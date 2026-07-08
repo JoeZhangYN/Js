@@ -9,7 +9,10 @@ const turnPreludeFile = path.join(root, "src/battle/battle-turn-prelude.js");
 const actionDecisionFile = path.join(root, "src/battle/battle-action-decision.js");
 const actionDecisionDispatchFile = path.join(root, "src/battle/battle-action-decision-dispatch.js");
 const actionDecisionEvidenceFile = path.join(root, "src/battle/battle-action-decision-evidence.js");
-const actionDecisionRecordingFile = path.join(root, "src/battle/battle-action-decision-recording.js");
+const actionDecisionRecordingFile = path.join(
+  root,
+  "src/battle/battle-action-decision-recording.js"
+);
 const actionEffectDispatchFile = path.join(root, "src/battle/battle-action-effect-dispatch.js");
 const violations = [];
 
@@ -118,7 +121,12 @@ for (const forbidden of ["BATTLE_RULES", "runRules", "battle/rules/index.js"]) {
     forbidden,
     "old action rule table path must stay retired"
   );
-  forbidText("src/battle/main-loop.js", mainLoop, forbidden, "main loop must stay orchestration-only");
+  forbidText(
+    "src/battle/main-loop.js",
+    mainLoop,
+    forbidden,
+    "main loop must stay orchestration-only"
+  );
 }
 
 for (const required of [
@@ -176,7 +184,9 @@ if (
     turnPrelude
   )
 ) {
-  violations.push("src/battle/battle-turn-prelude.js must keep the frozen documented turn prelude order");
+  violations.push(
+    "src/battle/battle-turn-prelude.js must keep the frozen documented turn prelude order"
+  );
 }
 
 for (const required of [
@@ -201,7 +211,9 @@ if (
     battleAutomation
   )
 ) {
-  violations.push("src/battle/battle-automation.js must keep the frozen documented page-ready order");
+  violations.push(
+    "src/battle/battle-automation.js must keep the frozen documented page-ready order"
+  );
 }
 
 if (!/export function runBattleActionEffectDispatch\(/.test(actionEffectDispatch)) {

@@ -5,12 +5,15 @@ const root = process.cwd();
 const target = path.normalize("src/i18n/hv-utils.js");
 const text = fs.readFileSync(path.join(root, target), "utf8");
 const keysText = fs.readFileSync(path.join(root, "src/core/diagnostic-evidence-keys.js"), "utf8");
-const diagnosticTestText = fs.readFileSync(path.join(root, "src/core/diagnostic-evidence.test.js"), "utf8");
+const diagnosticTestText = fs.readFileSync(
+  path.join(root, "src/core/diagnostic-evidence.test.js"),
+  "utf8"
+);
 const violations = [];
 
-const bodies = [...text.matchAll(/_ab\.unlock = async function \(name, to\) \{[\s\S]*?\n  \};/g)].map(
-  (match) => match[0]
-);
+const bodies = [
+  ...text.matchAll(/_ab\.unlock = async function \(name, to\) \{[\s\S]*?\n  \};/g),
+].map((match) => match[0]);
 
 for (const required of [
   "var record_hvut_ability_unlock_failure = function (stage, detail) {",
@@ -34,14 +37,16 @@ for (const required of [
   "return false;",
   "parse_hvut_ability_unlock_button(ability, context?.buttonStage || 'abilityUnlockButton')",
 ]) {
-  if (!text.includes(required)) violations.push(`${target} must include ability unlock diagnostic recorder: ${required}`);
+  if (!text.includes(required))
+    violations.push(`${target} must include ability unlock diagnostic recorder: ${required}`);
 }
 
 for (const required of [
   'HVUT_ABILITY_UNLOCK_FAILURE: "HVAA:lastHvutAbilityUnlockFailure"',
   'source("hvutAbilityUnlockFailure", DiagnosticEvidenceKey.HVUT_ABILITY_UNLOCK_FAILURE)',
 ]) {
-  if (!keysText.includes(required)) violations.push(`diagnostic evidence keys must include ${required}`);
+  if (!keysText.includes(required))
+    violations.push(`diagnostic evidence keys must include ${required}`);
 }
 
 if (!diagnosticTestText.includes("HVAA:lastHvutAbilityUnlockFailure")) {
@@ -69,7 +74,9 @@ for (const [index, body] of bodies.entries()) {
     }
   }
   if (/await Promise\.all\(requests\);\n\s*reloadCurrentPage/.test(body)) {
-    violations.push(`${target} ability unlock[${index}] must not reload after unchecked Promise.all`);
+    violations.push(
+      `${target} ability unlock[${index}] must not reload after unchecked Promise.all`
+    );
   }
   if (/popup\(error\);\n\s*}\s*else/.test(body)) {
     violations.push(`${target} ability unlock[${index}] must not continue after HV error popup`);
@@ -78,35 +85,53 @@ for (const [index, body] of bodies.entries()) {
     violations.push(`${target} ability unlock[${index}] must not keep untyped request failure`);
   }
   if (/record_hvut_ability_unlock_failure\([^;]+;\n\s*alert\(IS_ISEKAI/.test(body)) {
-    violations.push(`${target} ability unlock[${index}] must show copyable diagnostic evidence instead of a bare alert`);
+    violations.push(
+      `${target} ability unlock[${index}] must show copyable diagnostic evidence instead of a bare alert`
+    );
   }
   if (/\$ajax\.fetch\(location\.href/.test(body)) {
-    violations.push(`${target} ability unlock[${index}] must delegate current-page POST to run_hvut_ability_unlock_request`);
+    violations.push(
+      `${target} ability unlock[${index}] must delegate current-page POST to run_hvut_ability_unlock_request`
+    );
   }
   if (/get_message\(doc\)/.test(body)) {
-    violations.push(`${target} ability unlock[${index}] must not classify unlock response outside request entry`);
+    violations.push(
+      `${target} ability unlock[${index}] must not classify unlock response outside request entry`
+    );
   }
   if (/ab\.div\.children\[2\]/.test(body)) {
-    violations.push(`${target} ability unlock[${index}] must not rediscover button panel from raw DOM child index`);
+    violations.push(
+      `${target} ability unlock[${index}] must not rediscover button panel from raw DOM child index`
+    );
   }
   if (/\$qs\('div\[style\*="u\.png"\]',\s*ab\.div/.test(body)) {
-    violations.push(`${target} ability unlock[${index}] must use the typed ability unlock button parser`);
+    violations.push(
+      `${target} ability unlock[${index}] must use the typed ability unlock button parser`
+    );
   }
 }
 
 const requestEntry =
-  /var run_hvut_ability_unlock_request = async function \(ability, context\) \{[\s\S]*?\n  \};/.exec(text)?.[0] || "";
+  /var run_hvut_ability_unlock_request = async function \(ability, context\) \{[\s\S]*?\n  \};/.exec(
+    text
+  )?.[0] || "";
 if (/var error = get_message\(doc\);/.test(requestEntry)) {
-  violations.push(`${target} ability unlock request must use typed response classification instead of local error variable`);
+  violations.push(
+    `${target} ability unlock request must use typed response classification instead of local error variable`
+  );
 }
 if (/popup\(error\);/.test(requestEntry)) {
   violations.push(`${target} ability unlock request must popup the typed response message`);
 }
 if (/popup\(response\.message\);/.test(requestEntry)) {
-  violations.push(`${target} ability unlock request must show copyable diagnostic evidence instead of a popup`);
+  violations.push(
+    `${target} ability unlock request must show copyable diagnostic evidence instead of a popup`
+  );
 }
 if (/\$ajax\.fetch\(location\.href,\s*`unlock_ability=\$\{ability\.id\}`\)/.test(requestEntry)) {
-  violations.push(`${target} ability unlock request must use create_hvut_ability_unlock_url instead of raw location.href`);
+  violations.push(
+    `${target} ability unlock request must use create_hvut_ability_unlock_url instead of raw location.href`
+  );
 }
 
 if (violations.length) {

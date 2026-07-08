@@ -29,25 +29,43 @@ function requirePart(label, body, part) {
 }
 
 const offerLoad =
-  /load: async function \(iid, reward_type, reward_slot\) \{[\s\S]*?\n    \},\n    toggle: function/.exec(text)?.[0] || "";
+  /load: async function \(iid, reward_type, reward_slot\) \{[\s\S]*?\n    \},\n    toggle: function/.exec(
+    text
+  )?.[0] || "";
 const offerRequest =
-  /request: async function \(iid, count, reward_type, reward_slot\) \{[\s\S]*?\n    \},\n    load: async function/.exec(text)?.[0] || "";
+  /request: async function \(iid, count, reward_type, reward_slot\) \{[\s\S]*?\n    \},\n    load: async function/.exec(
+    text
+  )?.[0] || "";
 const logSave =
   /save: function \(\) \{[\s\S]*?\n    \},\n    reset: function/.exec(text)?.[0] || "";
 const legacyOffer =
-  /_ss\.offer = async function \(iid, count\) \{[\s\S]*?\n  \};\n\n  _ss\.request = async function/.exec(text)?.[0] || "";
+  /_ss\.offer = async function \(iid, count\) \{[\s\S]*?\n  \};\n\n  _ss\.request = async function/.exec(
+    text
+  )?.[0] || "";
 const legacyRequest =
-  /_ss\.request = async function \(iid, select_reward_type, select_reward_slot\) \{[\s\S]*?\n  \};\n\n  _ss\.toggle_results/.exec(text)?.[0] || "";
+  /_ss\.request = async function \(iid, select_reward_type, select_reward_slot\) \{[\s\S]*?\n  \};\n\n  _ss\.toggle_results/.exec(
+    text
+  )?.[0] || "";
 const localClassifier =
-  /var classify_hvut_shrine_offer_message = function \(msg\) \{[\s\S]*?\n  \};\n  var reloadCurrentPage/.exec(text)?.[0] || "";
+  /var classify_hvut_shrine_offer_message = function \(msg\) \{[\s\S]*?\n  \};\n  var reloadCurrentPage/.exec(
+    text
+  )?.[0] || "";
 const localClassifierBridge =
-  /var run_hvut_shrine_offer_message_classifier_bridge = function \(msg\) \{[\s\S]*?\n  \};\n  var classify_hvut_shrine_offer_message/.exec(text)?.[0] || "";
+  /var run_hvut_shrine_offer_message_classifier_bridge = function \(msg\) \{[\s\S]*?\n  \};\n  var classify_hvut_shrine_offer_message/.exec(
+    text
+  )?.[0] || "";
 const localReservation =
-  /var reserve_hvut_shrine_offer = function \(state, item\) \{[\s\S]*?\n  \};\n  var rollback_hvut_shrine_offer_reservation/.exec(text)?.[0] || "";
+  /var reserve_hvut_shrine_offer = function \(state, item\) \{[\s\S]*?\n  \};\n  var rollback_hvut_shrine_offer_reservation/.exec(
+    text
+  )?.[0] || "";
 const localReservationRollback =
-  /var rollback_hvut_shrine_offer_reservation = function \(state, item\) \{[\s\S]*?\n  \};\n  var classify_hvut_shrine_offer_message/.exec(text)?.[0] || "";
+  /var rollback_hvut_shrine_offer_reservation = function \(state, item\) \{[\s\S]*?\n  \};\n  var classify_hvut_shrine_offer_message/.exec(
+    text
+  )?.[0] || "";
 const localReservationBridge =
-  /var run_hvut_shrine_offer_reservation_bridge = function \(action, state, item\) \{[\s\S]*?\n  \};\n  var reserve_hvut_shrine_offer/.exec(text)?.[0] || "";
+  /var run_hvut_shrine_offer_reservation_bridge = function \(action, state, item\) \{[\s\S]*?\n  \};\n  var reserve_hvut_shrine_offer/.exec(
+    text
+  )?.[0] || "";
 
 if (!offerLoad) violations.push(`${target} must keep Shrine offer load entry visible`);
 if (!offerRequest) violations.push(`${target} must keep Shrine offer request entry visible`);
@@ -55,10 +73,14 @@ if (!logSave) violations.push(`${target} must keep Shrine log save entry visible
 if (!legacyOffer) violations.push(`${target} must keep legacy Shrine offer entry visible`);
 if (!legacyRequest) violations.push(`${target} must keep legacy Shrine request entry visible`);
 if (!localClassifier) violations.push(`${target} must keep local Shrine classifier bridge visible`);
-if (!localClassifierBridge) violations.push(`${target} must keep local Shrine classifier command visible`);
-if (!localReservation) violations.push(`${target} must keep local Shrine reservation bridge visible`);
-if (!localReservationRollback) violations.push(`${target} must keep local Shrine reservation rollback bridge visible`);
-if (!localReservationBridge) violations.push(`${target} must keep local Shrine reservation bridge command visible`);
+if (!localClassifierBridge)
+  violations.push(`${target} must keep local Shrine classifier command visible`);
+if (!localReservation)
+  violations.push(`${target} must keep local Shrine reservation bridge visible`);
+if (!localReservationRollback)
+  violations.push(`${target} must keep local Shrine reservation rollback bridge visible`);
+if (!localReservationBridge)
+  violations.push(`${target} must keep local Shrine reservation bridge command visible`);
 
 for (const part of [
   "record_hvut_shrine_offer_failure('offerLoadFetch'",
@@ -202,24 +224,28 @@ for (const forbidden of [
 
 for (const required of [
   "export function classifyShrineOfferMessage(message) {",
-  "if (msg.includes(\"Sold the remains for\")) return { kind: \"ignore\" };",
-  "return { kind: \"stop\", reason: \"equipmentInventoryFull\", message: msg };",
-  "return { kind: \"stop\", reason: \"unknownShrineResponse\", message: msg };",
+  'if (msg.includes("Sold the remains for")) return { kind: "ignore" };',
+  'return { kind: "stop", reason: "equipmentInventoryFull", message: msg };',
+  'return { kind: "stop", reason: "unknownShrineResponse", message: msg };',
 ]) {
   if (!classifierText.includes(required)) {
-    violations.push(`${classifierTarget} must own Shrine offer message classification with ${required}`);
+    violations.push(
+      `${classifierTarget} must own Shrine offer message classification with ${required}`
+    );
   }
 }
 for (const required of [
-  "import { classifyShrineOfferMessage } from \"./shrine-offer-message.js\";",
+  'import { classifyShrineOfferMessage } from "./shrine-offer-message.js";',
   "window.HVAA_shrineOfferMessage = Object.freeze({",
   "classify: classifyShrineOfferMessage",
 ]) {
   if (!classifierBridgeText.includes(required)) {
-    violations.push(`${classifierBridgeTarget} must expose Shrine offer classifier bridge with ${required}`);
+    violations.push(
+      `${classifierBridgeTarget} must expose Shrine offer classifier bridge with ${required}`
+    );
   }
 }
-if (!mainText.includes("import \"./i18n/shrine-offer-message-bridge.js\";")) {
+if (!mainText.includes('import "./i18n/shrine-offer-message-bridge.js";')) {
   violations.push(`${mainTarget} must load Shrine offer classifier bridge before hv-utils`);
 }
 if (
@@ -236,23 +262,30 @@ for (const required of [
   "state.equip.requests--;",
 ]) {
   if (!reservationText.includes(required)) {
-    violations.push(`${reservationTarget} must own Shrine offer reservation mutation with ${required}`);
+    violations.push(
+      `${reservationTarget} must own Shrine offer reservation mutation with ${required}`
+    );
   }
 }
 for (const required of [
-  "import { reserveShrineOffer, rollbackShrineOfferReservation } from \"./shrine-offer-reservation.js\";",
+  'import { reserveShrineOffer, rollbackShrineOfferReservation } from "./shrine-offer-reservation.js";',
   "window.HVAA_shrineOfferReservation = Object.freeze({",
   "reserve: reserveShrineOffer",
   "rollback: rollbackShrineOfferReservation",
 ]) {
   if (!reservationBridgeText.includes(required)) {
-    violations.push(`${reservationBridgeTarget} must expose Shrine offer reservation bridge with ${required}`);
+    violations.push(
+      `${reservationBridgeTarget} must expose Shrine offer reservation bridge with ${required}`
+    );
   }
 }
-if (!mainText.includes("import \"./i18n/shrine-offer-reservation-bridge.js\";")) {
+if (!mainText.includes('import "./i18n/shrine-offer-reservation-bridge.js";')) {
   violations.push(`${mainTarget} must load Shrine offer reservation bridge before hv-utils`);
 }
-if (!reservationTestText.includes("reserves one actual offer") || !reservationTestText.includes("rolls back one failed trophy reservation")) {
+if (
+  !reservationTestText.includes("reserves one actual offer") ||
+  !reservationTestText.includes("rolls back one failed trophy reservation")
+) {
   violations.push(`${reservationTestTarget} must cover reserve and rollback state transitions`);
 }
 
@@ -285,7 +318,11 @@ for (const [label, body, forbidden] of [
   ["local Shrine classifier bridge", localClassifier, "Sold it for"],
   ["local Shrine classifier bridge", localClassifier, "Salvaged it for"],
   ["local Shrine classifier bridge", localClassifier, "Sold the remains for"],
-  ["Shrine offer request", offerRequest, /(^|\n)\s*_ss\.offer\.load\(iid, reward_type, reward_slot\);/],
+  [
+    "Shrine offer request",
+    offerRequest,
+    /(^|\n)\s*_ss\.offer\.load\(iid, reward_type, reward_slot\);/,
+  ],
   ["Shrine offer request", offerRequest, "item.requests += count;"],
   ["Shrine offer request", offerRequest, "item.stock -= count * item.bulk;"],
   ["Shrine offer request", offerRequest, "item.max -= count;"],
@@ -299,7 +336,11 @@ for (const [label, body, forbidden] of [
   ["Shrine offer request", offerRequest, "_ss.equip.requests++;"],
   ["Shrine offer request", offerRequest, "_ss.equip.requests--;"],
   ["Shrine offer load", offerLoad, "_ss.log.save();"],
-  ["Shrine offer load", offerLoad, "set_hvut_shrine_stop_error(_ss, 'Shrine offer response unavailable.');"],
+  [
+    "Shrine offer load",
+    offerLoad,
+    "set_hvut_shrine_stop_error(_ss, 'Shrine offer response unavailable.');",
+  ],
   ["Shrine offer load", offerLoad, "get_message(doc, true).forEach"],
   ["Shrine offer load", offerLoad, "offerResponse.messages.forEach((msg) => {"],
   ["Shrine offer load", offerLoad, "classify_hvut_shrine_offer_message(msg)"],
@@ -312,7 +353,11 @@ for (const [label, body, forbidden] of [
   ["Shrine offer load", offerLoad, "RegExp.$"],
   ["Shrine offer load", offerLoad, "set_hvut_shrine_stop_error(_ss, msg);"],
   ["Shrine log save", logSave, "$config.set('ss_log', _ss.log.json);"],
-  ["legacy Shrine offer", legacyOffer, /(^|\n)\s*_ss\.request\(iid, select_reward_type, select_reward_slot\);/],
+  [
+    "legacy Shrine offer",
+    legacyOffer,
+    /(^|\n)\s*_ss\.request\(iid, select_reward_type, select_reward_slot\);/,
+  ],
   ["legacy Shrine offer", legacyOffer, "item.requests += count;"],
   ["legacy Shrine offer", legacyOffer, "item.stock -= count * item.bulk;"],
   ["legacy Shrine offer", legacyOffer, "item.max -= count;"],
@@ -326,7 +371,11 @@ for (const [label, body, forbidden] of [
   ["legacy Shrine offer", legacyOffer, "_ss.equip.requests++;"],
   ["legacy Shrine offer", legacyOffer, "_ss.equip.requests--;"],
   ["legacy Shrine request", legacyRequest, "$config.set('ss_log', _ss.log);"],
-  ["legacy Shrine request", legacyRequest, "set_hvut_shrine_stop_error(_ss, 'Shrine offer response unavailable.');"],
+  [
+    "legacy Shrine request",
+    legacyRequest,
+    "set_hvut_shrine_stop_error(_ss, 'Shrine offer response unavailable.');",
+  ],
   ["legacy Shrine request", legacyRequest, "get_message(doc, true).forEach"],
   ["legacy Shrine request", legacyRequest, "offerResponse.messages.forEach((msg) => {"],
   ["legacy Shrine request", legacyRequest, "classify_hvut_shrine_offer_message(msg)"],
@@ -337,18 +386,50 @@ for (const [label, body, forbidden] of [
   ["legacy Shrine request", legacyRequest, "msg.includes('Salvaged it for')"],
   ["legacy Shrine request", legacyRequest, "RegExp.$"],
   ["legacy Shrine request", legacyRequest, "set_hvut_shrine_stop_error(_ss, msg);"],
-  ["Shrine offer classifier", text, "return { kind: 'stop', reason: 'classifierUnavailable', message: 'Shrine offer classifier bridge unavailable.' };"],
-  ["Shrine offer summary", text, "return { kind: 'stop', reason: offerMessage.reason || 'unknownShrineResponse', message: offerMessage.message || msg };"],
+  [
+    "Shrine offer classifier",
+    text,
+    "return { kind: 'stop', reason: 'classifierUnavailable', message: 'Shrine offer classifier bridge unavailable.' };",
+  ],
+  [
+    "Shrine offer summary",
+    text,
+    "return { kind: 'stop', reason: offerMessage.reason || 'unknownShrineResponse', message: offerMessage.message || msg };",
+  ],
   ["Shrine stop entry", text, "var set_hvut_shrine_stop_error = function (state, message) {"],
-  ["Shrine offer reservation", text, "set_hvut_shrine_stop_error(state, 'Shrine offer reservation failed.');"],
-  ["Shrine offer reservation rollback", text, "set_hvut_shrine_stop_error(state, 'Shrine offer reservation rollback failed.');"],
+  [
+    "Shrine offer reservation",
+    text,
+    "set_hvut_shrine_stop_error(state, 'Shrine offer reservation failed.');",
+  ],
+  [
+    "Shrine offer reservation rollback",
+    text,
+    "set_hvut_shrine_stop_error(state, 'Shrine offer reservation rollback failed.');",
+  ],
   ["Shrine offer load", offerLoad, "set_hvut_shrine_stop_error(_ss, offerResponse.message);"],
   ["Shrine offer load", offerLoad, "set_hvut_shrine_stop_error(_ss, offerSummary.message);"],
-  ["Shrine offer load", offerLoad, "set_hvut_shrine_stop_error(_ss, 'Shrine offer request failed.');"],
+  [
+    "Shrine offer load",
+    offerLoad,
+    "set_hvut_shrine_stop_error(_ss, 'Shrine offer request failed.');",
+  ],
   ["Shrine offer load", offerLoad, "set_hvut_shrine_stop_error(_ss, '你的装备库存已满');"],
-  ["legacy Shrine request", legacyRequest, "set_hvut_shrine_stop_error(_ss, offerResponse.message);"],
-  ["legacy Shrine request", legacyRequest, "set_hvut_shrine_stop_error(_ss, offerSummary.message);"],
-  ["legacy Shrine request", legacyRequest, "set_hvut_shrine_stop_error(_ss, 'Shrine offer request failed.');"],
+  [
+    "legacy Shrine request",
+    legacyRequest,
+    "set_hvut_shrine_stop_error(_ss, offerResponse.message);",
+  ],
+  [
+    "legacy Shrine request",
+    legacyRequest,
+    "set_hvut_shrine_stop_error(_ss, offerSummary.message);",
+  ],
+  [
+    "legacy Shrine request",
+    legacyRequest,
+    "set_hvut_shrine_stop_error(_ss, 'Shrine offer request failed.');",
+  ],
   ["legacy Shrine request", legacyRequest, "set_hvut_shrine_stop_error(_ss, '你的装备库存已满');"],
 ]) {
   if (typeof forbidden === "string" ? body.includes(forbidden) : forbidden.test(body)) {
@@ -383,4 +464,6 @@ if (violations.length) {
   process.exit(1);
 }
 
-console.log("[verify-hvut-shrine-log-persistence-boundary] OK - Shrine log persistence failures fail closed");
+console.log(
+  "[verify-hvut-shrine-log-persistence-boundary] OK - Shrine log persistence failures fail closed"
+);

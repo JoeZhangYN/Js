@@ -107,10 +107,14 @@ const ownerTestText = fs.readFileSync(path.join(root, ownerTest), "utf8");
 const failureOwnerText = fs.readFileSync(path.join(root, failureOwner), "utf8");
 const failureTestText = fs.readFileSync(path.join(root, failureTest), "utf8");
 if (/if\s*\(\s*event\.type\s*===/.test(ownerEntry)) {
-  violations.push(`${owner.replaceAll("\\", "/")} entry must not reintroduce an event.type if-chain`);
+  violations.push(
+    `${owner.replaceAll("\\", "/")} entry must not reintroduce an event.type if-chain`
+  );
 }
 if (/\bevent\.type\b/.test(ownerEntry) || !/\bevent\?\.type\b/.test(ownerEntry)) {
-  violations.push(`${owner.replaceAll("\\", "/")} entry must fail closed for null incoming burst events`);
+  violations.push(
+    `${owner.replaceAll("\\", "/")} entry must fail closed for null incoming burst events`
+  );
 }
 for (const internal of ["updateBurstFromEvents(", "getLearnedBurstMap("]) {
   if (ownerEntry.includes(internal)) {
@@ -124,10 +128,18 @@ if (!/runIncomingBurstLearningAutomation\(null\)/.test(ownerTestText)) {
 }
 
 if ((ownerText.match(/\bsetValue\(/g) || []).length !== 0) {
-  violations.push(`${owner.replaceAll("\\", "/")} must not write learned incoming-burst storage directly`);
+  violations.push(
+    `${owner.replaceAll("\\", "/")} must not write learned incoming-burst storage directly`
+  );
 }
-if (!/function persistLearnedIncomingBurst\(learned\) \{[\s\S]*setValue\(STORAGE_KEYS\.LEARNED_INCOMING_BURST,\s*learned\);[\s\S]*return true;[\s\S]*catch\s*\(error\)\s*{[\s\S]*recordIncomingBurstLearningFailure\("update-learned",\s*error\);[\s\S]*return false;/.test(failureOwnerText)) {
-  violations.push(`${failureOwner.replaceAll("\\", "/")} must classify learned incoming-burst storage write failures`);
+if (
+  !/function persistLearnedIncomingBurst\(learned\) \{[\s\S]*setValue\(STORAGE_KEYS\.LEARNED_INCOMING_BURST,\s*learned\);[\s\S]*return true;[\s\S]*catch\s*\(error\)\s*{[\s\S]*recordIncomingBurstLearningFailure\("update-learned",\s*error\);[\s\S]*return false;/.test(
+    failureOwnerText
+  )
+) {
+  violations.push(
+    `${failureOwner.replaceAll("\\", "/")} must classify learned incoming-burst storage write failures`
+  );
 }
 for (const required of [
   "INCOMING_BURST_LEARNING_FAILURE_KEY",

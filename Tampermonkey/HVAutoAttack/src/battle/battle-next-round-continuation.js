@@ -3,9 +3,15 @@ import { post } from "../dom/http.js";
 import { RiddleEvent, runRiddleAutomation } from "../pages/riddle-automation.js";
 import { BattleTurnWorkflowEvent, runBattleTurnAutomation } from "./main-loop.js";
 import { BattleRoundStartEvent, runBattleRoundStartAutomation } from "./battle-round-start.js";
-import { BattleActionLifecycleEvidenceEvent, runBattleActionLifecycleEvidence } from "./battle-action-lifecycle-evidence.js";
+import {
+  BattleActionLifecycleEvidenceEvent,
+  runBattleActionLifecycleEvidence,
+} from "./battle-action-lifecycle-evidence.js";
 import { recordContinuationSafely } from "./battle-next-round-continuation-recording.js";
-import { recordCallbackRejection, recordPostFailure } from "./battle-next-round-continuation-result.js";
+import {
+  recordCallbackRejection,
+  recordPostFailure,
+} from "./battle-next-round-continuation-result.js";
 
 const EVENT_CONTINUE = "continue";
 const PHASE_NEXT_ROUND_CONTINUATION = "nextRoundContinuation";
@@ -144,12 +150,13 @@ export function runBattleNextRoundContinuation(
     handleRiddle: (data) => runRiddleAutomation({ type: RiddleEvent.BATTLE_POST_RESULT, data }),
     startRound: () => runBattleRoundStartAutomation({ type: BattleRoundStartEvent.ROUND_STARTED }),
     runTurn: () => runBattleTurnAutomation({ type: BattleTurnWorkflowEvent.RUN_CURRENT_TURN }),
-    recordContinuation: (result, steps) => runBattleActionLifecycleEvidence({
-      type: BattleActionLifecycleEvidenceEvent.RECORD_LIFECYCLE,
-      phase: PHASE_NEXT_ROUND_CONTINUATION,
-      result,
-      steps,
-    }),
+    recordContinuation: (result, steps) =>
+      runBattleActionLifecycleEvidence({
+        type: BattleActionLifecycleEvidenceEvent.RECORD_LIFECYCLE,
+        phase: PHASE_NEXT_ROUND_CONTINUATION,
+        result,
+        steps,
+      }),
   }
 ) {
   return (

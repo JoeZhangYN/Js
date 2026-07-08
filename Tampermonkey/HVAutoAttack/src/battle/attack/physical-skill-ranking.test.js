@@ -91,7 +91,9 @@ describe("pickByUtility", () => {
   });
 
   it("rejects unknown physical skill ranking events", () => {
-    expect(runPhysicalSkillRanking({ type: "unknown", candidates: [{ code: "OFC", score: 100 }] })).toBeNull();
+    expect(
+      runPhysicalSkillRanking({ type: "unknown", candidates: [{ code: "OFC", score: 100 }] })
+    ).toBeNull();
     expect(runPhysicalSkillRanking(null)).toBeNull();
   });
 });

@@ -78,7 +78,9 @@ if (
   !/const PHYSICAL_TYPES = Object\.freeze\(\{/.test(burstControlText) ||
   !/const CONTROL_IMG = Object\.freeze\(\{/.test(burstControlText)
 ) {
-  violations.push("src/battle/debuff/decide-burst-control.js must own frozen burst-control decision tables");
+  violations.push(
+    "src/battle/debuff/decide-burst-control.js must own frozen burst-control decision tables"
+  );
 }
 if (
   /\bexport\s+(?:function|const)\s+(?!BattleBurstControlDecisionEvent\b|runBattleBurstControlDecision\b)/.test(
@@ -113,7 +115,9 @@ for (const required of ["noop: () => true"]) {
 const emptyDecisionBody =
   ownerText.match(/function isEmptyDecision\([^)]*\) \{[\s\S]*?\n\}/)?.[0] || "";
 if (/result\.kind\s*===|result\.kind\s*!==/.test(emptyDecisionBody)) {
-  violations.push(`${rel(owner)} must route empty offensive debuff decisions through predicate tables`);
+  violations.push(
+    `${rel(owner)} must route empty offensive debuff decisions through predicate tables`
+  );
 }
 
 if (
@@ -125,8 +129,7 @@ if (
 }
 
 const entryBody =
-  ownerText.match(/export function runBattleOffensiveDebuff\([^)]*\) \{[\s\S]*?\n\}/)?.[0] ||
-  "";
+  ownerText.match(/export function runBattleOffensiveDebuff\([^)]*\) \{[\s\S]*?\n\}/)?.[0] || "";
 if (!/Object\.freeze\(\{[\s\S]*\[EVENT_DECIDE\]/.test(ownerText)) {
   violations.push(`${rel(owner)} must route events through a frozen handler table`);
 }

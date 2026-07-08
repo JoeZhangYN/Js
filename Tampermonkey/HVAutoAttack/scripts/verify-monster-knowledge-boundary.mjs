@@ -57,10 +57,11 @@ function checkEntry() {
     violations.push(`${entry.replaceAll("\\", "/")} must not route events through an if ladder`);
   }
   const entryBody =
-    text.match(/export function runMonsterKnowledgeAutomation\([^)]*\) \{[\s\S]*?\n\}/)?.[0] ||
-    "";
+    text.match(/export function runMonsterKnowledgeAutomation\([^)]*\) \{[\s\S]*?\n\}/)?.[0] || "";
   if (/monsterKnowledgeEventHandlers\[event\.type\]/.test(entryBody)) {
-    violations.push(`${entry.replaceAll("\\", "/")} entry must fail closed for invalid knowledge events`);
+    violations.push(
+      `${entry.replaceAll("\\", "/")} entry must fail closed for invalid knowledge events`
+    );
   }
   if (!/monsterKnowledgeEventHandlers\[event\?\.type\]/.test(entryBody)) {
     violations.push(
@@ -119,10 +120,11 @@ function checkEntry() {
     );
   }
   const syncEntryBody =
-    syncText.match(/export function runMonsterDbSyncAutomation\([^)]*\) \{[\s\S]*?\n\}/)?.[0] ||
-    "";
+    syncText.match(/export function runMonsterDbSyncAutomation\([^)]*\) \{[\s\S]*?\n\}/)?.[0] || "";
   if (/monsterDbSyncEventHandlers\[event\.type\]/.test(syncEntryBody)) {
-    violations.push(`${syncImpl.replaceAll("\\", "/")} entry must fail closed for invalid sync events`);
+    violations.push(
+      `${syncImpl.replaceAll("\\", "/")} entry must fail closed for invalid sync events`
+    );
   }
   if (!/monsterDbSyncEventHandlers\[event\?\.type\]/.test(syncEntryBody)) {
     violations.push(
@@ -228,10 +230,13 @@ function checkEntry() {
     );
   }
   const scanEntryBody =
-    scanText.match(/export function runMonsterScanLearningAutomation\([^)]*\) \{[\s\S]*?\n\}/)?.[0] ||
-    "";
+    scanText.match(
+      /export function runMonsterScanLearningAutomation\([^)]*\) \{[\s\S]*?\n\}/
+    )?.[0] || "";
   if (/monsterScanLearningEventHandlers\[event\.type\]/.test(scanEntryBody)) {
-    violations.push(`${scanImpl.replaceAll("\\", "/")} entry must fail closed for invalid scan learning events`);
+    violations.push(
+      `${scanImpl.replaceAll("\\", "/")} entry must fail closed for invalid scan learning events`
+    );
   }
   if (!/monsterScanLearningEventHandlers\[event\?\.type\]/.test(scanEntryBody)) {
     violations.push(
@@ -286,10 +291,13 @@ function checkEntry() {
     );
   }
   const scanResultEntryBody =
-    scanResultText.match(/export function runMonsterScanResultLearning\([^)]*\) \{[\s\S]*?\n\}/)?.[0] ||
-    "";
+    scanResultText.match(
+      /export function runMonsterScanResultLearning\([^)]*\) \{[\s\S]*?\n\}/
+    )?.[0] || "";
   if (/monsterScanResultEventHandlers\[event\.type\]/.test(scanResultEntryBody)) {
-    violations.push(`${scanResultImpl.replaceAll("\\", "/")} entry must fail closed for invalid scan result events`);
+    violations.push(
+      `${scanResultImpl.replaceAll("\\", "/")} entry must fail closed for invalid scan result events`
+    );
   }
   if (!/monsterScanResultEventHandlers\[event\?\.type\]/.test(scanResultEntryBody)) {
     violations.push(
@@ -317,7 +325,9 @@ function checkEntry() {
       violations.push(`${scanResultImpl.replaceAll("\\", "/")} must own ${required}`);
     }
   }
-  const scanResultFailureTest = path.normalize("src/battle/monster-scan-result-learning-failure.test.js");
+  const scanResultFailureTest = path.normalize(
+    "src/battle/monster-scan-result-learning-failure.test.js"
+  );
   const scanResultFailureText = fs.existsSync(path.join(root, scanResultFailureTest))
     ? fs.readFileSync(path.join(root, scanResultFailureTest), "utf8")
     : "";

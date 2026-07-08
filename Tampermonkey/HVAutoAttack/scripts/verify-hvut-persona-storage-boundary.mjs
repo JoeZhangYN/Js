@@ -20,27 +20,44 @@ function requireParts(label, value, parts) {
 
 const changeEOutcome = body(
   /persona\.change_e_outcome = async function \(eset\) \{[\s\S]*?\n  \};\n  persona\.change_e/,
-  "persona.change_e_outcome",
+  "persona.change_e_outcome"
 );
-const changeE = body(/persona\.change_e = async function \(eset\) \{[\s\S]*?\n  \};\n  persona\.set_button/, "persona.change_e");
+const changeE = body(
+  /persona\.change_e = async function \(eset\) \{[\s\S]*?\n  \};\n  persona\.set_button/,
+  "persona.change_e"
+);
 const loadDynjsOutcome = body(
   /persona\.load_dynjs_outcome = async function \(doc\) \{[\s\S]*?\n  \};\n  persona\.load_dynjs/,
-  "persona.load_dynjs_outcome",
+  "persona.load_dynjs_outcome"
 );
-const loadDynjs = body(/persona\.load_dynjs = async function \(doc\) \{[\s\S]*?\n  \};\n  \/\//, "persona.load_dynjs");
+const loadDynjs = body(
+  /persona\.load_dynjs = async function \(doc\) \{[\s\S]*?\n  \};\n  \/\//,
+  "persona.load_dynjs"
+);
 const parseStatsOutcome = body(
   /persona\.parse_stats_pane_outcome = function \(doc\) \{[\s\S]*?\n  \};\n  persona\.set_value/,
-  "persona.parse_stats_pane_outcome",
+  "persona.parse_stats_pane_outcome"
 );
-const setValue = body(/persona\.set_value = function \(name, value\) \{[\s\S]*?\n  \};\n  persona\.get_value/, "persona.set_value");
-const readEquipsetRow = body(/persona\.read_equipset_row = function \(row\) \{[\s\S]*?\n  \};\n  persona\.save_equipset/, "persona.read_equipset_row");
+const setValue = body(
+  /persona\.set_value = function \(name, value\) \{[\s\S]*?\n  \};\n  persona\.get_value/,
+  "persona.set_value"
+);
+const readEquipsetRow = body(
+  /persona\.read_equipset_row = function \(row\) \{[\s\S]*?\n  \};\n  persona\.save_equipset/,
+  "persona.read_equipset_row"
+);
 const saveEquipsetOutcome = body(
   /persona\.save_equipset_outcome = function \(doc\) \{[\s\S]*?\n  \};\n  persona\.save_equipset/,
-  "persona.save_equipset_outcome",
+  "persona.save_equipset_outcome"
 );
-const saveEquipset = body(/persona\.save_equipset = function \(doc\) \{[\s\S]*?\n  \};\n  persona\.check_warning/, "persona.save_equipset");
+const saveEquipset = body(
+  /persona\.save_equipset = function \(doc\) \{[\s\S]*?\n  \};\n  persona\.check_warning/,
+  "persona.save_equipset"
+);
 
-if (!text.includes("const write_hvut_character_config_value = function (ctx, key, value, stage) {")) {
+if (
+  !text.includes("const write_hvut_character_config_value = function (ctx, key, value, stage) {")
+) {
   violations.push(`${target} character config writes must share one typed writer`);
 }
 if (!text.includes("persona.write_config_value = function (key, value, stage) {")) {
@@ -109,8 +126,12 @@ for (const [required, expected] of [
   ["const statsOutcome = $persona.parse_stats_pane_outcome();", 4],
   ["if (statsOutcome.kind === 'rejected') return;", 2],
 ]) {
-  const count = (text.match(new RegExp(required.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "g")) || []).length;
-  if (count !== expected) violations.push(`${target} must keep ${expected} active stats pane outcome call(s) for ${required}, found ${count}`);
+  const count = (text.match(new RegExp(required.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "g")) || [])
+    .length;
+  if (count !== expected)
+    violations.push(
+      `${target} must keep ${expected} active stats pane outcome call(s) for ${required}, found ${count}`
+    );
 }
 requireParts("persona.read_equipset_row", readEquipsetRow, [
   "const slot = row.children?.[0]?.textContent || '';",
@@ -137,7 +158,9 @@ if (saveEquipsetOutcome.includes("ctx.config.set('equipset', equipset);\n  };"))
   violations.push(`${target} persona.save_equipset must not ignore equipset write result`);
 }
 if (changeEOutcome.includes("if ((await persona.load_dynjs(doc)) === false) return false;")) {
-  violations.push(`${target} persona.change_e must consume typed dynjs load outcome instead of direct boolean chaining`);
+  violations.push(
+    `${target} persona.change_e must consume typed dynjs load outcome instead of direct boolean chaining`
+  );
 }
 for (const forbidden of [
   "if (persona.save_equipset(doc) === false) return false;",
@@ -157,15 +180,16 @@ for (const [label, value, forbidden] of [
   ["persona.save_equipset_outcome", saveEquipsetOutcome, "ctx.config.set('equipset', equipset)"],
 ]) {
   if (value.includes(forbidden)) {
-    violations.push(`${target} ${label} must use typed persona config writer instead of ${forbidden}`);
+    violations.push(
+      `${target} ${label} must use typed persona config writer instead of ${forbidden}`
+    );
   }
 }
-for (const forbidden of [
-  "ctx.parseEquipElem(d.children[1])",
-  "d.children[0].textContent",
-]) {
+for (const forbidden of ["ctx.parseEquipElem(d.children[1])", "d.children[0].textContent"]) {
   if (saveEquipset.includes(forbidden)) {
-    violations.push(`${target} persona.save_equipset must not parse raw equipset row children: ${forbidden}`);
+    violations.push(
+      `${target} persona.save_equipset must not parse raw equipset row children: ${forbidden}`
+    );
   }
 }
 

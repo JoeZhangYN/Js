@@ -1,11 +1,20 @@
-import { BattleMonitorEvent, runBattleMonitorAutomation } from "../monitor/battle-monitor-automation.js";
+import {
+  BattleMonitorEvent,
+  runBattleMonitorAutomation,
+} from "../monitor/battle-monitor-automation.js";
 import { BattleActionDelayEvent, runBattleActionDelayAutomation } from "./battle-action-delay.js";
 import { BattleActionSpeedEvent, runBattleActionSpeedAutomation } from "./battle-action-speed.js";
 import { BattleCompletionEvent, runBattleCompletionAutomation } from "./battle-completion.js";
 import { BattleTurnWorkflowEvent, runBattleTurnAutomation } from "./main-loop.js";
 import { MonsterStatusEvent, runMonsterStatusAutomation } from "./monster-status-automation.js";
-import { BattleNextRoundContinuationEvent, runBattleNextRoundContinuation } from "./battle-next-round-continuation.js";
-import { BattleActionLifecycleEvidenceEvent, runBattleActionLifecycleEvidence } from "./battle-action-lifecycle-evidence.js";
+import {
+  BattleNextRoundContinuationEvent,
+  runBattleNextRoundContinuation,
+} from "./battle-next-round-continuation.js";
+import {
+  BattleActionLifecycleEvidenceEvent,
+  runBattleActionLifecycleEvidence,
+} from "./battle-action-lifecycle-evidence.js";
 import { recordLifecycleSafely } from "./battle-action-lifecycle-recording.js";
 
 const EVENT_ACTION_STARTED = "actionStarted";
@@ -102,7 +111,9 @@ function runActionEnded(deps) {
   recordStep(steps, "endDelay", deps.endDelay);
   recordStep(steps, "refreshCombatants", deps.refreshCombatants);
   recordStep(steps, "monitorActionEnded", deps.monitorActionEnded);
-  const completionReached = Boolean(recordStep(steps, "isCompletionReached", deps.isCompletionReached));
+  const completionReached = Boolean(
+    recordStep(steps, "isCompletionReached", deps.isCompletionReached)
+  );
   const completionReachedStep = steps[steps.length - 1];
   if (completionReachedStep.reason === REASON_ACTION_LIFECYCLE_STEP_THROW) {
     const result = rejectedLifecycleResult("isCompletionReached");
@@ -132,7 +143,12 @@ function rejectUnknownActionLifecycleEvent(event, deps) {
     eventType: event?.type ?? null,
   };
   recordLifecycleSafely(deps, EVENT_UNKNOWN_ACTION_LIFECYCLE, result, [
-    { step: "routeEvent", result: false, reason: EVENT_UNKNOWN_ACTION_LIFECYCLE, eventType: result.eventType },
+    {
+      step: "routeEvent",
+      result: false,
+      reason: EVENT_UNKNOWN_ACTION_LIFECYCLE,
+      eventType: result.eventType,
+    },
   ]);
   return false;
 }
@@ -140,15 +156,22 @@ function rejectUnknownActionLifecycleEvent(event, deps) {
 export function runBattleActionLifecycleAutomation(
   event = { type: EVENT_ACTION_STARTED },
   deps = {
-    startDelay: () => runBattleActionDelayAutomation({ type: BattleActionDelayEvent.ACTION_STARTED }),
-    recordSpeed: () => runBattleActionSpeedAutomation({ type: BattleActionSpeedEvent.ACTION_ENDED }),
+    startDelay: () =>
+      runBattleActionDelayAutomation({ type: BattleActionDelayEvent.ACTION_STARTED }),
+    recordSpeed: () =>
+      runBattleActionSpeedAutomation({ type: BattleActionSpeedEvent.ACTION_ENDED }),
     endDelay: () => runBattleActionDelayAutomation({ type: BattleActionDelayEvent.ACTION_ENDED }),
-    refreshCombatants: () => runMonsterStatusAutomation({ type: MonsterStatusEvent.REFRESH_COMBATANT_COUNTS }),
-    monitorActionStarted: () => runBattleMonitorAutomation({ type: BattleMonitorEvent.ACTION_STARTED }),
+    refreshCombatants: () =>
+      runMonsterStatusAutomation({ type: MonsterStatusEvent.REFRESH_COMBATANT_COUNTS }),
+    monitorActionStarted: () =>
+      runBattleMonitorAutomation({ type: BattleMonitorEvent.ACTION_STARTED }),
     monitorActionEnded: () => runBattleMonitorAutomation({ type: BattleMonitorEvent.ACTION_ENDED }),
-    completeBattle: () => runBattleCompletionAutomation({ type: BattleCompletionEvent.COMPLETION_REACHED }),
-    isCompletionReached: () => runBattleCompletionAutomation({ type: BattleCompletionEvent.READ_REACHED }),
-    continueNextRound: () => runBattleNextRoundContinuation({ type: BattleNextRoundContinuationEvent.CONTINUE }),
+    completeBattle: () =>
+      runBattleCompletionAutomation({ type: BattleCompletionEvent.COMPLETION_REACHED }),
+    isCompletionReached: () =>
+      runBattleCompletionAutomation({ type: BattleCompletionEvent.READ_REACHED }),
+    continueNextRound: () =>
+      runBattleNextRoundContinuation({ type: BattleNextRoundContinuationEvent.CONTINUE }),
     runTurn: () => runBattleTurnAutomation({ type: BattleTurnWorkflowEvent.RUN_CURRENT_TURN }),
     recordLifecycle: (phase, result, steps) =>
       runBattleActionLifecycleEvidence({
@@ -159,5 +182,8 @@ export function runBattleActionLifecycleAutomation(
       }),
   }
 ) {
-  return battleActionLifecycleEventHandlers[event?.type]?.(deps) ?? rejectUnknownActionLifecycleEvent(event, deps);
+  return (
+    battleActionLifecycleEventHandlers[event?.type]?.(deps) ??
+    rejectUnknownActionLifecycleEvent(event, deps)
+  );
 }

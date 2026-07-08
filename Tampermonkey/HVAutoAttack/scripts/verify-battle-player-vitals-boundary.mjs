@@ -49,7 +49,9 @@ if (
 }
 const entryBody =
   ownerText.match(/export function runBattlePlayerVitals\([^)]*\) \{[\s\S]*?\n\}/)?.[0] || "";
-if (!/Object\.freeze\(\{[\s\S]*\[EVENT_READ_CURRENT\][\s\S]*\[EVENT_MIRROR_RUNTIME\]/.test(ownerText)) {
+if (
+  !/Object\.freeze\(\{[\s\S]*\[EVENT_READ_CURRENT\][\s\S]*\[EVENT_MIRROR_RUNTIME\]/.test(ownerText)
+) {
   violations.push(`${rel(owner)} must route events through a frozen handler table`);
 }
 if (/event\.type\s*===/.test(entryBody)) {

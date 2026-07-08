@@ -56,16 +56,22 @@ for (const required of ["runRepairAutomation", "RepairEvent"]) {
 const entryBody =
   ownerText.match(/export function runRepairAutomation\([^)]*\) \{[\s\S]*?\n\}/)?.[0] || "";
 if (!/const repairEventHandlers\s*=\s*Object\.freeze\(\{[\s\S]*\[EVENT_START\]/.test(ownerText)) {
-  violations.push(`${owner.replaceAll("\\", "/")} must route events through a frozen handler table`);
+  violations.push(
+    `${owner.replaceAll("\\", "/")} must route events through a frozen handler table`
+  );
 }
 if (/event\.type\s*(?:!==|===)|switch\s*\(\s*event\.type\s*\)/.test(entryBody)) {
   violations.push(`${owner.replaceAll("\\", "/")} entry must dispatch by handler table`);
 }
 if (entryBody.includes("repairEventHandlers[event.type]")) {
-  violations.push(`${owner.replaceAll("\\", "/")} entry must reject null repair events without throwing`);
+  violations.push(
+    `${owner.replaceAll("\\", "/")} entry must reject null repair events without throwing`
+  );
 }
 if (!entryBody.includes("repairEventHandlers[event?.type]")) {
-  violations.push(`${owner.replaceAll("\\", "/")} entry must fail closed for unknown or null repair events`);
+  violations.push(
+    `${owner.replaceAll("\\", "/")} entry must fail closed for unknown or null repair events`
+  );
 }
 if (/export\s+function\s+runRepair\s*\(/.test(ownerText)) {
   violations.push(`${owner.replaceAll("\\", "/")} legacy runRepair export is forbidden`);
@@ -74,8 +80,8 @@ for (const required of [
   "stopBackendFailure",
   "REPAIR_BACKEND_FAILURE_KEY",
   "HVAA:lastRepairBackendFailure",
-  "capability: \"repairBackend\"",
-  "stage: \"requestFailure\"",
+  'capability: "repairBackend"',
+  'stage: "requestFailure"',
   "sessionStorage.setItem(REPAIR_BACKEND_FAILURE_KEY",
   "[HVAA] repair backend request failed",
   "Repair stop recovery must not depend on diagnostic storage.",
@@ -99,7 +105,11 @@ if (!fs.existsSync(path.join(root, ownerTest))) {
   violations.push(`${ownerTest.replaceAll("\\", "/")} must cover repair workflow entry`);
 } else {
   const ownerTestText = fs.readFileSync(path.join(root, ownerTest), "utf8");
-  if (!ownerTestText.includes("rejects unknown repair automation events without scanning or scheduling")) {
+  if (
+    !ownerTestText.includes(
+      "rejects unknown repair automation events without scanning or scheduling"
+    )
+  ) {
     violations.push(`${ownerTest.replaceAll("\\", "/")} must cover unknown repair events`);
   }
   if (!ownerTestText.includes("runRepairAutomation(null")) {
@@ -111,12 +121,16 @@ if (!fs.existsSync(path.join(root, ownerTest))) {
     "商店凭证",
   ]) {
     if (!ownerTestText.includes(required)) {
-      violations.push(`${ownerTest.replaceAll("\\", "/")} must lock missing storetoken stop messaging`);
+      violations.push(
+        `${ownerTest.replaceAll("\\", "/")} must lock missing storetoken stop messaging`
+      );
     }
   }
 }
 if (!fs.existsSync(path.join(root, backendFailureTest))) {
-  violations.push(`${backendFailureTest.replaceAll("\\", "/")} must cover backend failure recovery`);
+  violations.push(
+    `${backendFailureTest.replaceAll("\\", "/")} must cover backend failure recovery`
+  );
 } else {
   const backendFailureTestText = fs.readFileSync(path.join(root, backendFailureTest), "utf8");
   for (const required of [
@@ -139,7 +153,7 @@ if (!fs.existsSync(path.join(root, backendFailureTest))) {
 
 const diagnosticKeysText = fs.readFileSync(path.join(root, diagnosticKeys), "utf8");
 for (const required of [
-  "REPAIR_BACKEND_FAILURE: \"HVAA:lastRepairBackendFailure\"",
+  'REPAIR_BACKEND_FAILURE: "HVAA:lastRepairBackendFailure"',
   'source("repairBackendFailure", DiagnosticEvidenceKey.REPAIR_BACKEND_FAILURE)',
 ]) {
   if (!diagnosticKeysText.includes(required)) {

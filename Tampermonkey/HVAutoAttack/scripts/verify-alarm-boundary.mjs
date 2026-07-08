@@ -53,10 +53,17 @@ function checkFile(file) {
       relative !== profileCatalogTest &&
       /from\s+["'][^"']*alarm-profiles\.js["']/.test(line)
     ) {
-      violations.push(`${rel(file)}:${index + 1} alarm profile catalog is consumed only through alarm/settings entries`);
+      violations.push(
+        `${rel(file)}:${index + 1} alarm profile catalog is consumed only through alarm/settings entries`
+      );
     }
-    if (/\bALARM_(?:AUDIO_PROFILES|RUNTIME_KIND_KEYS)\b/.test(line) && relative !== profileCatalog) {
-      violations.push(`${rel(file)}:${index + 1} alarm profile lists are internal to alarm profile catalog`);
+    if (
+      /\bALARM_(?:AUDIO_PROFILES|RUNTIME_KIND_KEYS)\b/.test(line) &&
+      relative !== profileCatalog
+    ) {
+      violations.push(
+        `${rel(file)}:${index + 1} alarm profile lists are internal to alarm profile catalog`
+      );
     }
     if (
       relative === settingsRender &&
@@ -84,7 +91,11 @@ for (const required of ["runAlarmAutomation", "AlarmEvent", "PREVIEW_AUDIO_URL"]
   if (!ownerText.includes(required))
     violations.push(`${owner.replaceAll("\\", "/")} must own ${required}`);
 }
-for (const required of ["runAlarmProfileCatalog", "AlarmProfileEvent.NORMALIZE_KIND", "normalizeAlarmKind"]) {
+for (const required of [
+  "runAlarmProfileCatalog",
+  "AlarmProfileEvent.NORMALIZE_KIND",
+  "normalizeAlarmKind",
+]) {
   if (!ownerText.includes(required)) {
     violations.push(`${owner.replaceAll("\\", "/")} must internalize alarm kind invariants`);
   }
@@ -168,7 +179,9 @@ for (const required of [
   "runAlarmProfileCatalog({ type: AlarmProfileEvent.READ_AUDIO_PROFILES })",
 ]) {
   if (!settingsText.includes(required)) {
-    violations.push(`${settingsRender.replaceAll("\\", "/")} must read alarm audio profiles through catalog entry`);
+    violations.push(
+      `${settingsRender.replaceAll("\\", "/")} must read alarm audio profiles through catalog entry`
+    );
   }
 }
 for (const required of [
@@ -180,12 +193,16 @@ for (const required of [
   "normalizes runtime alarm kinds through the profile entry",
 ]) {
   if (!profileCatalogText.includes(required) && !profileCatalogTestText.includes(required)) {
-    violations.push(`${profileCatalog.replaceAll("\\", "/")} must lock alarm profile catalog entry ${required}`);
+    violations.push(
+      `${profileCatalog.replaceAll("\\", "/")} must lock alarm profile catalog entry ${required}`
+    );
   }
 }
 for (const legacy of ["ALARM_AUDIO_PROFILES", "ALARM_RUNTIME_KIND_KEYS"]) {
   if (new RegExp(`export\\s+const\\s+${legacy}\\b`).test(profileCatalogText)) {
-    violations.push(`${profileCatalog.replaceAll("\\", "/")} must keep ${legacy} private behind runAlarmProfileCatalog(event)`);
+    violations.push(
+      `${profileCatalog.replaceAll("\\", "/")} must keep ${legacy} private behind runAlarmProfileCatalog(event)`
+    );
   }
 }
 for (const retired of [

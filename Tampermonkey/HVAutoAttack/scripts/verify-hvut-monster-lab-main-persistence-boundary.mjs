@@ -12,14 +12,14 @@ function requirePart(label, value, part) {
 
 const parseBody =
   /parse: function \(\) \{[\s\S]*?\n      \},\n      sort: function/.exec(text)?.[0] || "";
-const initTail =
-  /_ml\.main\.init\(\);[\s\S]*?_ml\.main\.make_summary\(\);/.exec(text)?.[0] || "";
+const initTail = /_ml\.main\.init\(\);[\s\S]*?_ml\.main\.make_summary\(\);/.exec(text)?.[0] || "";
 const inlineInit =
   /\/\/ Initializing List[\s\S]*?\n    \/\/ Monster Upgrader/.exec(text)?.[0] || "";
 
 if (!parseBody) violations.push(`${target} must keep Monster Lab main parse entry visible`);
 if (!initTail) violations.push(`${target} must keep Monster Lab main parse caller visible`);
-if (!inlineInit) violations.push(`${target} must keep Monster Lab inline main initialization visible`);
+if (!inlineInit)
+  violations.push(`${target} must keep Monster Lab inline main initialization visible`);
 
 for (const part of [
   "let parseFailed = false;",
@@ -65,8 +65,14 @@ for (const [label, value] of [
   if (/\$config\.set\('ml_log', _ml\.log\);\n\s*(?:\}|(?:\$id\('monster_list'\)))/.test(value)) {
     violations.push(`${target} ${label} must not continue after unchecked ml_log write`);
   }
-  if (/mob\.name = div\.children\[1\]\.textContent|hungerdiv\.firstElementChild\.firstElementChild/.test(value)) {
-    violations.push(`${target} ${label} must not read Monster Lab roster DOM outside shared parser`);
+  if (
+    /mob\.name = div\.children\[1\]\.textContent|hungerdiv\.firstElementChild\.firstElementChild/.test(
+      value
+    )
+  ) {
+    violations.push(
+      `${target} ${label} must not read Monster Lab roster DOM outside shared parser`
+    );
   }
 }
 
@@ -76,4 +82,6 @@ if (violations.length) {
   process.exit(1);
 }
 
-console.log("[verify-hvut-monster-lab-main-persistence-boundary] OK - Monster Lab main persistence failures fail closed");
+console.log(
+  "[verify-hvut-monster-lab-main-persistence-boundary] OK - Monster Lab main persistence failures fail closed"
+);

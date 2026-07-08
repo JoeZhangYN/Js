@@ -52,7 +52,7 @@ for (const key of [...runtimeFailureKeys].sort()) {
     continue;
   }
   const sourcePattern = new RegExp(
-    `source\\("[^"]+",\\s*DiagnosticEvidenceKey\\.${enumName}\\)`
+    `source\\(\\s*"[^"]+",\\s*DiagnosticEvidenceKey\\.${enumName}\\s*\\)`
   );
   if (!sourcePattern.test(diagnosticKeysText)) {
     violations.push(`${key} must be listed in DIAGNOSTIC_EVIDENCE_SOURCES`);

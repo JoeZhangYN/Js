@@ -12,9 +12,9 @@ function rel(file) {
   return file.replaceAll("\\", "/");
 }
 
-const showEquipBodies = [...text.matchAll(/_bottom\.show_equip = async function \(\) \{[\s\S]*?\n\};/g)].map(
-  (match) => match[0]
-);
+const showEquipBodies = [
+  ...text.matchAll(/_bottom\.show_equip = async function \(\) \{[\s\S]*?\n\};/g),
+].map((match) => match[0]);
 
 if (showEquipBodies.length === 0) {
   violations.push(`${rel(hvUtilsFile)} must own _bottom.show_equip capacity monitor`);
@@ -37,7 +37,9 @@ for (const [index, showEquipBody] of showEquipBodies.entries()) {
   }
 
   const guardIndex = showEquipBody.indexOf("if (capacity === null)");
-  const firstUseIndex = showEquipBody.search(/capacity\.capacity|capacity\.usage|\{ usage \} = capacity/);
+  const firstUseIndex = showEquipBody.search(
+    /capacity\.capacity|capacity\.usage|\{ usage \} = capacity/
+  );
   if (firstUseIndex >= 0 && (guardIndex < 0 || firstUseIndex < guardIndex)) {
     violations.push(
       `${rel(hvUtilsFile)} show_equip[${index}] must not read capacity values before null guard`
@@ -50,64 +52,101 @@ for (const [index, showEquipBody] of showEquipBodies.entries()) {
       `${rel(hvUtilsFile)} show_equip[${index}] must not show equipment-full popup for parse failures`
     );
   }
-  if (/const exec = \/<td>Inventory Capacity:/.test(showEquipBody) || /exec\[[123]\]/.test(showEquipBody)) {
-    violations.push(`${rel(hvUtilsFile)} show_equip[${index}] must use shared Inventory Capacity parser`);
+  if (
+    /const exec = \/<td>Inventory Capacity:/.test(showEquipBody) ||
+    /exec\[[123]\]/.test(showEquipBody)
+  ) {
+    violations.push(
+      `${rel(hvUtilsFile)} show_equip[${index}] must use shared Inventory Capacity parser`
+    );
   }
 }
 
-const capacityWarningBodies = showEquipBodies.filter((body) =>
-  body.includes("Your inventory is almost full") || body.includes("装备库存量:")
+const capacityWarningBodies = showEquipBodies.filter(
+  (body) => body.includes("Your inventory is almost full") || body.includes("装备库存量:")
 );
 for (const [index, body] of capacityWarningBodies.entries()) {
-  if (!body.includes("const warnCapacity = normalize_hvut_bottom_warn_capacity($config.settings, capacity.capacity);")) {
-    violations.push(`${rel(hvUtilsFile)} bottom capacity warning[${index}] must use typed threshold evidence`);
+  if (
+    !body.includes(
+      "const warnCapacity = normalize_hvut_bottom_warn_capacity($config.settings, capacity.capacity);"
+    )
+  ) {
+    violations.push(
+      `${rel(hvUtilsFile)} bottom capacity warning[${index}] must use typed threshold evidence`
+    );
   }
   if (/free < capacity\.capacity \/ 10/.test(body)) {
-    violations.push(`${rel(hvUtilsFile)} bottom capacity warning[${index}] must not keep a parallel hardcoded threshold`);
+    violations.push(
+      `${rel(hvUtilsFile)} bottom capacity warning[${index}] must not keep a parallel hardcoded threshold`
+    );
   }
 }
 const legacyBottom = showEquipBodies.find((body) => body.includes("装备库存量:")) || "";
 if (legacyBottom && /popup\(/.test(legacyBottom)) {
-  violations.push(`${rel(hvUtilsFile)} legacy bottom capacity monitor must not show equipment-full popup`);
+  violations.push(
+    `${rel(hvUtilsFile)} legacy bottom capacity monitor must not show equipment-full popup`
+  );
 }
 if (!text.includes("var normalize_hvut_bottom_warn_capacity = function (settings, capacity) {")) {
   violations.push(`${rel(hvUtilsFile)} must own bottom capacity warning threshold normalization`);
 }
-if (!text.includes("var configured = Number.isFinite(threshold) && threshold >= 0 ? threshold : 50;")) {
-  violations.push(`${rel(hvUtilsFile)} bottom capacity warning threshold must fail closed to default`);
+if (
+  !text.includes("var configured = Number.isFinite(threshold) && threshold >= 0 ? threshold : 50;")
+) {
+  violations.push(
+    `${rel(hvUtilsFile)} bottom capacity warning threshold must fail closed to default`
+  );
 }
 if (
-  !text.includes("var capacityLimit = Number.isFinite(capacity) && capacity > 0 ? capacity / 2 : configured;") ||
+  !text.includes(
+    "var capacityLimit = Number.isFinite(capacity) && capacity > 0 ? capacity / 2 : configured;"
+  ) ||
   !text.includes("return Math.min(configured, capacityLimit);")
 ) {
-  violations.push(`${rel(hvUtilsFile)} bottom capacity warning threshold must not treat low usage as almost full`);
+  violations.push(
+    `${rel(hvUtilsFile)} bottom capacity warning threshold must not treat low usage as almost full`
+  );
 }
 
-for (const [index, match] of [...text.matchAll(/const exec = \/<td>Inventory Capacity:[^\n]+\.exec\(html\);/g)].entries()) {
+for (const [index, match] of [
+  ...text.matchAll(/const exec = \/<td>Inventory Capacity:[^\n]+\.exec\(html\);/g),
+].entries()) {
   const body = text.slice(match.index, match.index + 600);
   const guardIndex = body.indexOf("if (!exec)");
   const firstUseIndex = body.search(/exec\[[123]\]/);
   if (guardIndex < 0) {
-    violations.push(`${rel(hvUtilsFile)} capacity parser[${index}] must guard missing Inventory Capacity`);
+    violations.push(
+      `${rel(hvUtilsFile)} capacity parser[${index}] must guard missing Inventory Capacity`
+    );
     continue;
   }
   if (firstUseIndex >= 0 && firstUseIndex < guardIndex) {
-    violations.push(`${rel(hvUtilsFile)} capacity parser[${index}] must guard before reading capture groups`);
+    violations.push(
+      `${rel(hvUtilsFile)} capacity parser[${index}] must guard before reading capture groups`
+    );
   }
   const guardBody = body.match(/if \(!exec\) \{[\s\S]*?\n\s*\}/)?.[0] || "";
   if (!guardBody.includes("unavailable")) {
-    violations.push(`${rel(hvUtilsFile)} capacity parser[${index}] must expose unavailable capacity`);
+    violations.push(
+      `${rel(hvUtilsFile)} capacity parser[${index}] must expose unavailable capacity`
+    );
   }
   if (/popup\(/.test(guardBody)) {
-    violations.push(`${rel(hvUtilsFile)} capacity parser[${index}] must not popup on parse failures`);
+    violations.push(
+      `${rel(hvUtilsFile)} capacity parser[${index}] must not popup on parse failures`
+    );
   }
 }
 
 for (const [index, match] of [
-  ...text.matchAll(/\$ajax\.fetch\(create_hvut_armory_organize_url\(\)\)\.then\(\(html\) => \{[\s\S]*?\n\s*\}\);/g),
+  ...text.matchAll(
+    /\$ajax\.fetch\(create_hvut_armory_organize_url\(\)\)\.then\(\(html\) => \{[\s\S]*?\n\s*\}\);/g
+  ),
 ].entries()) {
   if (!match[0].includes(".catch(() => {")) {
-    violations.push(`${rel(hvUtilsFile)} capacity fetch[${index}] must expose unavailable capacity on request failure`);
+    violations.push(
+      `${rel(hvUtilsFile)} capacity fetch[${index}] must expose unavailable capacity on request failure`
+    );
   }
 }
 
@@ -121,4 +160,6 @@ if (violations.length) {
   process.exit(1);
 }
 
-console.log("[verify-hvut-bottom-capacity-boundary] OK - bottom capacity parse failures fail closed");
+console.log(
+  "[verify-hvut-bottom-capacity-boundary] OK - bottom capacity parse failures fail closed"
+);

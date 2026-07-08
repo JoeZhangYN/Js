@@ -4,7 +4,9 @@ function addCount(group, key, amount = 1) {
 
 function hasUsageLogClass(line, className) {
   if (line?.classList?.contains?.(className)) return true;
-  return String(line?.className || "").split(/\s+/).includes(className);
+  return String(line?.className || "")
+    .split(/\s+/)
+    .includes(className);
 }
 
 function isUsageLogCutoff(line) {
@@ -97,7 +99,9 @@ function recordExternalRestore(stats, text) {
 }
 
 function recordAbsorbedDamage(stats, log, index, text) {
-  const match = text.match(/(.*) absorbs (\d+) points of damage from the attack into (\d+) points of (\w+) damage/);
+  const match = text.match(
+    /(.*) absorbs (\d+) points of damage from the attack into (\d+) points of (\w+) damage/
+  );
   if (!match) return false;
   const prevText = log[index - 1]?.textContent || "";
   const prevMatch = prevText.match(/you for (\d+) (\w+) damage/);
@@ -119,8 +123,12 @@ function recordProficiency(stats, text) {
 function isIgnoredBattleLog(text) {
   return (
     text.trim() === "" ||
-    text.match(/You (gain |cast |use |are Victorious|have reached Level|have obtained the title|do not have enough MP)/) ||
-    text.match(/Cooldown|has expired|Spirit Stance|gains the effect|insufficient Spirit|Stop beating dead ponies| defeat |Clear Bonus|brink of defeat|Stop \w+ing|Spawned Monster| drop(ped|s) |defeated/)
+    text.match(
+      /You (gain |cast |use |are Victorious|have reached Level|have obtained the title|do not have enough MP)/
+    ) ||
+    text.match(
+      /Cooldown|has expired|Spirit Stance|gains the effect|insufficient Spirit|Stop beating dead ponies| defeat |Clear Bonus|brink of defeat|Stop \w+ing|Spawned Monster| drop(ped|s) |defeated/
+    )
   );
 }
 
@@ -132,10 +140,19 @@ function recordBattleLogLine(stats, usage, log, index) {
     text.match(/^You .* for \d+ .* damage/)
   )
     return recordOutgoingDamage(stats, text);
-  else if (text.match(/Vital Theft hits .*? for \d+ damage/)) return recordVitalTheftDamage(stats, text);
-  else if (text.match(/You (evade|parry|block) the attack|misses the attack against you|(casts|uses) .* misses the attack/))
+  else if (text.match(/Vital Theft hits .*? for \d+ damage/))
+    return recordVitalTheftDamage(stats, text);
+  else if (
+    text.match(
+      /You (evade|parry|block) the attack|misses the attack against you|(casts|uses) .* misses the attack/
+    )
+  )
     stats.self.evade++;
-  else if (text.match(/(resists your spell|Your spell is absorbed|(evades|parries) your (attack|spell))|Your attack misses its mark|Your spell fails to connect/))
+  else if (
+    text.match(
+      /(resists your spell|Your spell is absorbed|(evades|parries) your (attack|spell))|Your attack misses its mark|Your spell fails to connect/
+    )
+  )
     stats.self.miss++;
   else if (text.match(/You gain the effect Focusing/)) stats.self.focus++;
   else if (

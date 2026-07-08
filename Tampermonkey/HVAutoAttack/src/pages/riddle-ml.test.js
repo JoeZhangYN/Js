@@ -109,7 +109,10 @@ describe("riddle ML entry", () => {
       });
     });
 
-    await expect(runRiddleMlAutomation({ type: RiddleMlEvent.TRY_ANSWER })).resolves.toEqual(["ts", "ra"]);
+    await expect(runRiddleMlAutomation({ type: RiddleMlEvent.TRY_ANSWER })).resolves.toEqual([
+      "ts",
+      "ra",
+    ]);
 
     expect(mocks.runRiddleImageAutomation).toHaveBeenCalledWith({ type: "prepareMlPayload" });
     expect(mocks.gmXhr).toHaveBeenCalledWith(
@@ -120,7 +123,10 @@ describe("riddle ML entry", () => {
         headers: { "Content-Type": "image/jpeg", apikey: "key" },
       })
     );
-    expect(mocks.runRiddleStatsAutomation).toHaveBeenCalledWith({ type: "recordOutcome", outcome: "ok" });
+    expect(mocks.runRiddleStatsAutomation).toHaveBeenCalledWith({
+      type: "recordOutcome",
+      outcome: "ok",
+    });
     const actualOrder = [
       mocks.runRiddleImageAutomation.mock.invocationCallOrder[0],
       mocks.gmXhr.mock.invocationCallOrder[0],
@@ -147,7 +153,10 @@ describe("riddle ML entry", () => {
         detail: expect.stringContaining("non_json status=200"),
       })
     );
-    expect(mocks.runRiddleStatsAutomation).toHaveBeenCalledWith({ type: "recordOutcome", outcome: "non_json" });
+    expect(mocks.runRiddleStatsAutomation).toHaveBeenCalledWith({
+      type: "recordOutcome",
+      outcome: "non_json",
+    });
     expectAnswerFailure("non_json");
     expect(mocks.runAlarmAutomation).toHaveBeenCalledWith({ type: "trigger", kind: "Error" });
   });
@@ -170,7 +179,10 @@ describe("riddle ML entry", () => {
         detail: 'no_answer_code answer="??"',
       })
     );
-    expect(mocks.runRiddleStatsAutomation).toHaveBeenCalledWith({ type: "recordOutcome", outcome: "no_answer_code" });
+    expect(mocks.runRiddleStatsAutomation).toHaveBeenCalledWith({
+      type: "recordOutcome",
+      outcome: "no_answer_code",
+    });
     expectAnswerFailure("no_answer_code");
     expect(mocks.runAlarmAutomation).toHaveBeenCalledWith({ type: "trigger", kind: "Error" });
   });

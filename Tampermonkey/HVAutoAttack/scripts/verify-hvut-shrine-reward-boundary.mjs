@@ -35,7 +35,9 @@ for (const initBody of text.matchAll(/#accept_equip input\[type="submit"\][\s\S]
   const rewardIndex = body.indexOf("parse_hvut_shrine_reward_selection");
   const actionIndex = body.indexOf("dataset.action = 'select'");
   if (rewardIndex < 0 || actionIndex < 0 || actionIndex < rewardIndex) {
-    violations.push(`${rel(hvUtilsFile)} Shrine reward select action must be assigned only after parser success`);
+    violations.push(
+      `${rel(hvUtilsFile)} Shrine reward select action must be assigned only after parser success`
+    );
   }
 }
 

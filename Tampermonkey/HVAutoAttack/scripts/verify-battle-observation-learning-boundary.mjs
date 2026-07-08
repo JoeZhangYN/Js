@@ -74,13 +74,21 @@ if (/battleObservationLearningEventHandlers\[event\.type\]/.test(ownerEntry)) {
   violations.push(`${rel(owner)} entry must fail closed for invalid observation learning events`);
 }
 if (!/battleObservationLearningEventHandlers\[event\?\.type\]/.test(ownerEntry)) {
-  violations.push(`${rel(owner)} entry must dispatch invalid observation learning events through optional type`);
+  violations.push(
+    `${rel(owner)} entry must dispatch invalid observation learning events through optional type`
+  );
 }
 if (ownerEntry.includes("finalizeTurnObservations(")) {
-  violations.push(`${rel(owner)} entry must dispatch through battleObservationLearningEventHandlers`);
+  violations.push(
+    `${rel(owner)} entry must dispatch through battleObservationLearningEventHandlers`
+  );
 }
 const ownerTestText = fs.existsSync(path.join(root, ownerTest)) ? read(ownerTest) : "";
-if (!ownerTestText.includes("ignores invalid observation learning events without touching downstream learners")) {
+if (
+  !ownerTestText.includes(
+    "ignores invalid observation learning events without touching downstream learners"
+  )
+) {
   violations.push(`${rel(ownerTest)} must cover invalid observation learning events`);
 }
 if (!/runBattleObservationLearning\(null\)/.test(ownerTestText)) {

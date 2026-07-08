@@ -1,7 +1,10 @@
 import { OptionEvent, runOptionAutomation } from "../state/option.js";
 import { g } from "../state/store.js";
 import { BattleActionSpeedEvent, runBattleActionSpeedAutomation } from "./battle-action-speed.js";
-import { BattleLifecycleEvidenceEvent, runBattleLifecycleEvidence } from "./battle-lifecycle-evidence.js";
+import {
+  BattleLifecycleEvidenceEvent,
+  runBattleLifecycleEvidence,
+} from "./battle-lifecycle-evidence.js";
 
 const EVENT_BATTLE_STARTED = "battleStarted";
 const EVENT_READ_ATTACK_STATUS = "readAttackStatus";
@@ -54,7 +57,10 @@ export function runBattleStartRuntimeAutomation(
       runBattleActionSpeedAutomation({ type: BattleActionSpeedEvent.BATTLE_STARTED }),
   }
 ) {
-  return battleStartRuntimeEventHandlers[event?.type]?.(event, deps) ?? rejectUnknownStartRuntimeEvent(event);
+  return (
+    battleStartRuntimeEventHandlers[event?.type]?.(event, deps) ??
+    rejectUnknownStartRuntimeEvent(event)
+  );
 }
 
 const battleStartRuntimeEventHandlers = Object.freeze({

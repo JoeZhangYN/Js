@@ -41,7 +41,8 @@ const monsterDbStoreEventHandlers = Object.freeze({
   [EVENT_PROFILE_BULK_WRITE]: (event) => bulkSetMonsters(event.infos || []),
   [EVENT_PROFILE_IS_EMPTY]: () => isProfileEmpty(),
   [EVENT_HP_READ]: (event) => getMonsterHp(event.monsterId, event.level),
-  [EVENT_HP_WRITE]: (event) => setMonsterHp(event.monsterId, event.level, event.maxHP, event.lastUpdate),
+  [EVENT_HP_WRITE]: (event) =>
+    setMonsterHp(event.monsterId, event.level, event.maxHP, event.lastUpdate),
   [EVENT_META_READ]: (event) => getMeta(event.key),
   [EVENT_META_WRITE]: (event) => setMeta(event.key, event.value),
 });
@@ -172,7 +173,9 @@ const hpKey = (monsterId, level) => `${monsterId}|${level}`;
  * @returns {Promise<{monsterId:number, level:number, maxHP:number, lastUpdate?:string}|null>}
  */
 function getMonsterHp(monsterId, level) {
-  return withStore(STORE_HP, "readonly", (s) => s.get(hpKey(monsterId, level))).then((v) => v ?? null);
+  return withStore(STORE_HP, "readonly", (s) => s.get(hpKey(monsterId, level))).then(
+    (v) => v ?? null
+  );
 }
 
 /**

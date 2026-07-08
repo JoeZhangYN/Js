@@ -22,9 +22,7 @@ describe("runBattleReportModel", () => {
   it("builds a single drop report model from the active record", () => {
     setValue(STORAGE_KEYS.DROP, { "#Credit": 12 });
 
-    expect(
-      runBattleReportModel({ type: BattleReportModelEvent.READ_DROP_REPORT_MODEL })
-    ).toEqual({
+    expect(runBattleReportModel({ type: BattleReportModelEvent.READ_DROP_REPORT_MODEL })).toEqual({
       mode: "single",
       rows: [{ key: "#Credit", value: 12 }],
     });

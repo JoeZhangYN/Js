@@ -10,10 +10,20 @@ function requirePart(label, body, part) {
   if (!body.includes(part)) violations.push(`${target} ${label} must include ${part}`);
 }
 
-const exportBlocks = [...text.matchAll(/export: function \(\) \{[\s\S]*?\n      \},\n      import: function/g)].map((match) => match[0]);
-const importBlocks = [...text.matchAll(/import: function \(\) \{[\s\S]*?\n      \},\n      clear: async function/g)].map((match) => match[0]);
-const clearBlocks = [...text.matchAll(/clear: async function \(\) \{[\s\S]*?\n      \},\n      toggle: function/g)].map((match) => match[0]);
-const searchBlocks = [...text.matchAll(/search: function \((?:param|query)\) \{[\s\S]*?\n      \},\n      export: function/g)].map((match) => match[0]);
+const exportBlocks = [
+  ...text.matchAll(/export: function \(\) \{[\s\S]*?\n      \},\n      import: function/g),
+].map((match) => match[0]);
+const importBlocks = [
+  ...text.matchAll(/import: function \(\) \{[\s\S]*?\n      \},\n      clear: async function/g),
+].map((match) => match[0]);
+const clearBlocks = [
+  ...text.matchAll(/clear: async function \(\) \{[\s\S]*?\n      \},\n      toggle: function/g),
+].map((match) => match[0]);
+const searchBlocks = [
+  ...text.matchAll(
+    /search: function \((?:param|query)\) \{[\s\S]*?\n      \},\n      export: function/g
+  ),
+].map((match) => match[0]);
 
 const [modernExport, legacyExport] = exportBlocks;
 const [modernImport, legacyImport] = importBlocks;
@@ -37,10 +47,7 @@ for (const [label, body, stage] of [
   ["modern db search", modernSearch, "dbSearchReadFailed"],
   ["legacy db search", legacySearch, "legacyDbSearchReadFailed"],
 ]) {
-  for (const required of [
-    "return run_hvut_mooglemail_db_search(",
-    `failureStage: '${stage}',`,
-  ]) {
+  for (const required of ["return run_hvut_mooglemail_db_search(", `failureStage: '${stage}',`]) {
     requirePart(label, body, required);
   }
 }
@@ -64,7 +71,10 @@ for (const required of [
   "const exclude = filter && filter !== db.filter",
   "request.onerror = fail;",
 ]) {
-  if (!text.includes(required)) violations.push(`${target} must define shared MoogleMail DB search failure helper with ${required}`);
+  if (!text.includes(required))
+    violations.push(
+      `${target} must define shared MoogleMail DB search failure helper with ${required}`
+    );
 }
 
 for (const [label, body] of [
@@ -81,7 +91,9 @@ for (const [label, body] of [
     "cursor.continue();",
   ]) {
     if (body.includes(forbidden)) {
-      violations.push(`${target} ${label} must delegate cursor/query evaluation to run_hvut_mooglemail_db_search`);
+      violations.push(
+        `${target} ${label} must delegate cursor/query evaluation to run_hvut_mooglemail_db_search`
+      );
     }
   }
 }
@@ -93,7 +105,7 @@ for (const required of [
   "if (completed === 0) {\n          stop();\n          return;\n        }",
   "conn.tx.onerror = stop;",
   "conn.tx.onabort = stop;",
-  "popup(`<p>The file has been saved.</p><p style=\"font-weight: bold;\">${download}</p>`);\n                stop();",
+  'popup(`<p>The file has been saved.</p><p style="font-weight: bold;">${download}</p>`);\n                stop();',
 ]) {
   requirePart("modern db export", modernExport, required);
 }
@@ -119,7 +131,7 @@ for (const required of [
   "if (completed === 0) {\n          stop();\n          return;\n        }",
   "conn.tx.onerror = stop;",
   "conn.tx.onabort = stop;",
-  "popup(`<p>文件已保存.</p><p style=\"font-weight: bold;\">${download}</p>`);\n                stop();",
+  'popup(`<p>文件已保存.</p><p style="font-weight: bold;">${download}</p>`);\n                stop();',
 ]) {
   requirePart("legacy db export", legacyExport, required);
 }
@@ -183,7 +195,8 @@ for (const forbidden of [
   "clear: function () {\n        if (confirm",
   "conn.os.clear();\n        }",
 ]) {
-  if (text.includes(forbidden)) violations.push(`${target} must not keep unchecked MoogleMail DB clear path: ${forbidden}`);
+  if (text.includes(forbidden))
+    violations.push(`${target} must not keep unchecked MoogleMail DB clear path: ${forbidden}`);
 }
 
 if (violations.length) {
@@ -192,4 +205,6 @@ if (violations.length) {
   process.exit(1);
 }
 
-console.log("[verify-hvut-mooglemail-db-boundary] OK - MoogleMail DB search/import/export/clear handles failures");
+console.log(
+  "[verify-hvut-mooglemail-db-boundary] OK - MoogleMail DB search/import/export/clear handles failures"
+);

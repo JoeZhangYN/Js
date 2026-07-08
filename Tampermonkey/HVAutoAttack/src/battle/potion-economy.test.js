@@ -1,7 +1,12 @@
 import { describe, expect, it } from "vitest";
 import { BattlePotionEconomyEvent, runBattlePotionEconomy } from "./potion-economy.js";
 
-function isWasteful({ potionId = 11195, deficitFacts = { hpDeficit: 100 }, tolerance, readRecovery } = {}) {
+function isWasteful({
+  potionId = 11195,
+  deficitFacts = { hpDeficit: 100 },
+  tolerance,
+  readRecovery,
+} = {}) {
   return runBattlePotionEconomy({
     type: BattlePotionEconomyEvent.IS_WASTEFUL,
     potionId,
@@ -13,9 +18,7 @@ function isWasteful({ potionId = 11195, deficitFacts = { hpDeficit: 100 }, toler
 
 describe("potion economy", () => {
   it("requires the recovery learner query for waste decisions", () => {
-    expect(() => isWasteful({ tolerance: 0.7 })).toThrow(
-      "requires recovery learner query"
-    );
+    expect(() => isWasteful({ tolerance: 0.7 })).toThrow("requires recovery learner query");
   });
 
   it("uses the injected recovery answer when checking waste", () => {

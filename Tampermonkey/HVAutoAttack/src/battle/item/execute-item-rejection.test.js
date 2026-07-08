@@ -41,10 +41,19 @@ beforeEach(() => {
 
 describe("runBattleItemExecution rejection evidence", () => {
   it("rejects unknown and null item execution events as not acted with evidence", () => {
-    for (const [event, eventType] of [[{ type: "unknown" }, "unknown"], [null, null]]) {
+    for (const [event, eventType] of [
+      [{ type: "unknown" }, "unknown"],
+      [null, null],
+    ]) {
       for (const fn of Object.values(mocks)) fn.mockClear();
       expect(runBattleItemExecution(event)).toBe(false);
-      for (const fn of [mocks.runAutoTuneAutomation, mocks.runBattleFocusCommand, mocks.runBattleItemCommand, mocks.runBattleSpiritToggleAutomation, mocks.runRecoveryLearningAutomation]) {
+      for (const fn of [
+        mocks.runAutoTuneAutomation,
+        mocks.runBattleFocusCommand,
+        mocks.runBattleItemCommand,
+        mocks.runBattleSpiritToggleAutomation,
+        mocks.runRecoveryLearningAutomation,
+      ]) {
         expect(fn).not.toHaveBeenCalled();
       }
       expect(mocks.runBattleActionEffectEvidence).toHaveBeenCalledWith({

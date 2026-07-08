@@ -32,7 +32,9 @@ function checkFile(file) {
     ) {
       for (const name of legacy) {
         if (new RegExp(`\\b${name}\\b`).test(line)) {
-          violations.push(`${where} monster cache access must use runMonsterCacheAutomation(event)`);
+          violations.push(
+            `${where} monster cache access must use runMonsterCacheAutomation(event)`
+          );
         }
       }
     }
@@ -50,8 +52,14 @@ if (!/export function runMonsterCacheAutomation\(\s*event\b/.test(ownerText)) {
 }
 const entryBody =
   ownerText.match(/export function runMonsterCacheAutomation\([^)]*\) \{[\s\S]*?\n\}/)?.[0] || "";
-if (!/const monsterCacheEventHandlers\s*=\s*Object\.freeze\(\{[\s\S]*\[EVENT_PRIME_PROFILES\]/.test(ownerText)) {
-  violations.push(`${owner.replaceAll("\\", "/")} must route events through a frozen handler table`);
+if (
+  !/const monsterCacheEventHandlers\s*=\s*Object\.freeze\(\{[\s\S]*\[EVENT_PRIME_PROFILES\]/.test(
+    ownerText
+  )
+) {
+  violations.push(
+    `${owner.replaceAll("\\", "/")} must route events through a frozen handler table`
+  );
 }
 if (/event\.type\s*===/.test(entryBody)) {
   violations.push(`${owner.replaceAll("\\", "/")} entry must dispatch by handler table`);
@@ -60,7 +68,9 @@ if (entryBody.includes("event.type")) {
   violations.push(`${owner.replaceAll("\\", "/")} entry must reject null events without throwing`);
 }
 if (!entryBody.includes("event?.type")) {
-  violations.push(`${owner.replaceAll("\\", "/")} entry must fail closed for unknown or null events`);
+  violations.push(
+    `${owner.replaceAll("\\", "/")} entry must fail closed for unknown or null events`
+  );
 }
 for (const name of legacy) {
   if (new RegExp(`export\\s+(?:async\\s+)?function\\s+${name}\\s*\\(`).test(ownerText)) {
@@ -74,7 +84,9 @@ if (!fs.existsSync(path.join(root, ownerTest))) {
 } else {
   const ownerTestText = fs.readFileSync(path.join(root, ownerTest), "utf8");
   if (
-    !ownerTestText.includes("rejects unknown and null cache events without reading or changing cached profiles") ||
+    !ownerTestText.includes(
+      "rejects unknown and null cache events without reading or changing cached profiles"
+    ) ||
     !ownerTestText.includes("runMonsterCacheAutomation(null)") ||
     !ownerTestText.includes("runMonsterDbStoreAutomation).not.toHaveBeenCalled()")
   ) {

@@ -27,12 +27,14 @@ describe("runBattleDebuffFacts", () => {
   };
 
   it("reads burst-control facts from a battle snapshot", () => {
-    expect(runBattleDebuffFacts({ type: BattleDebuffFactsEvent.READ_BURST_CONTROL, snap })).toEqual({
-      healthAbs: 1200,
-      skillReady: { 213: true, 232: false },
-      learnedBurstByMid: { 99: { maxHit: 900, type: "fire" } },
-      monsterFacts: [monster],
-    });
+    expect(runBattleDebuffFacts({ type: BattleDebuffFactsEvent.READ_BURST_CONTROL, snap })).toEqual(
+      {
+        healthAbs: 1200,
+        skillReady: { 213: true, 232: false },
+        learnedBurstByMid: { 99: { maxHit: 900, type: "fire" } },
+        monsterFacts: [monster],
+      }
+    );
   });
 
   it("reads boss Imperil facts from a battle snapshot", () => {
@@ -59,18 +61,20 @@ describe("runBattleDebuffFacts", () => {
   });
 
   it("reads generic debuff action facts from a battle snapshot", () => {
-    expect(runBattleDebuffFacts({ type: BattleDebuffFactsEvent.READ_DEBUFF_ACTION, snap })).toEqual({
-      conditionFacts: snap,
-      monsterAlive: 1,
-      skillReady: { 213: true, 232: false },
-      spellAoe: { Imperil: 2 },
-      skillCooldowns: { 213: 0 },
-      aliveCount: 1,
-      overcharge: 55,
-      roundNow: 1,
-      roundAll: 3,
-      monsterFacts: [monster],
-    });
+    expect(runBattleDebuffFacts({ type: BattleDebuffFactsEvent.READ_DEBUFF_ACTION, snap })).toEqual(
+      {
+        conditionFacts: snap,
+        monsterAlive: 1,
+        skillReady: { 213: true, 232: false },
+        spellAoe: { Imperil: 2 },
+        skillCooldowns: { 213: 0 },
+        aliveCount: 1,
+        overcharge: 55,
+        roundNow: 1,
+        roundAll: 3,
+        monsterFacts: [monster],
+      }
+    );
   });
 
   it("rejects unknown debuff facts events", () => {

@@ -28,7 +28,9 @@ const delMatch = /config\.del = function \(key[\s\S]*?\n  \};\n  config\.ls_get/
 const lsGetMatch = /config\.ls_get = function \(key[\s\S]*?\n  \};\n  config\.ls_set/.exec(text);
 const lsSetMatch = /config\.ls_set = function \(key[\s\S]*?\n  \};\n  config\.ls_del/.exec(text);
 const lsDelMatch = /config\.ls_del = function \(key[\s\S]*?\n  \};\n  config\.open/.exec(text);
-const saveMatch = /config\.save = function \(panel\) \{[\s\S]*?\n  \};\n  config\.text2obj/.exec(text);
+const saveMatch = /config\.save = function \(panel\) \{[\s\S]*?\n  \};\n  config\.text2obj/.exec(
+  text
+);
 
 if (!getMatch) violations.push(`${target} config.get entry must stay visible`);
 else {
@@ -119,10 +121,7 @@ for (const [label, reason] of [
   if (!body) {
     violations.push(`${target} ${label} reload path must stay visible`);
   } else {
-    requireIncludes(body, label, [
-      "show_hvut_config_storage_failure_report",
-      "return false;",
-    ]);
+    requireIncludes(body, label, ["show_hvut_config_storage_failure_report", "return false;"]);
   }
 }
 
@@ -142,4 +141,6 @@ if (violations.length) {
   process.exit(1);
 }
 
-console.log("[verify-hvut-config-storage-boundary] OK - HVUT config storage failures fail closed before reload");
+console.log(
+  "[verify-hvut-config-storage-boundary] OK - HVUT config storage failures fail closed before reload"
+);

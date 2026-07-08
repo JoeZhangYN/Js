@@ -24,12 +24,14 @@ for (const required of [
 
 const bazaarBodies = [
   ...text.matchAll(
-    /if \(get_hvut_bazaar_page_context\(\)\.isItemShop\) \{[\s\S]*?\/\/ \[END (?:8|10)\] Bazaar - The Shrine/g,
+    /if \(get_hvut_bazaar_page_context\(\)\.isItemShop\) \{[\s\S]*?\/\/ \[END (?:8|10)\] Bazaar - The Shrine/g
   ),
 ];
 
 if (bazaarBodies.length !== 2) {
-  violations.push(`${target} must expose exactly two Bazaar Item Shop/Shrine bodies behind page context, found ${bazaarBodies.length}`);
+  violations.push(
+    `${target} must expose exactly two Bazaar Item Shop/Shrine bodies behind page context, found ${bazaarBodies.length}`
+  );
 }
 
 bazaarBodies.forEach((match, index) => {
@@ -49,7 +51,9 @@ bazaarBodies.forEach((match, index) => {
     "_query.s === 'Bazaar' && get_hvut_bazaar_page_context().isShrine",
   ]) {
     if (body.includes(forbidden)) {
-      violations.push(`${target} Bazaar body[${index}] must not rebuild page identity from raw query: ${forbidden}`);
+      violations.push(
+        `${target} Bazaar body[${index}] must not rebuild page identity from raw query: ${forbidden}`
+      );
     }
   }
 });
@@ -60,4 +64,6 @@ if (violations.length) {
   process.exit(1);
 }
 
-console.log("[verify-hvut-bazaar-page-context-boundary] OK - Item Shop/Shrine page routing uses one Bazaar context");
+console.log(
+  "[verify-hvut-bazaar-page-context-boundary] OK - Item Shop/Shrine page routing uses one Bazaar context"
+);

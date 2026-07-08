@@ -1,13 +1,15 @@
 // 配置面板的 condition 编辑器（嵌入式弹出 UI）。
 // 体量大、混 DOM/state，Phase 5 会进一步纯函数化拆分。
 // file-size-gate: exempt phase-3-monolith
-/* eslint-disable camelcase */
+
 import { gE, cE } from "../dom/query.js";
 import { g } from "../state/store.js";
 
 function hasCustomizeInspectClass(target, className) {
   if (target?.classList?.contains?.(className)) return true;
-  return String(target?.className || "").split(/\s+/).includes(className);
+  return String(target?.className || "")
+    .split(/\s+/)
+    .includes(className);
 }
 
 export function readCustomizeInspectTarget(target) {
@@ -69,13 +71,13 @@ export function customizeBox() {
     '<button class="groupAdd">添加</button>',
     // 内联条件/非门帮助（替换原 dodying 外链；点 "?" 切换显示）
     '<div class="hvAACondHelpBox" style="display:none;max-width:540px;margin-top:4px;padding:6px;border:1px solid #888;font-size:small;line-height:1.5;">' +
-      '<b>语法</b>: 变量,比较符,值（如 <code>mp,4,45</code>=mp≤45）。比较符 1=&gt; 2=&lt; 3=≥ 4=≤ 5== 6≠。<br>' +
-      '<b>多行</b>=并联(OR,任一行成立即可)；<b>行内多子句</b>默认<b>串</b>(AND)，行类型选<b>并</b>则该行内 OR。<br>' +
+      "<b>语法</b>: 变量,比较符,值（如 <code>mp,4,45</code>=mp≤45）。比较符 1=&gt; 2=&lt; 3=≥ 4=≤ 5== 6≠。<br>" +
+      "<b>多行</b>=并联(OR,任一行成立即可)；<b>行内多子句</b>默认<b>串</b>(AND)，行类型选<b>并</b>则该行内 OR。<br>" +
       '<b>非门</b>(勾"非"或前缀 <code>!</code>)=「满足就排除」：<br>' +
-      '　·<b>纯非门行</b>=全局前置守卫，任一触发→整条件不成立(顺延)；<br>' +
-      '　·<b>混合行</b>(非门+正向)：非门仅局部作用于本行。<br>' +
-      '<b>例·带状</b>：行1 <code>非 mp,4,25</code> + 行2 <code>mp,4,45</code> → 仅 mp∈(25,45] 用药（≤25 让给更大的瓶，不再拖到浪费）。<br>' +
-      '<b>新变量</b>: soloMonsterHpPercent / lowestMonsterHpPercent / firstMonsterHpPercent（单怪血条%）。<b>例</b> Drain 不打濒死独怪：混合行加 <code>!soloMonsterHpPercent,4,25</code>。' +
+      "　·<b>纯非门行</b>=全局前置守卫，任一触发→整条件不成立(顺延)；<br>" +
+      "　·<b>混合行</b>(非门+正向)：非门仅局部作用于本行。<br>" +
+      "<b>例·带状</b>：行1 <code>非 mp,4,25</code> + 行2 <code>mp,4,45</code> → 仅 mp∈(25,45] 用药（≤25 让给更大的瓶，不再拖到浪费）。<br>" +
+      "<b>新变量</b>: soloMonsterHpPercent / lowestMonsterHpPercent / firstMonsterHpPercent（单怪血条%）。<b>例</b> Drain 不打濒死独怪：混合行加 <code>!soloMonsterHpPercent,4,25</code>。" +
       "</div>",
   ].join(" ");
   // "?" 切换内联帮助
@@ -151,8 +153,10 @@ export function customizeBox() {
       const marker = mkInput(group, "||", true);
       marker.name = inputName;
     }
-    const input = mkInput(group, `${neg ? "!" : ""}${sel("statusA").value},${sel("compareAB").value},${sel("statusB").value}`);
+    const input = mkInput(
+      group,
+      `${neg ? "!" : ""}${sel("statusA").value},${sel("compareAB").value},${sel("statusB").value}`
+    );
     input.name = inputName;
   };
-
 }

@@ -4,11 +4,7 @@
 // 面板可翻可清。日志文本建议英文/码键，跨语言稳定、便于事后比对。
 // 叶子模块：只依赖 storage/failure（无环，可被 riddle-stats.js / riddle.js 同时 import）。
 import { getValue } from "./storage.js";
-import {
-  RIDDLE_LOG_KEY,
-  clearPersistedRiddleLog,
-  persistRiddleLog,
-} from "./riddle-log-failure.js";
+import { RIDDLE_LOG_KEY, clearPersistedRiddleLog, persistRiddleLog } from "./riddle-log-failure.js";
 
 const CAP = 80; // 环形上限：超出从头截断，恒只留最近 CAP 条。
 

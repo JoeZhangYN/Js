@@ -63,16 +63,16 @@ requireText(snapshotLogTelemetryTest, [
 ]);
 
 if (
-  /\bexport\s+(?:function|const)\s+(?!BattleSnapshotEvent\b|runBattleSnapshot\b)/.test(
-    snapshotText
-  )
+  /\bexport\s+(?:function|const)\s+(?!BattleSnapshotEvent\b|runBattleSnapshot\b)/.test(snapshotText)
 ) {
   violations.push(`${snapshot.replaceAll("\\", "/")} may export only its event entry`);
 }
 const snapshotEntryBody =
   snapshotText.match(/export function runBattleSnapshot\([^)]*\) \{[\s\S]*?\n\}/)?.[0] || "";
 if (!/Object\.freeze\(\{[\s\S]*\[EVENT_READ_CURRENT\]/.test(snapshotText)) {
-  violations.push(`${snapshot.replaceAll("\\", "/")} must route events through a frozen handler table`);
+  violations.push(
+    `${snapshot.replaceAll("\\", "/")} must route events through a frozen handler table`
+  );
 }
 if (/event\.type\s*===/.test(snapshotEntryBody)) {
   violations.push(`${snapshot.replaceAll("\\", "/")} entry must dispatch by handler table`);
@@ -87,7 +87,9 @@ if (!/runBattleSnapshot\(null\)/.test(fs.readFileSync(path.join(root, snapshotTe
   violations.push(`${snapshotTest.replaceAll("\\", "/")} must lock invalid snapshot events`);
 }
 if (/\bcollectSnapshot\b/.test(snapshotText)) {
-  violations.push(`${snapshot.replaceAll("\\", "/")} must not keep the retired collectSnapshot name`);
+  violations.push(
+    `${snapshot.replaceAll("\\", "/")} must not keep the retired collectSnapshot name`
+  );
 }
 if (/fightingStyle/.test(snapshotText)) {
   violations.push(

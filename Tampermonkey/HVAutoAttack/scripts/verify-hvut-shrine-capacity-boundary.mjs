@@ -14,15 +14,15 @@ function requirePart(label, body, part) {
 
 const helperRegion =
   /var record_hvut_shrine_capacity_failure = function \(stage, detail\) \{[\s\S]*?\n  var reloadCurrentPage/.exec(
-    text,
+    text
   )?.[0] || "";
 const modernShrine =
   /if \(get_hvut_bazaar_page_context\(\)\.isShrine\) \{[\s\S]*?\/\/ \[END 8\] Bazaar - The Shrine/.exec(
-    text,
+    text
   )?.[0] || "";
 const legacyShrine =
   /if \(get_hvut_bazaar_page_context\(\)\.isShrine\) \{[\s\S]*?\/\/ \[END 10\] Bazaar - The Shrine/.exec(
-    text.slice(text.indexOf("//* [10] Bazaar - The Shrine")),
+    text.slice(text.indexOf("//* [10] Bazaar - The Shrine"))
   )?.[0] || "";
 
 if (!helperRegion) violations.push(`${target} must keep Shrine capacity helper visible`);
@@ -50,7 +50,11 @@ for (const [label, body, baseKey, stage] of [
   requirePart(label, body, "capacity: null");
   requirePart(label, body, "total: null");
   requirePart(label, body, `const capacity = parse_hvut_inventory_capacity(html, '${stage}');`);
-  requirePart(label, body, `const total = update_hvut_shrine_equip_total(_ss.equip, '${baseKey}');`);
+  requirePart(
+    label,
+    body,
+    `const total = update_hvut_shrine_equip_total(_ss.equip, '${baseKey}');`
+  );
   requirePart(label, body, "if (is_hvut_shrine_equip_capacity_full(_ss.equip)) {");
   requirePart(label, body, "const evidence = record_hvut_shrine_offer_failure(");
   requirePart(label, body, "set_hvut_shrine_stop_error(_ss, '你的装备库存已满', evidence);");
@@ -87,4 +91,6 @@ if (violations.length) {
   process.exit(1);
 }
 
-console.log("[verify-hvut-shrine-capacity-boundary] OK - Shrine only reports full with known capacity");
+console.log(
+  "[verify-hvut-shrine-capacity-boundary] OK - Shrine only reports full with known capacity"
+);

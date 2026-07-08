@@ -111,7 +111,9 @@ async function syncMonsterDb({ force = false, deps }) {
           }
           if (!Array.isArray(list) || list.length === 0) {
             resolve(
-              syncRejected("validate", "empty", { length: Array.isArray(list) ? list.length : null })
+              syncRejected("validate", "empty", {
+                length: Array.isArray(list) ? list.length : null,
+              })
             );
             return;
           }

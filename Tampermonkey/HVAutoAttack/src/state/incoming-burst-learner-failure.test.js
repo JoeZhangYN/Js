@@ -37,7 +37,9 @@ describe("incoming burst learning persistence failures", () => {
 
     expect(runIncomingBurstLearningAutomation(event)).toBe(false);
 
-    expect(JSON.parse(window.sessionStorage.getItem(INCOMING_BURST_LEARNING_FAILURE_KEY))).toMatchObject({
+    expect(
+      JSON.parse(window.sessionStorage.getItem(INCOMING_BURST_LEARNING_FAILURE_KEY))
+    ).toMatchObject({
       capability: "incomingBurstLearning",
       stage: "update-learned",
       failure: { kind: "storageWrite", error: "incoming burst learning write blocked" },

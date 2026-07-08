@@ -161,7 +161,9 @@ describe("runBattleCompletionAutomation", () => {
     const d = deps();
     d.isCompletionReached.mockReturnValue(false);
 
-    expect(runBattleCompletionAutomation({ type: BattleCompletionEvent.READ_REACHED }, d)).toBe(false);
+    expect(runBattleCompletionAutomation({ type: BattleCompletionEvent.READ_REACHED }, d)).toBe(
+      false
+    );
 
     expect(d.isCompletionReached).toHaveBeenCalledTimes(1);
     expect(d.recordCompletion).not.toHaveBeenCalled();

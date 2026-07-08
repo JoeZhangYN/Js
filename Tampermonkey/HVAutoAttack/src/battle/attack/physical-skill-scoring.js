@@ -3,10 +3,7 @@
 // 不只是常量 base × multiplier。OFC/FRD 仍用 aoeScore（少怪降级 + 怪数比例）。
 // 盾战 combo：T1 stun → T2（晕状态打 T2 = 200 分高优先）→ T3 斩杀（hpRatio<25%+bleed = 1000 分决定性）
 import { checkCondition } from "../../settings/condition-eval.js";
-import {
-  PhysicalSkillRankingEvent,
-  runPhysicalSkillRanking,
-} from "./physical-skill-ranking.js";
+import { PhysicalSkillRankingEvent, runPhysicalSkillRanking } from "./physical-skill-ranking.js";
 import { BattleMonsterViewEvent, runBattleMonsterView } from "../battle-monster-view.js";
 import { BigSkillCatalogEvent, runBigSkillCatalog } from "../big-skill-catalog.js";
 
@@ -44,8 +41,7 @@ const PHYSICAL_SKILL_EXPLAINERS = Object.freeze({
     (firstMonster?.hpPercent ?? 1) < 0.25 && firstMonster?.buffs?.includes("wpn_bleed")
       ? " (execute)"
       : "",
-  T2: ({ firstMonster }) =>
-    firstMonster?.buffs?.includes("wpn_stun") ? " (T1+T2 combo)" : "",
+  T2: ({ firstMonster }) => (firstMonster?.buffs?.includes("wpn_stun") ? " (T1+T2 combo)" : ""),
   T1: () => "",
 });
 

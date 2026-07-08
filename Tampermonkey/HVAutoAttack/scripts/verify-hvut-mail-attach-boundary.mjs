@@ -5,7 +5,10 @@ const root = process.cwd();
 const target = path.normalize("src/i18n/hv-utils.js");
 const text = fs.readFileSync(path.join(root, target), "utf8");
 const keysText = fs.readFileSync(path.join(root, "src/core/diagnostic-evidence-keys.js"), "utf8");
-const diagnosticTestText = fs.readFileSync(path.join(root, "src/core/diagnostic-evidence.test.js"), "utf8");
+const diagnosticTestText = fs.readFileSync(
+  path.join(root, "src/core/diagnostic-evidence.test.js"),
+  "utf8"
+);
 const violations = [];
 
 for (const required of [
@@ -29,13 +32,17 @@ for (const required of [
   }
 }
 
-const sendMatch = /\$mail\.log\('\\n========== Sending =========='\);[\s\S]*?\n  \},\n  chunk: function/.exec(text);
+const sendMatch =
+  /\$mail\.log\('\\n========== Sending =========='\);[\s\S]*?\n  \},\n  chunk: function/.exec(text);
 
 if (!sendMatch) {
   violations.push(`${target} must keep the MoogleMail send entry visible`);
 } else {
   const body = sendMatch[0];
-  const stopHelperMatch = /var stop_hvut_mooglemail_send_failure = async function \(stage, detail, message, discardStage\) \{[\s\S]*?\n  \};/.exec(text);
+  const stopHelperMatch =
+    /var stop_hvut_mooglemail_send_failure = async function \(stage, detail, message, discardStage\) \{[\s\S]*?\n  \};/.exec(
+      text
+    );
   const stopHelperBody = stopHelperMatch?.[0] || "";
   for (const required of [
     "record_hvut_mooglemail_send_failure(stage, detail);",
@@ -45,10 +52,15 @@ if (!sendMatch) {
     "return false;",
   ]) {
     if (!stopHelperBody.includes(required)) {
-      violations.push(`${target} MoogleMail stop helper must preserve failure semantics with ${required}`);
+      violations.push(
+        `${target} MoogleMail stop helper must preserve failure semantics with ${required}`
+      );
     }
   }
-  if (/return (?:false|undefined|null);[\s\S]{0,80}\n\s*\};/.test(stopHelperBody) && !stopHelperBody.includes("$mail.ready = true;")) {
+  if (
+    /return (?:false|undefined|null);[\s\S]{0,80}\n\s*\};/.test(stopHelperBody) &&
+    !stopHelperBody.includes("$mail.ready = true;")
+  ) {
     violations.push(`${target} MoogleMail stop helper must release ready before returning`);
   }
   for (const required of [
@@ -90,15 +102,20 @@ if (!sendMatch) {
     violations.push(`${target} mail send must not keep naked discard/return failure paths`);
   }
   if (body.includes("$mail.check(html)")) {
-    violations.push(`${target} mail send must classify responses through classify_hvut_mooglemail_send_response`);
+    violations.push(
+      `${target} mail send must classify responses through classify_hvut_mooglemail_send_response`
+    );
   }
   if (text.includes("check: function (html) {")) {
-    violations.push(`${target} mail send must not keep $mail.check as a parallel response classifier`);
+    violations.push(
+      `${target} mail send must not keep $mail.check as a parallel response classifier`
+    );
   }
   if (text.includes("return { kind: 'rejected', reason: 'mailError', error: error };")) {
     violations.push(`${target} mail send rejected outcome must preserve evidence`);
   }
-  const attachMatch = /if \(attach\?\.length\) \{[\s\S]*?\n    \}\n\n    if \(cod && !cod_persistent\)/.exec(body);
+  const attachMatch =
+    /if \(attach\?\.length\) \{[\s\S]*?\n    \}\n\n    if \(cod && !cod_persistent\)/.exec(body);
   if (!attachMatch) {
     violations.push(`${target} must keep the MoogleMail attach stage visible`);
   }
@@ -123,19 +140,29 @@ if (!sendMatch) {
     violations.push(`${target} mail attach must not continue after unchecked Promise.all`);
   }
   if (attachBody.includes("$mail.check(html)")) {
-    violations.push(`${target} mail attach must classify attach responses through classify_hvut_mooglemail_attach_response`);
+    violations.push(
+      `${target} mail attach must classify attach responses through classify_hvut_mooglemail_attach_response`
+    );
   }
   if (/return true;/.test(attachBody)) {
-    violations.push(`${target} mail attach must return typed attach decisions instead of boolean success`);
+    violations.push(
+      `${target} mail attach must return typed attach decisions instead of boolean success`
+    );
   }
   if (/\$mail\.discard\(\);\n\s*return;/.test(attachBody)) {
     violations.push(`${target} mail attach must await discard and return false`);
   }
-  if (/catch \(_error\) \{\n\s*\$mail\.log\(`#\$\{index\}: !!! Error: Attachment request failed`\);/.test(attachBody)) {
+  if (
+    /catch \(_error\) \{\n\s*\$mail\.log\(`#\$\{index\}: !!! Error: Attachment request failed`\);/.test(
+      attachBody
+    )
+  ) {
     violations.push(`${target} mail attach must not keep untyped attach request failure`);
   }
   if (/record_hvut_mooglemail_send_failure\('attach(?:Request|Rejected)'/.test(attachBody)) {
-    violations.push(`${target} mail attach failures must route through stop_hvut_mooglemail_send_failure`);
+    violations.push(
+      `${target} mail attach failures must route through stop_hvut_mooglemail_send_failure`
+    );
   }
 }
 
@@ -143,7 +170,8 @@ for (const required of [
   'HVUT_MOOGLEMAIL_SEND_FAILURE: "HVAA:lastHvutMoogleMailSendFailure"',
   'source("hvutMoogleMailSendFailure", DiagnosticEvidenceKey.HVUT_MOOGLEMAIL_SEND_FAILURE)',
 ]) {
-  if (!keysText.includes(required)) violations.push(`diagnostic evidence keys must include ${required}`);
+  if (!keysText.includes(required))
+    violations.push(`diagnostic evidence keys must include ${required}`);
 }
 
 if (!diagnosticTestText.includes("HVAA:lastHvutMoogleMailSendFailure")) {

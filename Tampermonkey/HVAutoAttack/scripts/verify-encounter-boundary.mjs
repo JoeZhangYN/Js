@@ -278,11 +278,9 @@ const diagnosticTestText = fs.readFileSync(path.join(root, diagnosticTest), "utf
 const policyText = fs.readFileSync(path.join(root, policyFile), "utf8");
 const entryPolicyText = fs.readFileSync(path.join(root, entryPolicyFile), "utf8");
 const generationRecoveryText = fs.readFileSync(path.join(root, generationRecoveryFile), "utf8");
-const policyTestText = [
-  policyTest,
-  policyRouteTest,
-  generationRecoveryTest,
-].map((file) => fs.readFileSync(path.join(root, file), "utf8")).join("\n");
+const policyTestText = [policyTest, policyRouteTest, generationRecoveryTest]
+  .map((file) => fs.readFileSync(path.join(root, file), "utf8"))
+  .join("\n");
 const policyCorruptStateTestText = fs.existsSync(path.join(root, policyCorruptStateTest))
   ? fs.readFileSync(path.join(root, policyCorruptStateTest), "utf8")
   : "";
@@ -293,11 +291,9 @@ const widgetUnavailableText = fs.readFileSync(
   path.join(root, "src/pages/encounter-widget-unavailable.js"),
   "utf8"
 );
-const widgetPolicyTestText = [
-  widgetPolicyTest,
-  widgetMainWorldTest,
-  widgetGenerationRecoveryTest,
-].map((file) => fs.readFileSync(path.join(root, file), "utf8")).join("\n");
+const widgetPolicyTestText = [widgetPolicyTest, widgetMainWorldTest, widgetGenerationRecoveryTest]
+  .map((file) => fs.readFileSync(path.join(root, file), "utf8"))
+  .join("\n");
 const entryExecutionFailureTestText = fs.readFileSync(
   path.join(root, entryExecutionFailureTest),
   "utf8"
@@ -345,15 +341,24 @@ for (const required of ["isAutomaticEncounterEnabled", "EVENT_RANDOM_ENCOUNTER_S
     violations.push(`${owner.replaceAll("\\", "/")} must own ${required}`);
   }
 }
-if (!ownerText.includes('source: event.source')) {
+if (!ownerText.includes("source: event.source")) {
   violations.push(
     `${owner.replaceAll("\\", "/")} must pass typed random-encounter start authority into encounter state`
   );
 }
-if (!fs.readFileSync(path.join(root, "src/battle/battle-round-start.js"), "utf8").includes('source: "battleRoundStart"')) {
-  violations.push("src/battle/battle-round-start.js must mark random encounters with battleRoundStart evidence");
+if (
+  !fs
+    .readFileSync(path.join(root, "src/battle/battle-round-start.js"), "utf8")
+    .includes('source: "battleRoundStart"')
+) {
+  violations.push(
+    "src/battle/battle-round-start.js must mark random encounters with battleRoundStart evidence"
+  );
 }
-if (!policyText.includes('source === "battleRoundStart"') || !policyText.includes("if (!key && !hasBattleStartEvidence) return next")) {
+if (
+  !policyText.includes('source === "battleRoundStart"') ||
+  !policyText.includes("if (!key && !hasBattleStartEvidence) return next")
+) {
   violations.push(
     `${policyFile.replaceAll("\\", "/")} must require an encounter key or battle-start evidence before starting cooldown/count`
   );
@@ -466,10 +471,9 @@ if (!stateEntryMatch) {
     }
   }
 }
-const stateTestText = [
-  stateTest,
-  stateDawnRecoveryTest,
-].map((file) => fs.readFileSync(path.join(root, file), "utf8")).join("\n");
+const stateTestText = [stateTest, stateDawnRecoveryTest]
+  .map((file) => fs.readFileSync(path.join(root, file), "utf8"))
+  .join("\n");
 if (
   !stateTestText.includes(
     "rejects unknown and null state events without reading or writing encounter state"
@@ -736,7 +740,11 @@ if (/Date\.UTC\(.*getUTCFullYear\(\).*getUTCMonth\(\).*getUTCDate\(\)\s*\+\s*1/.
 if (!/\bPLAN_NEXT_CHECK\b/.test(policyText)) {
   violations.push(`${policyFile.replaceAll("\\", "/")} must expose one next-check plan query`);
 }
-if (/ISEKAI_ENCOUNTER_BASE_URL|isekaiEncounterSuppressed|hentaiverse\.org\/isekai\/\?\s*s=Battle/.test(ownerText + policyText + entryPolicyText)) {
+if (
+  /ISEKAI_ENCOUNTER_BASE_URL|isekaiEncounterSuppressed|hentaiverse\.org\/isekai\/\?\s*s=Battle/.test(
+    ownerText + policyText + entryPolicyText
+  )
+) {
   violations.push(
     `${owner.replaceAll("\\", "/")} must not own isekai encounter orchestration; route isekai at page/lobby identity`
   );

@@ -14,7 +14,9 @@ try {
 
 const errors = [];
 const lotteryRegion =
-  src.match(/if \(\$config\.settings\.lotteryNotification\) \{[\s\S]*?\n            \$element\("div", _bottom\.node\.div, \["\.hvut-spaceholder"\]\);[\s\S]*?\n          \}/)?.[0] || "";
+  src.match(
+    /if \(\$config\.settings\.lotteryNotification\) \{[\s\S]*?\n            \$element\("div", _bottom\.node\.div, \["\.hvut-spaceholder"\]\);[\s\S]*?\n          \}/
+  )?.[0] || "";
 
 // 1. UserScript metadata block 配对
 if (!src.includes("// ==UserScript==")) errors.push("missing `// ==UserScript==`");
@@ -51,7 +53,7 @@ if (/\bnew\s+Function\s*\(/.test(src)) {
 // 但过滤器错误和运行时崩溃不能退回 console-only。
 for (const required of [
   "recordFailure: function(stage, detail)",
-  "capability: \"equipmentFilter\"",
+  'capability: "equipmentFilter"',
   'sessionStorage.setItem("HVAA:lastEquipmentFilterFailure"',
 ]) {
   if (!src.includes(required)) errors.push(`equipment filter artifact missing ${required}`);
@@ -64,7 +66,9 @@ if (
   errors.push("equipment filter artifact missing structured match failure evidence");
 }
 if (
-  !/\$equip\d*\.filter\.recordFailure\("runtime", \{ equip: equip\d*, error: error\?\.message \|\| String\(error\) \}\)/.test(src)
+  !/\$equip\d*\.filter\.recordFailure\("runtime", \{ equip: equip\d*, error: error\?\.message \|\| String\(error\) \}\)/.test(
+    src
+  )
 ) {
   errors.push("equipment filter artifact missing runtime failure evidence");
 }
@@ -73,17 +77,23 @@ if (
 for (const required of [
   "record_hvut_navigation_bridge_failure = function(stage, detail)",
   "run_hvut_navigation_bridge = function(method, args, stage, detail)",
-  "capability: \"hvutNavigationBridge\"",
+  'capability: "hvutNavigationBridge"',
   'sessionStorage.setItem("HVAA:lastHvutNavigationBridgeFailure"',
   'console.warn("[HVAA] navigation bridge missing", evidence)',
 ]) {
   if (!src.includes(required)) errors.push(`hvut navigation bridge artifact missing ${required}`);
 }
-if (!/run_hvut_navigation_bridge\("reloadCurrentPage", \[reason\], "reloadBlocked", \{ reason(?:: reason)? \}\)/.test(src)) {
+if (
+  !/run_hvut_navigation_bridge\("reloadCurrentPage", \[reason\], "reloadBlocked", \{ reason(?:: reason)? \}\)/.test(
+    src
+  )
+) {
   errors.push("hvut navigation bridge artifact missing reload blocked evidence");
 }
 if (
-  !/run_hvut_navigation_bridge\("openUrl", \[url, reason, !!newTab\], "navigationBlocked", \{ reason(?:: reason)?, url(?:: url)?, newTab: !!newTab \}\)/.test(src)
+  !/run_hvut_navigation_bridge\("openUrl", \[url, reason, !!newTab\], "navigationBlocked", \{ reason(?:: reason)?, url(?:: url)?, newTab: !!newTab \}\)/.test(
+    src
+  )
 ) {
   errors.push("hvut navigation bridge artifact missing navigation blocked evidence");
 }
@@ -99,7 +109,13 @@ for (const forbidden of [
 }
 
 // 6. @grant 必须列全 5 项
-for (const g of ["GM_setValue", "GM_getValue", "GM_deleteValue", "GM_notification", "unsafeWindow"]) {
+for (const g of [
+  "GM_setValue",
+  "GM_getValue",
+  "GM_deleteValue",
+  "GM_notification",
+  "unsafeWindow",
+]) {
   if (!new RegExp(`@grant\\s+${g}\\b`).test(src)) errors.push(`@grant missing ${g}`);
 }
 
@@ -108,24 +124,24 @@ for (const g of ["GM_setValue", "GM_getValue", "GM_deleteValue", "GM_notificatio
 for (const required of [
   "_bottom.read_lottery_state = function(ss)",
   'const json = $config.get("lt_notif", { lt: {}, la: {} }, "hvut_") || {}',
-  "if (!json.lt || typeof json.lt !== \"object\") json.lt = {}",
-  "if (!json.la || typeof json.la !== \"object\") json.la = {}",
-  "if (!json[ss] || typeof json[ss] !== \"object\") json[ss] = {}",
+  'if (!json.lt || typeof json.lt !== "object") json.lt = {}',
+  'if (!json.la || typeof json.la !== "object") json.la = {}',
+  'if (!json[ss] || typeof json[ss] !== "object") json[ss] = {}',
   "return { json, lottery: json[ss] }",
   "_bottom.evaluate_lottery_filter = function(ss, equip)",
   "_bottom.record_lottery_notification_failure = function(stage, ss, detail)",
-  "capability: \"lotteryNotification\"",
+  'capability: "lotteryNotification"',
   'sessionStorage.setItem("HVAA:lastLotteryNotificationFailure"',
   "const reportErrors =",
   "return reportErrors(filterErrors, matched)",
-  "filter: \"<lotteryFilters>\"",
+  'filter: "<lotteryFilters>"',
   "matched: false",
   "_bottom.render_lottery_equip_text = function(ss, equip, lottery)",
   "_bottom.read_lottery_draw_time = function(text, now)",
   "drawTimeNotFound",
   "lottery.renderError = renderError",
   '_bottom.record_lottery_notification_failure("equipRender", ss',
-  "return String(equip ?? \"\")",
+  'return String(equip ?? "")',
   "let filterResult = { matched: false, error: null }",
   "filterResult = _bottom.evaluate_lottery_filter(ss, lottery.equip) || filterResult",
   '_bottom.record_lottery_notification_failure("filterDecision", ss',

@@ -108,7 +108,9 @@ if (!fs.existsSync(path.join(root, ownerTest))) {
   }
 }
 if (/return !!runBattle/.test(ownerText)) {
-  violations.push(`${rel(owner)} must not booleanize channel command entry results before typed failure normalization`);
+  violations.push(
+    `${rel(owner)} must not booleanize channel command entry results before typed failure normalization`
+  );
 }
 
 if (

@@ -62,12 +62,12 @@ export function checkCondition(parms, snap) {
     },
   };
   const comparators = {
-    "1": (a, b) => a > b,
-    "2": (a, b) => a < b,
-    "3": (a, b) => a >= b,
-    "4": (a, b) => a <= b,
-    "5": (a, b) => a === b,
-    "6": (a, b) => a !== b,
+    1: (a, b) => a > b,
+    2: (a, b) => a < b,
+    3: (a, b) => a >= b,
+    4: (a, b) => a <= b,
+    5: (a, b) => a === b,
+    6: (a, b) => a !== b,
   };
   // 单子句原子比较（保留 legacy 语义：缺/坏比较符 → false）。clause = "a,op,b"。
   const rawMatch = (clause) => {
@@ -94,8 +94,7 @@ export function checkCondition(parms, snap) {
   // 1) 前置守卫：纯非门行用"原始匹配"（排除条件成立即触发）；任一行触发 → 整体 false。
   for (const gate of preGates) {
     const exprs = gate.clauses.map((c) => c.slice(1)); // 去掉前缀 "!"
-    const tripped =
-      gate.rowType === "or" ? exprs.some(rawMatch) : exprs.every(rawMatch);
+    const tripped = gate.rowType === "or" ? exprs.some(rawMatch) : exprs.every(rawMatch);
     if (tripped) return false;
   }
 
@@ -103,12 +102,8 @@ export function checkCondition(parms, snap) {
   if (positives.length === 0) return true;
   for (const grp of positives) {
     // 混合行：正向子句取 rawMatch，"!" 子句取 !rawMatch；按行类型组合。
-    const clauseVal = (c) =>
-      c.charAt(0) === "!" ? !rawMatch(c.slice(1)) : rawMatch(c);
-    const ok =
-      grp.rowType === "or"
-        ? grp.clauses.some(clauseVal)
-        : grp.clauses.every(clauseVal);
+    const clauseVal = (c) => (c.charAt(0) === "!" ? !rawMatch(c.slice(1)) : rawMatch(c));
+    const ok = grp.rowType === "or" ? grp.clauses.some(clauseVal) : grp.clauses.every(clauseVal);
     if (ok) return true;
   }
   return false;

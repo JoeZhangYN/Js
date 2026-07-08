@@ -59,18 +59,26 @@ if (/Date\.UTC\(.*getUTCFullYear\(\).*getUTCMonth\(\).*getUTCDate\(\)\s*\+\s*1/.
   );
 }
 if (!ownerText.includes("const dayRecordEventHandlers")) {
-  violations.push(`${owner.replaceAll("\\", "/")} must route day-record events through a handler table`);
+  violations.push(
+    `${owner.replaceAll("\\", "/")} must route day-record events through a handler table`
+  );
 }
 const ownerEntry = ownerText.match(/export function runDayRecordAutomation[\s\S]*?\n}/)?.[0] || "";
 if (/if\s*\(\s*event\.type\s*===/.test(ownerEntry)) {
-  violations.push(`${owner.replaceAll("\\", "/")} entry must not reintroduce an event.type if-chain`);
+  violations.push(
+    `${owner.replaceAll("\\", "/")} entry must not reintroduce an event.type if-chain`
+  );
 }
 if (/\bevent\.type\b/.test(ownerEntry) || !/\bevent\?\.type\b/.test(ownerEntry)) {
-  violations.push(`${owner.replaceAll("\\", "/")} entry must fail closed for null day-record events`);
+  violations.push(
+    `${owner.replaceAll("\\", "/")} entry must fail closed for null day-record events`
+  );
 }
 for (const internal of ["syncUtcDate(", "refreshAndScheduleNextUtcDay("]) {
   if (ownerEntry.includes(internal)) {
-    violations.push(`${owner.replaceAll("\\", "/")} entry must dispatch through dayRecordEventHandlers`);
+    violations.push(
+      `${owner.replaceAll("\\", "/")} entry must dispatch through dayRecordEventHandlers`
+    );
   }
 }
 if (!/runDayRecordAutomation\(null\)/.test(ownerTestText)) {

@@ -9,7 +9,7 @@ import { EquipmentViewEvent, runEquipmentViewAutomation } from "./equipment-view
 import { runRiddleAutomation } from "./riddle-automation.js";
 import { LobbyEvent, runLobbyAutomation } from "./lobby-automation.js";
 import { BattleEvent, runBattleAutomation } from "../battle/battle-automation.js";
-import { PageKind } from "./page-kind.js";
+import { PageKind, PageWorld } from "./page-kind.js";
 
 const EVENT_PAGE_READY = "pageReady";
 
@@ -20,7 +20,7 @@ export const PageAutomationEvent = Object.freeze({
 });
 
 const pageAutomationEventHandlers = Object.freeze({
-  [EVENT_PAGE_READY]: (event) => runPageReadyFlow({ kind: event.kind }),
+  [EVENT_PAGE_READY]: (event) => runPageReadyFlow(normalizePageContext(event)),
 });
 
 const GAME_PAGE_AUTOMATION = Object.freeze({
@@ -39,6 +39,19 @@ const PAGE_READY_FLOW_STEPS = [
 
 function pageAutomationErrorText(error) {
   return error?.message || String(error);
+}
+
+function normalizePageContext(event) {
+  const kind = event.page?.kind ?? event.kind;
+  const world =
+    event.page?.world ??
+    event.world ??
+    (kind === PageKind.ISEKAI_LOBBY ? PageWorld.ISEKAI : PageWorld.PERSISTENT);
+  return {
+    kind,
+    world,
+    isIsekai: Boolean(event.page?.isIsekai ?? event.isIsekai ?? world === PageWorld.ISEKAI),
+  };
 }
 
 function recordPageAutomationFailure(stage, reason, detail = {}) {
@@ -100,7 +113,11 @@ function runGamePageAutomation(kind) {
 }
 
 function reportEquipmentViewPageReady(context) {
-  runEquipmentViewAutomation({ type: EquipmentViewEvent.PAGE_READY, kind: context.kind });
+  runEquipmentViewAutomation({
+    type: EquipmentViewEvent.PAGE_READY,
+    kind: context.kind,
+    page: context,
+  });
   return false;
 }
 

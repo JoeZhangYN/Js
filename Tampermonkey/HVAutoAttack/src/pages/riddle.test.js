@@ -60,7 +60,8 @@ vi.mock("./riddle-submission-timing.js", () => ({
 vi.mock("./riddle-helper.js", () => ({ runRiddleVisualAid: mocks.runRiddleVisualAid }));
 
 beforeEach(() => {
-  document.body.innerHTML = ""; sessionStorage.clear();
+  document.body.innerHTML = "";
+  sessionStorage.clear();
   for (const fn of Object.values(mocks)) fn.mockClear();
   mocks.runOptionAutomation.mockImplementation((event) => {
     if (event.type === "isOn") return false;
@@ -136,7 +137,8 @@ describe("runRiddleAutomation answering session", () => {
       expect.objectContaining({ type: "start", beforeEnd: 7 })
     );
     expect(mocks.runRiddleLogAutomation).toHaveBeenCalledWith({
-      type: "push", message: "ml answer failed error=ml blocked fallback=random",
+      type: "push",
+      message: "ml answer failed error=ml blocked fallback=random",
     });
   });
 
@@ -163,5 +165,4 @@ describe("runRiddleAutomation answering session", () => {
       })
     );
   });
-
 });

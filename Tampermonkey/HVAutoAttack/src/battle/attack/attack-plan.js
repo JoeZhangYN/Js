@@ -144,12 +144,7 @@ function decidePhysicalUtilityPlan(opt, event, context) {
 }
 
 function decideMercifulAoeTarget(opt, alive, winner, buffsOf) {
-  if (
-    !opt.mercifulBlow ||
-    opt.fightingStyle !== "2" ||
-    winner.code !== "T3" ||
-    alive.length <= 1
-  ) {
+  if (!opt.mercifulBlow || opt.fightingStyle !== "2" || winner.code !== "T3" || alive.length <= 1) {
     return null;
   }
   const target = alive.find(

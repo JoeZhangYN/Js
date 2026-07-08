@@ -13,7 +13,8 @@ function requirePart(label, body, part) {
 const modernPack =
   /pack: function \(e\) \{[\s\S]*?\n      \},\n      log: function/.exec(text)?.[0] || "";
 const legacyPack =
-  /_mm\.write_pack = function \(e\) \{[\s\S]*?\n    \};\n\n    _mm\.write_log/.exec(text)?.[0] || "";
+  /_mm\.write_pack = function \(e\) \{[\s\S]*?\n    \};\n\n    _mm\.write_log/.exec(text)?.[0] ||
+  "";
 
 for (const [label, body] of [
   ["modern write pack", modernPack],
@@ -48,10 +49,7 @@ for (const [label, body] of [
   ["modern write pack", modernPack],
   ["legacy write pack", legacyPack],
 ]) {
-  for (const forbidden of [
-    "$mail.request(mail);\n      },",
-    "$mail.request(mail);\n    };",
-  ]) {
+  for (const forbidden of ["$mail.request(mail);\n      },", "$mail.request(mail);\n    };"]) {
     if (body.includes(forbidden)) {
       violations.push(`${target} ${label} must not keep locked pack path: ${forbidden}`);
     }

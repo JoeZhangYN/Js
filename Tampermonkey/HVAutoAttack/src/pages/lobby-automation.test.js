@@ -121,6 +121,7 @@ describe("runLobbyAutomation", () => {
 
     expect(mocks.runEncounterAutomation).toHaveBeenCalledWith({
       type: "lobbyTick",
+      isIsekai: false,
       rerun: expect.any(Function),
     });
     expect(mocks.runStaminaAutomation).not.toHaveBeenCalled();
@@ -136,6 +137,7 @@ describe("runLobbyAutomation", () => {
 
     expect(mocks.runEncounterAutomation).toHaveBeenCalledWith({
       type: "lobbyTick",
+      isIsekai: false,
       rerun: expect.any(Function),
     });
     expect(mocks.runStaminaAutomation).toHaveBeenCalled();

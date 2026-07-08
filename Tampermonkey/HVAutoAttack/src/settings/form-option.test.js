@@ -19,9 +19,7 @@ describe("runSettingsFormOptionAutomation", () => {
       runSettingsFormOptionAutomation({
         type: "unknown",
         version: "10.0",
-        inputs: [
-          input({ className: "hvAANumber", name: "delay", value: "", placeholder: "200" }),
-        ],
+        inputs: [input({ className: "hvAANumber", name: "delay", value: "", placeholder: "200" })],
       })
     ).toBeUndefined();
     expect(runSettingsFormOptionAutomation(null)).toBeUndefined();

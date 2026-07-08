@@ -31,14 +31,24 @@ describe("recordEncounterStateFailure", () => {
   });
 
   it("does not throw when evidence storage and console warning both fail", () => {
-    const blockedStorage = { setItem: () => { throw new Error("storage blocked"); } };
-    const warn = () => { throw new Error("warn blocked"); };
+    const blockedStorage = {
+      setItem: () => {
+        throw new Error("storage blocked");
+      },
+    };
+    const warn = () => {
+      throw new Error("warn blocked");
+    };
 
     expect(() =>
-      recordEncounterStateFailure("write-local", { key: "hvut_re" }, {
-        sessionStorage: blockedStorage,
-        warn,
-      })
+      recordEncounterStateFailure(
+        "write-local",
+        { key: "hvut_re" },
+        {
+          sessionStorage: blockedStorage,
+          warn,
+        }
+      )
     ).not.toThrow();
   });
 });

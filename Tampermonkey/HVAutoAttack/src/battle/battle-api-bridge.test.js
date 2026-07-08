@@ -24,7 +24,9 @@ function makeDeps() {
     createScript: vi.fn(() => ({ textContent: "" })),
     appendHead: vi.fn((script) => scripts.push(script)),
     readBattleApiWorldContext: vi.fn(() => ({
-      world: "persistent", apiBaseUrl: "https://example.test/", apiJsonUrl: "https://example.test/json",
+      world: "persistent",
+      apiBaseUrl: "https://example.test/",
+      apiJsonUrl: "https://example.test/json",
     })),
     installApiResponseRecovery: vi.fn(() => true),
   };
@@ -36,13 +38,16 @@ function expectContains(text, tokens) {
 
 beforeEach(() => {
   document.head.innerHTML = "";
-  delete window.HVAA_battleApiRecovery; delete globalThis.unsafeWindow;
+  delete window.HVAA_battleApiRecovery;
+  delete globalThis.unsafeWindow;
   window.sessionStorage.clear();
   mocks.runOptionAutomation.mockReset();
   mocks.runOptionAutomation.mockReturnValue({});
   mocks.runBattleApiWorldContext.mockReset();
   mocks.runBattleApiWorldContext.mockReturnValue({
-    world: "isekai", apiBaseUrl: "https://hentaiverse.org/isekai/", apiJsonUrl: "https://hentaiverse.org/isekai/json",
+    world: "isekai",
+    apiBaseUrl: "https://hentaiverse.org/isekai/",
+    apiJsonUrl: "https://hentaiverse.org/isekai/json",
   });
 });
 
@@ -65,7 +70,12 @@ describe("runBattleApiBridgeAutomation", () => {
     expect(deps.scripts[0].textContent).toContain('b.open("POST", apiJsonUrl)');
     expect(deps.scripts[0].textContent).toContain("window.sessionStorage.delay * 1");
     expect(deps.scripts[0].textContent).toContain("window.sessionStorage.delay2 * 1");
-    expectContains(deps.scripts[0].textContent, ["window.battle.battle_continue", "window.HVAA_navigation", "BATTLE_API_CALLBACK_FALLBACK", "missingBattleContinue"]);
+    expectContains(deps.scripts[0].textContent, [
+      "window.battle.battle_continue",
+      "window.HVAA_navigation",
+      "BATTLE_API_CALLBACK_FALLBACK",
+      "missingBattleContinue",
+    ]);
     expect(deps.scripts[0].textContent).not.toContain("document.location");
     expect(deps.scripts[0].textContent).toContain('clickActionEventNode("start", "eventStart")');
     expect(deps.scripts[0].textContent).toContain('clickActionEventNode("end", "eventEnd")');
@@ -75,7 +85,11 @@ describe("runBattleApiBridgeAutomation", () => {
     expect(deps.scripts[1].textContent).toContain('responseKind: "malformedJson"');
     expect(deps.scripts[1].textContent).toContain("reloadFromApiResponse");
     expect(deps.scripts[1].textContent).toContain("window.HVAA_battleApiRecovery");
-    expectContains(deps.scripts[1].textContent, ["responseKind", '"world":"persistent"', "actionDetail"]);
+    expectContains(deps.scripts[1].textContent, [
+      "responseKind",
+      '"world":"persistent"',
+      "actionDetail",
+    ]);
     expect(deps.scripts[1].textContent).not.toContain("window.location.href");
   });
 
@@ -166,7 +180,9 @@ describe("runBattleApiBridgeAutomation", () => {
     expect(runBattleApiBridgeAutomation({ type: BattleApiBridgeEvent.INSTALL })).toBe(true);
 
     expect(document.head.lastChild.textContent).toContain("api_response =");
-    expect(document.head.children[document.head.children.length - 2].textContent).toContain('MAIN_URL + "json" : "https://hentaiverse.org/isekai/json"');
+    expect(document.head.children[document.head.children.length - 2].textContent).toContain(
+      'MAIN_URL + "json" : "https://hentaiverse.org/isekai/json"'
+    );
   });
 
   it("normalizes missing API bridge delays before writing runtime state", () => {

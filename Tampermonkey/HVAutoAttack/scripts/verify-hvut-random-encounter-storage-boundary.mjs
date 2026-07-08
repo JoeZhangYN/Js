@@ -19,16 +19,28 @@ function requireParts(label, value, parts) {
   }
 }
 
-const bindRe = body(/const bindRe = function \(re, ctx\) \{[\s\S]*?\n\};\n\n\/\/ \$price/, "bindRe");
-const encounterBridge = body(/const run_hvut_encounter_bridge = function \(eventName, event\) \{[\s\S]*?\n  \};\n  const applyEncounterState/, "run_hvut_encounter_bridge");
-const applyState = body(/const applyEncounterState = function \(outcome\) \{[\s\S]*?\n  \};\n  re\.init/, "applyEncounterState");
+const bindRe = body(
+  /const bindRe = function \(re, ctx\) \{[\s\S]*?\n\};\n\n\/\/ \$price/,
+  "bindRe"
+);
+const encounterBridge = body(
+  /const run_hvut_encounter_bridge = function \(eventName, event\) \{[\s\S]*?\n  \};\n  const applyEncounterState/,
+  "run_hvut_encounter_bridge"
+);
+const applyState = body(
+  /const applyEncounterState = function \(outcome\) \{[\s\S]*?\n  \};\n  re\.init/,
+  "applyEncounterState"
+);
 const init = body(/re\.init = function \(\) \{[\s\S]*?\n  \};\n  re\.clock/, "re.init");
 const clock = body(/re\.clock = function \(button\) \{[\s\S]*?\n  \};\n  re\.hv/, "re.clock");
 const hv = body(/re\.hv = function \(\) \{[\s\S]*?\n  \};\n  re\.ba/, "re.hv");
 const ba = body(/re\.ba = function \(\) \{[\s\S]*?\n  \};\n  re\.eh/, "re.ba");
 const eh = body(/re\.eh = function \(\) \{[\s\S]*?\n  \};\n  re\.get/, "re.eh");
 const run = body(/re\.run = async function \(engage\) \{[\s\S]*?\n  \};\n  re\.load/, "re.run");
-const load = body(/re\.load = async function \(engage, href\) \{[\s\S]*?\n  \};\n  re\.start/, "re.load");
+const load = body(
+  /re\.load = async function \(engage, href\) \{[\s\S]*?\n  \};\n  re\.start/,
+  "re.load"
+);
 
 requireParts("applyEncounterState", applyState, [
   "if (!ctx.config.set('re', outcome.state, 'hvut_')) {",
@@ -124,7 +136,9 @@ for (const forbidden of [
   "runEncounter({",
 ]) {
   if (bindRe.includes(forbidden)) {
-    violations.push(`${target} bindRe must not ignore random encounter state persistence: ${forbidden}`);
+    violations.push(
+      `${target} bindRe must not ignore random encounter state persistence: ${forbidden}`
+    );
   }
 }
 
@@ -134,4 +148,6 @@ if (violations.length) {
   process.exit(1);
 }
 
-console.log("[verify-hvut-random-encounter-storage-boundary] OK - random encounter state failures fail closed");
+console.log(
+  "[verify-hvut-random-encounter-storage-boundary] OK - random encounter state failures fail closed"
+);

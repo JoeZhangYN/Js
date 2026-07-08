@@ -7,9 +7,7 @@ const ownerTest = path.normalize("src/battle/attack/execute-attack.test.js");
 const commandFailureTest = path.normalize(
   "src/battle/attack/execute-attack-command-failure.test.js"
 );
-const typedFailureTest = path.normalize(
-  "src/battle/attack/execute-attack-typed-failure.test.js"
-);
+const typedFailureTest = path.normalize("src/battle/attack/execute-attack-typed-failure.test.js");
 const mercifulSideEffectTest = path.normalize(
   "src/battle/attack/execute-attack-merciful-side-effect.test.js"
 );
@@ -171,7 +169,9 @@ if (!fs.existsSync(path.join(root, typedFailureTest))) {
   }
 }
 if (/return !!runBattle/.test(ownerText)) {
-  violations.push(`${rel(owner)} must not booleanize attack command entry results before typed failure normalization`);
+  violations.push(
+    `${rel(owner)} must not booleanize attack command entry results before typed failure normalization`
+  );
 }
 if (!fs.existsSync(path.join(root, mercifulSideEffectTest))) {
   violations.push(`${rel(mercifulSideEffectTest)} must cover failed merciful physical plans`);
@@ -228,14 +228,17 @@ if (!physicalPlanBody.includes("clickMercifulFallbackTarget(plan)")) {
   violations.push(`${rel(owner)} merciful fallback click must be isolated from acted result`);
 }
 const mercifulFallbackBody =
-  mercifulFallbackText.match(/export function clickMercifulFallbackTarget\(plan\) \{[\s\S]*?\n\}/)
-    ?.[0] || "";
+  mercifulFallbackText.match(
+    /export function clickMercifulFallbackTarget\(plan\) \{[\s\S]*?\n\}/
+  )?.[0] || "";
 if (
   !mercifulFallbackBody.includes("try {") ||
   !mercifulFallbackBody.includes("recordMercifulFallbackTargetFailure") ||
   !mercifulFallbackBody.includes("catch (error)")
 ) {
-  violations.push(`${rel(mercifulFallback)} merciful fallback click must record rejected/thrown effects`);
+  violations.push(
+    `${rel(mercifulFallback)} merciful fallback click must record rejected/thrown effects`
+  );
 }
 for (const required of [
   "recordMercifulFallbackTargetFailure",

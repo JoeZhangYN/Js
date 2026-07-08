@@ -37,7 +37,9 @@ for (const required of [
 }
 
 if (hvUtilsText.includes("[HVAA][i18n] 汉化执行出错，请整段复制此日志反馈")) {
-  violations.push("src/i18n/hv-utils.js must not label top-level HVUT runtime failures as i18n-only failures");
+  violations.push(
+    "src/i18n/hv-utils.js must not label top-level HVUT runtime failures as i18n-only failures"
+  );
 }
 
 for (const required of [

@@ -9,10 +9,7 @@ import {
 } from "../battle-debuff-coverage.js";
 import { BattleMonsterViewEvent, runBattleMonsterView } from "../battle-monster-view.js";
 import { BattleTargetStrategyEvent, runBattleTargetStrategy } from "../battle-target-strategy.js";
-import {
-  BattleDebuffApplicabilityEvent,
-  runBattleDebuffApplicability,
-} from "./can-apply.js";
+import { BattleDebuffApplicabilityEvent, runBattleDebuffApplicability } from "./can-apply.js";
 
 const ALL_DEBUFF_GATES = Object.freeze({
   We: Object.freeze({

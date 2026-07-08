@@ -23,15 +23,15 @@ describe("runOptionSchema", () => {
       default: 50000,
       group: "Main",
     });
-    expect(runOptionSchema({ type: OptionSchemaEvent.READ_FIELD, key: "pageRefresh" })).toMatchObject(
-      {
-        key: "pageRefresh",
-        kind: "checkbox",
-        default: true,
-        defaultOn: true,
-        group: "Main",
-      }
-    );
+    expect(
+      runOptionSchema({ type: OptionSchemaEvent.READ_FIELD, key: "pageRefresh" })
+    ).toMatchObject({
+      key: "pageRefresh",
+      kind: "checkbox",
+      default: true,
+      defaultOn: true,
+      group: "Main",
+    });
     expect(
       runOptionSchema({ type: OptionSchemaEvent.READ_FIELD, key: "pageRefreshMinutes" })
     ).toMatchObject({
@@ -104,14 +104,14 @@ describe("runOptionSchema", () => {
       default: true,
       defaultOn: true,
     });
-    expect(runOptionSchema({ type: OptionSchemaEvent.READ_FIELD, key: "autoElement" })).toMatchObject(
-      {
-        key: "autoElement",
-        kind: "checkbox",
-        default: false,
-        group: "Spell",
-      }
-    );
+    expect(
+      runOptionSchema({ type: OptionSchemaEvent.READ_FIELD, key: "autoElement" })
+    ).toMatchObject({
+      key: "autoElement",
+      kind: "checkbox",
+      default: false,
+      group: "Spell",
+    });
     expect(runOptionSchema({ type: OptionSchemaEvent.READ_DEFAULT, key: "repairValue" })).toBe(60);
     expect(
       runOptionSchema({ type: OptionSchemaEvent.READ_GROUP, group: "Debuff" }).some(

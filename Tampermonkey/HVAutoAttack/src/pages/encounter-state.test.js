@@ -46,7 +46,10 @@ describe("runEncounterStateAutomation", () => {
       search: "?s=Battle&ss=ba&encounter=abc=",
     });
 
-    expect(JSON.parse(localStorage.getItem(HVUT_RE_KEY))).toMatchObject({ key: "abc=", clear: true });
+    expect(JSON.parse(localStorage.getItem(HVUT_RE_KEY))).toMatchObject({
+      key: "abc=",
+      clear: true,
+    });
   });
 
   it("marks attempted encounter entry through the state entry", () => {
@@ -65,7 +68,8 @@ describe("runEncounterStateAutomation", () => {
     localStorage.setItem(HVUT_RE_KEY, JSON.stringify({ date: 0, key: "", count: 0, clear: true }));
     mocks.gmXhr.mockImplementation(({ onload }) => {
       onload({
-        responseText: '<div id="eventpane"><a href="?s=Battle&amp;ss=ba&amp;encounter=xyz=">RE</a></div>',
+        responseText:
+          '<div id="eventpane"><a href="?s=Battle&amp;ss=ba&amp;encounter=xyz=">RE</a></div>',
       });
     });
 

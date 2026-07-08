@@ -42,8 +42,7 @@ if (
   violations.push(`${rel(owner)} may export only its event entry`);
 }
 const entryBody =
-  ownerText.match(/export function runBattleSkillReadiness\([^)]*\) \{[\s\S]*?\n\}/)?.[0] ||
-  "";
+  ownerText.match(/export function runBattleSkillReadiness\([^)]*\) \{[\s\S]*?\n\}/)?.[0] || "";
 if (!/Object\.freeze\(\{[\s\S]*\[EVENT_READ_READY_MAP\]/.test(ownerText)) {
   violations.push(`${rel(owner)} must route events through a frozen handler table`);
 }

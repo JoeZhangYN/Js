@@ -48,14 +48,20 @@ for (const required of ["runRepairDecision", "RepairDecisionEvent"]) {
 }
 const entryBody =
   ownerText.match(/export function runRepairDecision\([^)]*\) \{[\s\S]*?\n\}/)?.[0] || "";
-if (!/const repairDecisionEventHandlers\s*=\s*Object\.freeze\(\{[\s\S]*\[EVENT_PLAN\]/.test(ownerText)) {
-  violations.push(`${owner.replaceAll("\\", "/")} must route events through a frozen handler table`);
+if (
+  !/const repairDecisionEventHandlers\s*=\s*Object\.freeze\(\{[\s\S]*\[EVENT_PLAN\]/.test(ownerText)
+) {
+  violations.push(
+    `${owner.replaceAll("\\", "/")} must route events through a frozen handler table`
+  );
 }
 if (/event\.type\s*(?:!==|===)|switch\s*\(\s*event\.type\s*\)/.test(entryBody)) {
   violations.push(`${owner.replaceAll("\\", "/")} entry must dispatch by handler table`);
 }
 if (/repairDecisionEventHandlers\s*\[\s*event\.type\s*\]/.test(entryBody)) {
-  violations.push(`${owner.replaceAll("\\", "/")} entry must reject null repair decision events instead of reading event.type directly`);
+  violations.push(
+    `${owner.replaceAll("\\", "/")} entry must reject null repair decision events instead of reading event.type directly`
+  );
 }
 if (/export\s+function\s+decideRepair\s*\(/.test(ownerText)) {
   violations.push(`${owner.replaceAll("\\", "/")} legacy decideRepair export is forbidden`);

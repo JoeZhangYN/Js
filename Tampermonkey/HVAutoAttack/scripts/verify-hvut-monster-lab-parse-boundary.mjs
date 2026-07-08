@@ -13,7 +13,9 @@ function requirePart(label, body, part) {
 }
 
 const helperRegion =
-  /var record_hvut_monster_lab_parse_failure = function \(stage, detail\) \{[\s\S]*?\n  var reloadCurrentPage/.exec(text)?.[0] || "";
+  /var record_hvut_monster_lab_parse_failure = function \(stage, detail\) \{[\s\S]*?\n  var reloadCurrentPage/.exec(
+    text
+  )?.[0] || "";
 function initBodyFor(stage) {
   const stageIndex = text.indexOf(stage);
   if (stageIndex === -1) return "";
@@ -25,14 +27,20 @@ const initBodies = [
   initBodyFor("upgradeChaosTokenCost"),
   initBodyFor("legacyUpgradeChaosTokenCost"),
 ].filter(Boolean);
-const sortBodies = [...text.matchAll(/sort: function \(key\) \{[\s\S]*?\n      \},\n      feed:/g)].map((match) => match[0]);
+const sortBodies = [
+  ...text.matchAll(/sort: function \(key\) \{[\s\S]*?\n      \},\n      feed:/g),
+].map((match) => match[0]);
 
 if (!helperRegion) violations.push(`${target} must keep Monster Lab parse helper visible`);
 if (initBodies.length !== 2) {
-  violations.push(`${target} must keep both Monster Lab upgrader init entries visible, found ${initBodies.length}`);
+  violations.push(
+    `${target} must keep both Monster Lab upgrader init entries visible, found ${initBodies.length}`
+  );
 }
 if (sortBodies.length !== 2) {
-  violations.push(`${target} must keep both Monster Lab sort entries visible, found ${sortBodies.length}`);
+  violations.push(
+    `${target} must keep both Monster Lab sort entries visible, found ${sortBodies.length}`
+  );
 }
 
 for (const required of [
@@ -105,4 +113,6 @@ if (violations.length) {
   process.exit(1);
 }
 
-console.log("[verify-hvut-monster-lab-parse-boundary] OK - Monster Lab parse failures fail closed with evidence");
+console.log(
+  "[verify-hvut-monster-lab-parse-boundary] OK - Monster Lab parse failures fail closed with evidence"
+);

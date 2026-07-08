@@ -27,10 +27,12 @@ describe("runOfflineEquipPercentileEnhancement failure fallback", () => {
     runOfflineEquipPercentileEnhancement();
     document.dispatchEvent(new KeyboardEvent("keydown", { key: "f", bubbles: true }));
 
-    expect(JSON.parse(sessionStorage.getItem("HVAA:lastEquipmentPercentileFailure"))).toMatchObject({
-      capability: "equipmentPercentile",
-      stage: "persist-preference",
-      detail: { error: "preference write blocked" },
-    });
+    expect(JSON.parse(sessionStorage.getItem("HVAA:lastEquipmentPercentileFailure"))).toMatchObject(
+      {
+        capability: "equipmentPercentile",
+        stage: "persist-preference",
+        detail: { error: "preference write blocked" },
+      }
+    );
   });
 });

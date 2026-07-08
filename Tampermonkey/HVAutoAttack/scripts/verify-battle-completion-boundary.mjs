@@ -161,11 +161,19 @@ function checkOwner() {
     }
   }
   if (!fs.existsSync(path.join(root, monitorResultTest))) {
-    violations.push(`${monitorResultTest.replaceAll("\\", "/")} must cover failed monitor completion evidence`);
+    violations.push(
+      `${monitorResultTest.replaceAll("\\", "/")} must cover failed monitor completion evidence`
+    );
   } else {
     const monitorResultTestText = fs.readFileSync(path.join(root, monitorResultTest), "utf8");
-    if (!monitorResultTestText.includes("records failed completion monitor results as failed evidence")) {
-      violations.push(`${monitorResultTest.replaceAll("\\", "/")} must cover failed monitor completion evidence`);
+    if (
+      !monitorResultTestText.includes(
+        "records failed completion monitor results as failed evidence"
+      )
+    ) {
+      violations.push(
+        `${monitorResultTest.replaceAll("\\", "/")} must cover failed monitor completion evidence`
+      );
     }
   }
   if (!fs.existsSync(path.join(root, evidence))) {

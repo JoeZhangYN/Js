@@ -163,10 +163,16 @@ describe("runBattleSpiritToggleAutomation", () => {
     expect(mocks.runCdRuntimeAutomation).not.toHaveBeenCalled();
     expect(mocks.runBattleCommandEvidence.mock.calls).toEqual([
       [
-        expect.objectContaining({ reason: "unknownSpiritToggleEvent", detail: { eventType: "unknown" } }),
+        expect.objectContaining({
+          reason: "unknownSpiritToggleEvent",
+          detail: { eventType: "unknown" },
+        }),
       ],
       [
-        expect.objectContaining({ reason: "unknownSpiritToggleEvent", detail: { eventType: null } }),
+        expect.objectContaining({
+          reason: "unknownSpiritToggleEvent",
+          detail: { eventType: null },
+        }),
       ],
     ]);
   });

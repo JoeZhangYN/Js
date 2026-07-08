@@ -1,8 +1,5 @@
 import { describe, expect, it } from "vitest";
-import {
-  BattleAutoPauseDecisionEvent,
-  runBattleAutoPauseDecision,
-} from "./decide-auto-pause.js";
+import { BattleAutoPauseDecisionEvent, runBattleAutoPauseDecision } from "./decide-auto-pause.js";
 
 function decideAutoPause(event) {
   return runBattleAutoPauseDecision({ type: BattleAutoPauseDecisionEvent.DECIDE, ...event });

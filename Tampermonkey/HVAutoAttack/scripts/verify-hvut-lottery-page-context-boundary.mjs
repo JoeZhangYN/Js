@@ -26,11 +26,15 @@ for (const required of [
 }
 
 const lotteryBodies = [
-  ...text.matchAll(/if \(get_hvut_lottery_page_context\(\)\.isLottery\) \{[\s\S]*?\n\} else\n\/\/ \[END (?:13|14)\] Bazaar - Lottery/g),
+  ...text.matchAll(
+    /if \(get_hvut_lottery_page_context\(\)\.isLottery\) \{[\s\S]*?\n\} else\n\/\/ \[END (?:13|14)\] Bazaar - Lottery/g
+  ),
 ].map((match) => match[0]);
 
 if (lotteryBodies.length !== 2) {
-  violations.push(`${target} must keep both Lottery segment bodies visible, found ${lotteryBodies.length}`);
+  violations.push(
+    `${target} must keep both Lottery segment bodies visible, found ${lotteryBodies.length}`
+  );
 }
 
 for (const [index, body] of lotteryBodies.entries()) {
@@ -54,7 +58,9 @@ for (const [index, body] of lotteryBodies.entries()) {
     "_query.ss === 'la'",
   ]) {
     if (body.includes(forbidden)) {
-      violations.push(`${target} Lottery body[${index}] must not rebuild page identity from raw query/DOM: ${forbidden}`);
+      violations.push(
+        `${target} Lottery body[${index}] must not rebuild page identity from raw query/DOM: ${forbidden}`
+      );
     }
   }
 }
@@ -65,4 +71,6 @@ if (violations.length) {
   process.exit(1);
 }
 
-console.log("[verify-hvut-lottery-page-context-boundary] OK - Lottery notification page state uses one context");
+console.log(
+  "[verify-hvut-lottery-page-context-boundary] OK - Lottery notification page state uses one context"
+);

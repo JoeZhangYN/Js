@@ -224,7 +224,7 @@ if (!rejectionTestText.includes("roundPersistenceFailed")) {
 if (!ownerText.includes("if (!contextReady)") || !ownerText.includes("return false;")) {
   violations.push(`${owner.replaceAll("\\", "/")} must stop after failed round context`);
 }
-if (!ownerTestText.includes("toBe(false)") || !rejectionTestText.includes("toBe(false)")) {
+if (!/toBe\(\s*false\s*\)/.test(ownerTestText) || !/toBe\(\s*false\s*\)/.test(rejectionTestText)) {
   violations.push("round-start tests must assert non-ready round-start returns false");
 }
 if (!ownerTestText.includes("routes battle hash cleanup reload with the original hash evidence")) {

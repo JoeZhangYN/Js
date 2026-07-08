@@ -18,16 +18,33 @@ function requirePart(label, body, part) {
   if (!body.includes(part)) violations.push(`${target} ${label} must include ${part}`);
 }
 
-const migrationBodies = [...text.matchAll(/migration: function \(\) \{[\s\S]*?\n  \},\n  \/\/ reset\/get\/set\/del\/ls_get\/ls_set\/ls_del/g)].map(
-  (match) => match[0]
-);
+const migrationBodies = [
+  ...text.matchAll(
+    /migration: function \(\) \{[\s\S]*?\n  \},\n  \/\/ reset\/get\/set\/del\/ls_get\/ls_set\/ls_del/g
+  ),
+].map((match) => match[0]);
 
-if (migrationBodies.length !== 2) violations.push(`${target} must keep both config migration entries visible`);
-if (migrationBodies[0] && !migrationBodies[0].includes("run_hvut_config_settings_migration($config, $price, HVUT_WORLD, { dropEquipmentShopAutoProtect: true, cleanShrineLog: true });")) {
-  violations.push(`${target} persistent config migration must pass persistent-only cleanup options`);
+if (migrationBodies.length !== 2)
+  violations.push(`${target} must keep both config migration entries visible`);
+if (
+  migrationBodies[0] &&
+  !migrationBodies[0].includes(
+    "run_hvut_config_settings_migration($config, $price, HVUT_WORLD, { dropEquipmentShopAutoProtect: true, cleanShrineLog: true });"
+  )
+) {
+  violations.push(
+    `${target} persistent config migration must pass persistent-only cleanup options`
+  );
 }
-if (migrationBodies[1] && !migrationBodies[1].includes("run_hvut_config_settings_migration($config, $price, HVUT_WORLD, {});")) {
-  violations.push(`${target} Isekai config migration must not inherit persistent-only cleanup options`);
+if (
+  migrationBodies[1] &&
+  !migrationBodies[1].includes(
+    "run_hvut_config_settings_migration($config, $price, HVUT_WORLD, {});"
+  )
+) {
+  violations.push(
+    `${target} Isekai config migration must not inherit persistent-only cleanup options`
+  );
 }
 
 for (const required of [
@@ -120,7 +137,9 @@ for (const [index, body] of migrationBodies.entries()) {
     "if (!$config.set('ss_log', ss_log)) return false;",
   ]) {
     if (body.includes(forbidden)) {
-      violations.push(`${target} config migration[${index}] must delegate legacy carry flow: ${forbidden}`);
+      violations.push(
+        `${target} config migration[${index}] must delegate legacy carry flow: ${forbidden}`
+      );
     }
   }
 }
@@ -219,16 +238,16 @@ for (const required of [
 }
 
 for (const required of [
-  "const COMMON_CARRY_KEYS = Object.freeze([\"equipset\", \"ch_style\", \"se_settings\", \"ss_log\", \"ml_log\"]);",
-  "const PERSISTENT_CARRY_KEYS = Object.freeze([\"equipnames\", ...COMMON_CARRY_KEYS]);",
+  'const COMMON_CARRY_KEYS = Object.freeze(["equipset", "ch_style", "se_settings", "ss_log", "ml_log"]);',
+  'const PERSISTENT_CARRY_KEYS = Object.freeze(["equipnames", ...COMMON_CARRY_KEYS]);',
   "export function getHvutConfigNamespace(segment) {",
-  "return segment?.isIsekai ? \"hvuti\" : \"hvut\";",
+  'return segment?.isIsekai ? "hvuti" : "hvut";',
   "export function getHvutConfigCarryKeys(segment) {",
   "return segment?.isIsekai ? [...COMMON_CARRY_KEYS] : [...PERSISTENT_CARRY_KEYS];",
   "export function buildLegacyHvutEquipData(inEquipdata, inJson) {",
   "return { version: 1, ...(inEquipdata || {}), ...(inJson || {}) };",
   "export function normalizeLegacyHvutEquipCode(equipCode) {",
-  "return equipCode.replace(/(\\{\\$\\w+):/g, \"$1?\").replace(/\\$bbcode/g, \"$namecode\");",
+  'return equipCode.replace(/(\\{\\$\\w+):/g, "$1?").replace(/\\$bbcode/g, "$namecode");',
   "export function migrateLegacyHvutMonsterLabLog(mlLog) {",
   "if (!mlLog || mlLog[0]) return null;",
   "migrated[0] = { version: 1 };",
@@ -243,7 +262,9 @@ for (const required of [
   "normalized[key] = cloneConfigValue(value);",
 ]) {
   if (!migrationText.includes(required)) {
-    violations.push(`${migrationTarget} must own HVUT config carry key segmentation with ${required}`);
+    violations.push(
+      `${migrationTarget} must own HVUT config carry key segmentation with ${required}`
+    );
   }
 }
 
@@ -255,7 +276,7 @@ for (const required of [
   "normalizeLegacyHvutEquipCode",
   "normalizeLegacyHvutPrices",
   "normalizeHvutConfigSettings",
-  "from \"./hvut-config-migration.js\";",
+  'from "./hvut-config-migration.js";',
   "window.HVAA_hvutConfigMigration = Object.freeze({",
   "buildEquipData: buildLegacyHvutEquipData",
   "carryKeys: getHvutConfigCarryKeys",
@@ -266,11 +287,13 @@ for (const required of [
   "normalizeSettings: normalizeHvutConfigSettings",
 ]) {
   if (!migrationBridgeText.includes(required)) {
-    violations.push(`${migrationBridgeTarget} must expose HVUT config migration bridge with ${required}`);
+    violations.push(
+      `${migrationBridgeTarget} must expose HVUT config migration bridge with ${required}`
+    );
   }
 }
 
-if (!mainText.includes("import \"./i18n/hvut-config-migration-bridge.js\";")) {
+if (!mainText.includes('import "./i18n/hvut-config-migration-bridge.js";')) {
   violations.push(`${mainTarget} must load HVUT config migration bridge before hv-utils`);
 }
 
@@ -280,7 +303,9 @@ if (
   !migrationTestText.includes("does not carry persistent-only legacy equipment names") ||
   !migrationTestText.includes("builds legacy equipment data from split old stores") ||
   !migrationTestText.includes("normalizes legacy equipment code templates") ||
-  !migrationTestText.includes("upgrades legacy equipCode string and aligns settings with defaults") ||
+  !migrationTestText.includes(
+    "upgrades legacy equipCode string and aligns settings with defaults"
+  ) ||
   !migrationTestText.includes("migrates legacy Monster Lab logs without mutating the original") ||
   !migrationTestText.includes("flattens legacy nested price groups without mutating the original")
 ) {

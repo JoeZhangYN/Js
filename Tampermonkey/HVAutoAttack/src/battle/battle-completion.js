@@ -126,5 +126,8 @@ export function runBattleCompletionAutomation(
       }),
   }
 ) {
-  return battleCompletionEventHandlers[event?.type]?.(event, deps) ?? rejectUnknownCompletionEvent(event, deps);
+  return (
+    battleCompletionEventHandlers[event?.type]?.(event, deps) ??
+    rejectUnknownCompletionEvent(event, deps)
+  );
 }

@@ -88,7 +88,9 @@ function checkEntry() {
     violations.push(`${owner.replaceAll("\\", "/")} must expose READ_SPELL_AOE`);
   }
   if (!text.includes("const abilityAoeEventHandlers")) {
-    violations.push(`${owner.replaceAll("\\", "/")} must route ability AoE events through a handler table`);
+    violations.push(
+      `${owner.replaceAll("\\", "/")} must route ability AoE events through a handler table`
+    );
   }
   const entryMatch = text.match(/export function runAbilityAoeAutomation[\s\S]*?\n}/);
   if (!entryMatch) {
@@ -96,17 +98,25 @@ function checkEntry() {
   } else {
     const entryBody = entryMatch[0];
     if (entryBody.includes("event.type")) {
-      violations.push(`${owner.replaceAll("\\", "/")} entry must reject null events without throwing`);
+      violations.push(
+        `${owner.replaceAll("\\", "/")} entry must reject null events without throwing`
+      );
     }
     if (!entryBody.includes("event?.type")) {
-      violations.push(`${owner.replaceAll("\\", "/")} entry must fail closed for unknown or null events`);
+      violations.push(
+        `${owner.replaceAll("\\", "/")} entry must fail closed for unknown or null events`
+      );
     }
     if (/if\s*\(\s*event\.type\s*===/.test(entryBody)) {
-      violations.push(`${owner.replaceAll("\\", "/")} entry must not reintroduce an event.type if-chain`);
+      violations.push(
+        `${owner.replaceAll("\\", "/")} entry must not reintroduce an event.type if-chain`
+      );
     }
     for (const internal of ["loadStoredAoe(", "parseAbilityPage(", "readSpellAoe("]) {
       if (entryBody.includes(internal)) {
-        violations.push(`${owner.replaceAll("\\", "/")} entry must dispatch through abilityAoeEventHandlers`);
+        violations.push(
+          `${owner.replaceAll("\\", "/")} entry must dispatch through abilityAoeEventHandlers`
+        );
       }
     }
   }
@@ -142,10 +152,14 @@ function checkEntry() {
   }
   const testText = fs.readFileSync(path.join(root, ownerTest), "utf8");
   if (
-    !testText.includes("rejects unknown and null ability AoE events without reading or writing state") ||
+    !testText.includes(
+      "rejects unknown and null ability AoE events without reading or writing state"
+    ) ||
     !testText.includes("runAbilityAoeAutomation(null)")
   ) {
-    violations.push(`${ownerTest.replaceAll("\\", "/")} must cover unknown and null ability AoE events`);
+    violations.push(
+      `${ownerTest.replaceAll("\\", "/")} must cover unknown and null ability AoE events`
+    );
   }
 }
 

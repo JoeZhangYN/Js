@@ -92,8 +92,9 @@ function checkEntry() {
     violations.push(`${rel(entryFile)} must route startup events through appStartupEventHandlers`);
   }
   const entryBody =
-    text.match(/export function runAppStartup\(event = \{ type: EVENT_USERSCRIPT_START \}\) \{[\s\S]*?\n\}/)?.[0] ||
-    "";
+    text.match(
+      /export function runAppStartup\(event = \{ type: EVENT_USERSCRIPT_START \}\) \{[\s\S]*?\n\}/
+    )?.[0] || "";
   if (/if\s*\(\s*event\.type\s*===/.test(entryBody)) {
     violations.push(`${rel(entryFile)} entry must route events through handler table`);
   }
@@ -104,7 +105,9 @@ function checkEntry() {
     violations.push(`${rel(entryFile)} entry must fail closed for unknown or null startup events`);
   }
   if (/\?\?\s*true/.test(entryBody)) {
-    violations.push(`${rel(entryFile)} must reject unknown startup events instead of reporting success`);
+    violations.push(
+      `${rel(entryFile)} must reject unknown startup events instead of reporting success`
+    );
   }
   for (const forbidden of [
     "runCdRuntimeAutomation",
@@ -184,7 +187,7 @@ function checkEntry() {
   }
   const diagnosticKeysText = fs.readFileSync(diagnosticKeysFile, "utf8");
   for (const required of [
-    "APP_STARTUP_FAILURE: \"HVAA:lastAppStartupFailure\"",
+    'APP_STARTUP_FAILURE: "HVAA:lastAppStartupFailure"',
     'source("appStartupFailure", DiagnosticEvidenceKey.APP_STARTUP_FAILURE)',
   ]) {
     if (!diagnosticKeysText.includes(required)) {
@@ -192,11 +195,7 @@ function checkEntry() {
     }
   }
   const diagnosticTestText = fs.readFileSync(diagnosticTestFile, "utf8");
-  for (const required of [
-    "HVAA:lastAppStartupFailure",
-    "appStartupFailure",
-    "appStartup",
-  ]) {
+  for (const required of ["HVAA:lastAppStartupFailure", "appStartupFailure", "appStartup"]) {
     if (!diagnosticTestText.includes(required)) {
       violations.push(`${rel(diagnosticTestFile)} must cover ${required}`);
     }

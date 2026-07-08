@@ -14,7 +14,7 @@ function requirePart(label, body, part) {
 
 const helperRegion =
   /var record_hvut_player_state_parse_failure = function \(stage, detail\) \{[\s\S]*?\n  var reloadCurrentPage/.exec(
-    text,
+    text
   )?.[0] || "";
 
 if (!helperRegion) violations.push(`${target} must keep player state parse helper visible`);
@@ -35,12 +35,15 @@ for (const required of [
   "const _player = parse_hvut_player_state(level_exec, $id('stamina_readout'), 'mainPlayerState');",
   "const _player = parse_hvut_player_state(level_exec, $id('stamina_readout'), 'isekaiPlayerState');",
 ]) {
-  if (!text.includes(required)) violations.push(`${target} must route player state through ${required}`);
+  if (!text.includes(required))
+    violations.push(`${target} must route player state through ${required}`);
 }
 
 const nullGuardCount = (text.match(/if \(_player === null\) return;/g) || []).length;
 if (nullGuardCount !== 2) {
-  violations.push(`${target} must keep fail-closed player state guards for both segments, found ${nullGuardCount}`);
+  violations.push(
+    `${target} must keep fail-closed player state guards for both segments, found ${nullGuardCount}`
+  );
 }
 
 for (const forbidden of [
@@ -68,4 +71,6 @@ if (violations.length) {
   process.exit(1);
 }
 
-console.log("[verify-hvut-player-state-parse-boundary] OK - player state parse failures fail closed with evidence");
+console.log(
+  "[verify-hvut-player-state-parse-boundary] OK - player state parse failures fail closed with evidence"
+);

@@ -19,11 +19,16 @@ const body =
 const stateBody =
   text.match(/_bottom\.read_lottery_state = function \(ss\) \{[\s\S]*?\n  \};/)?.[0] || "";
 const filterBody =
-  text.match(/_bottom\.evaluate_lottery_filter = function \(ss, equip\) \{[\s\S]*?\n  \};/)?.[0] || "";
+  text.match(/_bottom\.evaluate_lottery_filter = function \(ss, equip\) \{[\s\S]*?\n  \};/)?.[0] ||
+  "";
 const renderBody =
-  text.match(/_bottom\.render_lottery_equip_text = function \(ss, equip, lottery\) \{[\s\S]*?\n  \};/)?.[0] || "";
+  text.match(
+    /_bottom\.render_lottery_equip_text = function \(ss, equip, lottery\) \{[\s\S]*?\n  \};/
+  )?.[0] || "";
 const failureBody =
-  text.match(/_bottom\.record_lottery_notification_failure = function \(stage, ss, detail\) \{[\s\S]*?\n  \};/)?.[0] || "";
+  text.match(
+    /_bottom\.record_lottery_notification_failure = function \(stage, ss, detail\) \{[\s\S]*?\n  \};/
+  )?.[0] || "";
 const lotteryRegion = text.match(/\/\/ LOTTERY[\s\S]*?\n\n\/\/\* \[1\] Character/)?.[0] || "";
 
 if (!body) {
@@ -88,7 +93,11 @@ if (!lotteryRegion.includes("const { lottery } = _bottom.read_lottery_state(ss)"
 if (!lotteryRegion.includes("const { json, lottery } = _bottom.read_lottery_state(ss)")) {
   violations.push(`${rel(target)} lottery loader must read initialized lottery state`);
 }
-if (!lotteryRegion.includes("_bottom.node[ss].equip.textContent = _bottom.render_lottery_equip_text(ss, lottery.equip, lottery)")) {
+if (
+  !lotteryRegion.includes(
+    "_bottom.node[ss].equip.textContent = _bottom.render_lottery_equip_text(ss, lottery.equip, lottery)"
+  )
+) {
   violations.push(`${rel(target)} lottery cached display must use safe equip rendering`);
 }
 
@@ -119,7 +128,9 @@ for (const required of [
   "drawTime.known ? time_format(lottery.date - now, 1) : '--:--'",
 ]) {
   if (!lotteryRegion.includes(required)) {
-    violations.push(`${rel(target)} lottery draw-time parsing must preserve equipment display with ${required}`);
+    violations.push(
+      `${rel(target)} lottery draw-time parsing must preserve equipment display with ${required}`
+    );
   }
 }
 
@@ -148,8 +159,8 @@ for (const required of [
 }
 
 for (const required of [
-  "LOTTERY_NOTIFICATION_FAILURE: \"HVAA:lastLotteryNotificationFailure\"",
-  "source(\"lotteryNotificationFailure\", DiagnosticEvidenceKey.LOTTERY_NOTIFICATION_FAILURE)",
+  'LOTTERY_NOTIFICATION_FAILURE: "HVAA:lastLotteryNotificationFailure"',
+  'source("lotteryNotificationFailure", DiagnosticEvidenceKey.LOTTERY_NOTIFICATION_FAILURE)',
 ]) {
   if (!diagnosticKeysText.includes(required)) {
     violations.push(`${rel(diagnosticKeys)} must expose ${required}`);
@@ -157,7 +168,7 @@ for (const required of [
 }
 for (const required of [
   "HVAA:lastLotteryNotificationFailure",
-  "lotteryNotificationFailure: { capability: \"lotteryNotification\", stage: \"load\" }",
+  'lotteryNotificationFailure: { capability: "lotteryNotification", stage: "load" }',
 ]) {
   if (!diagnosticTestText.includes(required)) {
     violations.push(`${rel(diagnosticTest)} must cover ${required}`);
@@ -177,18 +188,24 @@ for (const forbidden of [
   "const filters = $equip.filter.normalize($config.settings.lotteryFilters)",
   "Array.isArray($config.settings.lotteryFilters) ? $config.settings.lotteryFilters : [$config.settings.lotteryFilters]",
   "_bottom.node[ss].equip.textContent = equip_name_text_str(lottery.equip)",
-  "popup(`<p>${date_text}</p><p style=\"color: #f00; font-weight: bold;\">${equip_name_text_str(lottery.equip)}</p>`)",
+  'popup(`<p>${date_text}</p><p style="color: #f00; font-weight: bold;">${equip_name_text_str(lottery.equip)}</p>`)',
 ]) {
   if (lotteryRegion.includes(forbidden)) {
-    violations.push(`${rel(target)} lottery filter boundary must not use brittle parser path: ${forbidden}`);
+    violations.push(
+      `${rel(target)} lottery filter boundary must not use brittle parser path: ${forbidden}`
+    );
   }
 }
 
 if (lotteryRegion.includes("$equip.filter.equip(")) {
-  violations.push(`${rel(target)} lottery notification must not call generic equipment filter boolean entry`);
+  violations.push(
+    `${rel(target)} lottery notification must not call generic equipment filter boolean entry`
+  );
 }
 if (!lotteryRegion.includes("$equip.filter.match($config.settings.lotteryFilters, equip)")) {
-  violations.push(`${rel(target)} lottery notification must use the match decision with structured filter errors`);
+  violations.push(
+    `${rel(target)} lottery notification must use the match decision with structured filter errors`
+  );
 }
 
 if (violations.length) {

@@ -35,16 +35,24 @@ for (const required of [
 }
 
 const characterBodies = [
-  ...text.matchAll(/const characterPage = get_hvut_character_page_context\(\);[\s\S]*?\n\} else\n\/\/ \[END (?:6|7)\] Character - Settings/g),
+  ...text.matchAll(
+    /const characterPage = get_hvut_character_page_context\(\);[\s\S]*?\n\} else\n\/\/ \[END (?:6|7)\] Character - Settings/g
+  ),
 ].map((match) => match[0]);
 
 if (characterBodies.length !== 2) {
-  violations.push(`${target} must keep both Character segment bodies visible, found ${characterBodies.length}`);
+  violations.push(
+    `${target} must keep both Character segment bodies visible, found ${characterBodies.length}`
+  );
 }
 
-const fontSettingChecks = [...text.matchAll(/if \(get_hvut_character_page_context\(\)\.isSettings\) \{/g)].length;
+const fontSettingChecks = [
+  ...text.matchAll(/if \(get_hvut_character_page_context\(\)\.isSettings\) \{/g),
+].length;
 if (fontSettingChecks !== 2) {
-  violations.push(`${target} must route both font setting checks through Character page context, found ${fontSettingChecks}`);
+  violations.push(
+    `${target} must route both font setting checks through Character page context, found ${fontSettingChecks}`
+  );
 }
 
 if (!text.includes("$id('csp').dataset.ss = get_hvut_character_page_context().surfaceSs;")) {
@@ -63,7 +71,9 @@ for (const forbidden of [
   "_query.equip_slot",
 ]) {
   if (text.includes(forbidden)) {
-    violations.push(`${target} must not keep raw Character settings/surface identity: ${forbidden}`);
+    violations.push(
+      `${target} must not keep raw Character settings/surface identity: ${forbidden}`
+    );
   }
 }
 
@@ -92,7 +102,9 @@ for (const [index, body] of characterBodies.entries()) {
     "|| $id('persona_outer')",
   ]) {
     if (body.includes(forbidden)) {
-      violations.push(`${target} Character body[${index}] must not rebuild subpage identity from raw query: ${forbidden}`);
+      violations.push(
+        `${target} Character body[${index}] must not rebuild subpage identity from raw query: ${forbidden}`
+      );
     }
   }
 }
@@ -103,4 +115,6 @@ if (violations.length) {
   process.exit(1);
 }
 
-console.log("[verify-hvut-character-page-context-boundary] OK - Character subpage routing uses one context");
+console.log(
+  "[verify-hvut-character-page-context-boundary] OK - Character subpage routing uses one context"
+);

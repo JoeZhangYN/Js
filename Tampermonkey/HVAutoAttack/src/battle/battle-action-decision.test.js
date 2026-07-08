@@ -238,7 +238,7 @@ describe("runBattleActionDecision stall Imperil contract", () => {
     });
   });
 
-it("burstControl 未开启时入口自行返回 noop", () => {
+  it("burstControl 未开启时入口自行返回 noop", () => {
     expect(dispatchedResults().results[2]).toEqual({ kind: "noop" });
   });
 });

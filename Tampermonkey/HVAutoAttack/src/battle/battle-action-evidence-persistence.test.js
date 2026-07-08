@@ -48,7 +48,11 @@ const storageFailureCases = [
   [
     "keeps effect evidence visible when storage is unavailable",
     runBattleActionEffectEvidence,
-    { type: BattleActionEffectEvidenceEvent.RECORD_APPLIED, result: { kind: "noop" }, acted: false },
+    {
+      type: BattleActionEffectEvidenceEvent.RECORD_APPLIED,
+      result: { kind: "noop" },
+      acted: false,
+    },
     "[HVAA] battle action effect",
   ],
   [
@@ -97,7 +101,11 @@ const storageFailureCases = [
 describe("battle action evidence persistence failures", () => {
   it.each(storageFailureCases)("%s", (_name, run, event, label) => {
     const deps = {
-      sessionStorage: { setItem: vi.fn(() => { throw new Error("quota"); }) },
+      sessionStorage: {
+        setItem: vi.fn(() => {
+          throw new Error("quota");
+        }),
+      },
       debug: vi.fn(),
     };
 
@@ -107,5 +115,4 @@ describe("battle action evidence persistence failures", () => {
       expect.objectContaining({ storageWriteOk: false, storageWriteError: "quota" })
     );
   });
-
 });

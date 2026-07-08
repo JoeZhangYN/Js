@@ -9,11 +9,7 @@ vi.mock("./storage.js", async () => {
   return { ...actual, setValue: mocks.setValue };
 });
 
-import {
-  AUTO_TUNE_FAILURE_KEY,
-  AutoTuneEvent,
-  runAutoTuneAutomation,
-} from "./auto-tune.js";
+import { AUTO_TUNE_FAILURE_KEY, AutoTuneEvent, runAutoTuneAutomation } from "./auto-tune.js";
 import { STORAGE_KEYS } from "./persist-keys.js";
 import { g } from "./store.js";
 import { BattleTurnEvent, runBattleTurnAutomation } from "./battle-turn.js";
@@ -25,8 +21,7 @@ beforeEach(() => {
   vi.restoreAllMocks();
   mocks.setValue.mockReset();
   mocks.setValue.mockImplementation((item, value) => {
-    window.localStorage[`hvAA_${item}`] =
-      typeof value === "string" ? value : JSON.stringify(value);
+    window.localStorage[`hvAA_${item}`] = typeof value === "string" ? value : JSON.stringify(value);
   });
   g("autoTunePotionCount", 0);
   runBattleTurnAutomation({ type: BattleTurnEvent.ROUND_STARTED });
@@ -40,9 +35,9 @@ describe("auto-tune persistence failures", () => {
       throw new Error("auto-tune write blocked");
     });
 
-    expect(
-      runAutoTuneAutomation({ type: AutoTuneEvent.RECORD_BATTLE, potionsUsed: 2 })
-    ).toBe(false);
+    expect(runAutoTuneAutomation({ type: AutoTuneEvent.RECORD_BATTLE, potionsUsed: 2 })).toBe(
+      false
+    );
 
     expect(JSON.parse(window.sessionStorage.getItem(AUTO_TUNE_FAILURE_KEY))).toMatchObject({
       capability: "autoTune",

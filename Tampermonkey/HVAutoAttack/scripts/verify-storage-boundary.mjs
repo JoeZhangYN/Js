@@ -15,7 +15,7 @@ function rel(file) {
 const ownerText = fs.readFileSync(path.join(root, owner), "utf8");
 for (const required of [
   "warnStorageReadFailure",
-  "capability: \"storageRead\"",
+  'capability: "storageRead"',
   "STORAGE_READ_FAILURE_KEY",
   "HVAA:lastStorageReadFailure",
   "[HVAA] storage read failed",
@@ -28,10 +28,18 @@ for (const required of [
     violations.push(`${rel(owner)} must own storage read failure ${required}`);
   }
 }
-if (!/catch\s*\(error\)\s*\{[\s\S]*warnStorageReadFailure\(item,\s*key,\s*"GM_getValue"/.test(ownerText)) {
+if (
+  !/catch\s*\(error\)\s*\{[\s\S]*warnStorageReadFailure\(item,\s*key,\s*"GM_getValue"/.test(
+    ownerText
+  )
+) {
   violations.push(`${rel(owner)} must classify GM_getValue read failures`);
 }
-if (!/catch\s*\(error\)\s*\{[\s\S]*warnStorageReadFailure\(item,\s*key,\s*"localStorageJson"/.test(ownerText)) {
+if (
+  !/catch\s*\(error\)\s*\{[\s\S]*warnStorageReadFailure\(item,\s*key,\s*"localStorageJson"/.test(
+    ownerText
+  )
+) {
   violations.push(`${rel(owner)} must classify corrupted localStorage JSON`);
 }
 
@@ -43,7 +51,7 @@ if (!fs.existsSync(path.join(root, ownerTest))) {
     "fails closed and records evidence for corrupted localStorage JSON",
     "falls back to localStorage when GM_getValue throws",
     "fails closed when storage read diagnostics cannot be written or warned",
-    "capability: \"storageRead\"",
+    'capability: "storageRead"',
     "STORAGE_READ_FAILURE_KEY",
     "HVAA:lastStorageReadFailure",
     "console blocked",
@@ -60,8 +68,8 @@ if (!fs.existsSync(path.join(root, ownerTest))) {
 
 const diagnosticKeysText = fs.readFileSync(path.join(root, diagnosticKeys), "utf8");
 for (const required of [
-  "STORAGE_READ_FAILURE: \"HVAA:lastStorageReadFailure\"",
-  "source(\"storageReadFailure\", DiagnosticEvidenceKey.STORAGE_READ_FAILURE)",
+  'STORAGE_READ_FAILURE: "HVAA:lastStorageReadFailure"',
+  'source("storageReadFailure", DiagnosticEvidenceKey.STORAGE_READ_FAILURE)',
 ]) {
   if (!diagnosticKeysText.includes(required)) {
     violations.push(`${rel(diagnosticKeys)} must expose ${required}`);
@@ -70,7 +78,7 @@ for (const required of [
 const diagnosticTestText = fs.readFileSync(path.join(root, diagnosticTest), "utf8");
 for (const required of [
   "HVAA:lastStorageReadFailure",
-  "storageReadFailure: { capability: \"storageRead\", source: \"GM_getValue\" }",
+  'storageReadFailure: { capability: "storageRead", source: "GM_getValue" }',
 ]) {
   if (!diagnosticTestText.includes(required)) {
     violations.push(`${rel(diagnosticTest)} must cover ${required}`);

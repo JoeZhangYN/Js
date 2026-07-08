@@ -6,10 +6,8 @@
 import { gE, cE } from "../dom/query.js";
 import { FORGE_COSTS } from "../data/forge-costs.js";
 
-function pickConfig() {
-  return window.location.pathname.includes("/isekai/")
-    ? FORGE_COSTS.isekai
-    : FORGE_COSTS.persistent;
+function pickConfig(page = {}) {
+  return page.isIsekai ? FORGE_COSTS.isekai : FORGE_COSTS.persistent;
 }
 
 function credit(credits) {
@@ -226,12 +224,12 @@ function calcCost(levelOverride, ctx) {
  * showequip 页入口：扫 #eu span 强化条目，注入 tooltip + 总价 div + Lv 预测 input。
  * 已检测 isekai/persistent 路径自选价格；无强化条目（非传奇装备/普通页）自然 no-op。
  */
-export function runForgeCostEnhancement() {
+export function runForgeCostEnhancement(page) {
   const equipment = document.body;
   const upgrades = equipment.querySelectorAll("#eu span");
   if (!upgrades.length) return;
 
-  const cfg = pickConfig();
+  const cfg = pickConfig(page);
   equipment.style = "height:425px";
   const basicMaterialCost = getBasicMaterialCost(cfg.materialCost);
   const ctx = { upgrades, equipment, cfg, basicMaterialCost, totalInvested: {} };

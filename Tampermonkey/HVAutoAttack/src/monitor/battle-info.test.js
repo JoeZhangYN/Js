@@ -28,9 +28,7 @@ describe("runBattleHudAutomation", () => {
       turn: 12,
     };
 
-    expect(
-      runBattleHudAutomation({ type: BattleHudEvent.REFRESH }, makeDeps(values))
-    ).toBe(true);
+    expect(runBattleHudAutomation({ type: BattleHudEvent.REFRESH }, makeDeps(values))).toBe(true);
 
     const hud = document.querySelector(".hvAALog");
     expect(hud.textContent).toContain("Turns: 12");

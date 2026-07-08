@@ -44,7 +44,8 @@ function add(group, zhRaw, en) {
   if (prev === en || prev === null) return;
   const prevCap = /^[A-Z]/.test(prev);
   const enCap = /^[A-Z]/.test(en);
-  if (enCap && !prevCap) m.set(z, en); // 大写规范优先（Strength > strength）
+  if (enCap && !prevCap)
+    m.set(z, en); // 大写规范优先（Strength > strength）
   else if (enCap === prevCap) m.set(z, null); // 同形多对一 → 不可逆
 }
 
@@ -54,7 +55,18 @@ for (const group of Object.keys(INTERFACE_WORDS)) {
     if (isLiteralKey(en)) add(group, dict[en], en);
   }
 }
-const QUALITY_EN = ["Flimsy ", "Crude ", "Fair ", "Average ", "Superior ", "Fine ", "Exquisite", "Magnificent", "Legendary", "Peerless"];
+const QUALITY_EN = [
+  "Flimsy ",
+  "Crude ",
+  "Fair ",
+  "Average ",
+  "Superior ",
+  "Fine ",
+  "Exquisite",
+  "Magnificent",
+  "Legendary",
+  "Peerless",
+];
 for (const en of QUALITY_EN) {
   if (EQUIP_EQUIPS[en]) add("quality", stripDecor(EQUIP_EQUIPS[en]), en);
 }

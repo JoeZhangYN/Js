@@ -157,7 +157,11 @@ describe("navigation decision evidence", () => {
 
     let result;
     expect(() => {
-      result = recordNavigationDecision("accepted", { type: NavigationEvent.SCHEDULE_RELOAD }, { delayMs: 250 });
+      result = recordNavigationDecision(
+        "accepted",
+        { type: NavigationEvent.SCHEDULE_RELOAD },
+        { delayMs: 250 }
+      );
     }).not.toThrow();
 
     expect(result).toBe(true);

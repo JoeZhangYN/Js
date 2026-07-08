@@ -11,9 +11,12 @@ function requirePart(label, body, part) {
 }
 
 const modernMulti =
-  /multi: function \(\) \{[\s\S]*?\n      \},\n    \};\n\n    if \(_mm\.credits\.init/.exec(text)?.[0] || "";
+  /multi: function \(\) \{[\s\S]*?\n      \},\n    \};\n\n    if \(_mm\.credits\.init/.exec(
+    text
+  )?.[0] || "";
 const legacyMulti =
-  /_mm\.credits_multi = function \(\) \{[\s\S]*?\n    \};\n\n    const multi_div/.exec(text)?.[0] || "";
+  /_mm\.credits_multi = function \(\) \{[\s\S]*?\n    \};\n\n    const multi_div/.exec(text)?.[0] ||
+  "";
 
 for (const [label, body] of [
   ["modern credits multi-send", modernMulti],
@@ -71,4 +74,6 @@ if (violations.length) {
   process.exit(1);
 }
 
-console.log("[verify-hvut-mooglemail-multi-send-boundary] OK - MoogleMail multi-send releases UI locks");
+console.log(
+  "[verify-hvut-mooglemail-multi-send-boundary] OK - MoogleMail multi-send releases UI locks"
+);

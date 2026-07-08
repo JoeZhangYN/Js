@@ -23,19 +23,19 @@ describe("runBattleTargetStrategy", () => {
     expect(
       runBattleTargetStrategy({ type: BattleTargetStrategyEvent.FIRST_BY_FIN_WEIGHT, alive }).id
     ).toBe(3);
-    expect(runBattleTargetStrategy({ type: BattleTargetStrategyEvent.FIRST_BY_ORDER, alive }).id).toBe(
-      2
-    );
-    expect(runBattleTargetStrategy({ type: BattleTargetStrategyEvent.HIGHEST_ABS_HP, alive }).id).toBe(
-      2
-    );
+    expect(
+      runBattleTargetStrategy({ type: BattleTargetStrategyEvent.FIRST_BY_ORDER, alive }).id
+    ).toBe(2);
+    expect(
+      runBattleTargetStrategy({ type: BattleTargetStrategyEvent.HIGHEST_ABS_HP, alive }).id
+    ).toBe(2);
   });
 
   it("routes explicit target id and AoE anchor decisions through one entry", () => {
     const self = monster({ id: 7 });
-    expect(runBattleTargetStrategy({ type: BattleTargetStrategyEvent.SELF_TARGET, monster: self })).toBe(
-      7
-    );
+    expect(
+      runBattleTargetStrategy({ type: BattleTargetStrategyEvent.SELF_TARGET, monster: self })
+    ).toBe(7);
     expect(
       runBattleTargetStrategy({
         type: BattleTargetStrategyEvent.AOE_NEIGHBOR_ANCHOR,

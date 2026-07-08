@@ -47,16 +47,16 @@ function waitForNextCheck(state, event) {
   return { claimed: false };
 }
 
-function planStoredEncounterEntry(state) {
+function planStoredEncounterEntry(state, event) {
   return runEncounterPolicy({
     type: EncounterPolicyEvent.PLAN_ACTIVATION,
     state,
-    isIsekai: typeof window !== "undefined" && Boolean(window.location?.pathname?.includes("/isekai/")),
+    isIsekai: Boolean(event?.isIsekai),
   });
 }
 
-function enterStoredEncounter(state) {
-  const outcome = executeEncounterEntry(planStoredEncounterEntry(state));
+function enterStoredEncounter(state, event) {
+  const outcome = executeEncounterEntry(planStoredEncounterEntry(state, event));
   if (!outcome?.handled) return undefined;
   return outcome;
 }
@@ -71,10 +71,10 @@ function executeWidgetEvent(event) {
   return executeEncounterEntry(planEncounterWidgetEvent(event));
 }
 
-async function loadAndEnterEncounter() {
+async function loadAndEnterEncounter(event) {
   const state = await runEncounterStateAutomation({ type: EncounterStateEvent.LOAD_KEY });
   if (!state) return undefined;
-  return enterStoredEncounter(state);
+  return enterStoredEncounter(state, event);
 }
 
 function readEncounterState() {
@@ -91,7 +91,7 @@ function claimStaminaRecovery() {
 }
 
 function continueAfterLoadedEncounter(event) {
-  return loadAndEnterEncounter().then(
+  return loadAndEnterEncounter(event).then(
     (outcome) => claimEnteredEncounter(outcome) || waitForNextCheck(readEncounterState(), event)
   );
 }
@@ -100,7 +100,7 @@ async function runLobbyTick(event) {
   const state = readEncounterState();
   const clock = runEncounterPolicy({ type: EncounterPolicyEvent.READ_CLOCK, state });
   if (clock.status === "countdown") return waitForNextCheck(state, event);
-  const entered = claimEnteredEncounter(enterStoredEncounter(state));
+  const entered = claimEnteredEncounter(enterStoredEncounter(state, event));
   if (entered) return entered;
   if (shouldRestoreForBattle()) return claimStaminaRecovery();
   return continueAfterLoadedEncounter(event);

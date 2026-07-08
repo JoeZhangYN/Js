@@ -67,11 +67,9 @@ describe("runBattleAttackExecution merciful physical side effects", () => {
   });
 
   it("keeps acted merciful physical plans acted when the fallback target command throws", () => {
-    mocks.runBattleTargetCommand
-      .mockReturnValueOnce(true)
-      .mockImplementationOnce(() => {
-        throw new Error("default target bridge failed");
-      });
+    mocks.runBattleTargetCommand.mockReturnValueOnce(true).mockImplementationOnce(() => {
+      throw new Error("default target bridge failed");
+    });
 
     expect(
       runBattleAttackExecution({

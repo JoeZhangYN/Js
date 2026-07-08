@@ -56,7 +56,9 @@ describe("big-skill kill learning persistence failures", () => {
 
     expect(settleWithFailingStorage()).toBe(false);
 
-    expect(JSON.parse(window.sessionStorage.getItem(BIG_SKILL_KILL_LEARNING_FAILURE_KEY))).toMatchObject({
+    expect(
+      JSON.parse(window.sessionStorage.getItem(BIG_SKILL_KILL_LEARNING_FAILURE_KEY))
+    ).toMatchObject({
       capability: "bigSkillKillLearning",
       stage: "update-learned",
       failure: { kind: "storageWrite", error: "big-kill learning write blocked" },

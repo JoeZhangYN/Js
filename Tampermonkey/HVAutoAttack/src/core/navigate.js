@@ -1,12 +1,36 @@
 // 页面导航副作用：唯一对外入口 runNavigationAutomation(event)。
 import { installExternalUnloadAudit, reportPreviousNavigationAudit } from "./navigation-audit.js";
-import { recordNavigationDecisionSafely, writeNavigationAuditSafely } from "./navigation-recording.js";
-import { createReloadAudit, createReloadEvidence, createReloadFailureAudit, createReloadFailureEvidence, createReloadStopAudit, createReloadStopEvidence, RELOAD_RETRY_DELAY_MS, shouldStopReloadRetry } from "./navigation-reload-retry.js";
-import { NavigationRedirectReason, NavigationReloadReason, NavigationWindowReason } from "./navigation-reasons.js";
+import {
+  recordNavigationDecisionSafely,
+  writeNavigationAuditSafely,
+} from "./navigation-recording.js";
+import {
+  createReloadAudit,
+  createReloadEvidence,
+  createReloadFailureAudit,
+  createReloadFailureEvidence,
+  createReloadStopAudit,
+  createReloadStopEvidence,
+  RELOAD_RETRY_DELAY_MS,
+  shouldStopReloadRetry,
+} from "./navigation-reload-retry.js";
+import {
+  NavigationRedirectReason,
+  NavigationReloadReason,
+  NavigationWindowReason,
+} from "./navigation-reasons.js";
 
-const EVENT_RELOAD_NOW = "reloadNow", EVENT_SCHEDULE_RELOAD = "scheduleReload", EVENT_OPEN_URL = "openUrl", EVENT_OPEN_WINDOW = "openWindow";
+const EVENT_RELOAD_NOW = "reloadNow",
+  EVENT_SCHEDULE_RELOAD = "scheduleReload",
+  EVENT_OPEN_URL = "openUrl",
+  EVENT_OPEN_WINDOW = "openWindow";
 
-export const NavigationEvent = Object.freeze({ RELOAD_NOW: EVENT_RELOAD_NOW, SCHEDULE_RELOAD: EVENT_SCHEDULE_RELOAD, OPEN_URL: EVENT_OPEN_URL, OPEN_WINDOW: EVENT_OPEN_WINDOW });
+export const NavigationEvent = Object.freeze({
+  RELOAD_NOW: EVENT_RELOAD_NOW,
+  SCHEDULE_RELOAD: EVENT_SCHEDULE_RELOAD,
+  OPEN_URL: EVENT_OPEN_URL,
+  OPEN_WINDOW: EVENT_OPEN_WINDOW,
+});
 
 const RELOAD_REASONS = new Set(Object.values(NavigationReloadReason));
 
@@ -31,9 +55,17 @@ function goto(reason, detail, attempt = 1) {
   try {
     window.location.href = window.location;
   } catch (error) {
-    const failure = createReloadFailureEvidence(CAUSE_NAVIGATION_EFFECT_FAILED, attempt, detail, error);
+    const failure = createReloadFailureEvidence(
+      CAUSE_NAVIGATION_EFFECT_FAILED,
+      attempt,
+      detail,
+      error
+    );
     recordNavigationDecisionSafely("rejected", { type: EVENT_RELOAD_NOW, reason }, failure);
-    writeNavigationAuditSafely("reloadFailed", createReloadFailureAudit(reason, attempt, detail, error));
+    writeNavigationAuditSafely(
+      "reloadFailed",
+      createReloadFailureAudit(reason, attempt, detail, error)
+    );
     return false;
   }
   setTimeout(() => goto(reason, detail, attempt + 1), RELOAD_RETRY_DELAY_MS);

@@ -49,10 +49,14 @@ function checkEntry() {
     violations.push(`${rel(entryFile)} must not expose raw kind-based navigation entry`);
   }
   if (text.includes("event.type !== EVENT_PAGE_READY")) {
-    violations.push(`${rel(entryFile)} must reject null cross-site navigation events without throwing`);
+    violations.push(
+      `${rel(entryFile)} must reject null cross-site navigation events without throwing`
+    );
   }
   if (!text.includes("event?.type !== EVENT_PAGE_READY")) {
-    violations.push(`${rel(entryFile)} must fail closed for unknown or null cross-site navigation events`);
+    violations.push(
+      `${rel(entryFile)} must fail closed for unknown or null cross-site navigation events`
+    );
   }
   if (/\b(?:getValue|setValue)\(\s*["']url["']/.test(text)) {
     violations.push(`${rel(entryFile)} must use STORAGE_KEYS.URL for return-origin storage`);
@@ -110,7 +114,9 @@ function checkPageAutomation() {
     violations.push("src/pages/page-automation.js must report CrossSiteEncounterEvent.PAGE_READY");
   }
   if (/runCrossSiteEncounterNavigation\(\s*kind\s*\)/.test(text)) {
-    violations.push("src/pages/page-automation.js must not call cross-site navigation with raw kind");
+    violations.push(
+      "src/pages/page-automation.js must not call cross-site navigation with raw kind"
+    );
   }
 }
 

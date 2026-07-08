@@ -22,11 +22,16 @@ const abilityInit =
 const trainingInit =
   /_tr\.init = function \(\) \{[\s\S]*?\n  \};\n\n  _tr\.parse_table/.exec(text)?.[0] || "";
 const trainingParse =
-  /_tr\.parse_table = function \(\) \{[\s\S]*?\n  \};\n\n  _tr\.parse_progress/.exec(text)?.[0] || "";
+  /_tr\.parse_table = function \(\) \{[\s\S]*?\n  \};\n\n  _tr\.parse_progress/.exec(text)?.[0] ||
+  "";
 const legacyAbility =
-  /if \(!\$config\.set\('ab_level', _ab\.level\)\) \{[\s\S]*?\$input\(\['button', '能力点计算器'[\s\S]*?\n\} else\n\/\/ \[END 3\] Character - Abilities/.exec(text)?.[0] || "";
+  /if \(!\$config\.set\('ab_level', _ab\.level\)\) \{[\s\S]*?\$input\(\['button', '能力点计算器'[\s\S]*?\n\} else\n\/\/ \[END 3\] Character - Abilities/.exec(
+    text
+  )?.[0] || "";
 const legacyTraining =
-  /\$element\('tr', \$id\('train_table'\)[\s\S]*?\n\} else\n\/\/ \[END 4\] Character - Training/.exec(text)?.[0] || "";
+  /\$element\('tr', \$id\('train_table'\)[\s\S]*?\n\} else\n\/\/ \[END 4\] Character - Training/.exec(
+    text
+  )?.[0] || "";
 
 if (!abilityInit) violations.push(`${target} must keep ability init entry visible`);
 if (!trainingInit) violations.push(`${target} must keep training init entry visible`);
@@ -72,4 +77,6 @@ if (violations.length) {
   process.exit(1);
 }
 
-console.log("[verify-hvut-derived-cache-persistence-boundary] OK - derived cache persistence failures fail closed");
+console.log(
+  "[verify-hvut-derived-cache-persistence-boundary] OK - derived cache persistence failures fail closed"
+);

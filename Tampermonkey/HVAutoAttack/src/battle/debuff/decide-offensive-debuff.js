@@ -6,10 +6,7 @@ import {
 } from "./decide-burst-control.js";
 import { BigSkillDebuffEvent, runBigSkillDebuffAutomation } from "./big-skill-debuff.js";
 import { runBossImperilAutomation } from "./decide-boss-imperil.js";
-import {
-  BattleAllDebuffDecisionEvent,
-  runBattleAllDebuffDecision,
-} from "./decide-cast-all.js";
+import { BattleAllDebuffDecisionEvent, runBattleAllDebuffDecision } from "./decide-cast-all.js";
 import { BattleDeSkillDecisionEvent, runBattleDeSkillDecision } from "./decide-de-skill.js";
 import { BattleDebuffFactsEvent, runBattleDebuffFacts } from "./debuff-facts.js";
 

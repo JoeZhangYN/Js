@@ -166,5 +166,4 @@ describe("runBattleActionDelayAutomation", () => {
 
     expect(deps.cancel).not.toHaveBeenCalled();
   });
-
 });

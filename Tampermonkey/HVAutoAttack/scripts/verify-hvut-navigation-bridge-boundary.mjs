@@ -11,11 +11,17 @@ const diagnosticTestText = fs.readFileSync(diagnosticTest, "utf8");
 const violations = [];
 
 const failureBody =
-  text.match(/var record_hvut_navigation_bridge_failure = function \(stage, detail\) \{[\s\S]*?\n  \};/)?.[0] || "";
+  text.match(
+    /var record_hvut_navigation_bridge_failure = function \(stage, detail\) \{[\s\S]*?\n  \};/
+  )?.[0] || "";
 const bridgeBody =
-  text.match(/var run_hvut_navigation_bridge = function \(method, args, stage, detail\) \{[\s\S]*?\n  \};/)?.[0] || "";
+  text.match(
+    /var run_hvut_navigation_bridge = function \(method, args, stage, detail\) \{[\s\S]*?\n  \};/
+  )?.[0] || "";
 const reasonBody =
-  text.match(/var run_hvut_navigation_reason_bridge = function \(vocabulary, key, stage\) \{[\s\S]*?\n  \};/)?.[0] || "";
+  text.match(
+    /var run_hvut_navigation_reason_bridge = function \(vocabulary, key, stage\) \{[\s\S]*?\n  \};/
+  )?.[0] || "";
 const reloadBody =
   text.match(/var reloadCurrentPage = function \(reason\) \{[\s\S]*?\n  \};/)?.[0] || "";
 const openBody =
@@ -105,8 +111,8 @@ for (const forbidden of [
 }
 
 for (const required of [
-  "HVUT_NAVIGATION_BRIDGE_FAILURE: \"HVAA:lastHvutNavigationBridgeFailure\"",
-  "source(\"hvutNavigationBridgeFailure\", DiagnosticEvidenceKey.HVUT_NAVIGATION_BRIDGE_FAILURE)",
+  'HVUT_NAVIGATION_BRIDGE_FAILURE: "HVAA:lastHvutNavigationBridgeFailure"',
+  'source("hvutNavigationBridgeFailure", DiagnosticEvidenceKey.HVUT_NAVIGATION_BRIDGE_FAILURE)',
 ]) {
   if (!diagnosticKeysText.includes(required)) {
     violations.push(`diagnostic evidence keys must expose ${required}`);
@@ -114,7 +120,7 @@ for (const required of [
 }
 for (const required of [
   "HVAA:lastHvutNavigationBridgeFailure",
-  "hvutNavigationBridgeFailure: { capability: \"hvutNavigationBridge\", stage: \"reloadBlocked\" }",
+  'hvutNavigationBridgeFailure: { capability: "hvutNavigationBridge", stage: "reloadBlocked" }',
 ]) {
   if (!diagnosticTestText.includes(required)) {
     violations.push(`diagnostic evidence test must cover ${required}`);
@@ -127,4 +133,6 @@ if (violations.length) {
   process.exit(1);
 }
 
-console.log("[verify-hvut-navigation-bridge-boundary] OK - HVUT navigation bridge failures are persisted");
+console.log(
+  "[verify-hvut-navigation-bridge-boundary] OK - HVUT navigation bridge failures are persisted"
+);

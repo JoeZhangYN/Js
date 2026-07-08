@@ -50,16 +50,10 @@ describe("runBattlePlayerBuffState SHOULD_RECAST", () => {
 
   it("falls back to exact playerEffects matches", () => {
     expect(
-      shouldRecast(
-        { playerEffects: [{ img: "haste", name: "Hastened", turns: 5 }] },
-        "haste"
-      )
+      shouldRecast({ playerEffects: [{ img: "haste", name: "Hastened", turns: 5 }] }, "haste")
     ).toBe(false);
     expect(
-      shouldRecast(
-        { playerEffects: [{ img: "haste", name: "Hastened", turns: 1 }] },
-        "haste"
-      )
+      shouldRecast({ playerEffects: [{ img: "haste", name: "Hastened", turns: 1 }] }, "haste")
     ).toBe(true);
   });
 

@@ -89,7 +89,7 @@ if (!ownerText.includes("battleActionSpeedEventHandlers[event?.type]")) {
     `${owner.replaceAll("\\", "/")} must reject null events without touching runtime state`
   );
 }
-if (!ownerText.includes("?? rejectUnknownActionSpeedEvent(event, deps)")) {
+if (!/\?\?\s*rejectUnknownActionSpeedEvent\(event,\s*deps\)/.test(ownerText)) {
   violations.push(`${owner.replaceAll("\\", "/")} must record rejected action speed events`);
 }
 if (/if\s*\(\s*event\.type\s*===\s*EVENT_/.test(ownerText)) {

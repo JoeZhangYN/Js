@@ -21,7 +21,7 @@ for (const required of [
   "HTTP_REQUEST_FAILURE_KEY",
   "HVAA:lastHttpRequestFailure",
   "recordHttpRequestFailure",
-  'capability: HTTP_CAPABILITY',
+  "capability: HTTP_CAPABILITY",
   'recordHttpRequestFailure("retryScheduled"',
   'recordHttpRequestFailure("finalFailure"',
   "attempts: retries + 1",
@@ -62,7 +62,7 @@ for (const required of [
 
 const diagnosticKeysText = read(diagnosticKeys);
 for (const required of [
-  "HTTP_REQUEST_FAILURE: \"HVAA:lastHttpRequestFailure\"",
+  'HTTP_REQUEST_FAILURE: "HVAA:lastHttpRequestFailure"',
   'source("httpRequestFailure", DiagnosticEvidenceKey.HTTP_REQUEST_FAILURE)',
 ]) {
   if (!diagnosticKeysText.includes(required)) {

@@ -106,13 +106,17 @@ if (!ownerText.includes("const cdRuntimeEventHandlers")) {
 }
 const ownerEntry = ownerText.match(/export function runCdRuntimeAutomation[\s\S]*?\n}/)?.[0] || "";
 if (/if\s*\(\s*event\.type\s*===/.test(ownerEntry)) {
-  violations.push(`${owner.replaceAll("\\", "/")} entry must not reintroduce an event.type if-chain`);
+  violations.push(
+    `${owner.replaceAll("\\", "/")} entry must not reintroduce an event.type if-chain`
+  );
 }
 if (ownerEntry.includes("event.type")) {
   violations.push(`${owner.replaceAll("\\", "/")} entry must reject null events without throwing`);
 }
 if (!ownerEntry.includes("event?.type")) {
-  violations.push(`${owner.replaceAll("\\", "/")} entry must fail closed for unknown or null events`);
+  violations.push(
+    `${owner.replaceAll("\\", "/")} entry must fail closed for unknown or null events`
+  );
 }
 for (const internal of [
   "loadCdState(",
@@ -130,17 +134,27 @@ for (const internal of [
   }
 }
 const ownerTestText = fs.readFileSync(path.join(root, ownerTest), "utf8");
-if (!ownerTestText.includes("expect(runCdRuntimeAutomation({ type: CdRuntimeEvent.PERSIST })).toBe(true)")) {
+if (
+  !ownerTestText.includes(
+    "expect(runCdRuntimeAutomation({ type: CdRuntimeEvent.PERSIST })).toBe(true)"
+  )
+) {
   violations.push(`${ownerTest.replaceAll("\\", "/")} must cover successful CD persistence result`);
 }
 if (
-  !ownerTestText.includes("rejects unknown and null cd runtime events without changing runtime or persisted state") ||
+  !ownerTestText.includes(
+    "rejects unknown and null cd runtime events without changing runtime or persisted state"
+  ) ||
   !ownerTestText.includes("runCdRuntimeAutomation(null)")
 ) {
-  violations.push(`${ownerTest.replaceAll("\\", "/")} must cover unknown and null CD runtime events`);
+  violations.push(
+    `${ownerTest.replaceAll("\\", "/")} must cover unknown and null CD runtime events`
+  );
 }
 if (!fs.existsSync(path.join(root, failureTest))) {
-  violations.push(`${failureTest.replaceAll("\\", "/")} must cover CD runtime persistence failures`);
+  violations.push(
+    `${failureTest.replaceAll("\\", "/")} must cover CD runtime persistence failures`
+  );
 } else {
   const failureTestText = fs.readFileSync(path.join(root, failureTest), "utf8");
   for (const required of [

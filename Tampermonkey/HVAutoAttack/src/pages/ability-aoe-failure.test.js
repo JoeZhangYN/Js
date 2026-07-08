@@ -33,7 +33,9 @@ beforeEach(() => {
   sessionStorage.clear();
   window.history.pushState({}, "", "/?s=Character&ss=ab");
   const abilityTop = document.createElement("div");
-  const slot = abilitySlot("Spells Modified: <strong>Imperil</strong> Changes max affected targets to 2");
+  const slot = abilitySlot(
+    "Spells Modified: <strong>Imperil</strong> Changes max affected targets to 2"
+  );
   mocks.gE.mockImplementation((selector, mode) => {
     if (selector === "#ability_top") return abilityTop;
     if (selector === "[onmouseover*='overability']" && mode === "all") return [slot];

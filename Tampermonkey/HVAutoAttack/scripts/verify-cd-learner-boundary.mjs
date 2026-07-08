@@ -144,13 +144,17 @@ if (!ownerText.includes("const cdLearningEventHandlers")) {
 }
 const ownerEntry = ownerText.match(/export function runCdLearningAutomation[\s\S]*?\n}/)?.[0] || "";
 if (/if\s*\(\s*event\.type\s*===/.test(ownerEntry)) {
-  violations.push(`${owner.replaceAll("\\", "/")} entry must not reintroduce an event.type if-chain`);
+  violations.push(
+    `${owner.replaceAll("\\", "/")} entry must not reintroduce an event.type if-chain`
+  );
 }
 if (ownerEntry.includes("event.type")) {
   violations.push(`${owner.replaceAll("\\", "/")} entry must reject null events without throwing`);
 }
 if (!ownerEntry.includes("event?.type")) {
-  violations.push(`${owner.replaceAll("\\", "/")} entry must fail closed for unknown or null events`);
+  violations.push(
+    `${owner.replaceAll("\\", "/")} entry must fail closed for unknown or null events`
+  );
 }
 for (const internal of ["recordCdFire(", "finalizeCdPending(", "getLearnedCd("]) {
   if (ownerEntry.includes(internal)) {
@@ -163,18 +167,28 @@ const ownerTestText = fs.readFileSync(path.join(root, ownerTest), "utf8");
 const failureOwnerText = fs.readFileSync(path.join(root, failureOwner), "utf8");
 const failureTestText = fs.readFileSync(path.join(root, failureTest), "utf8");
 if (
-  !ownerTestText.includes("rejects unknown and null CD learning events without reading or changing learning state") ||
+  !ownerTestText.includes(
+    "rejects unknown and null CD learning events without reading or changing learning state"
+  ) ||
   !ownerTestText.includes("runCdLearningAutomation(null)") ||
   !ownerTestText.includes("getItem.mock.calls.length")
 ) {
-  violations.push(`${ownerTest.replaceAll("\\", "/")} must cover unknown and null CD learning events`);
+  violations.push(
+    `${ownerTest.replaceAll("\\", "/")} must cover unknown and null CD learning events`
+  );
 }
 
 if ((ownerText.match(/\bsetValue\(/g) || []).length !== 0) {
   violations.push(`${owner.replaceAll("\\", "/")} must not write learned CD storage directly`);
 }
-if (!/function persistLearnedCd\(learned\) \{[\s\S]*setValue\(STORAGE_KEYS\.LEARNED_CD,\s*learned\);[\s\S]*return true;[\s\S]*catch\s*\(error\)\s*{[\s\S]*recordCdLearningFailure\("update-learned",\s*error\);[\s\S]*return false;/.test(failureOwnerText)) {
-  violations.push(`${failureOwner.replaceAll("\\", "/")} must classify learned CD storage write failures`);
+if (
+  !/function persistLearnedCd\(learned\) \{[\s\S]*setValue\(STORAGE_KEYS\.LEARNED_CD,\s*learned\);[\s\S]*return true;[\s\S]*catch\s*\(error\)\s*{[\s\S]*recordCdLearningFailure\("update-learned",\s*error\);[\s\S]*return false;/.test(
+    failureOwnerText
+  )
+) {
+  violations.push(
+    `${failureOwner.replaceAll("\\", "/")} must classify learned CD storage write failures`
+  );
 }
 for (const required of [
   "CD_LEARNING_FAILURE_KEY",

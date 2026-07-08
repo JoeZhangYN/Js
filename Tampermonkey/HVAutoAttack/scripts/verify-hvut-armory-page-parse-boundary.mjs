@@ -10,7 +10,9 @@ const diagnosticText = fs.readFileSync(path.join(root, diagnosticTarget), "utf8"
 const diagnosticTestText = fs.readFileSync(path.join(root, diagnosticTestTarget), "utf8");
 const violations = [];
 const armoryScriptParse =
-  /script: \{\n      parse: function \(doc, screen, assign\) \{[\s\S]*?\n      \},\n      assign: function/.exec(text)?.[0] || "";
+  /script: \{\n      parse: function \(doc, screen, assign\) \{[\s\S]*?\n      \},\n      assign: function/.exec(
+    text
+  )?.[0] || "";
 
 if (!armoryScriptParse) {
   violations.push(`${target} must keep Armory script.parse visible`);
@@ -50,9 +52,7 @@ for (const required of [
   }
 }
 
-for (const forbidden of [
-  "$id('equipform', doc).elements.postoken?.value",
-]) {
+for (const forbidden of ["$id('equipform', doc).elements.postoken?.value"]) {
   if (text.includes(forbidden)) {
     violations.push(`${target} must not keep raw Armory page parse path: ${forbidden}`);
   }
@@ -95,4 +95,6 @@ if (violations.length) {
   process.exit(1);
 }
 
-console.log("[verify-hvut-armory-page-parse-boundary] OK - Armory page parse failures are diagnosable");
+console.log(
+  "[verify-hvut-armory-page-parse-boundary] OK - Armory page parse failures are diagnosable"
+);

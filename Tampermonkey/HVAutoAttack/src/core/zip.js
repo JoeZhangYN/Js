@@ -10,7 +10,7 @@ function crc32(bytes) {
     crc ^= bytes[i];
     for (let j = 0; j < 8; j++) crc = (crc >>> 1) ^ (0xedb88320 & -(crc & 1));
   }
-  return (~crc) >>> 0;
+  return ~crc >>> 0;
 }
 
 /** ASCII 文件名 → 字节（ZIP 名段；非 ASCII 不在本用例，截断到 Latin-1 安全）。 */

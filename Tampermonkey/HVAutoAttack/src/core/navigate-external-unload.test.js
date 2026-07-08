@@ -57,7 +57,9 @@ describe("navigation external unload audit", () => {
         },
       })
     );
-    expect(JSON.parse(sessionStorage.getItem(DiagnosticEvidenceKey.NAVIGATION_AUDIT))).toMatchObject({
+    expect(
+      JSON.parse(sessionStorage.getItem(DiagnosticEvidenceKey.NAVIGATION_AUDIT))
+    ).toMatchObject({
       kind: "externalUnload",
       reason: "outsideNavigationEntry",
       eventType: "pagehide",
@@ -111,7 +113,9 @@ describe("navigation external unload audit", () => {
 
     expect(() => window.dispatchEvent(new Event("pagehide"))).not.toThrow();
 
-    expect(JSON.parse(sessionStorage.getItem(DiagnosticEvidenceKey.NAVIGATION_AUDIT))).toMatchObject({
+    expect(
+      JSON.parse(sessionStorage.getItem(DiagnosticEvidenceKey.NAVIGATION_AUDIT))
+    ).toMatchObject({
       kind: "externalUnload",
       reason: "outsideNavigationEntry",
       eventType: "pagehide",

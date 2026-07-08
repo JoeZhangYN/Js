@@ -16,12 +16,9 @@ describe("runBattleScrollCoverage", () => {
   });
 
   it("uses scroll buff containment instead of exact player buff activation", () => {
-    expect(
-      isCovered(
-        { playerBuffs: ["protection_scroll"] },
-        { mult: 1, img1: "protection" }
-      )
-    ).toBe(true);
+    expect(isCovered({ playerBuffs: ["protection_scroll"] }, { mult: 1, img1: "protection" })).toBe(
+      true
+    );
   });
 
   it("requires the scroll suffix when scrollFirst is enabled", () => {

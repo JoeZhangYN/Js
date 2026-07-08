@@ -17,9 +17,7 @@ function lastPageRefreshFailure() {
 describe("runPageRefreshAutomation", () => {
   it("does not schedule reload when periodic page refresh is disabled", () => {
     const scheduleReload = vi.fn();
-    const readOptionField = vi.fn((key, fallback) =>
-      key === "pageRefresh" ? false : fallback
-    );
+    const readOptionField = vi.fn((key, fallback) => (key === "pageRefresh" ? false : fallback));
 
     expect(
       runPageRefreshAutomation(
@@ -100,10 +98,7 @@ describe("runPageRefreshAutomation", () => {
     });
 
     expect(
-      runPageRefreshAutomation(
-        { type: PageRefreshEvent.UNKNOWN_PAGE_READY },
-        { scheduleReload }
-      )
+      runPageRefreshAutomation({ type: PageRefreshEvent.UNKNOWN_PAGE_READY }, { scheduleReload })
     ).toBe(false);
 
     expect(PAGE_REFRESH_FAILURE_KEY).toBe("HVAA:lastPageRefreshFailure");

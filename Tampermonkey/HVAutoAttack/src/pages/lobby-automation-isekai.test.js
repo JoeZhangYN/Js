@@ -19,7 +19,9 @@ vi.mock("../state/option.js", () => ({
   runOptionAutomation: mocks.runOptionAutomation,
 }));
 vi.mock("../state/day-record.js", () => ({
-  DayRecordEvent: Object.freeze({ REFRESH_AND_SCHEDULE_NEXT_UTC_DAY: "refreshAndScheduleNextUtcDay" }),
+  DayRecordEvent: Object.freeze({
+    REFRESH_AND_SCHEDULE_NEXT_UTC_DAY: "refreshAndScheduleNextUtcDay",
+  }),
   runDayRecordAutomation: mocks.runDayRecordAutomation,
 }));
 vi.mock("../state/stamina.js", () => ({

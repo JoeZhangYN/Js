@@ -36,10 +36,12 @@ function runWidgetLinkFound(event) {
 }
 
 function runWidgetStartedEncounter(event) {
-  const key = event.key || runEncounterPolicy({
-    type: EncounterPolicyEvent.PARSE_SEARCH_KEY,
-    search: event.search || "",
-  });
+  const key =
+    event.key ||
+    runEncounterPolicy({
+      type: EncounterPolicyEvent.PARSE_SEARCH_KEY,
+      search: event.search || "",
+    });
   if (!key) return readWidgetState(event.state);
   return readWidgetState(
     runEncounterPolicy({
@@ -58,7 +60,12 @@ function planWidgetClick(event) {
   }
   if (event.pageType === "ba") return { action: "load" };
   if (event.pageType === "eh" && event.hvAvailable === false) return { action: "load" };
-  const plan = runEncounterPolicy({ type: EncounterPolicyEvent.PLAN_ACTIVATION, state: event.state, force: Boolean(event.force), isIsekai: Boolean(event.isIsekai) });
+  const plan = runEncounterPolicy({
+    type: EncounterPolicyEvent.PLAN_ACTIVATION,
+    state: event.state,
+    force: Boolean(event.force),
+    isIsekai: Boolean(event.isIsekai),
+  });
   if (plan.action === "enter") {
     if (event.pageType === "eh") {
       return planWidgetEngage({ ...event, state: plan.state });
@@ -111,23 +118,33 @@ function planWidgetNewsLoaded(event) {
           reason: "dailyResetEvent",
         })
       : runEncounterPolicy({ type: EncounterPolicyEvent.RESET_DAY });
-    return { ...readWidgetState(state), action: "dailyResetEvent", unavailableReason: "dailyResetEvent" };
+    return {
+      ...readWidgetState(state),
+      action: "dailyResetEvent",
+      unavailableReason: "dailyResetEvent",
+    };
   }
   const unavailableReason = classifyWidgetUnavailableReason(eventpane);
   const current = readWidgetState(event.state);
-  const state = event.engage && unavailableReason === "encounterKeyMissing"
-    ? runEncounterPolicy({
-        type: EncounterPolicyEvent.MARK_GENERATION_ATTEMPTED,
-        state: current.state,
-        attemptKey: current.attemptKey,
-        reason: unavailableReason,
-      })
-    : current.state;
+  const state =
+    event.engage && unavailableReason === "encounterKeyMissing"
+      ? runEncounterPolicy({
+          type: EncounterPolicyEvent.MARK_GENERATION_ATTEMPTED,
+          state: current.state,
+          attemptKey: current.attemptKey,
+          reason: unavailableReason,
+        })
+      : current.state;
   return { ...readWidgetState(state), action: "unavailable", unavailableReason };
 }
 
 function planWidgetEngage(event) {
-  const plan = runEncounterPolicy({ type: EncounterPolicyEvent.PLAN_ACTIVATION, state: event.state, force: true, isIsekai: Boolean(event.isIsekai) });
+  const plan = runEncounterPolicy({
+    type: EncounterPolicyEvent.PLAN_ACTIVATION,
+    state: event.state,
+    force: true,
+    isIsekai: Boolean(event.isIsekai),
+  });
   if (plan.action !== "enter" || event.pageType === "ba") {
     return { ...readWidgetState(plan.state), action: "none" };
   }
@@ -147,7 +164,8 @@ const encounterWidgetPolicyEventHandlers = Object.freeze({
   widgetTick: (event) => readWidgetState(event.state),
   widgetLinkFound: runWidgetLinkFound,
   widgetStartedEncounter: runWidgetStartedEncounter,
-  widgetResetDay: () => readWidgetState(runEncounterPolicy({ type: EncounterPolicyEvent.RESET_DAY })),
+  widgetResetDay: () =>
+    readWidgetState(runEncounterPolicy({ type: EncounterPolicyEvent.RESET_DAY })),
   widgetClicked: planWidgetClick,
   widgetTimerElapsed: planWidgetTimerElapsed,
   widgetNewsLoaded: planWidgetNewsLoaded,

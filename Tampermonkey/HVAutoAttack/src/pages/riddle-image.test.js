@@ -15,7 +15,8 @@ function expectImageFailure(stage) {
 
 describe("riddle image entry", () => {
   it("rejects unknown and null image events without reading image state", () => {
-    document.body.innerHTML = '<div id="riddleimage"><img src="https://example.test/riddle.webp"></div>';
+    document.body.innerHTML =
+      '<div id="riddleimage"><img src="https://example.test/riddle.webp"></div>';
     const getElementById = vi.spyOn(document, "getElementById");
 
     expect(runRiddleImageAutomation({ type: "unknown" })).toBeUndefined();
@@ -24,7 +25,8 @@ describe("riddle image entry", () => {
   });
 
   it("captures sample image metadata through the entry", () => {
-    document.body.innerHTML = '<div id="riddleimage"><img src="https://example.test/riddle.webp"></div>';
+    document.body.innerHTML =
+      '<div id="riddleimage"><img src="https://example.test/riddle.webp"></div>';
 
     const sample = runRiddleImageAutomation({ type: RiddleImageEvent.CAPTURE_SAMPLE });
 
@@ -33,7 +35,8 @@ describe("riddle image entry", () => {
   });
 
   it("records sample data-url capture failures while keeping metadata", () => {
-    document.body.innerHTML = '<div id="riddleimage"><img src="https://example.test/riddle.webp"></div>';
+    document.body.innerHTML =
+      '<div id="riddleimage"><img src="https://example.test/riddle.webp"></div>';
     const img = document.querySelector("img");
     Object.defineProperty(img, "naturalWidth", { configurable: true, value: 100 });
     Object.defineProperty(img, "naturalHeight", { configurable: true, value: 100 });
@@ -59,7 +62,8 @@ describe("riddle image entry", () => {
   });
 
   it("returns null ML payload when canvas and fetch fallbacks all fail", async () => {
-    document.body.innerHTML = '<div id="riddleimage"><img src="https://example.test/riddle.webp"></div>';
+    document.body.innerHTML =
+      '<div id="riddleimage"><img src="https://example.test/riddle.webp"></div>';
     const img = document.querySelector("img");
     Object.defineProperty(img, "complete", { configurable: true, value: true });
     Object.defineProperty(img, "naturalWidth", { configurable: true, value: 100 });

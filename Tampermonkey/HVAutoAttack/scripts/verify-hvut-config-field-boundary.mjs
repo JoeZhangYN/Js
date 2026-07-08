@@ -24,19 +24,19 @@ requireIncludes(fieldTarget, fieldText, [
   "export function isHvutConfigFieldDisabled(field, context) {",
   "context?.isIsekai",
   "field?.server && field.server !== context.serverName",
-  "field?.disabled === \"persistent\"",
-  "field?.disabled === \"isekai\"",
+  'field?.disabled === "persistent"',
+  'field?.disabled === "isekai"',
   "export function getHvutConfigFieldInputKind(field) {",
-  "if (field?.input === \"textarea\") return \"textarea\";",
-  "if (field?.input === \"select\") return \"select\";",
-  "if (field?.type === \"boolean\") return \"checkbox\";",
-  "if (field?.type === \"number\") return \"number\";",
-  "return \"text\";",
+  'if (field?.input === "textarea") return "textarea";',
+  'if (field?.input === "select") return "select";',
+  'if (field?.type === "boolean") return "checkbox";',
+  'if (field?.type === "number") return "number";',
+  'return "text";',
   "export function formatHvutConfigFieldHelpText(text) {",
-  "return text.trim().replace(/^ +/gm, \"\").replace(/\\n/g, \"<br>\");",
+  'return text.trim().replace(/^ +/gm, "").replace(/\\n/g, "<br>");',
   "export function formatHvutConfigFieldDescription(description) {",
   "button: lines[0]",
-  "html: lines.slice(1).join(\"<br>\")",
+  'html: lines.slice(1).join("<br>")',
 ]);
 
 requireIncludes(fieldBridgeTarget, fieldBridgeText, [
@@ -44,7 +44,7 @@ requireIncludes(fieldBridgeTarget, fieldBridgeText, [
   "formatHvutConfigFieldHelpText",
   "getHvutConfigFieldInputKind",
   "isHvutConfigFieldDisabled",
-  "from \"./hvut-config-field.js\";",
+  'from "./hvut-config-field.js";',
   "window.HVAA_hvutConfigField = Object.freeze({",
   "formatDescription: formatHvutConfigFieldDescription",
   "formatHelpText: formatHvutConfigFieldHelpText",
@@ -52,7 +52,7 @@ requireIncludes(fieldBridgeTarget, fieldBridgeText, [
   "isDisabled: isHvutConfigFieldDisabled",
 ]);
 
-if (!mainText.includes("import \"./i18n/hvut-config-field-bridge.js\";")) {
+if (!mainText.includes('import "./i18n/hvut-config-field-bridge.js";')) {
   violations.push(`${mainTarget} must load HVUT config field bridge before hv-utils`);
 }
 
@@ -138,10 +138,7 @@ if (createBodies.some((body) => body === null)) {
 for (const [index, body] of createBodies.entries()) {
   if (!body) continue;
   const expectedCall = expectedCreateCalls[index];
-  requireIncludes(target, body, [
-    "inject_hvut_config_panel_style(HVUT_WORLD);",
-    expectedCall,
-  ]);
+  requireIncludes(target, body, ["inject_hvut_config_panel_style(HVUT_WORLD);", expectedCall]);
   for (const forbidden of [
     "GM_addStyle(/*css*/`",
     ".hvut-cfg-div { position: absolute;",
@@ -168,7 +165,9 @@ for (const [index, body] of createBodies.entries()) {
     "desc.slice(1).join('<br>')",
   ]) {
     if (body.includes(forbidden)) {
-      violations.push(`${target} config create[${index}] must not reimplement input kind with ${forbidden}`);
+      violations.push(
+        `${target} config create[${index}] must not reimplement input kind with ${forbidden}`
+      );
     }
   }
 }
@@ -189,4 +188,6 @@ if (violations.length) {
   process.exit(1);
 }
 
-console.log("[verify-hvut-config-field-boundary] OK - config field applicability is behind one decision");
+console.log(
+  "[verify-hvut-config-field-boundary] OK - config field applicability is behind one decision"
+);

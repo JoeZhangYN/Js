@@ -35,9 +35,9 @@ describe("battle action watchdog navigation detail", () => {
       return option[event.key] ?? event.fallback;
     });
 
-    expect(
-      runBattleActionDelayAutomation({ type: BattleActionDelayEvent.ACTION_STARTED })
-    ).toBe(true);
+    expect(runBattleActionDelayAutomation({ type: BattleActionDelayEvent.ACTION_STARTED })).toBe(
+      true
+    );
     expect(mocks.runNavigationAutomation).toHaveBeenCalledWith({
       type: "scheduleReload",
       reason: "actionWatchdog",

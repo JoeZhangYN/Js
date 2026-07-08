@@ -30,15 +30,13 @@ function scoreOne(skill, opt, eventOver = {}, ctx = {}) {
     type: PhysicalSkillScoringEvent.SCORE_CANDIDATES,
     opt: { skillSwitch: true, fightingStyle: "2", skillOrderValue: skill, ...opt },
     event: event(eventOver),
-    ctx
+    ctx,
   })[0];
 }
 
 describe("scorePhysicalSkillCandidates", () => {
   it("blocks OFC through the physical skill blocker table when downgrade applies", () => {
-    expect(
-      scoreOne("OFC", {}, { aliveCount: 2, skillReady: { 1111: true } })
-    ).toMatchObject({
+    expect(scoreOne("OFC", {}, { aliveCount: 2, skillReady: { 1111: true } })).toMatchObject({
       code: "OFC",
       score: 0,
       explain: "downgrade",
@@ -57,10 +55,14 @@ describe("scorePhysicalSkillCandidates", () => {
 
   it("explains T2 combo scoring through the physical skill explainer table", () => {
     expect(
-      scoreOne("T2", {}, {
-        skillReady: { 2202: true },
-        monsterFacts: [monster({ buffs: ["wpn_stun"] })],
-      })
+      scoreOne(
+        "T2",
+        {},
+        {
+          skillReady: { 2202: true },
+          monsterFacts: [monster({ buffs: ["wpn_stun"] })],
+        }
+      )
     ).toMatchObject({
       code: "T2",
       score: 200,
@@ -70,10 +72,14 @@ describe("scorePhysicalSkillCandidates", () => {
 
   it("explains T3 execute scoring through the physical skill explainer table", () => {
     expect(
-      scoreOne("T3", {}, {
-        skillReady: { 2203: true },
-        monsterFacts: [monster({ hpPercent: 0.1, buffs: ["wpn_bleed"] })],
-      })
+      scoreOne(
+        "T3",
+        {},
+        {
+          skillReady: { 2203: true },
+          monsterFacts: [monster({ hpPercent: 0.1, buffs: ["wpn_bleed"] })],
+        }
+      )
     ).toMatchObject({
       code: "T3",
       score: 1000,

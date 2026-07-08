@@ -42,26 +42,34 @@ for (const forbidden of [
   "window.HVAA_i18n.recordI18nInitFailure('hv-utils', e)",
 ]) {
   if (text.includes(forbidden)) {
-    violations.push(`${target} must not call HVAA_i18n directly outside the bridge command: ${forbidden}`);
+    violations.push(
+      `${target} must not call HVAA_i18n directly outside the bridge command: ${forbidden}`
+    );
   }
 }
 
 for (const required of [
-  "HVUT_I18N_BRIDGE_FAILURE: \"HVAA:lastHvutI18nBridgeFailure\"",
-  "source(\"hvutI18nBridgeFailure\", DiagnosticEvidenceKey.HVUT_I18N_BRIDGE_FAILURE)",
+  'HVUT_I18N_BRIDGE_FAILURE: "HVAA:lastHvutI18nBridgeFailure"',
+  'source("hvutI18nBridgeFailure", DiagnosticEvidenceKey.HVUT_I18N_BRIDGE_FAILURE)',
 ]) {
   if (!diagnosticKeysText.includes(required)) {
     violations.push(`${diagnosticKeys} must expose ${required}`);
   }
 }
 
-for (const required of [
-  "HVAA:lastHvutI18nBridgeFailure",
-  "hvutI18nBridgeFailure: { capability: \"hvutI18nBridge\", stage: \"retranslateEquiplistBridgeMissing\" }",
-]) {
+for (const required of ["HVAA:lastHvutI18nBridgeFailure"]) {
   if (!diagnosticTestText.includes(required)) {
     violations.push(`${diagnosticTest} must cover ${required}`);
   }
+}
+if (
+  !/hvutI18nBridgeFailure:\s*\{[\s\S]*capability:\s*"hvutI18nBridge"[\s\S]*stage:\s*"retranslateEquiplistBridgeMissing"[\s\S]*\}/.test(
+    diagnosticTestText
+  )
+) {
+  violations.push(
+    `${diagnosticTest} must cover hvutI18nBridgeFailure retranslateEquiplistBridgeMissing evidence`
+  );
 }
 
 if (violations.length) {

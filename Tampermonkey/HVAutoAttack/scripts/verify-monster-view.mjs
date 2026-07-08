@@ -59,8 +59,9 @@ if (existsSync(LEGACY_TARGET_STRATEGY)) {
 const targetStrategyFile = `${SRC_DIR}/battle/battle-target-strategy.js`;
 const targetStrategyText = readFileSync(targetStrategyFile, "utf8");
 const targetStrategyEntry =
-  targetStrategyText.match(/export function runBattleTargetStrategy\([^)]*\) \{[\s\S]*?\n\}/)?.[0] ||
-  "";
+  targetStrategyText.match(
+    /export function runBattleTargetStrategy\([^)]*\) \{[\s\S]*?\n\}/
+  )?.[0] || "";
 if (/battleTargetStrategyEventHandlers\[event\.type\]/.test(targetStrategyEntry)) {
   violations.push({
     rel: "battle/battle-target-strategy.js",
@@ -75,7 +76,10 @@ if (!/battleTargetStrategyEventHandlers\[event\?\.type\]/.test(targetStrategyEnt
     msg: "target strategy entry must dispatch invalid events through optional type",
   });
 }
-const targetStrategyTestText = readFileSync(`${SRC_DIR}/battle/battle-target-strategy.test.js`, "utf8");
+const targetStrategyTestText = readFileSync(
+  `${SRC_DIR}/battle/battle-target-strategy.test.js`,
+  "utf8"
+);
 if (!targetStrategyTestText.includes("rejects invalid target strategy events")) {
   violations.push({
     rel: "battle/battle-target-strategy.test.js",

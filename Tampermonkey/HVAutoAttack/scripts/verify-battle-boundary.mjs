@@ -1193,8 +1193,8 @@ function checkActionEventBridgeEntry() {
     );
   }
   if (
-    !text.includes(
-      "battleActionEventBridgeEventHandlers[event?.type]?.(event) ?? rejectUnknownActionEventBridgeEvent(event)"
+    !/battleActionEventBridgeEventHandlers\[event\?\.type\]\?\.\(event\)\s*\?\?\s*rejectUnknownActionEventBridgeEvent\(event\)/.test(
+      text
     )
   ) {
     violations.push(
@@ -1520,8 +1520,8 @@ function checkActionLifecycleEntry() {
     violations.push(`${rel(actionLifecycleFile)} entry must dispatch by handler table`);
   }
   if (
-    !text.includes(
-      "battleActionLifecycleEventHandlers[event?.type]?.(deps) ?? rejectUnknownActionLifecycleEvent(event, deps)"
+    !/battleActionLifecycleEventHandlers\[event\?\.type\]\?\.\(deps\)\s*\?\?\s*rejectUnknownActionLifecycleEvent\(event,\s*deps\)/.test(
+      text
     )
   ) {
     violations.push(

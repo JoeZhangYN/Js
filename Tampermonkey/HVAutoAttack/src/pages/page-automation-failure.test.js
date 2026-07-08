@@ -70,7 +70,9 @@ describe("runPageAutomation failure fallback", () => {
       throw new Error("equipment blocked");
     });
 
-    expect(runPageAutomation({ type: PageAutomationEvent.PAGE_READY, kind: PageKind.BATTLE })).toBe(false);
+    expect(runPageAutomation({ type: PageAutomationEvent.PAGE_READY, kind: PageKind.BATTLE })).toBe(
+      false
+    );
     expect(mocks.runBattleAutomation).not.toHaveBeenCalled();
   });
 });

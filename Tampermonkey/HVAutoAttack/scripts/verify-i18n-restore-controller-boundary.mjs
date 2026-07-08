@@ -25,7 +25,7 @@ const ownerTestText = fs.existsSync(path.join(root, ownerTest)) ? read(ownerTest
 for (const required of [
   "I18N_RESTORE_FAILURE_KEY",
   "recordI18nRestoreFailure",
-  "from \"./restore-failure.js\"",
+  'from "./restore-failure.js"',
   "registerRestore",
   "ensureRestoreButton",
   "toggleRestore",
@@ -91,8 +91,8 @@ for (const required of [
 
 const diagnosticKeysText = read(diagnosticKeys);
 for (const required of [
-  "I18N_RESTORE_FAILURE: \"HVAA:lastI18nRestoreFailure\"",
-  "source(\"i18nRestoreFailure\", DiagnosticEvidenceKey.I18N_RESTORE_FAILURE)",
+  'I18N_RESTORE_FAILURE: "HVAA:lastI18nRestoreFailure"',
+  'source("i18nRestoreFailure", DiagnosticEvidenceKey.I18N_RESTORE_FAILURE)',
 ]) {
   if (!diagnosticKeysText.includes(required)) {
     violations.push(`${rel(diagnosticKeys)} must expose ${required}`);
@@ -102,7 +102,7 @@ for (const required of [
 const diagnosticTestText = read(diagnosticTest);
 for (const required of [
   "HVAA:lastI18nRestoreFailure",
-  "i18nRestoreFailure: { capability: \"i18nRestore\", stage: \"restore\" }",
+  'i18nRestoreFailure: { capability: "i18nRestore", stage: "restore" }',
 ]) {
   if (!diagnosticTestText.includes(required)) {
     violations.push(`${rel(diagnosticTest)} must cover ${required}`);
@@ -115,4 +115,6 @@ if (violations.length) {
   process.exit(1);
 }
 
-console.log("[verify-i18n-restore-controller-boundary] OK - i18n restore controller failures are isolated");
+console.log(
+  "[verify-i18n-restore-controller-boundary] OK - i18n restore controller failures are isolated"
+);

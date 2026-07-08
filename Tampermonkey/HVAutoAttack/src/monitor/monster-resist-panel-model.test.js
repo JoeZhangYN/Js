@@ -11,9 +11,14 @@ describe("monster resist panel model", () => {
     const readMonsterIdByOrder = vi.fn();
 
     expect(
-      runMonsterResistPanelModel({ type: "unknown" }, { primeProfiles, readProfile, readMonsterIdByOrder })
+      runMonsterResistPanelModel(
+        { type: "unknown" },
+        { primeProfiles, readProfile, readMonsterIdByOrder }
+      )
     ).toEqual([]);
-    expect(runMonsterResistPanelModel(null, { primeProfiles, readProfile, readMonsterIdByOrder })).toEqual([]);
+    expect(
+      runMonsterResistPanelModel(null, { primeProfiles, readProfile, readMonsterIdByOrder })
+    ).toEqual([]);
 
     expect(primeProfiles).not.toHaveBeenCalled();
     expect(readProfile).not.toHaveBeenCalled();

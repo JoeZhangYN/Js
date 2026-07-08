@@ -34,7 +34,9 @@ for (const forbidden of [
   "$config.set('equipdata', $armory.equipdata);",
 ]) {
   if (saveBody.includes(forbidden)) {
-    violations.push(`${target} Armory equipcode save must not mutate or write unchecked equipdata: ${forbidden}`);
+    violations.push(
+      `${target} Armory equipcode save must not mutate or write unchecked equipdata: ${forbidden}`
+    );
   }
 }
 
@@ -44,4 +46,6 @@ if (violations.length) {
   process.exit(1);
 }
 
-console.log("[verify-hvut-equipdata-persistence-boundary] OK - Armory equipdata persistence failures fail closed");
+console.log(
+  "[verify-hvut-equipdata-persistence-boundary] OK - Armory equipdata persistence failures fail closed"
+);

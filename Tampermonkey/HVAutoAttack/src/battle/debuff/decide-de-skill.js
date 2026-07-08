@@ -6,10 +6,7 @@ import { DEBUFF_SKILL_LIB } from "../../data/debuff-lib.js";
 import { checkCondition } from "../../settings/condition-eval.js";
 import { BattleMonsterViewEvent, runBattleMonsterView } from "../battle-monster-view.js";
 import { BattleTargetStrategyEvent, runBattleTargetStrategy } from "../battle-target-strategy.js";
-import {
-  BattleDebuffApplicabilityEvent,
-  runBattleDebuffApplicability,
-} from "./can-apply.js";
+import { BattleDebuffApplicabilityEvent, runBattleDebuffApplicability } from "./can-apply.js";
 
 const EVENT_DECIDE = "decide";
 

@@ -5,7 +5,10 @@ const root = process.cwd();
 const target = path.normalize("src/i18n/hv-utils.js");
 const text = fs.readFileSync(path.join(root, target), "utf8");
 const keysText = fs.readFileSync(path.join(root, "src/core/diagnostic-evidence-keys.js"), "utf8");
-const diagnosticTestText = fs.readFileSync(path.join(root, "src/core/diagnostic-evidence.test.js"), "utf8");
+const diagnosticTestText = fs.readFileSync(
+  path.join(root, "src/core/diagnostic-evidence.test.js"),
+  "utf8"
+);
 const violations = [];
 
 function requirePart(label, body, part) {
@@ -13,21 +16,34 @@ function requirePart(label, body, part) {
 }
 
 const modernRead =
-  /read: async function \(mid, post, season = _mm\.db\.season\) \{[\s\S]*?\n      \},\n      load: async function/.exec(text)?.[0] || "";
+  /read: async function \(mid, post, season = _mm\.db\.season\) \{[\s\S]*?\n      \},\n      load: async function/.exec(
+    text
+  )?.[0] || "";
 const modernLoad =
-  /load: async function \(mid, post\) \{[\s\S]*?\n      \},\n      parse: function/.exec(text)?.[0] || "";
+  /load: async function \(mid, post\) \{[\s\S]*?\n      \},\n      parse: function/.exec(
+    text
+  )?.[0] || "";
 const modernUpdate =
-  /update: async function \(mail, post\) \{[\s\S]*?\n      \},\n      modify: function/.exec(text)?.[0] || "";
+  /update: async function \(mail, post\) \{[\s\S]*?\n      \},\n      modify: function/.exec(
+    text
+  )?.[0] || "";
 const modernView =
   /view: function \(mail\) \{[\s\S]*?\n      \},\n      close: function/.exec(text)?.[0] || "";
 const legacyRead =
-  /_mm\.mail_read = async function \(mid, post, season = _mm\.db\.season\) \{[\s\S]*?\n    \};\n\n    _mm\.mail_load/.exec(text)?.[0] || "";
+  /_mm\.mail_read = async function \(mid, post, season = _mm\.db\.season\) \{[\s\S]*?\n    \};\n\n    _mm\.mail_load/.exec(
+    text
+  )?.[0] || "";
 const legacyLoad =
-  /_mm\.mail_load = async function \(mid, post\) \{[\s\S]*?\n    \};\n\n    _mm\.mail_parse/.exec(text)?.[0] || "";
+  /_mm\.mail_load = async function \(mid, post\) \{[\s\S]*?\n    \};\n\n    _mm\.mail_parse/.exec(
+    text
+  )?.[0] || "";
 const legacyUpdate =
-  /_mm\.mail_update = async function \(mail, post\) \{[\s\S]*?\n    \};\n\n    _mm\.mail_modify/.exec(text)?.[0] || "";
+  /_mm\.mail_update = async function \(mail, post\) \{[\s\S]*?\n    \};\n\n    _mm\.mail_modify/.exec(
+    text
+  )?.[0] || "";
 const legacyView =
-  /_mm\.mail_view = function \(mail\) \{[\s\S]*?\n    \};\n\n    _mm\.mail_click/.exec(text)?.[0] || "";
+  /_mm\.mail_view = function \(mail\) \{[\s\S]*?\n    \};\n\n    _mm\.mail_click/.exec(text)?.[0] ||
+  "";
 
 for (const [label, body] of [
   ["modern MoogleMail read", modernRead],
@@ -96,7 +112,8 @@ for (const required of [
   "conn.tx.onerror = function (event) {",
   "conn.tx.onabort = function (event) {",
 ]) {
-  if (!text.includes(required)) violations.push(`${target} must define MoogleMail action evidence with ${required}`);
+  if (!text.includes(required))
+    violations.push(`${target} must define MoogleMail action evidence with ${required}`);
 }
 
 for (const required of [
@@ -233,7 +250,8 @@ for (const forbidden of [
   "return { kind: 'rejected', reason: 'viewResponseMessageMissing', error: '未知错误' };",
   "return { kind: 'rejected', reason: 'mailError', error: message };",
 ]) {
-  if (text.includes(forbidden)) violations.push(`${target} must not keep unchecked MoogleMail action path: ${forbidden}`);
+  if (text.includes(forbidden))
+    violations.push(`${target} must not keep unchecked MoogleMail action path: ${forbidden}`);
 }
 
 for (const [label, body] of [
@@ -250,7 +268,9 @@ for (const [label, body] of [
     "mail.view = { ...mail.view, error: post ? '邮件动作保存失败' : '邮件缓存保存失败' };",
   ]) {
     if (body.includes(forbidden)) {
-      violations.push(`${target} ${label} must delegate view load result classification to run_hvut_mooglemail_view_load`);
+      violations.push(
+        `${target} ${label} must delegate view load result classification to run_hvut_mooglemail_view_load`
+      );
     }
   }
 }
@@ -274,7 +294,9 @@ for (const [label, body] of [
     "writePlan.apply();",
   ]) {
     if (body.includes(forbidden)) {
-      violations.push(`${target} ${label} must delegate cache write planning/execution to MoogleMail cache write entries`);
+      violations.push(
+        `${target} ${label} must delegate cache write planning/execution to MoogleMail cache write entries`
+      );
     }
   }
 }
@@ -307,7 +329,9 @@ for (const [label, body] of [
     "div.classList.remove('hvut-mm-failed');",
   ]) {
     if (body.includes(forbidden)) {
-      violations.push(`${target} ${label} must delegate attachment rendering to render_hvut_mooglemail_view_attach_list`);
+      violations.push(
+        `${target} ${label} must delegate attachment rendering to render_hvut_mooglemail_view_attach_list`
+      );
     }
   }
 }
@@ -316,7 +340,8 @@ for (const required of [
   'HVUT_MOOGLEMAIL_ACTION_FAILURE: "HVAA:lastHvutMoogleMailActionFailure"',
   'source("hvutMoogleMailActionFailure", DiagnosticEvidenceKey.HVUT_MOOGLEMAIL_ACTION_FAILURE)',
 ]) {
-  if (!keysText.includes(required)) violations.push(`diagnostic evidence keys must include ${required}`);
+  if (!keysText.includes(required))
+    violations.push(`diagnostic evidence keys must include ${required}`);
 }
 
 if (!diagnosticTestText.includes("HVAA:lastHvutMoogleMailActionFailure")) {
@@ -329,4 +354,6 @@ if (violations.length) {
   process.exit(1);
 }
 
-console.log("[verify-hvut-mooglemail-action-boundary] OK - MoogleMail view actions fail closed with evidence");
+console.log(
+  "[verify-hvut-mooglemail-action-boundary] OK - MoogleMail view actions fail closed with evidence"
+);

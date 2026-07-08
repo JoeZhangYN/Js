@@ -32,11 +32,15 @@ for (const required of [
 }
 
 const marketBodies = [
-  ...text.matchAll(/if \(get_hvut_market_page_context\(\)\.isMarket\) \{[\s\S]*?\n\} else\n\/\/ \[END (?:9|11)\] Bazaar - The Market/g),
+  ...text.matchAll(
+    /if \(get_hvut_market_page_context\(\)\.isMarket\) \{[\s\S]*?\n\} else\n\/\/ \[END (?:9|11)\] Bazaar - The Market/g
+  ),
 ].map((match) => match[0]);
 
 if (marketBodies.length !== 2) {
-  violations.push(`${target} must keep both Market segment bodies visible, found ${marketBodies.length}`);
+  violations.push(
+    `${target} must keep both Market segment bodies visible, found ${marketBodies.length}`
+  );
 }
 
 for (const [index, body] of marketBodies.entries()) {
@@ -65,12 +69,17 @@ for (const [index, body] of marketBodies.entries()) {
     "_query.screen === 'browseitems' && _query.filter === 'mo'",
   ]) {
     if (body.includes(forbidden)) {
-      violations.push(`${target} Market body[${index}] must not rebuild page identity from raw query: ${forbidden}`);
+      violations.push(
+        `${target} Market body[${index}] must not rebuild page identity from raw query: ${forbidden}`
+      );
     }
   }
 }
 
-if (!marketBodies[0]?.includes("if (marketPage.isBuyOrders)") || !marketBodies[0]?.includes("if (marketPage.isSellOrders)")) {
+if (
+  !marketBodies[0]?.includes("if (marketPage.isBuyOrders)") ||
+  !marketBodies[0]?.includes("if (marketPage.isSellOrders)")
+) {
   violations.push(`${target} modern Market order check must use typed buy/sell order decisions`);
 }
 
@@ -80,4 +89,6 @@ if (violations.length) {
   process.exit(1);
 }
 
-console.log("[verify-hvut-market-page-context-boundary] OK - Market screen/filter routing uses one page context");
+console.log(
+  "[verify-hvut-market-page-context-boundary] OK - Market screen/filter routing uses one page context"
+);

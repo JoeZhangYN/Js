@@ -129,7 +129,9 @@ describe("runBattleTurnContext", () => {
     });
     mocks.runBattleSnapshot.mockReturnValue({ hp: document.createElement("div") });
 
-    expect(() => runBattleTurnContext({ type: BattleTurnContextEvent.PREPARE })).toThrow("含 DOM 引用");
+    expect(() => runBattleTurnContext({ type: BattleTurnContextEvent.PREPARE })).toThrow(
+      "含 DOM 引用"
+    );
   });
 
   it("rejects unknown turn context events without side effects", () => {

@@ -13,17 +13,20 @@ const violations = [];
 const equipBody =
   text.match(/equip: function \(filters, equip\) \{[\s\S]*?\n    \},\n    match:/)?.[0] || "";
 const failureBody =
-  text.match(/recordFailure: function \(stage, detail\) \{[\s\S]*?\n    \},\n    equip:/)?.[0] || "";
+  text.match(/recordFailure: function \(stage, detail\) \{[\s\S]*?\n    \},\n    equip:/)?.[0] ||
+  "";
 const matchBody =
   text.match(/match: function \(filters, equip\) \{[\s\S]*?\n    \},\n    normalize:/)?.[0] || "";
 const normalizeBody =
   text.match(/normalize: function \(filters\) \{[\s\S]*?\n    \},\n    test:/)?.[0] || "";
 const expressionBody =
-  text.match(/evaluateExpression: function \(expression\) \{[\s\S]*?\n    \},\n    test:/)?.[0] || "";
+  text.match(/evaluateExpression: function \(expression\) \{[\s\S]*?\n    \},\n    test:/)?.[0] ||
+  "";
 const testBody =
-  text.match(/test: function \(filter, equip, name = equip\.info\.name\) \{[\s\S]*?\n    \},\n    details:/)?.[0] || "";
-const validateBody =
-  text.match(/validate: function \(filters\) \{[\s\S]*?\n    \},/)?.[0] || "";
+  text.match(
+    /test: function \(filter, equip, name = equip\.info\.name\) \{[\s\S]*?\n    \},\n    details:/
+  )?.[0] || "";
+const validateBody = text.match(/validate: function \(filters\) \{[\s\S]*?\n    \},/)?.[0] || "";
 
 if (!equipBody) {
   violations.push("equipment filter match entry must stay explicit");
@@ -114,9 +117,7 @@ for (const required of [
   }
 }
 
-for (const required of [
-  "return $equip.filter.evaluateExpression(r)",
-]) {
+for (const required of ["return $equip.filter.evaluateExpression(r)"]) {
   if (!testBody.includes(required)) {
     violations.push(`equipment filter test entry must include ${required}`);
   }
@@ -129,7 +130,9 @@ for (const required of [
   "const error = errors.join('\\n')",
 ]) {
   if (!validateBody.includes(required)) {
-    violations.push(`equipment filter validation entry must keep strict error reporting: ${required}`);
+    violations.push(
+      `equipment filter validation entry must keep strict error reporting: ${required}`
+    );
   }
 }
 
@@ -138,14 +141,20 @@ for (const forbidden of [
   "return filters.some((filter) => $equip.filter.test(filter, equip, name))",
   "window.HVAA_equipFilterExpression.evaluate(r)",
 ]) {
-  if (equipBody.includes(forbidden) || matchBody.includes(forbidden) || testBody.includes(forbidden)) {
-    violations.push(`equipment filter match entry must not throw from first invalid filter: ${forbidden}`);
+  if (
+    equipBody.includes(forbidden) ||
+    matchBody.includes(forbidden) ||
+    testBody.includes(forbidden)
+  ) {
+    violations.push(
+      `equipment filter match entry must not throw from first invalid filter: ${forbidden}`
+    );
   }
 }
 
 for (const required of [
-  "EQUIPMENT_FILTER_FAILURE: \"HVAA:lastEquipmentFilterFailure\"",
-  "source(\"equipmentFilterFailure\", DiagnosticEvidenceKey.EQUIPMENT_FILTER_FAILURE)",
+  'EQUIPMENT_FILTER_FAILURE: "HVAA:lastEquipmentFilterFailure"',
+  'source("equipmentFilterFailure", DiagnosticEvidenceKey.EQUIPMENT_FILTER_FAILURE)',
 ]) {
   if (!diagnosticKeysText.includes(required)) {
     violations.push(`diagnostic evidence keys must expose ${required}`);
@@ -153,7 +162,7 @@ for (const required of [
 }
 for (const required of [
   "HVAA:lastEquipmentFilterFailure",
-  "equipmentFilterFailure: { capability: \"equipmentFilter\", stage: \"match\" }",
+  'equipmentFilterFailure: { capability: "equipmentFilter", stage: "match" }',
 ]) {
   if (!diagnosticTestText.includes(required)) {
     violations.push(`diagnostic evidence test must cover ${required}`);

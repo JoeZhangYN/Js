@@ -84,7 +84,11 @@ function executeToggleSpiritResult() {
 }
 
 function executeSkillTargetResult(result) {
-  if (actionEffectActed(runBattlePreCastSpiritAutomation({ type: BattlePreCastSpiritEvent.ACTIVATE_IF_ALLOWED }))) {
+  if (
+    actionEffectActed(
+      runBattlePreCastSpiritAutomation({ type: BattlePreCastSpiritEvent.ACTIVATE_IF_ALLOWED })
+    )
+  ) {
     return true;
   }
   return runBattleTargetCommand({

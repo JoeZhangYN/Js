@@ -14,26 +14,51 @@ function requirePart(label, body, part) {
 
 const helperRegion =
   /var create_hvut_character_parse_evidence = function \(stage, detail\) \{[\s\S]*?\n  var parse_hvut_inventory_capacity/.exec(
-    text,
+    text
   )?.[0] || "";
 const dfctSetButtonOutcome =
-  /dfct\.set_button_outcome = function \(doc\) \{[\s\S]*?\n  \};\n  dfct\.set_button/.exec(text)?.[0] || "";
-const dfctSetButton = /dfct\.set_button = function \(doc\) \{[\s\S]*?\n  \};\n\};\n\n\/\/ \$persona/.exec(text)?.[0] || "";
+  /dfct\.set_button_outcome = function \(doc\) \{[\s\S]*?\n  \};\n  dfct\.set_button/.exec(
+    text
+  )?.[0] || "";
+const dfctSetButton =
+  /dfct\.set_button = function \(doc\) \{[\s\S]*?\n  \};\n\};\n\n\/\/ \$persona/.exec(text)?.[0] ||
+  "";
 const personaInitOutcome =
-  /persona\.init_outcome = async function \(\) \{[\s\S]*?\n  \};\n  persona\.init/.exec(text)?.[0] || "";
-const personaInit = /persona\.init = async function \(\) \{[\s\S]*?\n  \};\n  persona\.create/.exec(text)?.[0] || "";
+  /persona\.init_outcome = async function \(\) \{[\s\S]*?\n  \};\n  persona\.init/.exec(
+    text
+  )?.[0] || "";
+const personaInit =
+  /persona\.init = async function \(\) \{[\s\S]*?\n  \};\n  persona\.create/.exec(text)?.[0] || "";
 const personaCheckPOutcome =
-  /persona\.check_p_outcome = function \(doc\) \{[\s\S]*?\n  \};\n  persona\.check_e_outcome/.exec(text)?.[0] || "";
+  /persona\.check_p_outcome = function \(doc\) \{[\s\S]*?\n  \};\n  persona\.check_e_outcome/.exec(
+    text
+  )?.[0] || "";
 const personaCheckEOutcome =
-  /persona\.check_e_outcome = function \(doc\) \{[\s\S]*?\n  \};\n  persona\.change_p/.exec(text)?.[0] || "";
+  /persona\.check_e_outcome = function \(doc\) \{[\s\S]*?\n  \};\n  persona\.change_p/.exec(
+    text
+  )?.[0] || "";
 const personaChangePOutcome =
-  /persona\.change_p_outcome = async function \(pset\) \{[\s\S]*?\n  \};\n  persona\.change_p/.exec(text)?.[0] || "";
-const personaChangeP = /persona\.change_p = async function \(pset\) \{[\s\S]*?\n  \};\n  persona\.change_e_outcome/.exec(text)?.[0] || "";
+  /persona\.change_p_outcome = async function \(pset\) \{[\s\S]*?\n  \};\n  persona\.change_p/.exec(
+    text
+  )?.[0] || "";
+const personaChangeP =
+  /persona\.change_p = async function \(pset\) \{[\s\S]*?\n  \};\n  persona\.change_e_outcome/.exec(
+    text
+  )?.[0] || "";
 const personaChangeEOutcome =
-  /persona\.change_e_outcome = async function \(eset\) \{[\s\S]*?\n  \};\n  persona\.change_e/.exec(text)?.[0] || "";
-const personaChangeE = /persona\.change_e = async function \(eset\) \{[\s\S]*?\n  \};\n  persona\.set_button/.exec(text)?.[0] || "";
-const equipPopupLoad = /_eq\.popup_load = function \(eq\) \{[\s\S]*?\n  \};\n\n  _eq\.charm_load/.exec(text)?.[0] || "";
-const equipCharmAppend = /_eq\.charm_append = function \(eq\) \{[\s\S]*?\n  \};\n\n  if \(characterPage\.hasEquipSlot\)/.exec(text)?.[0] || "";
+  /persona\.change_e_outcome = async function \(eset\) \{[\s\S]*?\n  \};\n  persona\.change_e/.exec(
+    text
+  )?.[0] || "";
+const personaChangeE =
+  /persona\.change_e = async function \(eset\) \{[\s\S]*?\n  \};\n  persona\.set_button/.exec(
+    text
+  )?.[0] || "";
+const equipPopupLoad =
+  /_eq\.popup_load = function \(eq\) \{[\s\S]*?\n  \};\n\n  _eq\.charm_load/.exec(text)?.[0] || "";
+const equipCharmAppend =
+  /_eq\.charm_append = function \(eq\) \{[\s\S]*?\n  \};\n\n  if \(characterPage\.hasEquipSlot\)/.exec(
+    text
+  )?.[0] || "";
 
 for (const [label, body] of [
   ["character parse helper", helperRegion],
@@ -88,65 +113,193 @@ for (const required of [
 requirePart(
   "dfct.set_button_outcome",
   dfctSetButtonOutcome,
-  "const value = parse_hvut_difficulty_from_level_readout(doc, 'difficultyLevelReadout');",
+  "const value = parse_hvut_difficulty_from_level_readout(doc, 'difficultyLevelReadout');"
 );
 requirePart("dfct.set_button_outcome", dfctSetButtonOutcome, "if (value === null) {");
-requirePart("dfct.set_button_outcome", dfctSetButtonOutcome, "if (dfct.selector) {\n        dfct.selector.disabled = false;");
-requirePart("dfct.set_button_outcome", dfctSetButtonOutcome, "return reject_hvut_difficulty_refresh('difficultyLevelReadoutRejected', {});");
+requirePart(
+  "dfct.set_button_outcome",
+  dfctSetButtonOutcome,
+  "if (dfct.selector) {\n        dfct.selector.disabled = false;"
+);
+requirePart(
+  "dfct.set_button_outcome",
+  dfctSetButtonOutcome,
+  "return reject_hvut_difficulty_refresh('difficultyLevelReadoutRejected', {});"
+);
 requirePart("dfct.set_button", dfctSetButton, "const outcome = dfct.set_button_outcome(doc);");
 requirePart("dfct.set_button", dfctSetButton, "return outcome.kind === 'accepted';");
 
-requirePart("persona.init_outcome", personaInitOutcome, "const personaCheck = persona.check_p_outcome();");
-requirePart("persona.init_outcome", personaInitOutcome, "if (personaCheck.kind === 'rejected') return personaCheck;");
+requirePart(
+  "persona.init_outcome",
+  personaInitOutcome,
+  "const personaCheck = persona.check_p_outcome();"
+);
+requirePart(
+  "persona.init_outcome",
+  personaInitOutcome,
+  "if (personaCheck.kind === 'rejected') return personaCheck;"
+);
 requirePart("persona.init_outcome", personaInitOutcome, "if (!personaCheck.checked) {");
-requirePart("persona.init_outcome", personaInitOutcome, "const equipOutcome = await persona.change_e_outcome();");
-requirePart("persona.init_outcome", personaInitOutcome, "if (equipOutcome.kind === 'rejected') return equipOutcome;");
-requirePart("persona.init_outcome", personaInitOutcome, "const personaOutcome = await persona.change_p_outcome();");
-requirePart("persona.init_outcome", personaInitOutcome, "if (personaOutcome.kind === 'rejected') return personaOutcome;");
+requirePart(
+  "persona.init_outcome",
+  personaInitOutcome,
+  "const equipOutcome = await persona.change_e_outcome();"
+);
+requirePart(
+  "persona.init_outcome",
+  personaInitOutcome,
+  "if (equipOutcome.kind === 'rejected') return equipOutcome;"
+);
+requirePart(
+  "persona.init_outcome",
+  personaInitOutcome,
+  "const personaOutcome = await persona.change_p_outcome();"
+);
+requirePart(
+  "persona.init_outcome",
+  personaInitOutcome,
+  "if (personaOutcome.kind === 'rejected') return personaOutcome;"
+);
 requirePart("persona.init_outcome", personaInitOutcome, "persona.check_warning();");
-requirePart("persona.init_outcome", personaInitOutcome, "persona.node.div.addEventListener('mouseenter', persona.create);");
+requirePart(
+  "persona.init_outcome",
+  personaInitOutcome,
+  "persona.node.div.addEventListener('mouseenter', persona.create);"
+);
 requirePart("persona.init_outcome", personaInitOutcome, "return { kind: 'accepted' };");
 requirePart("persona.init", personaInit, "const outcome = await persona.init_outcome();");
 requirePart("persona.init", personaInit, "return outcome.kind === 'accepted';");
-requirePart("persona.check_p_outcome", personaCheckPOutcome, "const state = parse_hvut_persona_form_state(doc, 'personaFormState');");
-requirePart("persona.check_p_outcome", personaCheckPOutcome, "return reject_hvut_persona_sync('personaFormStateRejected', {});");
-requirePart("persona.check_p_outcome", personaCheckPOutcome, "return reject_hvut_persona_sync('personaStateWriteRejected', {});");
-requirePart("persona.check_p_outcome", personaCheckPOutcome, "return { kind: 'accepted', checked: checked };");
-requirePart("persona.check_e_outcome", personaCheckEOutcome, "const state = parse_hvut_equip_set_state(doc, 'personaEquipSetState');");
-requirePart("persona.check_e_outcome", personaCheckEOutcome, "return reject_hvut_persona_sync('personaEquipSetStateRejected', {});");
-requirePart("persona.check_e_outcome", personaCheckEOutcome, "return reject_hvut_persona_sync('personaStateWriteRejected', {});");
+requirePart(
+  "persona.check_p_outcome",
+  personaCheckPOutcome,
+  "const state = parse_hvut_persona_form_state(doc, 'personaFormState');"
+);
+requirePart(
+  "persona.check_p_outcome",
+  personaCheckPOutcome,
+  "return reject_hvut_persona_sync('personaFormStateRejected', {});"
+);
+requirePart(
+  "persona.check_p_outcome",
+  personaCheckPOutcome,
+  "return reject_hvut_persona_sync('personaStateWriteRejected', {});"
+);
+requirePart(
+  "persona.check_p_outcome",
+  personaCheckPOutcome,
+  "return { kind: 'accepted', checked: checked };"
+);
+requirePart(
+  "persona.check_e_outcome",
+  personaCheckEOutcome,
+  "const state = parse_hvut_equip_set_state(doc, 'personaEquipSetState');"
+);
+requirePart(
+  "persona.check_e_outcome",
+  personaCheckEOutcome,
+  "return reject_hvut_persona_sync('personaEquipSetStateRejected', {});"
+);
+requirePart(
+  "persona.check_e_outcome",
+  personaCheckEOutcome,
+  "return reject_hvut_persona_sync('personaStateWriteRejected', {});"
+);
 requirePart("persona.check_e_outcome", personaCheckEOutcome, "return { kind: 'accepted' };");
-requirePart("persona.change_p_outcome", personaChangePOutcome, "const personaState = persona.check_p_outcome(doc);");
-requirePart("persona.change_p_outcome", personaChangePOutcome, "if (personaState.kind === 'rejected') {");
 requirePart(
   "persona.change_p_outcome",
   personaChangePOutcome,
-  "return reject_hvut_persona_sync('personaPageFetchFailed', { message: String(error?.message || error) });",
+  "const personaState = persona.check_p_outcome(doc);"
+);
+requirePart(
+  "persona.change_p_outcome",
+  personaChangePOutcome,
+  "if (personaState.kind === 'rejected') {"
+);
+requirePart(
+  "persona.change_p_outcome",
+  personaChangePOutcome,
+  "return reject_hvut_persona_sync('personaPageFetchFailed', { message: String(error?.message || error) });"
 );
 requirePart("persona.change_p_outcome", personaChangePOutcome, "return personaState;");
-requirePart("persona.change_p_outcome", personaChangePOutcome, "const equipOutcome = await persona.change_e_outcome();");
-requirePart("persona.change_p_outcome", personaChangePOutcome, "if (equipOutcome.kind === 'rejected') return equipOutcome;");
-requirePart("persona.change_p_outcome", personaChangePOutcome, "const difficultyOutcome = ctx.dfct.set_button_outcome(doc);");
-requirePart("persona.change_p_outcome", personaChangePOutcome, "if (difficultyOutcome.kind === 'rejected') return difficultyOutcome;");
+requirePart(
+  "persona.change_p_outcome",
+  personaChangePOutcome,
+  "const equipOutcome = await persona.change_e_outcome();"
+);
+requirePart(
+  "persona.change_p_outcome",
+  personaChangePOutcome,
+  "if (equipOutcome.kind === 'rejected') return equipOutcome;"
+);
+requirePart(
+  "persona.change_p_outcome",
+  personaChangePOutcome,
+  "const difficultyOutcome = ctx.dfct.set_button_outcome(doc);"
+);
+requirePart(
+  "persona.change_p_outcome",
+  personaChangePOutcome,
+  "if (difficultyOutcome.kind === 'rejected') return difficultyOutcome;"
+);
 requirePart("persona.change_p_outcome", personaChangePOutcome, "return { kind: 'accepted' };");
-requirePart("persona.change_p", personaChangeP, "const outcome = await persona.change_p_outcome(pset);");
+requirePart(
+  "persona.change_p",
+  personaChangeP,
+  "const outcome = await persona.change_p_outcome(pset);"
+);
 requirePart("persona.change_p", personaChangeP, "return outcome.kind === 'accepted';");
-requirePart("persona.change_e_outcome", personaChangeEOutcome, "const equipState = persona.check_e_outcome(doc);");
-requirePart("persona.change_e_outcome", personaChangeEOutcome, "if (equipState.kind === 'rejected') {");
 requirePart(
   "persona.change_e_outcome",
   personaChangeEOutcome,
-  "return reject_hvut_persona_sync('equipPageFetchFailed', { message: String(error?.message || error) });",
+  "const equipState = persona.check_e_outcome(doc);"
 );
-requirePart("persona.change_e_outcome", personaChangeEOutcome, "if (persona.selector_e) persona.selector_e.disabled = false;");
+requirePart(
+  "persona.change_e_outcome",
+  personaChangeEOutcome,
+  "if (equipState.kind === 'rejected') {"
+);
+requirePart(
+  "persona.change_e_outcome",
+  personaChangeEOutcome,
+  "return reject_hvut_persona_sync('equipPageFetchFailed', { message: String(error?.message || error) });"
+);
+requirePart(
+  "persona.change_e_outcome",
+  personaChangeEOutcome,
+  "if (persona.selector_e) persona.selector_e.disabled = false;"
+);
 requirePart("persona.change_e_outcome", personaChangeEOutcome, "return equipState;");
-requirePart("persona.change_e_outcome", personaChangeEOutcome, "const loadOutcome = await persona.load_dynjs_outcome(doc);");
-requirePart("persona.change_e_outcome", personaChangeEOutcome, "if (loadOutcome.kind === 'rejected') return loadOutcome;");
-requirePart("persona.change_e", personaChangeE, "const outcome = await persona.change_e_outcome(eset);");
+requirePart(
+  "persona.change_e_outcome",
+  personaChangeEOutcome,
+  "const loadOutcome = await persona.load_dynjs_outcome(doc);"
+);
+requirePart(
+  "persona.change_e_outcome",
+  personaChangeEOutcome,
+  "if (loadOutcome.kind === 'rejected') return loadOutcome;"
+);
+requirePart(
+  "persona.change_e",
+  personaChangeE,
+  "const outcome = await persona.change_e_outcome(eset);"
+);
 requirePart("persona.change_e", personaChangeE, "return outcome.kind === 'accepted';");
-requirePart("_eq.popup_load", equipPopupLoad, "clear_hvut_equip_popup_drop_info(doc, 'equipPopupDropInfo');");
-requirePart("_eq.charm_append", equipCharmAppend, "record_hvut_character_parse_failure('equipPopupCharmText', { charm: charm });");
-requirePart("_eq.charm_append", equipCharmAppend, "if (append_hvut_equip_popup_charms(doc, div, 'equipPopupCharmAppend') === false) {");
+requirePart(
+  "_eq.popup_load",
+  equipPopupLoad,
+  "clear_hvut_equip_popup_drop_info(doc, 'equipPopupDropInfo');"
+);
+requirePart(
+  "_eq.charm_append",
+  equipCharmAppend,
+  "record_hvut_character_parse_failure('equipPopupCharmText', { charm: charm });"
+);
+requirePart(
+  "_eq.charm_append",
+  equipCharmAppend,
+  "if (append_hvut_equip_popup_charms(doc, div, 'equipPopupCharmAppend') === false) {"
+);
 
 for (const required of [
   "const stat = parse_hvut_character_base_stat_row(tr, 'equipmentBaseStatSourceRow');",
@@ -160,12 +313,22 @@ for (const required of [
 }
 
 for (const [required, expected] of [
-  ["const personaContext = render_hvut_equipment_persona_context($persona, 'equipmentPersonaContextRejected');", 1],
-  ["const personaContext = render_hvut_equipment_persona_context($persona, 'legacyEquipmentPersonaContextRejected');", 1],
+  [
+    "const personaContext = render_hvut_equipment_persona_context($persona, 'equipmentPersonaContextRejected');",
+    1,
+  ],
+  [
+    "const personaContext = render_hvut_equipment_persona_context($persona, 'legacyEquipmentPersonaContextRejected');",
+    1,
+  ],
   ["if (personaContext.kind === 'rejected') return;", 2],
 ]) {
-  const count = (text.match(new RegExp(required.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "g")) || []).length;
-  if (count !== expected) violations.push(`${target} must keep ${expected} equipment persona context render call(s) for ${required}, found ${count}`);
+  const count = (text.match(new RegExp(required.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "g")) || [])
+    .length;
+  if (count !== expected)
+    violations.push(
+      `${target} must keep ${expected} equipment persona context render call(s) for ${required}, found ${count}`
+    );
 }
 
 for (const forbidden of [
@@ -213,4 +376,6 @@ if (violations.length) {
   process.exit(1);
 }
 
-console.log("[verify-hvut-character-parse-boundary] OK - Character parse failures fail closed with evidence");
+console.log(
+  "[verify-hvut-character-parse-boundary] OK - Character parse failures fail closed with evidence"
+);

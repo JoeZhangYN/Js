@@ -65,16 +65,17 @@ function persistScanProfile(info, status, onStored, deps) {
         });
       }
       if (status.level != null && profile.maxHP > 0) {
-        Promise.resolve(deps.storeHp(profile.monsterId, status.level, profile.maxHP, profile.lastUpdate))
-          .catch((error) =>
-            deps.recordPersistenceFailure({
-              stage: "scan-store-hp",
-              monsterId: profile.monsterId,
-              level: status.level,
-              maxHP: profile.maxHP,
-              error,
-            })
-          );
+        Promise.resolve(
+          deps.storeHp(profile.monsterId, status.level, profile.maxHP, profile.lastUpdate)
+        ).catch((error) =>
+          deps.recordPersistenceFailure({
+            stage: "scan-store-hp",
+            monsterId: profile.monsterId,
+            level: status.level,
+            maxHP: profile.maxHP,
+            error,
+          })
+        );
       }
       onStored?.();
     })

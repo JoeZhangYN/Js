@@ -44,7 +44,9 @@ function checkFile(file) {
     ) {
       for (const name of legacy) {
         if (new RegExp(`\\b${name}\\b`).test(line)) {
-          violations.push(`${where} monster db store IO must use runMonsterDbStoreAutomation(event)`);
+          violations.push(
+            `${where} monster db store IO must use runMonsterDbStoreAutomation(event)`
+          );
         }
       }
     }
@@ -62,8 +64,14 @@ if (!/export function runMonsterDbStoreAutomation\(\s*event\b/.test(ownerText)) 
 }
 const entryBody =
   ownerText.match(/export function runMonsterDbStoreAutomation\([^)]*\) \{[\s\S]*?\n\}/)?.[0] || "";
-if (!/const monsterDbStoreEventHandlers\s*=\s*Object\.freeze\(\{[\s\S]*\[EVENT_PROFILE_READ\]/.test(ownerText)) {
-  violations.push(`${owner.replaceAll("\\", "/")} must route events through a frozen handler table`);
+if (
+  !/const monsterDbStoreEventHandlers\s*=\s*Object\.freeze\(\{[\s\S]*\[EVENT_PROFILE_READ\]/.test(
+    ownerText
+  )
+) {
+  violations.push(
+    `${owner.replaceAll("\\", "/")} must route events through a frozen handler table`
+  );
 }
 if (/event\.type\s*===/.test(entryBody)) {
   violations.push(`${owner.replaceAll("\\", "/")} entry must dispatch by handler table`);
@@ -72,7 +80,9 @@ if (entryBody.includes("event.type")) {
   violations.push(`${owner.replaceAll("\\", "/")} entry must reject null events without throwing`);
 }
 if (!entryBody.includes("event?.type")) {
-  violations.push(`${owner.replaceAll("\\", "/")} entry must fail closed for unknown or null events`);
+  violations.push(
+    `${owner.replaceAll("\\", "/")} entry must fail closed for unknown or null events`
+  );
 }
 for (const name of legacy) {
   if (new RegExp(`export\\s+function\\s+${name}\\s*\\(`).test(ownerText)) {
@@ -86,7 +96,7 @@ for (const required of [
   "HVAA:lastMonsterDbStoreFailure",
   "classifyDbError",
   "rejectDbFailure",
-  "capability: \"monsterDbStore\"",
+  'capability: "monsterDbStore"',
   "sessionStorage.setItem(MONSTER_DB_STORE_FAILURE_KEY",
   "[HVAA] monster db store failed",
   "IndexedDB failure rejection must not depend on diagnostic storage.",
@@ -105,7 +115,9 @@ if (!fs.existsSync(path.join(root, ownerTest))) {
 } else {
   const ownerTestText = fs.readFileSync(path.join(root, ownerTest), "utf8");
   if (
-    !ownerTestText.includes("rejects unknown and null store events without reading or changing persisted profiles") ||
+    !ownerTestText.includes(
+      "rejects unknown and null store events without reading or changing persisted profiles"
+    ) ||
     !ownerTestText.includes("runMonsterDbStoreAutomation(null)") ||
     !ownerTestText.includes("does not open IndexedDB for unknown or null store events")
   ) {
@@ -118,7 +130,7 @@ if (!fs.existsSync(path.join(root, ownerTest))) {
     "[HVAA] monster db store failed",
     "transaction-start",
     "transaction-abort",
-    "source: \"monsterDbStore\"",
+    'source: "monsterDbStore"',
   ]) {
     if (!ownerTestText.includes(required)) {
       violations.push(`${ownerTest.replaceAll("\\", "/")} must cover ${required}`);
@@ -126,7 +138,9 @@ if (!fs.existsSync(path.join(root, ownerTest))) {
   }
 }
 if (!fs.existsSync(path.join(root, failureEvidenceTest))) {
-  violations.push(`${failureEvidenceTest.replaceAll("\\", "/")} must cover persisted failure evidence`);
+  violations.push(
+    `${failureEvidenceTest.replaceAll("\\", "/")} must cover persisted failure evidence`
+  );
 } else {
   const failureEvidenceTestText = fs.readFileSync(path.join(root, failureEvidenceTest), "utf8");
   for (const required of [
@@ -136,7 +150,7 @@ if (!fs.existsSync(path.join(root, failureEvidenceTest))) {
     "HVAA:lastMonsterDbStoreFailure",
     "session blocked",
     "console blocked",
-    "capability: \"monsterDbStore\"",
+    'capability: "monsterDbStore"',
   ]) {
     if (!failureEvidenceTestText.includes(required)) {
       violations.push(`${failureEvidenceTest.replaceAll("\\", "/")} must cover ${required}`);
@@ -146,7 +160,7 @@ if (!fs.existsSync(path.join(root, failureEvidenceTest))) {
 
 const diagnosticKeysText = fs.readFileSync(path.join(root, diagnosticKeys), "utf8");
 for (const required of [
-  "MONSTER_DB_STORE_FAILURE: \"HVAA:lastMonsterDbStoreFailure\"",
+  'MONSTER_DB_STORE_FAILURE: "HVAA:lastMonsterDbStoreFailure"',
   'source("monsterDbStoreFailure", DiagnosticEvidenceKey.MONSTER_DB_STORE_FAILURE)',
 ]) {
   if (!diagnosticKeysText.includes(required)) {

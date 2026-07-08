@@ -1,0 +1,134 @@
+{
+  "arena/quick-site.test.js": {
+    "maxSloc": 162,
+    "reason": "formatted baseline test verbosity"
+  },
+  "battle/attack/execute-attack.test.js": {
+    "maxSloc": 158,
+    "reason": "formatted baseline test verbosity"
+  },
+  "battle/battle-action-decision-evidence.test.js": {
+    "maxSloc": 154,
+    "reason": "formatted baseline evidence test verbosity"
+  },
+  "battle/battle-action-lifecycle.js": {
+    "maxSloc": 175,
+    "reason": "formatted baseline capability split debt"
+  },
+  "battle/battle-api-bridge.test.js": {
+    "maxSloc": 164,
+    "reason": "formatted baseline adapter contract test verbosity"
+  },
+  "battle/battle-api-response-recovery.test.js": {
+    "maxSloc": 155,
+    "reason": "formatted baseline recovery test verbosity"
+  },
+  "battle/battle-next-round-continuation.js": {
+    "maxSloc": 155,
+    "reason": "formatted baseline battle continuation split debt"
+  },
+  "battle/battle-spirit-toggle.test.js": {
+    "maxSloc": 155,
+    "reason": "formatted baseline behavior test verbosity"
+  },
+  "battle/item/decide-item.js": {
+    "maxSloc": 165,
+    "reason": "formatted baseline item decision split debt"
+  },
+  "battle/item/execute-item.js": {
+    "maxSloc": 152,
+    "reason": "formatted baseline item execution split debt"
+  },
+  "battle/monster-status-automation.js": {
+    "maxSloc": 194,
+    "reason": "formatted baseline monster-status orchestration split debt"
+  },
+  "battle/monster-status-automation.test.js": {
+    "maxSloc": 160,
+    "reason": "formatted baseline behavior test verbosity"
+  },
+  "battle/monster-view.test.js": {
+    "maxSloc": 171,
+    "reason": "formatted baseline behavior test verbosity"
+  },
+  "battle/snapshot.test.js": {
+    "maxSloc": 158,
+    "reason": "formatted baseline snapshot test verbosity"
+  },
+  "core/diagnostic-evidence-keys.js": {
+    "maxSloc": 195,
+    "reason": "formatted baseline diagnostic evidence registry debt"
+  },
+  "core/diagnostic-evidence.test.js": {
+    "maxSloc": 417,
+    "reason": "formatted baseline diagnostic evidence test verbosity"
+  },
+  "core/navigate.js": {
+    "maxSloc": 171,
+    "reason": "formatted baseline navigation recovery split debt"
+  },
+  "core/navigation-decision-evidence.test.js": {
+    "maxSloc": 152,
+    "reason": "formatted baseline navigation evidence test verbosity"
+  },
+  "monitor/record-usage-action-stats.js": {
+    "maxSloc": 166,
+    "reason": "formatted baseline monitor calculation split debt"
+  },
+  "pages/app-startup.test.js": {
+    "maxSloc": 174,
+    "reason": "formatted baseline startup contract test verbosity"
+  },
+  "pages/encounter-policy.js": {
+    "maxSloc": 169,
+    "reason": "formatted baseline encounter policy split debt"
+  },
+  "pages/encounter-state.js": {
+    "maxSloc": 153,
+    "reason": "formatted baseline encounter state split debt"
+  },
+  "pages/encounter-state.test.js": {
+    "maxSloc": 154,
+    "reason": "formatted baseline encounter state test verbosity"
+  },
+  "pages/encounter-widget-policy.js": {
+    "maxSloc": 166,
+    "reason": "formatted baseline encounter widget policy split debt"
+  },
+  "pages/lobby-automation.test.js": {
+    "maxSloc": 152,
+    "reason": "formatted baseline lobby automation test verbosity"
+  },
+  "pages/page-automation.test.js": {
+    "maxSloc": 174,
+    "reason": "formatted baseline page automation test verbosity"
+  },
+  "pages/riddle-ml.test.js": {
+    "maxSloc": 162,
+    "reason": "formatted baseline riddle ML test verbosity"
+  },
+  "pages/riddle.test.js": {
+    "maxSloc": 152,
+    "reason": "formatted baseline riddle behavior test verbosity"
+  },
+  "repair/repair-orchestrator.js": {
+    "maxSloc": 152,
+    "reason": "formatted baseline repair orchestration split debt"
+  },
+  "state/auto-tune.js": {
+    "maxSloc": 162,
+    "reason": "formatted baseline auto-tune split debt"
+  },
+  "state/big-skill-kill-learner.test.js": {
+    "maxSloc": 154,
+    "reason": "formatted baseline learner test verbosity"
+  },
+  "state/cd-learner.test.js": {
+    "maxSloc": 157,
+    "reason": "formatted baseline learner test verbosity"
+  },
+  "state/riddle-dataset.test.js": {
+    "maxSloc": 157,
+    "reason": "formatted baseline riddle dataset test verbosity"
+  }
+}

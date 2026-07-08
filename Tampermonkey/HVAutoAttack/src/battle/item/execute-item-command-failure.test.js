@@ -68,10 +68,12 @@ describe("runBattleItemExecution command failures", () => {
 
     expect(applyPlan({ type: "stall", attempts: [{ kind: "focus" }] })).toBe(false);
 
-    expect(mocks.runBattleActionEffectEvidence).toHaveBeenCalledWith(expect.objectContaining({
-      result: { kind: "item-execution-event", reason: "itemSubCommandThrew", planType: "stall" },
-      executionError: "focus command failed",
-    }));
+    expect(mocks.runBattleActionEffectEvidence).toHaveBeenCalledWith(
+      expect.objectContaining({
+        result: { kind: "item-execution-event", reason: "itemSubCommandThrew", planType: "stall" },
+        executionError: "focus command failed",
+      })
+    );
   });
 
   it("records stall spirit command exceptions as not acted item execution evidence", () => {
@@ -81,9 +83,11 @@ describe("runBattleItemExecution command failures", () => {
 
     expect(applyPlan({ type: "stall", attempts: [{ kind: "spirit-off" }] })).toBe(false);
 
-    expect(mocks.runBattleActionEffectEvidence).toHaveBeenCalledWith(expect.objectContaining({
-      result: { kind: "item-execution-event", reason: "itemSubCommandThrew", planType: "stall" },
-      executionError: "spirit command failed",
-    }));
+    expect(mocks.runBattleActionEffectEvidence).toHaveBeenCalledWith(
+      expect.objectContaining({
+        result: { kind: "item-execution-event", reason: "itemSubCommandThrew", planType: "stall" },
+        executionError: "spirit command failed",
+      })
+    );
   });
 });

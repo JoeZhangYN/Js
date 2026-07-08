@@ -58,25 +58,53 @@ for (const legacy of ["OPTION_SCHEMA", "getOptionDefault", "getFieldsByGroup"]) 
     );
   }
 }
-if (!/key:\s*["']repairCreditCap["'][\s\S]{0,500}description:\s*\{[\s\S]{0,260}credits\/run cap/.test(ownerText)) {
+if (
+  !/key:\s*["']repairCreditCap["'][\s\S]{0,500}description:\s*\{[\s\S]{0,260}credits\/run cap/.test(
+    ownerText
+  )
+) {
   violations.push(`${owner.replaceAll("\\", "/")} must own repair material cap help text`);
 }
-if (!/key:\s*["']riddleAnswerTime["'][\s\S]{0,500}description:\s*\{[\s\S]{0,260}no answer has been chosen yet/.test(ownerText)) {
+if (
+  !/key:\s*["']riddleAnswerTime["'][\s\S]{0,500}description:\s*\{[\s\S]{0,260}no answer has been chosen yet/.test(
+    ownerText
+  )
+) {
   violations.push(`${owner.replaceAll("\\", "/")} must own riddle answer timing help text`);
 }
-if (!/key:\s*["']delayAlertTime["'][\s\S]{0,500}description:\s*\{[\s\S]{0,220}s, alarm/.test(ownerText)) {
+if (
+  !/key:\s*["']delayAlertTime["'][\s\S]{0,500}description:\s*\{[\s\S]{0,220}s, alarm/.test(
+    ownerText
+  )
+) {
   violations.push(`${owner.replaceAll("\\", "/")} must own action delay alarm help text`);
 }
-if (!/key:\s*["']delayReloadTime["'][\s\S]{0,500}description:\s*\{[\s\S]{0,220}s, reload page/.test(ownerText)) {
+if (
+  !/key:\s*["']delayReloadTime["'][\s\S]{0,500}description:\s*\{[\s\S]{0,220}s, reload page/.test(
+    ownerText
+  )
+) {
   violations.push(`${owner.replaceAll("\\", "/")} must own action delay reload help text`);
 }
-if (!/key:\s*["']criticalBuffMinTurns["'][\s\S]{0,500}description:\s*\{[\s\S]{0,260}critical buff ≤N & MP low/.test(ownerText)) {
+if (
+  !/key:\s*["']criticalBuffMinTurns["'][\s\S]{0,500}description:\s*\{[\s\S]{0,260}critical buff ≤N & MP low/.test(
+    ownerText
+  )
+) {
   violations.push(`${owner.replaceAll("\\", "/")} must own critical buff threshold help text`);
 }
-if (!/key:\s*["']potionWasteTolerance["'][\s\S]{0,500}description:\s*\{[\s\S]{0,220}skip if deficit too small/.test(ownerText)) {
+if (
+  !/key:\s*["']potionWasteTolerance["'][\s\S]{0,500}description:\s*\{[\s\S]{0,220}skip if deficit too small/.test(
+    ownerText
+  )
+) {
   violations.push(`${owner.replaceAll("\\", "/")} must own no-waste potion tolerance help text`);
 }
-if (!/key:\s*["']pageRefreshMinutes["'][\s\S]{0,500}description:\s*\{[\s\S]{0,240}mobile anti-hang absolute clock/.test(ownerText)) {
+if (
+  !/key:\s*["']pageRefreshMinutes["'][\s\S]{0,500}description:\s*\{[\s\S]{0,240}mobile anti-hang absolute clock/.test(
+    ownerText
+  )
+) {
   violations.push(`${owner.replaceAll("\\", "/")} must own page refresh interval help text`);
 }
 if (!/export const OptionSchemaEvent\s*=\s*Object\.freeze\(/.test(ownerText)) {
@@ -88,7 +116,10 @@ if (!/export function runOptionSchema\(\s*event\b/.test(ownerText)) {
 
 const renderText = fs.readFileSync(path.join(root, settingsRender), "utf8");
 const orderControlCatalogText = fs.readFileSync(path.join(root, orderControlCatalog), "utf8");
-const orderControlCatalogTestText = fs.readFileSync(path.join(root, orderControlCatalogTest), "utf8");
+const orderControlCatalogTestText = fs.readFileSync(
+  path.join(root, orderControlCatalogTest),
+  "utf8"
+);
 for (const required of [
   "SettingsOrderControlEvent",
   "runSettingsOrderControlCatalog",
@@ -104,25 +135,32 @@ for (const required of [
   "exposes castable debuff controls without weapon-only effects",
   "exposes arena, round, scroll, and spell control surfaces",
 ]) {
-  if (!orderControlCatalogText.includes(required) && !orderControlCatalogTestText.includes(required)) {
-    violations.push(`${orderControlCatalog.replaceAll("\\", "/")} must own settings order control catalog ${required}`);
+  if (
+    !orderControlCatalogText.includes(required) &&
+    !orderControlCatalogTestText.includes(required)
+  ) {
+    violations.push(
+      `${orderControlCatalog.replaceAll("\\", "/")} must own settings order control catalog ${required}`
+    );
   }
 }
 for (const forbidden of [
-  "from \"../data/buff-lib.js\"",
-  "from \"../data/channel-fallback-order.js\"",
-  "from \"../data/debuff-lib.js\"",
-  "from \"../data/item-order.js\"",
-  "from \"../data/physical-skill-order.js\"",
-  "from \"../data/all-debuff-actions.js\"",
-  "from \"../data/battle-buff-actions.js\"",
-  "from \"../data/battle-round-types.js\"",
-  "from \"../data/battle-scrolls.js\"",
-  "from \"../data/idle-arena-levels.js\"",
-  "from \"../data/spell-lib.js\"",
+  'from "../data/buff-lib.js"',
+  'from "../data/channel-fallback-order.js"',
+  'from "../data/debuff-lib.js"',
+  'from "../data/item-order.js"',
+  'from "../data/physical-skill-order.js"',
+  'from "../data/all-debuff-actions.js"',
+  'from "../data/battle-buff-actions.js"',
+  'from "../data/battle-round-types.js"',
+  'from "../data/battle-scrolls.js"',
+  'from "../data/idle-arena-levels.js"',
+  'from "../data/spell-lib.js"',
 ]) {
   if (renderText.includes(forbidden)) {
-    violations.push(`${settingsRender.replaceAll("\\", "/")} must read order controls through settings order catalog`);
+    violations.push(
+      `${settingsRender.replaceAll("\\", "/")} must read order controls through settings order catalog`
+    );
   }
 }
 if (/function\s+renderCheckboxPlusNumber\(\s*checkboxKey\s*,\s*numberKey\s*,/.test(renderText)) {

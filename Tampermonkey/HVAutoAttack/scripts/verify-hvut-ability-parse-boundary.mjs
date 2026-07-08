@@ -11,15 +11,20 @@ function requirePart(label, body, part) {
 }
 
 const helperRegion =
-  /var record_hvut_ability_parse_failure = function \(stage, detail\) \{[\s\S]*?\n  var reloadCurrentPage/.exec(text)?.[0] || "";
+  /var record_hvut_ability_parse_failure = function \(stage, detail\) \{[\s\S]*?\n  var reloadCurrentPage/.exec(
+    text
+  )?.[0] || "";
 const modernInit =
   /_ab\.init = function \(\) \{[\s\S]*?\n  \};\n\n  _ab\.parse_slotbar/.exec(text)?.[0] || "";
 const modernSlotbar =
-  /_ab\.parse_slotbar = function \(\) \{[\s\S]*?\n  \};\n\n  _ab\.parse_treepane/.exec(text)?.[0] || "";
+  /_ab\.parse_slotbar = function \(\) \{[\s\S]*?\n  \};\n\n  _ab\.parse_treepane/.exec(text)?.[0] ||
+  "";
 const modernTreepane =
   /_ab\.parse_treepane = function \(\) \{[\s\S]*?\n  \};\n\n  _ab\.click/.exec(text)?.[0] || "";
 const abilityRegions = [
-  ...text.matchAll(/_ab\.point = parse_hvut_ability_points_from_top\(\$id\('ability_top'\)[\s\S]*?\n\} else\n\/\/ \[END 3\] Character - Abilities/g),
+  ...text.matchAll(
+    /_ab\.point = parse_hvut_ability_points_from_top\(\$id\('ability_top'\)[\s\S]*?\n\} else\n\/\/ \[END 3\] Character - Abilities/g
+  ),
 ].map((match) => match[0]);
 const legacyRegion = abilityRegions[1] || "";
 
@@ -30,11 +35,13 @@ for (const [label, body] of [
   ["modern ability treepane parser", modernTreepane],
   ["legacy ability region", legacyRegion],
 ]) {
-if (!body) violations.push(`${target} must keep ${label} visible`);
+  if (!body) violations.push(`${target} must keep ${label} visible`);
 }
 
 if (abilityRegions.length !== 2) {
-  violations.push(`${target} must keep exactly two HVUT ability page regions, found ${abilityRegions.length}`);
+  violations.push(
+    `${target} must keep exactly two HVUT ability page regions, found ${abilityRegions.length}`
+  );
 }
 
 for (const required of [
@@ -129,4 +136,6 @@ if (violations.length) {
   process.exit(1);
 }
 
-console.log("[verify-hvut-ability-parse-boundary] OK - ability parse failures fail closed with evidence");
+console.log(
+  "[verify-hvut-ability-parse-boundary] OK - ability parse failures fail closed with evidence"
+);

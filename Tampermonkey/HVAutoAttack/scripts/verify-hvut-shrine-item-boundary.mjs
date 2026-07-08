@@ -31,24 +31,33 @@ for (const required of [
 }
 
 if (/\{\s*iid,\s*stock,\s*bulk\s*\}\s*=\s*\$item\.get_data/.test(text)) {
-  violations.push(`${rel(hvUtilsFile)} must not destructure Shrine offer identity directly from $item.get_data`);
+  violations.push(
+    `${rel(hvUtilsFile)} must not destructure Shrine offer identity directly from $item.get_data`
+  );
 }
 
 const shrineOfferParser =
-  /var parse_hvut_shrine_offer_item = function \(div, stage\) \{[\s\S]*?\n  \};/.exec(text)?.[0] || "";
+  /var parse_hvut_shrine_offer_item = function \(div, stage\) \{[\s\S]*?\n  \};/.exec(text)?.[0] ||
+  "";
 if (!shrineOfferParser) {
   violations.push(`${rel(hvUtilsFile)} must keep Shrine offer item parser visible`);
 } else if (shrineOfferParser.includes("$item.get_data")) {
-  violations.push(`${rel(hvUtilsFile)} Shrine offer item parser must not depend on branch-private $item`);
+  violations.push(
+    `${rel(hvUtilsFile)} Shrine offer item parser must not depend on branch-private $item`
+  );
 }
 
-for (const initBody of text.matchAll(/\$qsa\('\.itemlist tr'\)\.forEach\(\(tr\) => \{[\s\S]*?\n\s*\}\);/g)) {
+for (const initBody of text.matchAll(
+  /\$qsa\('\.itemlist tr'\)\.forEach\(\(tr\) => \{[\s\S]*?\n\s*\}\);/g
+)) {
   const body = initBody[0];
   if (!body.includes("dataset: { action: 'offer'")) continue;
   const parserIndex = body.indexOf("parse_hvut_shrine_offer_item");
   const buttonIndex = body.indexOf("dataset: { action: 'offer'");
   if (parserIndex < 0 || buttonIndex < 0 || buttonIndex < parserIndex) {
-    violations.push(`${rel(hvUtilsFile)} Shrine offer button must be created only after item identity parser success`);
+    violations.push(
+      `${rel(hvUtilsFile)} Shrine offer button must be created only after item identity parser success`
+    );
   }
 }
 
@@ -67,4 +76,6 @@ if (violations.length) {
   process.exit(1);
 }
 
-console.log("[verify-hvut-shrine-item-boundary] OK - Shrine offer item identity parse fails closed");
+console.log(
+  "[verify-hvut-shrine-item-boundary] OK - Shrine offer item identity parse fails closed"
+);

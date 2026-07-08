@@ -35,11 +35,15 @@ for (const required of [
 }
 
 const mailBodies = [
-  ...text.matchAll(/if \(get_hvut_mail_page_context\(\)\.isMoogleMail && \$config\.settings\.moogleMail\) \{[\s\S]*?\n\} else\n\/\/ \[END (?:12|13)\] Bazaar - MoogleMail/g),
+  ...text.matchAll(
+    /if \(get_hvut_mail_page_context\(\)\.isMoogleMail && \$config\.settings\.moogleMail\) \{[\s\S]*?\n\} else\n\/\/ \[END (?:12|13)\] Bazaar - MoogleMail/g
+  ),
 ].map((match) => match[0]);
 
 if (mailBodies.length !== 2) {
-  violations.push(`${target} must keep both MoogleMail segment bodies visible, found ${mailBodies.length}`);
+  violations.push(
+    `${target} must keep both MoogleMail segment bodies visible, found ${mailBodies.length}`
+  );
 }
 
 for (const [index, body] of mailBodies.entries()) {
@@ -59,16 +63,24 @@ for (const [index, body] of mailBodies.entries()) {
     "parseInt(_query.page) || 0",
   ]) {
     if (body.includes(forbidden)) {
-      violations.push(`${target} MoogleMail body[${index}] must not rebuild page context from raw query: ${forbidden}`);
+      violations.push(
+        `${target} MoogleMail body[${index}] must not rebuild page context from raw query: ${forbidden}`
+      );
     }
   }
 }
 
-if (!mailBodies[0]?.includes("filter: mailPage.filter,") || !mailBodies[0]?.includes("current: mailPage.current,")) {
+if (
+  !mailBodies[0]?.includes("filter: mailPage.filter,") ||
+  !mailBodies[0]?.includes("current: mailPage.current,")
+) {
   violations.push(`${target} modern MoogleMail page state must derive from page context`);
 }
 
-if (!mailBodies[1]?.includes("_mm.page_filter = mailPage.filter;") || !mailBodies[1]?.includes("_mm.page_current = mailPage.current;")) {
+if (
+  !mailBodies[1]?.includes("_mm.page_filter = mailPage.filter;") ||
+  !mailBodies[1]?.includes("_mm.page_current = mailPage.current;")
+) {
   violations.push(`${target} legacy MoogleMail page state must derive from page context`);
 }
 
@@ -80,12 +92,11 @@ const sendBody = /send: async function \(\) \{[\s\S]*?\n  \},\n  chunk:/.exec(te
 if (!sendBody.includes("if (get_hvut_mail_page_context().shouldUseHvutCompose) {")) {
   violations.push(`${target} MoogleMail send must reuse current compose page through page context`);
 }
-for (const forbidden of [
-  "_query.ss === 'mm'",
-  "_query.filter === 'new'",
-]) {
+for (const forbidden of ["_query.ss === 'mm'", "_query.filter === 'new'"]) {
   if (sendBody.includes(forbidden)) {
-    violations.push(`${target} MoogleMail send must not rebuild compose page identity from raw query: ${forbidden}`);
+    violations.push(
+      `${target} MoogleMail send must not rebuild compose page identity from raw query: ${forbidden}`
+    );
   }
 }
 
@@ -95,4 +106,6 @@ if (violations.length) {
   process.exit(1);
 }
 
-console.log("[verify-hvut-mail-page-context-boundary] OK - MoogleMail filter/page routing uses one page context");
+console.log(
+  "[verify-hvut-mail-page-context-boundary] OK - MoogleMail filter/page routing uses one page context"
+);

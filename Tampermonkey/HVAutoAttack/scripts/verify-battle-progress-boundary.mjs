@@ -87,10 +87,11 @@ function checkOwner() {
       `${owner.replaceAll("\\", "/")} must not route progress queries through an if ladder`
     );
   }
-  const entryBody =
-    text.match(/export function runBattleProgressAutomation[\s\S]*?\n}/)?.[0] || "";
+  const entryBody = text.match(/export function runBattleProgressAutomation[\s\S]*?\n}/)?.[0] || "";
   if (entryBody.includes("event.type") || !entryBody.includes("event?.type")) {
-    violations.push(`${owner.replaceAll("\\", "/")} entry must fail closed for null progress events`);
+    violations.push(
+      `${owner.replaceAll("\\", "/")} entry must fail closed for null progress events`
+    );
   }
   if (
     /\bexport\s+(?:function|const)\s+(?!BattleProgressEvent\b|runBattleProgressAutomation\b)/.test(
@@ -112,7 +113,9 @@ function checkOwner() {
       !ownerTestText.includes("rejects invalid progress events without reading battle facts") ||
       !ownerTestText.includes("runBattleProgressAutomation(null)")
     ) {
-      violations.push(`${ownerTest.replaceAll("\\", "/")} must cover unknown and null progress events`);
+      violations.push(
+        `${ownerTest.replaceAll("\\", "/")} must cover unknown and null progress events`
+      );
     }
   }
 }

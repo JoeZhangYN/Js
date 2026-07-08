@@ -15,19 +15,26 @@ const lines = readFileSync(TARGET, "utf8").split("\n");
 const isekaiStart = lines.findIndex((l) => /^if \(IS_ISEKAI\) \{/.test(l)) + 1;
 let mainStart = -1;
 for (let i = isekaiStart; i < lines.length; i++) {
-  if (/^\} else \{/.test(lines[i])) { mainStart = i + 1; break; }
+  if (/^\} else \{/.test(lines[i])) {
+    mainStart = i + 1;
+    break;
+  }
 }
 console.log(`# isekai IIFE: L${isekaiStart + 1}.. , main IIFE: L${mainStart + 1}..`);
 
 // 提取函数体：从定义行起花括号配对到 depth 归零
 function extractBody(start) {
-  let depth = 0, started = false, out = [];
+  let depth = 0,
+    started = false,
+    out = [];
   for (let i = start; i < lines.length && i < start + 400; i++) {
     const l = lines[i];
     out.push(l);
     for (const ch of l) {
-      if (ch === "{") { depth++; started = true; }
-      else if (ch === "}") depth--;
+      if (ch === "{") {
+        depth++;
+        started = true;
+      } else if (ch === "}") depth--;
     }
     if (started && depth <= 0) return { body: out.join("\n"), end: i };
   }
@@ -89,7 +96,8 @@ const byShort = (defs) => {
   }
   return m;
 };
-const iseShort = byShort(ise), mainShort = byShort(main);
+const iseShort = byShort(ise),
+  mainShort = byShort(main);
 
 const rows = [];
 for (const [short, iList] of iseShort) {
@@ -97,7 +105,8 @@ for (const [short, iList] of iseShort) {
   if (!mList) continue;
   for (const a of iList)
     for (const b of mList) {
-      const na = norm(a.body), nb = norm(b.body);
+      const na = norm(a.body),
+        nb = norm(b.body);
       const s = na === nb ? 1 : sim(na, nb);
       if (s >= 0.75)
         rows.push({
@@ -122,19 +131,28 @@ if (process.argv[2] === "diff") {
     const short = k.split(".")[1];
     if (only && short !== only) continue;
     const mv = main.get(k);
-    if (!mv) { console.log(`## ${k}: main 无对应`); continue; }
+    if (!mv) {
+      console.log(`## ${k}: main 无对应`);
+      continue;
+    }
     if (norm(v.body) === norm(mv.body)) continue;
     writeFileSync(join(dir, "a"), v.body + "\n");
     writeFileSync(join(dir, "b"), mv.body + "\n");
     console.log(`\n===== ${k} (ise L${v.line} vs main L${mv.line}) =====`);
     const { execSync } = await import("node:child_process");
     try {
-      execSync(`git diff --no-index --word-diff=plain -- "${join(dir, "a")}" "${join(dir, "b")}"`, { stdio: "inherit" });
-    } catch { /* git diff exits 1 on differences */ }
+      execSync(`git diff --no-index --word-diff=plain -- "${join(dir, "a")}" "${join(dir, "b")}"`, {
+        stdio: "inherit",
+      });
+    } catch {
+      /* git diff exits 1 on differences */
+    }
   }
 } else {
   rows.sort((x, y) => (y.s === "IDENT" ? 2 : +y.s) - (x.s === "IDENT" ? 2 : +x.s));
   for (const r of rows)
-    console.log(`${String(r.s).padEnd(5)} len=${String(r.len).padStart(5)} ${r.ise.padEnd(38)} <-> ${r.main}`);
+    console.log(
+      `${String(r.s).padEnd(5)} len=${String(r.len).padStart(5)} ${r.ise.padEnd(38)} <-> ${r.main}`
+    );
   console.log(`# total candidates: ${rows.length}`);
 }

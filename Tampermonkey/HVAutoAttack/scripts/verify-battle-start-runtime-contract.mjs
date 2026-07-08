@@ -87,9 +87,11 @@ if (!/const battleStartRuntimeEventHandlers\s*=\s*Object\.freeze\(/.test(ownerTe
   violations.push(`${owner.replaceAll("\\", "/")} must route events through one table`);
 }
 if (!ownerText.includes("battleStartRuntimeEventHandlers[event?.type]")) {
-  violations.push(`${owner.replaceAll("\\", "/")} must reject null events without runtime side effects`);
+  violations.push(
+    `${owner.replaceAll("\\", "/")} must reject null events without runtime side effects`
+  );
 }
-if (!ownerText.includes("?? rejectUnknownStartRuntimeEvent(event)")) {
+if (!/\?\?\s*rejectUnknownStartRuntimeEvent\(event\)/.test(ownerText)) {
   violations.push(`${owner.replaceAll("\\", "/")} must record rejected start runtime events`);
 }
 if (/if\s*\(\s*event\.type\s*===\s*EVENT_/.test(ownerText)) {

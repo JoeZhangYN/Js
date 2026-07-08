@@ -1,9 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
-import {
-  STAMINA_RECOVERY_FAILURE_KEY,
-  StaminaEvent,
-  runStaminaAutomation,
-} from "./stamina.js";
+import { STAMINA_RECOVERY_FAILURE_KEY, StaminaEvent, runStaminaAutomation } from "./stamina.js";
 
 const mocks = vi.hoisted(() => ({
   post: vi.fn(),

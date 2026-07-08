@@ -9,11 +9,7 @@ vi.mock("./storage.js", async () => {
   return { ...actual, setValue: mocks.setValue };
 });
 
-import {
-  CD_RUNTIME_FAILURE_KEY,
-  CdRuntimeEvent,
-  runCdRuntimeAutomation,
-} from "./cd-tracker.js";
+import { CD_RUNTIME_FAILURE_KEY, CdRuntimeEvent, runCdRuntimeAutomation } from "./cd-tracker.js";
 import { g } from "./store.js";
 
 beforeEach(() => {

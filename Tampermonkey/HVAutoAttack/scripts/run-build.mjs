@@ -173,7 +173,7 @@ const commands = [
   "node scripts/verify-ability-aoe-boundary.mjs",
   "vite build",
   "node scripts/verify-metadata.mjs",
-  "node scripts/postbuild-check.mjs"
+  "node scripts/postbuild-check.mjs",
 ];
 
 for (const command of commands) {

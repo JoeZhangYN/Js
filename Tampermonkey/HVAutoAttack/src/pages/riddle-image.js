@@ -71,21 +71,35 @@ function getImageBlobFromCanvas() {
       reject(e);
       return;
     }
-    canvas.toBlob((blob) => (blob ? resolve(blob) : reject(new Error("toBlob null"))), "image/jpeg", 0.95);
+    canvas.toBlob(
+      (blob) => (blob ? resolve(blob) : reject(new Error("toBlob null"))),
+      "image/jpeg",
+      0.95
+    );
   });
 }
 
 async function getImageBlobFromFetch(url) {
   // 1) only-if-cached（未命中抛 TypeError，捕获后继续）
   try {
-    const res = await fetch(url, { method: "GET", credentials: "same-origin", cache: "only-if-cached", mode: "same-origin" });
+    const res = await fetch(url, {
+      method: "GET",
+      credentials: "same-origin",
+      cache: "only-if-cached",
+      mode: "same-origin",
+    });
     if (res.status === 200) return await res.blob();
   } catch {
     /* miss */
   }
   // 2) force-cache
   try {
-    const res = await fetch(url, { method: "GET", credentials: "same-origin", cache: "force-cache", mode: "same-origin" });
+    const res = await fetch(url, {
+      method: "GET",
+      credentials: "same-origin",
+      cache: "force-cache",
+      mode: "same-origin",
+    });
     if (res.status === 200) return await res.blob();
   } catch {
     /* ignore */

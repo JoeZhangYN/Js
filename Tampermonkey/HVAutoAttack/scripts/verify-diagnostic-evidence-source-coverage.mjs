@@ -12,9 +12,10 @@ const navigationAuditText = fs.readFileSync(navigationAuditFile, "utf8");
 const testText = fs.readFileSync(testFile, "utf8");
 const violations = [];
 
-const enumEntries = [...keysText.matchAll(/([A-Z0-9_]+):\s*"([^"]+)"/g)].map(
-  ([, name, key]) => ({ name, key })
-);
+const enumEntries = [...keysText.matchAll(/([A-Z0-9_]+):\s*"([^"]+)"/g)].map(([, name, key]) => ({
+  name,
+  key,
+}));
 
 const sourceEntries = [
   ...keysText.matchAll(/source\(\s*"([^"]+)",\s*DiagnosticEvidenceKey\.([A-Z0-9_]+)\s*\)/gs),
@@ -36,7 +37,9 @@ for (const { name, key } of enumEntries) {
 }
 
 if (duplicateSources.length) {
-  violations.push(`duplicate diagnostic source names: ${[...new Set(duplicateSources)].join(", ")}`);
+  violations.push(
+    `duplicate diagnostic source names: ${[...new Set(duplicateSources)].join(", ")}`
+  );
 }
 
 if (!keysText.includes("item.key !== DiagnosticEvidenceKey.BATTLE_API_RESPONSE_RECOVERY")) {

@@ -52,4 +52,6 @@ if (violations.length) {
   process.exit(1);
 }
 
-console.log("[verify-hvut-settings-persistence-boundary] OK - settings persistence failures fail closed");
+console.log(
+  "[verify-hvut-settings-persistence-boundary] OK - settings persistence failures fail closed"
+);

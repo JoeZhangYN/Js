@@ -59,14 +59,20 @@ if (ownerEntry.includes("event.type")) {
   violations.push(`${owner.replaceAll("\\", "/")} entry must reject null events without throwing`);
 }
 if (!ownerEntry.includes("event?.type")) {
-  violations.push(`${owner.replaceAll("\\", "/")} entry must fail closed for unknown or null events`);
+  violations.push(
+    `${owner.replaceAll("\\", "/")} entry must fail closed for unknown or null events`
+  );
 }
 const ownerTestText = fs.readFileSync(path.join(root, ownerTest), "utf8");
 if (
-  !ownerTestText.includes("rejects unknown and null battle turn events without changing turn state") ||
+  !ownerTestText.includes(
+    "rejects unknown and null battle turn events without changing turn state"
+  ) ||
   !ownerTestText.includes("runBattleTurnAutomation(null)")
 ) {
-  violations.push(`${ownerTest.replaceAll("\\", "/")} must cover unknown and null battle turn events`);
+  violations.push(
+    `${ownerTest.replaceAll("\\", "/")} must cover unknown and null battle turn events`
+  );
 }
 
 for (const legacy of ["resetTurn", "advanceTurn", "readCurrentTurn"]) {

@@ -3,7 +3,9 @@ import { DiagnosticEvidenceKey } from "../core/diagnostic-evidence-keys.js";
 import { buildApiResponseScript } from "./battle-api-response-script.js";
 
 function installApiResponse() {
-  Function(`${buildApiResponseScript({ world: "persistent", apiJsonUrl: "https://hv/json" })}; window.__testApiResponse = api_response;`)();
+  Function(
+    `${buildApiResponseScript({ world: "persistent", apiJsonUrl: "https://hv/json" })}; window.__testApiResponse = api_response;`
+  )();
   return window.__testApiResponse;
 }
 

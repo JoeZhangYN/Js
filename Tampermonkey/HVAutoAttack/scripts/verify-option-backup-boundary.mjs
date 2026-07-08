@@ -66,7 +66,7 @@ for (const required of [
   "OptionBackupEvent",
   "OPTION_BACKUP_FAILURE_KEY",
   "STORAGE_KEYS.BACKUP",
-  "capability: \"optionBackup\"",
+  'capability: "optionBackup"',
   "HAS_CODE",
   "RENDER_LIST_ITEMS",
   "persistOptionBackups",
@@ -137,7 +137,9 @@ for (const legacy of [
   if (!settingsText.includes(legacy)) {
     continue;
   }
-  violations.push(`${settingsRender.replaceAll("\\", "/")} must not keep legacy backup command ${legacy}`);
+  violations.push(
+    `${settingsRender.replaceAll("\\", "/")} must not keep legacy backup command ${legacy}`
+  );
 }
 const settingsBackupBlock =
   /gE\(["']\.hvAABackup["'][\s\S]*?gE\(["']\.hvAARestore["']/.exec(settingsText)?.[0] || "";
@@ -145,14 +147,28 @@ const settingsRestoreBlock =
   /gE\(["']\.hvAARestore["'][\s\S]*?gE\(["']\.hvAADelete["']/.exec(settingsText)?.[0] || "";
 const settingsDeleteBlock =
   /gE\(["']\.hvAADelete["'][\s\S]*?gE\(["']\.hvAAExport["']/.exec(settingsText)?.[0] || "";
-if (/runOptionBackupAutomation\(\{\s*type:\s*OptionBackupEvent\.(?:SAVE_CURRENT|DELETE)\b/.test(settingsBackupBlock)) {
-  violations.push(`${settingsRender.replaceAll("\\", "/")} backup button must not bypass checked backup commands`);
+if (
+  /runOptionBackupAutomation\(\{\s*type:\s*OptionBackupEvent\.(?:SAVE_CURRENT|DELETE)\b/.test(
+    settingsBackupBlock
+  )
+) {
+  violations.push(
+    `${settingsRender.replaceAll("\\", "/")} backup button must not bypass checked backup commands`
+  );
 }
-if (/runOptionBackupAutomation\(\{\s*type:\s*OptionBackupEvent\.DELETE\b/.test(settingsDeleteBlock)) {
-  violations.push(`${settingsRender.replaceAll("\\", "/")} delete button must not bypass checked backup commands`);
+if (
+  /runOptionBackupAutomation\(\{\s*type:\s*OptionBackupEvent\.DELETE\b/.test(settingsDeleteBlock)
+) {
+  violations.push(
+    `${settingsRender.replaceAll("\\", "/")} delete button must not bypass checked backup commands`
+  );
 }
-if (/runOptionBackupAutomation\(\{\s*type:\s*OptionBackupEvent\.RESTORE\b/.test(settingsRestoreBlock)) {
-  violations.push(`${settingsRender.replaceAll("\\", "/")} restore button must not bypass checked backup commands`);
+if (
+  /runOptionBackupAutomation\(\{\s*type:\s*OptionBackupEvent\.RESTORE\b/.test(settingsRestoreBlock)
+) {
+  violations.push(
+    `${settingsRender.replaceAll("\\", "/")} restore button must not bypass checked backup commands`
+  );
 }
 
 for (const legacy of [
@@ -176,10 +192,14 @@ if (!ownerText.includes("const optionBackupEventHandlers")) {
 const ownerEntry =
   ownerText.match(/export function runOptionBackupAutomation[\s\S]*?\n}/)?.[0] || "";
 if (/if\s*\(\s*event\.type\s*===/.test(ownerEntry)) {
-  violations.push(`${owner.replaceAll("\\", "/")} entry must not reintroduce an event.type if-chain`);
+  violations.push(
+    `${owner.replaceAll("\\", "/")} entry must not reintroduce an event.type if-chain`
+  );
 }
 if (/\bevent\.type\b/.test(ownerEntry) || !/\bevent\?\.type\b/.test(ownerEntry)) {
-  violations.push(`${owner.replaceAll("\\", "/")} entry must fail closed for null option backup events`);
+  violations.push(
+    `${owner.replaceAll("\\", "/")} entry must fail closed for null option backup events`
+  );
 }
 for (const internal of [
   "readOptionBackups(",
@@ -208,7 +228,7 @@ for (const required of [
   'throw new Error("evidence blocked")',
   'throw new Error("console blocked")',
   "not.toThrow()",
-  "capability: \"optionBackup\"",
+  'capability: "optionBackup"',
   "OPTION_BACKUP_FAILURE_KEY",
 ]) {
   if (!ownerTestText.includes(required)) {
@@ -232,12 +252,20 @@ for (const required of [
     violations.push(`${failureTest.replaceAll("\\", "/")} must cover ${required}`);
   }
 }
-if (!/try\s*{[\s\S]*setValue\(STORAGE_KEYS\.BACKUP,\s*backups\);[\s\S]*return true;[\s\S]*}\s*catch/.test(ownerText)) {
+if (
+  !/try\s*{[\s\S]*setValue\(STORAGE_KEYS\.BACKUP,\s*backups\);[\s\S]*return true;[\s\S]*}\s*catch/.test(
+    ownerText
+  )
+) {
   violations.push(
     `${owner.replaceAll("\\", "/")} must classify backup persistence failures before reporting success`
   );
 }
-if (!/catch\s*\(error\)\s*{[\s\S]*recordOptionBackupFailure\(EVENT_RESTORE,\s*"restoreFailed"/.test(ownerText)) {
+if (
+  !/catch\s*\(error\)\s*{[\s\S]*recordOptionBackupFailure\(EVENT_RESTORE,\s*"restoreFailed"/.test(
+    ownerText
+  )
+) {
   violations.push(
     `${owner.replaceAll("\\", "/")} must classify restore write failures before reporting success`
   );
@@ -254,27 +282,39 @@ if (
 if (!/globalThis\.sessionStorage\?\.setItem\(OPTION_BACKUP_FAILURE_KEY/.test(ownerText)) {
   violations.push(`${owner.replaceAll("\\", "/")} must persist option backup failure evidence`);
 }
-if (!/normalizeOptionBackups\(EVENT_READ,\s*getValue\(STORAGE_KEYS\.BACKUP,\s*true\) \|\| {}\)/.test(ownerText)) {
-  violations.push(`${owner.replaceAll("\\", "/")} must normalize malformed backup storage at read entry`);
+if (
+  !/normalizeOptionBackups\(EVENT_READ,\s*getValue\(STORAGE_KEYS\.BACKUP,\s*true\) \|\| {}\)/.test(
+    ownerText
+  )
+) {
+  violations.push(
+    `${owner.replaceAll("\\", "/")} must normalize malformed backup storage at read entry`
+  );
 }
 
 const diagnosticKeysText = fs.readFileSync(path.join(root, diagnosticKeys), "utf8");
 for (const required of [
-  "OPTION_BACKUP_FAILURE: \"HVAA:lastOptionBackupFailure\"",
-  "source(\"optionBackupFailure\", DiagnosticEvidenceKey.OPTION_BACKUP_FAILURE)",
+  'OPTION_BACKUP_FAILURE: "HVAA:lastOptionBackupFailure"',
+  'source("optionBackupFailure", DiagnosticEvidenceKey.OPTION_BACKUP_FAILURE)',
 ]) {
   if (!diagnosticKeysText.includes(required)) {
     violations.push(`${diagnosticKeys.replaceAll("\\", "/")} must expose ${required}`);
   }
 }
 const diagnosticTestText = fs.readFileSync(path.join(root, diagnosticTest), "utf8");
-for (const required of [
-  "HVAA:lastOptionBackupFailure",
-  "optionBackupFailure: { capability: \"optionBackup\", action: \"restore\", reason: \"restoreFailed\" }",
-]) {
+for (const required of ["HVAA:lastOptionBackupFailure"]) {
   if (!diagnosticTestText.includes(required)) {
     violations.push(`${diagnosticTest.replaceAll("\\", "/")} must cover ${required}`);
   }
+}
+if (
+  !/optionBackupFailure:\s*\{[\s\S]*capability:\s*"optionBackup"[\s\S]*action:\s*"restore"[\s\S]*reason:\s*"restoreFailed"[\s\S]*\}/.test(
+    diagnosticTestText
+  )
+) {
+  violations.push(
+    `${diagnosticTest.replaceAll("\\", "/")} must cover optionBackupFailure restoreFailed evidence`
+  );
 }
 
 if (violations.length) {

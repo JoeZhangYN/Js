@@ -21,7 +21,10 @@ describe("firstByFinWeight", () => {
       m({ id: 2, finWeight: 2 }),
       m({ id: 3, finWeight: 9 }),
     ];
-    const r = runBattleTargetStrategy({ type: BattleTargetStrategyEvent.FIRST_BY_FIN_WEIGHT, alive });
+    const r = runBattleTargetStrategy({
+      type: BattleTargetStrategyEvent.FIRST_BY_FIN_WEIGHT,
+      alive,
+    });
     expect(r.id).toBe(2);
   });
   it("空 → undefined", () => {
@@ -33,11 +36,7 @@ describe("firstByFinWeight", () => {
 
 describe("firstByOrder", () => {
   it("选 order 最小", () => {
-    const alive = [
-      m({ id: 1, order: 2 }),
-      m({ id: 2, order: 0 }),
-      m({ id: 3, order: 1 }),
-    ];
+    const alive = [m({ id: 1, order: 2 }), m({ id: 2, order: 0 }), m({ id: 3, order: 1 })];
     const r = runBattleTargetStrategy({ type: BattleTargetStrategyEvent.FIRST_BY_ORDER, alive });
     expect(r.id).toBe(2);
   });
@@ -63,10 +62,7 @@ describe("highestAbsHp", () => {
     expect(r.id).toBe(2);
   });
   it("hpAbsNow 相同 → 取 order 最小(稳定)", () => {
-    const alive = [
-      m({ id: 1, order: 1, hpAbsNow: 500 }),
-      m({ id: 2, order: 0, hpAbsNow: 500 }),
-    ];
+    const alive = [m({ id: 1, order: 1, hpAbsNow: 500 }), m({ id: 2, order: 0, hpAbsNow: 500 })];
     const r = runBattleTargetStrategy({ type: BattleTargetStrategyEvent.HIGHEST_ABS_HP, alive });
     expect(r.id).toBe(2);
   });

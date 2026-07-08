@@ -72,11 +72,15 @@ describe("monster-cache（按 MID 键）", () => {
   });
 
   it("returns null for missing or absent monster ids", () => {
-    expect(runMonsterCacheAutomation({ type: MonsterCacheEvent.READ_PROFILE, monsterId: 999 })).toBeNull();
+    expect(
+      runMonsterCacheAutomation({ type: MonsterCacheEvent.READ_PROFILE, monsterId: 999 })
+    ).toBeNull();
     expect(
       runMonsterCacheAutomation({ type: MonsterCacheEvent.READ_PROFILE, monsterId: undefined })
     ).toBeNull();
-    expect(runMonsterCacheAutomation({ type: MonsterCacheEvent.READ_PROFILE, monsterId: null })).toBeNull();
+    expect(
+      runMonsterCacheAutomation({ type: MonsterCacheEvent.READ_PROFILE, monsterId: null })
+    ).toBeNull();
   });
 
   it("writes a freshly scanned profile through the cache entry", () => {

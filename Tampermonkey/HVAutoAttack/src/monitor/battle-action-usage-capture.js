@@ -31,7 +31,10 @@ function readRecordUsageEnabled(deps, stage) {
   try {
     return deps.readOptionField("recordUsage", false);
   } catch (error) {
-    recordBattleActionUsageCaptureFailure(stage, { reason: "optionReadFailed", error: failureError(error) });
+    recordBattleActionUsageCaptureFailure(stage, {
+      reason: "optionReadFailed",
+      error: failureError(error),
+    });
     return false;
   }
 }

@@ -84,9 +84,9 @@ describe("option backup entry", () => {
       throw new Error("quota exceeded");
     };
 
-    expect(runOptionBackupAutomation({ type: OptionBackupEvent.SAVE_CURRENT, code: "broken" })).toBe(
-      false
-    );
+    expect(
+      runOptionBackupAutomation({ type: OptionBackupEvent.SAVE_CURRENT, code: "broken" })
+    ).toBe(false);
 
     expect(JSON.parse(sessionStorage.getItem(OPTION_BACKUP_FAILURE_KEY))).toMatchObject({
       capability: "optionBackup",
@@ -104,7 +104,9 @@ describe("option backup entry", () => {
       throw new Error("write blocked");
     };
 
-    expect(runOptionBackupAutomation({ type: OptionBackupEvent.DELETE, code: "saved" })).toBe(false);
+    expect(runOptionBackupAutomation({ type: OptionBackupEvent.DELETE, code: "saved" })).toBe(
+      false
+    );
 
     expect(JSON.parse(sessionStorage.getItem(OPTION_BACKUP_FAILURE_KEY))).toMatchObject({
       capability: "optionBackup",
@@ -166,8 +168,8 @@ describe("option backup entry", () => {
     expect(() =>
       runOptionBackupAutomation({ type: OptionBackupEvent.SAVE_CURRENT, code: "broken" })
     ).not.toThrow();
-    expect(runOptionBackupAutomation({ type: OptionBackupEvent.SAVE_CURRENT, code: "broken" })).toBe(
-      false
-    );
+    expect(
+      runOptionBackupAutomation({ type: OptionBackupEvent.SAVE_CURRENT, code: "broken" })
+    ).toBe(false);
   });
 });

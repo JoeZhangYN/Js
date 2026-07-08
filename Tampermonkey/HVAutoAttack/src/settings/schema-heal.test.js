@@ -12,14 +12,14 @@ describe("runOptionSchema heal fields", () => {
       default: false,
       group: "Heal",
     });
-    expect(runOptionSchema({ type: OptionSchemaEvent.READ_FIELD, key: "playerMaxHp" })).toMatchObject(
-      {
-        key: "playerMaxHp",
-        kind: "number",
-        default: 17000,
-        group: "Heal",
-      }
-    );
+    expect(
+      runOptionSchema({ type: OptionSchemaEvent.READ_FIELD, key: "playerMaxHp" })
+    ).toMatchObject({
+      key: "playerMaxHp",
+      kind: "number",
+      default: 17000,
+      group: "Heal",
+    });
     expect(
       runOptionSchema({ type: OptionSchemaEvent.READ_FIELD, key: "dynamicHealSafetyPad" })
     ).toMatchObject({

@@ -97,5 +97,8 @@ function recordBridgeLifecycleEvidenceSafely(event) {
 }
 
 export function runBattleActionEventBridgeAutomation(event = { type: EVENT_INSTALL }) {
-  return battleActionEventBridgeEventHandlers[event?.type]?.(event) ?? rejectUnknownActionEventBridgeEvent(event);
+  return (
+    battleActionEventBridgeEventHandlers[event?.type]?.(event) ??
+    rejectUnknownActionEventBridgeEvent(event)
+  );
 }

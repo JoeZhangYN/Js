@@ -109,9 +109,9 @@ requireText(owner, [
   "unknownActionEventBridgeEvent",
   "BattleApiBridgeEvent.INSTALL",
   "actionEventBridgeInstalled",
-  "result.kind === \"failed\"",
-  "return runLifecycleFromBridge(\"eventStart\", BattleActionLifecycleEvent.ACTION_STARTED)",
-  "return runLifecycleFromBridge(\"eventEnd\", BattleActionLifecycleEvent.ACTION_ENDED)",
+  'result.kind === "failed"',
+  'return runLifecycleFromBridge("eventStart", BattleActionLifecycleEvent.ACTION_STARTED)',
+  'return runLifecycleFromBridge("eventEnd", BattleActionLifecycleEvent.ACTION_ENDED)',
   "eventStart",
   "eventEnd",
 ]);
@@ -129,20 +129,25 @@ if (
   violations.push(`${owner.replaceAll("\\", "/")} may export only its event entry`);
 }
 const entryBody =
-  ownerText.match(/export function runBattleActionEventBridgeAutomation\([^)]*\) \{[\s\S]*?\n\}/)
-    ?.[0] || "";
+  ownerText.match(
+    /export function runBattleActionEventBridgeAutomation\([^)]*\) \{[\s\S]*?\n\}/
+  )?.[0] || "";
 if (!/Object\.freeze\(\{[\s\S]*\[EVENT_INSTALL\]/.test(ownerText)) {
-  violations.push(`${owner.replaceAll("\\", "/")} must route events through a frozen handler table`);
+  violations.push(
+    `${owner.replaceAll("\\", "/")} must route events through a frozen handler table`
+  );
 }
 if (/event\.type\s*===/.test(entryBody)) {
   violations.push(`${owner.replaceAll("\\", "/")} entry must dispatch by handler table`);
 }
 if (
-  !ownerText.includes(
-    "battleActionEventBridgeEventHandlers[event?.type]?.(event) ?? rejectUnknownActionEventBridgeEvent(event)"
+  !/battleActionEventBridgeEventHandlers\[event\?\.type\]\?\.\(event\)\s*\?\?\s*rejectUnknownActionEventBridgeEvent\(event\)/.test(
+    ownerText
   )
 ) {
-  violations.push(`${owner.replaceAll("\\", "/")} must route unknown events through bridge evidence`);
+  violations.push(
+    `${owner.replaceAll("\\", "/")} must route unknown events through bridge evidence`
+  );
 }
 const rejectionBody =
   ownerText.match(/function rejectUnknownActionEventBridgeEvent\(event\) \{[\s\S]*?\n\}/)?.[0] ||
@@ -158,9 +163,13 @@ for (const required of [
   }
 }
 if (rejectionBody.includes("runBattleActionLifecycleAutomation(event ?? null)")) {
-  violations.push(`${owner.replaceAll("\\", "/")} must not misclassify bridge rejection as lifecycle rejection`);
+  violations.push(
+    `${owner.replaceAll("\\", "/")} must not misclassify bridge rejection as lifecycle rejection`
+  );
 }
-const ownerTestText = fs.existsSync(path.join(root, ownerTest)) ? fs.readFileSync(path.join(root, ownerTest), "utf8") : "";
+const ownerTestText = fs.existsSync(path.join(root, ownerTest))
+  ? fs.readFileSync(path.join(root, ownerTest), "utf8")
+  : "";
 for (const required of [
   "rejects unknown events",
   "rejects null events through bridge evidence instead of throwing",
@@ -176,7 +185,9 @@ for (const required of [
   }
 }
 if (!fs.existsSync(path.join(root, evidenceFailureTest))) {
-  violations.push(`${evidenceFailureTest.replaceAll("\\", "/")} must cover bridge evidence failures`);
+  violations.push(
+    `${evidenceFailureTest.replaceAll("\\", "/")} must cover bridge evidence failures`
+  );
 } else {
   const evidenceFailureText = fs.readFileSync(path.join(root, evidenceFailureTest), "utf8");
   for (const required of [

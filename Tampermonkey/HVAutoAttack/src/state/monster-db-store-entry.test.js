@@ -11,9 +11,9 @@ describe("runMonsterDbStoreAutomation entry behavior", () => {
     const { MonsterDbStoreEvent, runMonsterDbStoreAutomation } =
       await loadStoreWithIndexedDb(makeFakeIndexedDb());
 
-    expect(
-      await runMonsterDbStoreAutomation({ type: MonsterDbStoreEvent.PROFILE_IS_EMPTY })
-    ).toBe(true);
+    expect(await runMonsterDbStoreAutomation({ type: MonsterDbStoreEvent.PROFILE_IS_EMPTY })).toBe(
+      true
+    );
     await runMonsterDbStoreAutomation({
       type: MonsterDbStoreEvent.PROFILE_WRITE,
       info: { monsterId: 84361, monsterName: "Ariel", fire: 50 },
@@ -25,9 +25,9 @@ describe("runMonsterDbStoreAutomation entry behavior", () => {
         monsterId: 84361,
       })
     ).toMatchObject({ monsterId: 84361, fire: 50 });
-    expect(
-      await runMonsterDbStoreAutomation({ type: MonsterDbStoreEvent.PROFILE_IS_EMPTY })
-    ).toBe(false);
+    expect(await runMonsterDbStoreAutomation({ type: MonsterDbStoreEvent.PROFILE_IS_EMPTY })).toBe(
+      false
+    );
   });
 
   it("bulk writes only keyed monster profiles", async () => {

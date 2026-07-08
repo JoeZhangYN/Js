@@ -13,26 +13,41 @@ function requirePart(label, body, part) {
 }
 
 const helperRegion =
-  /var create_hvut_mooglemail_parse_evidence = function \(stage, detail\) \{[\s\S]*?\n  var reloadCurrentPage/.exec(text)?.[0] || "";
+  /var create_hvut_mooglemail_parse_evidence = function \(stage, detail\) \{[\s\S]*?\n  var reloadCurrentPage/.exec(
+    text
+  )?.[0] || "";
 const modernCredits =
-  /_mm\.credits = \{[\s\S]*?\n    if \(_mm\.credits\.init\(\) === false\) \{[\s\S]*?\n    \}/.exec(text)?.[0] || "";
+  /_mm\.credits = \{[\s\S]*?\n    if \(_mm\.credits\.init\(\) === false\) \{[\s\S]*?\n    \}/.exec(
+    text
+  )?.[0] || "";
 const legacyCredits =
   /_mm\.credits_list = \[\];[\s\S]*?\n    _mm\.credits_multi = function/.exec(text)?.[0] || "";
-const mailParseBodies = [...text.matchAll(/parse: function \(html\) \{[\s\S]*?\n      \},\n      update: async function/g)].map((m) => m[0]);
+const mailParseBodies = [
+  ...text.matchAll(/parse: function \(html\) \{[\s\S]*?\n      \},\n      update: async function/g),
+].map((m) => m[0]);
 const legacyMailParse =
-  /_mm\.mail_parse = function \(arg\) \{[\s\S]*?\n    \};\n\n    _mm\.mail_update/.exec(text)?.[0] || "";
+  /_mm\.mail_parse = function \(arg\) \{[\s\S]*?\n    \};\n\n    _mm\.mail_update/.exec(
+    text
+  )?.[0] || "";
 const modernPagePager =
-  /pager: function \(pager, p\) \{[\s\S]*?\n      \},\n      create: function/.exec(text)?.[0] || "";
+  /pager: function \(pager, p\) \{[\s\S]*?\n      \},\n      create: function/.exec(text)?.[0] ||
+  "";
 const modernPageCreate =
-  /create: function \(list, p\) \{[\s\S]*?\n      \},\n      modify: function/.exec(text)?.[0] || "";
+  /create: function \(list, p\) \{[\s\S]*?\n      \},\n      modify: function/.exec(text)?.[0] ||
+  "";
 const modernPageModify =
   /modify: function \(mail\) \{[\s\S]*?\n      \},\n      go: function/.exec(text)?.[0] || "";
 const legacyPagePager =
-  /_mm\.page_pager = function \(pager, p\) \{[\s\S]*?\n    \};\n\n    _mm\.page_create/.exec(text)?.[0] || "";
+  /_mm\.page_pager = function \(pager, p\) \{[\s\S]*?\n    \};\n\n    _mm\.page_create/.exec(
+    text
+  )?.[0] || "";
 const legacyPageCreate =
-  /_mm\.page_create = function \(list, p\) \{[\s\S]*?\n    \};\n\n    _mm\.page_modify/.exec(text)?.[0] || "";
+  /_mm\.page_create = function \(list, p\) \{[\s\S]*?\n    \};\n\n    _mm\.page_modify/.exec(
+    text
+  )?.[0] || "";
 const legacyPageModify =
-  /_mm\.page_modify = function \(mail\) \{[\s\S]*?\n    \};\n\n    _mm\.page_go/.exec(text)?.[0] || "";
+  /_mm\.page_modify = function \(mail\) \{[\s\S]*?\n    \};\n\n    _mm\.page_go/.exec(text)?.[0] ||
+  "";
 
 for (const [label, body] of [
   ["MoogleMail parse helper", helperRegion],
@@ -50,7 +65,9 @@ for (const [label, body] of [
 }
 
 if (mailParseBodies.length !== 1) {
-  violations.push(`${target} must keep one modern MoogleMail parser, found ${mailParseBodies.length}`);
+  violations.push(
+    `${target} must keep one modern MoogleMail parser, found ${mailParseBodies.length}`
+  );
 }
 const modernMailParse = mailParseBodies[0] || "";
 
@@ -232,14 +249,46 @@ for (const [label, body, stage] of [
     "view.attach.unshift({",
   ]) {
     if (body.includes(forbidden)) {
-      violations.push(`${target} ${label} must delegate view identity to apply_hvut_mooglemail_view_identity`);
+      violations.push(
+        `${target} ${label} must delegate view identity to apply_hvut_mooglemail_view_identity`
+      );
     }
   }
 }
 
-for (const [label, body, stateArg, prevKey, nextKey, prevButton, nextButton, prevStage, nextStage] of [
-  ["modern MoogleMail page pager", modernPagePager, "_mm.page", "prev", "next", "_mm.page.node.prev", "_mm.page.node.next", "pagePrevHref", "pageNextHref"],
-  ["legacy MoogleMail page pager", legacyPagePager, "_mm", "page_prev", "page_next", "_mm.node.page_prev", "_mm.node.page_next", "legacyPagePrevHref", "legacyPageNextHref"],
+for (const [
+  label,
+  body,
+  stateArg,
+  prevKey,
+  nextKey,
+  prevButton,
+  nextButton,
+  prevStage,
+  nextStage,
+] of [
+  [
+    "modern MoogleMail page pager",
+    modernPagePager,
+    "_mm.page",
+    "prev",
+    "next",
+    "_mm.page.node.prev",
+    "_mm.page.node.next",
+    "pagePrevHref",
+    "pageNextHref",
+  ],
+  [
+    "legacy MoogleMail page pager",
+    legacyPagePager,
+    "_mm",
+    "page_prev",
+    "page_next",
+    "_mm.node.page_prev",
+    "_mm.node.page_next",
+    "legacyPagePrevHref",
+    "legacyPageNextHref",
+  ],
 ]) {
   requirePart(label, body, `update_hvut_mooglemail_page_window(${stateArg}, pager, p, {`);
   requirePart(label, body, `prevKey: '${prevKey}',`);
@@ -249,7 +298,9 @@ for (const [label, body, stateArg, prevKey, nextKey, prevButton, nextButton, pre
   requirePart(label, body, `prevStage: '${prevStage}',`);
   requirePart(label, body, `nextStage: '${nextStage}',`);
   if (body.includes("parse_hvut_mooglemail_page_href(")) {
-    violations.push(`${target} ${label} must delegate page-window parsing to update_hvut_mooglemail_page_window`);
+    violations.push(
+      `${target} ${label} must delegate page-window parsing to update_hvut_mooglemail_page_window`
+    );
   }
 }
 
@@ -257,17 +308,29 @@ for (const [label, body, rowName, filter, stage] of [
   ["modern MoogleMail page create", modernPageCreate, "tr", "_mm.page.filter", "pageRowMid"],
   ["legacy MoogleMail page create", legacyPageCreate, "row", "_mm.page_filter", "legacyPageRowMid"],
 ]) {
-  requirePart(label, body, `const rowRecord = parse_hvut_mooglemail_page_row(${rowName}, ${filter}, '${stage}');`);
+  requirePart(
+    label,
+    body,
+    `const rowRecord = parse_hvut_mooglemail_page_row(${rowName}, ${filter}, '${stage}');`
+  );
   requirePart(label, body, "if (rowRecord.kind === 'empty') {");
   requirePart(label, body, "if (rowRecord.kind === 'rejected') {");
   requirePart(label, body, "if (!--count) scrollIntoView(table);");
   requirePart(label, body, "return;");
   requirePart(label, body, "const { mid, page } = rowRecord;");
   if (body.includes("parse_hvut_mooglemail_mid(")) {
-    violations.push(`${target} ${label} must delegate page row identity to parse_hvut_mooglemail_page_row`);
+    violations.push(
+      `${target} ${label} must delegate page row identity to parse_hvut_mooglemail_page_row`
+    );
   }
-  if (body.includes("Date.parse(") || body.includes("returned = user === 'MoogleMail'") || body.includes("mail.page = { filter:")) {
-    violations.push(`${target} ${label} must not reassemble mailbox page record outside parse_hvut_mooglemail_page_row`);
+  if (
+    body.includes("Date.parse(") ||
+    body.includes("returned = user === 'MoogleMail'") ||
+    body.includes("mail.page = { filter:")
+  ) {
+    violations.push(
+      `${target} ${label} must not reassemble mailbox page record outside parse_hvut_mooglemail_page_row`
+    );
   }
 }
 
@@ -288,7 +351,9 @@ for (const [label, body] of [
     "hvut-mm-nodb",
   ]) {
     if (body.includes(forbidden)) {
-      violations.push(`${target} ${label} must delegate page row rendering to render_hvut_mooglemail_page_row`);
+      violations.push(
+        `${target} ${label} must delegate page row rendering to render_hvut_mooglemail_page_row`
+      );
     }
   }
 }
@@ -330,4 +395,6 @@ if (violations.length) {
   process.exit(1);
 }
 
-console.log("[verify-hvut-mooglemail-parse-boundary] OK - MoogleMail parse failures fail closed with evidence");
+console.log(
+  "[verify-hvut-mooglemail-parse-boundary] OK - MoogleMail parse failures fail closed with evidence"
+);

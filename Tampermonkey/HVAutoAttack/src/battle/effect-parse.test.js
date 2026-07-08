@@ -27,9 +27,9 @@ describe("runBattleEffectParse", () => {
   });
 
   it("falls back for missing or malformed metadata", () => {
-    expect(runBattleEffectParse({ type: BattleEffectParseEvent.READ_EFFECT, img: effect() })).toEqual(
-      { name: "", turns: Infinity }
-    );
+    expect(
+      runBattleEffectParse({ type: BattleEffectParseEvent.READ_EFFECT, img: effect() })
+    ).toEqual({ name: "", turns: Infinity });
   });
 
   it("rejects unknown effect parse events", () => {

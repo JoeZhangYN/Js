@@ -36,7 +36,13 @@ export function makeFakeIndexedDb() {
   };
   return {
     open: () => {
-      const req = { result: db, error: null, onupgradeneeded: null, onsuccess: null, onerror: null };
+      const req = {
+        result: db,
+        error: null,
+        onupgradeneeded: null,
+        onsuccess: null,
+        onerror: null,
+      };
       setTimeout(() => {
         req.onupgradeneeded?.();
         req.onsuccess?.();

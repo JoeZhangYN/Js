@@ -85,7 +85,9 @@ if (!ownerText.includes("./battle-round-runtime.js")) {
 }
 for (const required of ["DEFAULT_ROUND_COUNT", "normalizeRoundCount", "roundRuntime"]) {
   if (!runtimeOwnerText.includes(required)) {
-    violations.push(`${runtimeOwner.replaceAll("\\", "/")} must internalize round count invariants`);
+    violations.push(
+      `${runtimeOwner.replaceAll("\\", "/")} must internalize round count invariants`
+    );
   }
 }
 for (const required of [
@@ -97,17 +99,25 @@ for (const required of [
   "roundPersistenceFailed",
 ]) {
   if (!ownerText.includes(required)) {
-    violations.push(`${owner.replaceAll("\\", "/")} must route round persistence through ${required}`);
+    violations.push(
+      `${owner.replaceAll("\\", "/")} must route round persistence through ${required}`
+    );
   }
 }
 if (!/if \(!persistBattleRoundValue\("record-type"[\s\S]*return false;/.test(ownerText)) {
-  violations.push(`${owner.replaceAll("\\", "/")} must fail closed when round type persistence fails`);
+  violations.push(
+    `${owner.replaceAll("\\", "/")} must fail closed when round type persistence fails`
+  );
 }
 if (!/if \(!persistBattleRoundValue\("record-count-now"[\s\S]*return false;/.test(ownerText)) {
-  violations.push(`${owner.replaceAll("\\", "/")} must fail closed when round-now persistence fails`);
+  violations.push(
+    `${owner.replaceAll("\\", "/")} must fail closed when round-now persistence fails`
+  );
 }
 if (!/if \(!persistBattleRoundValue\("record-count-all"[\s\S]*return false;/.test(ownerText)) {
-  violations.push(`${owner.replaceAll("\\", "/")} must fail closed when round-all persistence fails`);
+  violations.push(
+    `${owner.replaceAll("\\", "/")} must fail closed when round-all persistence fails`
+  );
 }
 for (const required of [
   "BATTLE_ROUND_FAILURE_KEY",
@@ -145,8 +155,7 @@ if (/if\s*\(\s*event\.type\s*===\s*EVENT_/.test(ownerText)) {
   );
 }
 const entryBody =
-  ownerText.match(/export function runBattleRoundAutomation\([^)]*\) \{[\s\S]*?\n\}/)?.[0] ||
-  "";
+  ownerText.match(/export function runBattleRoundAutomation\([^)]*\) \{[\s\S]*?\n\}/)?.[0] || "";
 if (/battleRoundEventHandlers\[event\.type\]/.test(entryBody)) {
   violations.push(`${owner.replaceAll("\\", "/")} must fail closed for invalid round events`);
 }

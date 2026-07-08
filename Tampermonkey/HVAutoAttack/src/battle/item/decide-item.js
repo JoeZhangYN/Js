@@ -9,7 +9,10 @@ import { BattleItemFactsEvent, runBattleItemFacts } from "./item-facts.js";
 import { BattleDynamicThresholdEvent, runBattleDynamicThreshold } from "../dynamic-threshold.js";
 import { BattleStallModeEvent, runBattleStallModeAutomation } from "../battle-stall-mode.js";
 import { BattlePotionEconomyEvent, runBattlePotionEconomy } from "../potion-economy.js";
-import { RecoveryLearningEvent, runRecoveryLearningAutomation } from "../../state/recovery-learner.js";
+import {
+  RecoveryLearningEvent,
+  runRecoveryLearningAutomation,
+} from "../../state/recovery-learner.js";
 import { BattlePlayerBuffStateEvent, runBattlePlayerBuffState } from "../player-buff-state.js";
 
 const DECIDE_GEM = "decide-gem";
@@ -83,7 +86,11 @@ function decideGemUse(event = {}) {
   if (!event.gemName) return { kind: "item-plan", plan: { type: "noop" } };
   const optEffective = { ...opt };
   if (opt.dynamicHealThreshold && event.gemName === "Health Gem") {
-    optEffective.hp1 = runBattleDynamicThreshold({ type: BattleDynamicThresholdEvent.READ_HP_THRESHOLD, facts: event, opt });
+    optEffective.hp1 = runBattleDynamicThreshold({
+      type: BattleDynamicThresholdEvent.READ_HP_THRESHOLD,
+      facts: event,
+      opt,
+    });
   }
   const result = runBattleGemDecision({
     ...event,
@@ -126,7 +133,13 @@ function decidePotion(event = {}) {
     if (
       noWaste &&
       !hasExplicitCond &&
-      runBattlePotionEconomy({ type: BattlePotionEconomyEvent.IS_WASTEFUL, potionId: order[i], deficitFacts: event.deficitFacts, tolerance: tol, readRecovery })
+      runBattlePotionEconomy({
+        type: BattlePotionEconomyEvent.IS_WASTEFUL,
+        potionId: order[i],
+        deficitFacts: event.deficitFacts,
+        tolerance: tol,
+        readRecovery,
+      })
     ) {
       continue;
     }
@@ -177,7 +190,11 @@ function decideStallTopup(event = {}) {
     !event.spiritOn &&
     (event.overcharge || 0) >= (opt.stallFocusOcThreshold ?? 60) &&
     (event.manaPercent ?? 100) < (opt.stallFocusMpMax ?? 80) &&
-    !runBattlePlayerBuffState({ type: BattlePlayerBuffStateEvent.READ_ACTIVE, state: event, img: "channeling" })
+    !runBattlePlayerBuffState({
+      type: BattlePlayerBuffStateEvent.READ_ACTIVE,
+      state: event,
+      img: "channeling",
+    })
   ) {
     attempts.push({ kind: "focus" });
   }

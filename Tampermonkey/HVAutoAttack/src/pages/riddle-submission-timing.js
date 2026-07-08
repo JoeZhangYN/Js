@@ -53,7 +53,11 @@ function createSubmissionTiming(event) {
   const submit = event.submit;
   const fallbackAnswers = event.fallbackAnswers;
   const readRemaining = event.readRemaining || readRemainingSeconds;
-  const setTitle = event.setTitle || ((remaining) => { document.title = String(remaining); });
+  const setTitle =
+    event.setTitle ||
+    ((remaining) => {
+      document.title = String(remaining);
+    });
   const getMlAnswers = event.getMlAnswers || (() => null);
   let submitted = false;
   let unreadable = 0;

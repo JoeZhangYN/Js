@@ -73,7 +73,11 @@ if ((ownerText.match(/normalizeUsage\(/g) || []).length < 2) {
 const entryBody =
   ownerText.match(/export function runBattleSkillUsageAutomation\([^)]*\) \{[\s\S]*?\n\}/)?.[0] ||
   "";
-if (!/Object\.freeze\(\{[\s\S]*\[EVENT_RESET_ROUND\][\s\S]*\[EVENT_RECORD_USE\][\s\S]*\[EVENT_READ_USAGE\]/.test(ownerText)) {
+if (
+  !/Object\.freeze\(\{[\s\S]*\[EVENT_RESET_ROUND\][\s\S]*\[EVENT_RECORD_USE\][\s\S]*\[EVENT_READ_USAGE\]/.test(
+    ownerText
+  )
+) {
   violations.push(
     `${owner.replaceAll("\\", "/")} must route events through a frozen handler table`
   );

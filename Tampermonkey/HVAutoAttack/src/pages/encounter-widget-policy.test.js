@@ -45,7 +45,8 @@ describe("planEncounterWidgetEvent", () => {
       planEncounterWidgetEvent({
         type: "widgetNewsLoaded",
         state: { date: Date.now() - 31 * 60 * 1000, key: "", count: 1, clear: true },
-        eventpane: "<table><tr><td>Inventory Capacity:</td><td>54</td><td>/</td><td>500</td></tr></table>",
+        eventpane:
+          "<table><tr><td>Inventory Capacity:</td><td>54</td><td>/</td><td>500</td></tr></table>",
         engage: true,
         pageType: "hv",
       })

@@ -130,7 +130,9 @@ describe("runBattleRoundStartAutomation", () => {
   it("stops round preparation when stamina gate pauses the round", () => {
     mocks.runBattleStaminaAutomation.mockReturnValue({ lostStamina: 99, paused: true });
 
-    expect(runBattleRoundStartAutomation({ type: BattleRoundStartEvent.ROUND_STARTED })).toBe(false);
+    expect(runBattleRoundStartAutomation({ type: BattleRoundStartEvent.ROUND_STARTED })).toBe(
+      false
+    );
 
     expect(mocks.runBattleRoundAutomation).toHaveBeenCalledWith({
       type: "recordStartContext",
@@ -155,5 +157,4 @@ describe("runBattleRoundStartAutomation", () => {
       ]),
     });
   });
-
 });

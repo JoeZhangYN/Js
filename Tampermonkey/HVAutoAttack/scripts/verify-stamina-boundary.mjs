@@ -65,8 +65,8 @@ for (const required of [
   "STAMINA_RECOVERY_FAILURE_KEY",
   "HVAA:lastStaminaRecoveryFailure",
   "recordStaminaRecoveryFailure",
-  "capability: \"staminaRecovery\"",
-  "stage: \"claimRecoveryPost\"",
+  'capability: "staminaRecovery"',
+  'stage: "claimRecoveryPost"',
   "sessionStorage.setItem(STAMINA_RECOVERY_FAILURE_KEY",
   "[HVAA] stamina recovery request failed",
   "Stamina recovery fallback must not depend on diagnostic storage.",
@@ -89,17 +89,23 @@ if (/export\s+function\s+readStaminaValue\s*\(/.test(ownerText)) {
 }
 
 if (!ownerText.includes("const staminaEventHandlers")) {
-  violations.push(`${owner.replaceAll("\\", "/")} must route stamina events through a handler table`);
+  violations.push(
+    `${owner.replaceAll("\\", "/")} must route stamina events through a handler table`
+  );
 }
 const ownerEntry = ownerText.match(/export function runStaminaAutomation[\s\S]*?\n}/)?.[0] || "";
 if (/if\s*\(\s*event\.type\s*===/.test(ownerEntry)) {
-  violations.push(`${owner.replaceAll("\\", "/")} entry must not reintroduce an event.type if-chain`);
+  violations.push(
+    `${owner.replaceAll("\\", "/")} entry must not reintroduce an event.type if-chain`
+  );
 }
 if (ownerEntry.includes("event.type")) {
   violations.push(`${owner.replaceAll("\\", "/")} entry must reject null events without throwing`);
 }
 if (!ownerEntry.includes("event?.type")) {
-  violations.push(`${owner.replaceAll("\\", "/")} entry must fail closed for unknown or null events`);
+  violations.push(
+    `${owner.replaceAll("\\", "/")} entry must fail closed for unknown or null events`
+  );
 }
 for (const internal of [
   "readStaminaValue(",
@@ -109,12 +115,16 @@ for (const internal of [
   "claimStaminaRecovery(",
 ]) {
   if (ownerEntry.includes(internal)) {
-    violations.push(`${owner.replaceAll("\\", "/")} entry must dispatch through staminaEventHandlers`);
+    violations.push(
+      `${owner.replaceAll("\\", "/")} entry must dispatch through staminaEventHandlers`
+    );
   }
 }
 const ownerTestText = fs.readFileSync(path.join(root, ownerTest), "utf8");
 if (
-  !ownerTestText.includes("rejects unknown and null stamina events without reading or writing state") ||
+  !ownerTestText.includes(
+    "rejects unknown and null stamina events without reading or writing state"
+  ) ||
   !ownerTestText.includes("runStaminaAutomation(null)") ||
   !ownerTestText.includes("querySelector).not.toHaveBeenCalled()")
 ) {
@@ -128,18 +138,20 @@ for (const required of [
   "session blocked",
   "console blocked",
   "claimRecoveryPost",
-  "kind: \"networkError\"",
+  'kind: "networkError"',
   "runNavigationAutomation).not.toHaveBeenCalled()",
   "[HVAA] stamina recovery request failed",
 ]) {
   if (!ownerTestText.includes(required)) {
-    violations.push(`${ownerTest.replaceAll("\\", "/")} must cover stamina recovery request failures`);
+    violations.push(
+      `${ownerTest.replaceAll("\\", "/")} must cover stamina recovery request failures`
+    );
   }
 }
 
 const diagnosticKeysText = fs.readFileSync(path.join(root, diagnosticKeys), "utf8");
 for (const required of [
-  "STAMINA_RECOVERY_FAILURE: \"HVAA:lastStaminaRecoveryFailure\"",
+  'STAMINA_RECOVERY_FAILURE: "HVAA:lastStaminaRecoveryFailure"',
   'source("staminaRecoveryFailure", DiagnosticEvidenceKey.STAMINA_RECOVERY_FAILURE)',
 ]) {
   if (!diagnosticKeysText.includes(required)) {

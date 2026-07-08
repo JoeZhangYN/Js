@@ -44,7 +44,15 @@
 
 /** 九抗字段名（顺序固定，与 scan/sync 解析 + UI 显示 + 视图 join 一致）。@type {readonly string[]} */
 export const RESIST_KEYS = [
-  "fire", "cold", "elec", "wind", "holy", "dark", "crushing", "slashing", "piercing",
+  "fire",
+  "cold",
+  "elec",
+  "wind",
+  "holy",
+  "dark",
+  "crushing",
+  "slashing",
+  "piercing",
 ];
 
 // scan 面板逐字段抽取（替代旧上游单条巨正则）。
@@ -59,13 +67,21 @@ const R_SCAN = {
   trainer: /Monster Trainer:<\/strong><\/td>\s*<td[^>]*>([^<]*)</,
   klass: /Monster Class:<\/strong><\/td>\s*<td[^>]*>([A-Z][a-z]+)(?:,\s*Power Level\s*(\d+))?/,
   attack: /Melee Attack:<\/strong><\/td>\s*<td[^>]*>(\w+);\s*Accuracy\s*([\d.]+)\s*\(([\d.]+)% hit/,
-  evade: /Evade\s*([\d.]+)\s*\(([\d.]+)% base chance vs player attack,\s*([\d.]+)% base chance vs player magic\)/,
+  evade:
+    /Evade\s*([\d.]+)\s*\(([\d.]+)% base chance vs player attack,\s*([\d.]+)% base chance vs player magic\)/,
   parry: /Parry\s*([\d.]+)\s*\(([\d.]+)% base chance vs player attack\)/,
   mresist: /Resist\s*([\d.]+)\s*\(([\d.]+)% base chance vs player magic\)/,
 };
 const RESIST_LABELS = {
-  fire: "Fire", cold: "Cold", elec: "Elec", wind: "Wind", holy: "Holy",
-  dark: "Dark", crushing: "Crushing", slashing: "Slashing", piercing: "Piercing",
+  fire: "Fire",
+  cold: "Cold",
+  elec: "Elec",
+  wind: "Wind",
+  holy: "Holy",
+  dark: "Dark",
+  crushing: "Crushing",
+  slashing: "Slashing",
+  piercing: "Piercing",
 };
 
 // 会改变怪物显示抗性的 debuff/状态 —— 命中则 scan 结果不可信，必须丢弃（否则把虚假抗性写库）。
@@ -107,17 +123,36 @@ export function parseScanResult(logHtml, today) {
 
   // 可选实测战斗参数（缺=undefined，additive）
   const atk = html.match(R_SCAN.attack);
-  if (atk) { info.attack = atk[1]; info.accuracy = Number(atk[2]); info.hitChance = Number(atk[3]); }
+  if (atk) {
+    info.attack = atk[1];
+    info.accuracy = Number(atk[2]);
+    info.hitChance = Number(atk[3]);
+  }
   const hp = html.match(R_SCAN.hp);
-  if (hp) { info.curHP = Number(hp[1]); info.maxHP = Number(hp[2]); }
-  const mp = html.match(R_SCAN.mp); if (mp) info.mpPct = Number(mp[1]);
-  const sp = html.match(R_SCAN.sp); if (sp) info.spPct = Number(sp[1]);
+  if (hp) {
+    info.curHP = Number(hp[1]);
+    info.maxHP = Number(hp[2]);
+  }
+  const mp = html.match(R_SCAN.mp);
+  if (mp) info.mpPct = Number(mp[1]);
+  const sp = html.match(R_SCAN.sp);
+  if (sp) info.spPct = Number(sp[1]);
   const ev = html.match(R_SCAN.evade);
-  if (ev) { info.evade = Number(ev[1]); info.evadeVsAttack = Number(ev[2]); info.evadeVsMagic = Number(ev[3]); }
+  if (ev) {
+    info.evade = Number(ev[1]);
+    info.evadeVsAttack = Number(ev[2]);
+    info.evadeVsMagic = Number(ev[3]);
+  }
   const pa = html.match(R_SCAN.parry);
-  if (pa) { info.parry = Number(pa[1]); info.parryChance = Number(pa[2]); }
+  if (pa) {
+    info.parry = Number(pa[1]);
+    info.parryChance = Number(pa[2]);
+  }
   const mr = html.match(R_SCAN.mresist);
-  if (mr) { info.magicResist = Number(mr[1]); info.magicResistChance = Number(mr[2]); }
+  if (mr) {
+    info.magicResist = Number(mr[1]);
+    info.magicResistChance = Number(mr[2]);
+  }
 
   return info;
 }

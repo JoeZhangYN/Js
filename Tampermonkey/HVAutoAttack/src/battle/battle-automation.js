@@ -96,7 +96,12 @@ function rejectUnknownBattleAutomationEvent(event, deps) {
     eventType: event?.type ?? null,
   };
   deps.recordStartup(EVENT_UNKNOWN_BATTLE_AUTOMATION, result, [
-    { capability: "routeEvent", result: false, reason: EVENT_UNKNOWN_BATTLE_AUTOMATION, eventType: result.eventType },
+    {
+      capability: "routeEvent",
+      result: false,
+      reason: EVENT_UNKNOWN_BATTLE_AUTOMATION,
+      eventType: result.eventType,
+    },
   ]);
   return false;
 }
@@ -113,5 +118,8 @@ export function runBattleAutomation(
       }),
   }
 ) {
-  return battleEventHandlers[event?.type]?.(event, deps) ?? rejectUnknownBattleAutomationEvent(event, deps);
+  return (
+    battleEventHandlers[event?.type]?.(event, deps) ??
+    rejectUnknownBattleAutomationEvent(event, deps)
+  );
 }

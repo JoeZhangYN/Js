@@ -24,7 +24,9 @@ describe("repair backend entry", () => {
   it("rejects unknown backend events without creating a backend", () => {
     const { post } = fakePost([]);
 
-    expect(runRepairBackendAutomation({ type: "unknown", isIsekai: false }, { post })).toBeUndefined();
+    expect(
+      runRepairBackendAutomation({ type: "unknown", isIsekai: false }, { post })
+    ).toBeUndefined();
   });
 
   it("rejects null backend events without creating a backend", () => {
@@ -46,7 +48,11 @@ describe("makeRepairBackend 主世界 Armory repair authority", () => {
     backend.fetchState((s) => {
       state = s;
     });
-    expect(calls[0]).toMatchObject({ href: "?s=Bazaar&ss=am&screen=repair", parm: null, type: "text" });
+    expect(calls[0]).toMatchObject({
+      href: "?s=Bazaar&ss=am&screen=repair",
+      parm: null,
+      type: "text",
+    });
     expect(state).toMatchObject({
       isIsekai: false,
       token: "tokp",

@@ -42,13 +42,21 @@ const violations = [];
 if (!src.includes("var record_hvut_top_level_parse_failure = function (stage, detail) {")) {
   violations.push({ line: 1, what: "缺少 HVUT 顶部等级解析失败证据入口" });
 }
-if (!src.includes("sessionStorage.setItem('HVAA:lastHvutTopLevelParseFailure', JSON.stringify(evidence));")) {
+if (
+  !src.includes(
+    "sessionStorage.setItem('HVAA:lastHvutTopLevelParseFailure', JSON.stringify(evidence));"
+  )
+) {
   violations.push({ line: 1, what: "顶部等级解析失败证据未持久化" });
 }
 if (!src.includes("var parse_hvut_top_level_progress = function (text, stage) {")) {
   violations.push({ line: 1, what: "缺少顶部等级进度解析入口" });
 }
-if (!src.includes("const progress = parse_hvut_top_level_progress($id('level_details')?.textContent, 'topLevelDetails');")) {
+if (
+  !src.includes(
+    "const progress = parse_hvut_top_level_progress($id('level_details')?.textContent, 'topLevelDetails');"
+  )
+) {
   violations.push({ line: 1, what: "level_details 未走顶部等级进度解析入口" });
 }
 if (!src.includes("if (progress !== null) {")) {

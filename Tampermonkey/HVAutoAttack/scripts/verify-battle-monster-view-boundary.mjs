@@ -64,19 +64,29 @@ if (/battleMonsterViewEventHandlers\[event\.type\]/.test(entryBody)) {
   violations.push(`${rel(owner)} entry must fail closed for invalid monster view events`);
 }
 if (!/battleMonsterViewEventHandlers\[event\?\.type\]/.test(entryBody)) {
-  violations.push(`${rel(owner)} entry must dispatch invalid monster view events through optional type`);
+  violations.push(
+    `${rel(owner)} entry must dispatch invalid monster view events through optional type`
+  );
 }
 if (!fs.existsSync(path.join(root, ownerTest))) {
   violations.push(`${rel(ownerTest)} must cover monster view entry contract`);
 } else {
   const ownerTestText = read(ownerTest);
-  if (!ownerTestText.includes("rejects invalid events without reading status, cache, or deriving view")) {
+  if (
+    !ownerTestText.includes(
+      "rejects invalid events without reading status, cache, or deriving view"
+    )
+  ) {
     violations.push(`${rel(ownerTest)} must cover invalid monster view events`);
   }
   if (!/runBattleMonsterView\(null\)/.test(ownerTestText)) {
     violations.push(`${rel(ownerTest)} must cover null monster view events`);
   }
-  if (!ownerTestText.includes("routes monster ordering queries through the entry without reading status or cache")) {
+  if (
+    !ownerTestText.includes(
+      "routes monster ordering queries through the entry without reading status or cache"
+    )
+  ) {
     violations.push(`${rel(ownerTest)} must cover monster ordering query events`);
   }
 }
@@ -84,9 +94,13 @@ if (
   !snapshotText.includes("BattleMonsterViewEvent.READ_VIEW") ||
   !snapshotText.includes("runBattleMonsterView")
 ) {
-  violations.push(`${rel(snapshot)} must read unified monster view through battle monster view entry`);
+  violations.push(
+    `${rel(snapshot)} must read unified monster view through battle monster view entry`
+  );
 }
-if (/MonsterStatusEvent\.READ_STATUS|MonsterCacheEvent\.READ_DB|joinMonsterView/.test(snapshotText)) {
+if (
+  /MonsterStatusEvent\.READ_STATUS|MonsterCacheEvent\.READ_DB|joinMonsterView/.test(snapshotText)
+) {
   violations.push(`${rel(snapshot)} must not assemble monster status/cache/view directly`);
 }
 if (/monsterHpVars|\.filter\(\s*\(?\w+\)?\s*=>\s*!\w+\.isDead/.test(snapshotText)) {
@@ -100,7 +114,9 @@ for (const entry of fs.readdirSync(battleDir, { recursive: true, withFileTypes: 
   const relative = path.normalize(path.relative(root, file));
   const text = fs.readFileSync(file, "utf8");
   if (/from\s+["'][^"']*(?:^|[\\/])monster-view\.js["']/.test(text)) {
-    violations.push(`${rel(relative)} must read monster view ordering through runBattleMonsterView`);
+    violations.push(
+      `${rel(relative)} must read monster view ordering through runBattleMonsterView`
+    );
   }
 }
 

@@ -14,13 +14,15 @@ function requirePart(label, body, part) {
   if (!body.includes(part)) violations.push(`${target} ${label} must include ${part}`);
 }
 
-const submitBody =
-  /submit: \{[\s\S]*?\n    \},\n\n    organize: \{/.exec(text)?.[0] || "";
+const submitBody = /submit: \{[\s\S]*?\n    \},\n\n    organize: \{/.exec(text)?.[0] || "";
 const organizeSubmitBody =
-  /submit: async function \(eid, name, value = true\) \{[\s\S]*?\n      \},\n      status: function/.exec(text)?.[0] || "";
+  /submit: async function \(eid, name, value = true\) \{[\s\S]*?\n      \},\n      status: function/.exec(
+    text
+  )?.[0] || "";
 
 if (!submitBody) violations.push(`${target} must keep Armory submit entry visible`);
-if (!organizeSubmitBody) violations.push(`${target} must keep Armory organize submit entry visible`);
+if (!organizeSubmitBody)
+  violations.push(`${target} must keep Armory organize submit entry visible`);
 
 for (const required of [
   "var record_hvut_armory_submit_failure = function (stage, detail) {",
@@ -31,13 +33,18 @@ for (const required of [
   "return { kind: 'rejected', reason: 'messageMissing', evidence: evidence };",
   "return { kind: 'accepted', message: message };",
 ]) {
-  if (!text.includes(required)) violations.push(`${target} must define Armory submit evidence with ${required}`);
+  if (!text.includes(required))
+    violations.push(`${target} must define Armory submit evidence with ${required}`);
 }
 
 for (const [label, stage, fetchCall] of [
   ["purchase", "purchaseRequest", "$ajax.fetch(create_hvut_armory_screen_url('purchase'), data);"],
   ["sell", "sellRequest", "$ajax.fetch(create_hvut_armory_screen_url('sell'), data);"],
-  ["salvage", "salvageRequest", "$ajax.fetch(create_hvut_armory_screen_url('salvage'), data + '&sell_salvage=on');"],
+  [
+    "salvage",
+    "salvageRequest",
+    "$ajax.fetch(create_hvut_armory_screen_url('salvage'), data + '&sell_salvage=on');",
+  ],
 ]) {
   for (const required of [
     `${label}: async function (equips) {`,
@@ -101,19 +108,28 @@ for (const forbidden of [
   }
 }
 
-if (organizeSubmitBody.includes("const html = await $ajax.fetch('?s=Bazaar&ss=am&screen=organize', data + `&set_${param_name}=${param_value}`);")) {
-  violations.push(`${target} Armory organize submit must not keep unchecked organize submit request`);
+if (
+  organizeSubmitBody.includes(
+    "const html = await $ajax.fetch('?s=Bazaar&ss=am&screen=organize', data + `&set_${param_name}=${param_value}`);"
+  )
+) {
+  violations.push(
+    `${target} Armory organize submit must not keep unchecked organize submit request`
+  );
 }
 
 if (organizeSubmitBody.includes("$ajax.fetch('?s=Bazaar&ss=am&screen=organize'")) {
-  violations.push(`${target} Armory organize submit must route through create_hvut_armory_organize_url`);
+  violations.push(
+    `${target} Armory organize submit must route through create_hvut_armory_organize_url`
+  );
 }
 
 for (const required of [
   'HVUT_ARMORY_SUBMIT_FAILURE: "HVAA:lastHvutArmorySubmitFailure"',
   'source("hvutArmorySubmitFailure", DiagnosticEvidenceKey.HVUT_ARMORY_SUBMIT_FAILURE)',
 ]) {
-  if (!diagnosticText.includes(required)) violations.push(`${diagnosticTarget} must include ${required}`);
+  if (!diagnosticText.includes(required))
+    violations.push(`${diagnosticTarget} must include ${required}`);
 }
 
 if (!diagnosticTestText.includes("HVAA:lastHvutArmorySubmitFailure")) {

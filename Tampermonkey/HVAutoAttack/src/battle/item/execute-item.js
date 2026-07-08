@@ -128,7 +128,9 @@ function executeStallDraughtAttempt(attempt, snap) {
 function executeScrollPlan(plan) {
   for (const id of plan.candidates) {
     if (
-      itemExecutionActed(runBattleItemCommand({ type: BattleItemCommandEvent.CLICK_ITEM, itemId: id }))
+      itemExecutionActed(
+        runBattleItemCommand({ type: BattleItemCommandEvent.CLICK_ITEM, itemId: id })
+      )
     ) {
       return true;
     }

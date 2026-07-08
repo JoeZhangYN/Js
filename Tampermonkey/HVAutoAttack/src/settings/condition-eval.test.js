@@ -7,7 +7,7 @@ const baseSnap = {
   hp: 50,
   mp: 80,
   oc: 100,
-  skillReady: { "213": true, "221": false }, // 213 可用 / 221 在 CD
+  skillReady: { 213: true, 221: false }, // 213 可用 / 221 在 CD
   playerEffectTurns: { protection: 3, hastespell: Infinity }, // 永续 = Infinity
 };
 

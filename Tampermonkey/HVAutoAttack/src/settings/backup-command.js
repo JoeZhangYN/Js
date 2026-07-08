@@ -46,7 +46,9 @@ const settingsBackupCommandHandlers = Object.freeze({
     runOptionBackupAutomation({ type: OptionBackupEvent.HAS_CODE, code: event.code }),
   [EVENT_SAVE_CURRENT]: (event) =>
     result(
-      Boolean(runOptionBackupAutomation({ type: OptionBackupEvent.SAVE_CURRENT, code: event.code })),
+      Boolean(
+        runOptionBackupAutomation({ type: OptionBackupEvent.SAVE_CURRENT, code: event.code })
+      ),
       event,
       BACKUP_FAILURE_MESSAGE
     ),

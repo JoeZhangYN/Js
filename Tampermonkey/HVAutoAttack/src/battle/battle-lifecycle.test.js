@@ -73,9 +73,7 @@ describe("runBattleLifecycleAutomation", () => {
     const detail = { kind: "failed", reason: "monitorStartFailed" };
     mocks.runBattleMonitorAutomation.mockReturnValue(detail);
 
-    expect(runBattleLifecycleAutomation({ type: BattleLifecycleEvent.BATTLE_STARTED })).toBe(
-      false
-    );
+    expect(runBattleLifecycleAutomation({ type: BattleLifecycleEvent.BATTLE_STARTED })).toBe(false);
 
     expect(JSON.parse(sessionStorage.getItem("HVAA:lastBattleLifecycle"))).toMatchObject({
       phase: "battleStarted",

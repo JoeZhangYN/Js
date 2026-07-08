@@ -9,7 +9,8 @@ const violations = [];
 const buyBody = text.match(/buy: async function \(items\) \{[\s\S]*?\n  \},\n\};/)?.[0] || "";
 const loadBody = text.match(/load: async function \(\) \{[\s\S]*?\n  \},\n  once:/)?.[0] || "";
 const onceBody = text.match(/once: async function \(\) \{[\s\S]*?\n  \},\n  load_shop:/)?.[0] || "";
-const loadShopBody = text.match(/load_shop: async function \(\) \{[\s\S]*?\n  \},\n  count:/)?.[0] || "";
+const loadShopBody =
+  text.match(/load_shop: async function \(\) \{[\s\S]*?\n  \},\n  count:/)?.[0] || "";
 const loadItemsBody =
   text.match(/battle\.load_items = async function \(\) \{[\s\S]*?\n  \};\n\};/)?.[0] || "";
 
@@ -67,10 +68,7 @@ for (const required of [
   }
 }
 
-for (const required of [
-  "return true;",
-  "return await $item.load();",
-]) {
+for (const required of ["return true;", "return await $item.load();"]) {
   if (!onceBody.includes(required)) {
     violations.push(`${target} $item.once must preserve inventory load result with ${required}`);
   }
@@ -103,19 +101,29 @@ for (const required of [
   }
 }
 if (buyBody.includes("const error = get_message(doc);")) {
-  violations.push(`${target} $item.buy must classify HV response through classify_hvut_item_shop_buy_response`);
+  violations.push(
+    `${target} $item.buy must classify HV response through classify_hvut_item_shop_buy_response`
+  );
 }
 if (buyBody.includes("alert(outcome.message);")) {
-  violations.push(`${target} $item.buy must show copyable diagnostic evidence instead of a bare alert`);
+  violations.push(
+    `${target} $item.buy must show copyable diagnostic evidence instead of a bare alert`
+  );
 }
 if (buyBody.includes("return classify_hvut_item_shop_buy_response(doc);")) {
-  violations.push(`${target} $item.buy must pass item identity into classify_hvut_item_shop_buy_response`);
+  violations.push(
+    `${target} $item.buy must pass item identity into classify_hvut_item_shop_buy_response`
+  );
 }
 if (buyBody.includes("$ajax.fetch('?s=Bazaar&ss=is'")) {
-  violations.push(`${target} $item.buy must route Item Shop authority through create_hvut_item_shop_url`);
+  violations.push(
+    `${target} $item.buy must route Item Shop authority through create_hvut_item_shop_url`
+  );
 }
 if (loadShopBody.includes("$ajax.fetch('?s=Bazaar&ss=is'")) {
-  violations.push(`${target} $item.load_shop must route Item Shop authority through create_hvut_item_shop_url`);
+  violations.push(
+    `${target} $item.load_shop must route Item Shop authority through create_hvut_item_shop_url`
+  );
 }
 for (const forbidden of [
   "try {\n      if ((await $item.load_shop()) === false) {",
@@ -143,10 +151,16 @@ for (const required of [
   "return true;",
 ]) {
   if (!loadItemsBody.includes(required)) {
-    violations.push(`${target} battle.load_items must fail closed on inventory cache writes with ${required}`);
+    violations.push(
+      `${target} battle.load_items must fail closed on inventory cache writes with ${required}`
+    );
   }
 }
-if (/battle\.render_supply_grid\(\);\n\s*ctx\.config\.set\('items', \$item\.count\(\)\);/.test(loadItemsBody)) {
+if (
+  /battle\.render_supply_grid\(\);\n\s*ctx\.config\.set\('items', \$item\.count\(\)\);/.test(
+    loadItemsBody
+  )
+) {
   violations.push(`${target} battle.load_items must not ignore inventory cache write failure`);
 }
 if (/await \$item\.load\(\);\n\s*battle\.render_supply_grid/.test(loadItemsBody)) {
@@ -200,7 +214,9 @@ for (const forbidden of [
   }
 }
 if (/(^|\n)\s*await \$item\.load\(\);/.test(text)) {
-  violations.push(`${target} must not keep unchecked item inventory load path: await $item.load();`);
+  violations.push(
+    `${target} must not keep unchecked item inventory load path: await $item.load();`
+  );
 }
 
 if (violations.length) {

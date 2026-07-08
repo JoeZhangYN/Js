@@ -106,31 +106,49 @@ if (/OptionEvent\.READ\b/.test(ownerText)) {
   );
 }
 if (!ownerText.includes("const pageRefreshEventHandlers")) {
-  violations.push(`${owner.replaceAll("\\", "/")} must route page refresh events through a handler table`);
+  violations.push(
+    `${owner.replaceAll("\\", "/")} must route page refresh events through a handler table`
+  );
 }
-const ownerEntry = ownerText.match(/export function runPageRefreshAutomation[\s\S]*?\n}/)?.[0] || "";
+const ownerEntry =
+  ownerText.match(/export function runPageRefreshAutomation[\s\S]*?\n}/)?.[0] || "";
 if (/if\s*\(\s*event\.type\s*(?:===|!==)/.test(ownerEntry)) {
   violations.push(`${owner.replaceAll("\\", "/")} entry must not reintroduce event.type branching`);
 }
 if (ownerEntry.includes("pageRefreshEventHandlers[event.type]")) {
-  violations.push(`${owner.replaceAll("\\", "/")} entry must reject null page refresh events without throwing`);
+  violations.push(
+    `${owner.replaceAll("\\", "/")} entry must reject null page refresh events without throwing`
+  );
 }
-if (!ownerEntry.includes("pageRefreshEventHandlers[event?.type]") || !ownerEntry.includes("?? false")) {
-  violations.push(`${owner.replaceAll("\\", "/")} entry must fail closed for unknown or null page refresh events`);
+if (
+  !ownerEntry.includes("pageRefreshEventHandlers[event?.type]") ||
+  !ownerEntry.includes("?? false")
+) {
+  violations.push(
+    `${owner.replaceAll("\\", "/")} entry must fail closed for unknown or null page refresh events`
+  );
 }
 for (const internal of ["scheduleUnknownPageRefresh(", "scheduleGamePageRefresh("]) {
   if (ownerEntry.includes(internal)) {
-    violations.push(`${owner.replaceAll("\\", "/")} entry must dispatch through pageRefreshEventHandlers`);
+    violations.push(
+      `${owner.replaceAll("\\", "/")} entry must dispatch through pageRefreshEventHandlers`
+    );
   }
 }
 if (!/globalThis\.sessionStorage\?\.setItem\(PAGE_REFRESH_FAILURE_KEY/.test(ownerText)) {
   violations.push(`${owner.replaceAll("\\", "/")} must persist page refresh failure evidence`);
 }
-if (!/catch\s*\(error\)\s*{[\s\S]*recordPageRefreshFailure\("scheduleReload",\s*"scheduleFailed"/.test(ownerText)) {
+if (
+  !/catch\s*\(error\)\s*{[\s\S]*recordPageRefreshFailure\("scheduleReload",\s*"scheduleFailed"/.test(
+    ownerText
+  )
+) {
   violations.push(`${owner.replaceAll("\\", "/")} must classify reload scheduling failures`);
 }
 if (!/reloadReason:\s*reason/.test(ownerText)) {
-  violations.push(`${owner.replaceAll("\\", "/")} must preserve reload reason separately from failure reason`);
+  violations.push(
+    `${owner.replaceAll("\\", "/")} must preserve reload reason separately from failure reason`
+  );
 }
 
 const testText = fs.readFileSync(path.join(root, testFile), "utf8");
@@ -154,7 +172,7 @@ for (const required of [
 
 const diagnosticKeysText = fs.readFileSync(path.join(root, diagnosticKeys), "utf8");
 for (const required of [
-  "PAGE_REFRESH_FAILURE: \"HVAA:lastPageRefreshFailure\"",
+  'PAGE_REFRESH_FAILURE: "HVAA:lastPageRefreshFailure"',
   'source("pageRefreshFailure", DiagnosticEvidenceKey.PAGE_REFRESH_FAILURE)',
 ]) {
   if (!diagnosticKeysText.includes(required)) {
@@ -163,11 +181,7 @@ for (const required of [
 }
 
 const diagnosticTestText = fs.readFileSync(path.join(root, diagnosticTest), "utf8");
-for (const required of [
-  "HVAA:lastPageRefreshFailure",
-  "pageRefreshFailure",
-  "pageRefresh",
-]) {
+for (const required of ["HVAA:lastPageRefreshFailure", "pageRefreshFailure", "pageRefresh"]) {
   if (!diagnosticTestText.includes(required)) {
     violations.push(`${diagnosticTest.replaceAll("\\", "/")} must cover ${required}`);
   }

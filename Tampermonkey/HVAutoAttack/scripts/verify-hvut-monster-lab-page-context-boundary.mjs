@@ -32,11 +32,15 @@ for (const required of [
 }
 
 const monsterLabBodies = [
-  ...text.matchAll(/if \(get_hvut_monster_lab_page_context\(\)\.isMonsterLab && \$config\.settings\.monsterLab\) \{[\s\S]*?\n\} else\n\/\/ \[END (?:11|12)\] Bazaar - Monster Lab/g),
+  ...text.matchAll(
+    /if \(get_hvut_monster_lab_page_context\(\)\.isMonsterLab && \$config\.settings\.monsterLab\) \{[\s\S]*?\n\} else\n\/\/ \[END (?:11|12)\] Bazaar - Monster Lab/g
+  ),
 ].map((match) => match[0]);
 
 if (monsterLabBodies.length !== 2) {
-  violations.push(`${target} must keep both Monster Lab segment bodies visible, found ${monsterLabBodies.length}`);
+  violations.push(
+    `${target} must keep both Monster Lab segment bodies visible, found ${monsterLabBodies.length}`
+  );
 }
 
 for (const [index, body] of monsterLabBodies.entries()) {
@@ -49,7 +53,9 @@ for (const [index, body] of monsterLabBodies.entries()) {
     "replace('ss=ml', 'ss=ml&pane=skills')",
   ]) {
     if (!body.includes(required)) {
-      violations.push(`${target} Monster Lab body[${index}] must consume page context: ${required}`);
+      violations.push(
+        `${target} Monster Lab body[${index}] must consume page context: ${required}`
+      );
     }
   }
   for (const forbidden of [
@@ -60,7 +66,9 @@ for (const [index, body] of monsterLabBodies.entries()) {
     "if (_query.pane === 'skills') {",
   ]) {
     if (body.includes(forbidden)) {
-      violations.push(`${target} Monster Lab body[${index}] must not rebuild lifecycle from raw query: ${forbidden}`);
+      violations.push(
+        `${target} Monster Lab body[${index}] must not rebuild lifecycle from raw query: ${forbidden}`
+      );
     }
   }
 }
@@ -71,4 +79,6 @@ if (violations.length) {
   process.exit(1);
 }
 
-console.log("[verify-hvut-monster-lab-page-context-boundary] OK - Monster Lab lifecycle routing uses one page context");
+console.log(
+  "[verify-hvut-monster-lab-page-context-boundary] OK - Monster Lab lifecycle routing uses one page context"
+);

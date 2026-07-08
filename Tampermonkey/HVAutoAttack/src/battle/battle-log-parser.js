@@ -57,7 +57,13 @@ function parseBattleLog() {
 }
 
 function damageEvent(kind, source, target, dmg, type) {
-  return { kind, source: source.trim(), target: target.trim(), dmg: parseInt(dmg), type: type || "unknown" };
+  return {
+    kind,
+    source: source.trim(),
+    target: target.trim(),
+    dmg: parseInt(dmg),
+    type: type || "unknown",
+  };
 }
 
 function estimatePlayerIncomingDps(events, turn) {
@@ -103,7 +109,12 @@ function parseMonsterRoster(battleLogRows, monsterAll) {
     const full = text.match(/MID=(\d+) \((.+)\) LV=(\d+) HP=(\d+)$/);
     if (full) {
       lastHp = parseInt(full[4], 10);
-      roster.push({ monsterId: parseInt(full[1], 10), name: full[2], level: parseInt(full[3], 10), maxHP: lastHp });
+      roster.push({
+        monsterId: parseInt(full[1], 10),
+        name: full[2],
+        level: parseInt(full[3], 10),
+        maxHP: lastHp,
+      });
       continue;
     }
     const hpOnly = text.match(/HP=(\d+)$/);
@@ -121,8 +132,13 @@ function parseMonsterRoster(battleLogRows, monsterAll) {
 
 function buildMonsterStatus(roster, fallbackHp = 100000) {
   return roster.map((rec, order) => ({
-    order, id: order === 9 ? 0 : order + 1, monsterId: rec?.monsterId, name: rec?.name,
-    level: rec?.level, hp: rec?.maxHP ?? fallbackHp, hpInferred: rec?.maxHP == null,
+    order,
+    id: order === 9 ? 0 : order + 1,
+    monsterId: rec?.monsterId,
+    name: rec?.name,
+    level: rec?.level,
+    hp: rec?.maxHP ?? fallbackHp,
+    hpInferred: rec?.maxHP == null,
   }));
 }
 

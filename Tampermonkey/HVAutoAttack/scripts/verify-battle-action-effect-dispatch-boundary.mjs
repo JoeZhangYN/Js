@@ -289,7 +289,9 @@ for (const forbidden of [
   "return !!runBattle",
 ]) {
   if (ownerText.includes(forbidden) || executionText.includes(forbidden)) {
-    violations.push(`${rel(owner)} must keep retired halt/booleanized ActionResult paths out of dispatch`);
+    violations.push(
+      `${rel(owner)} must keep retired halt/booleanized ActionResult paths out of dispatch`
+    );
   }
 }
 if (

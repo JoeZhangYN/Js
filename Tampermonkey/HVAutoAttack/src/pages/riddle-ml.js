@@ -363,13 +363,19 @@ function normalizeRiddleMlApiKey(context) {
 async function prepareRiddleMlPayload(context) {
   context.payload = await runRiddleImageAutomation({ type: RiddleImageEvent.PREPARE_ML_PAYLOAD });
   if (!context.payload) {
-    warnRiddleMlAnswerConsole("warn", "[HVAA][RMA] 找不到 riddle 图片元素/src，跳过 ML 识别（走随机）");
+    warnRiddleMlAnswerConsole(
+      "warn",
+      "[HVAA][RMA] 找不到 riddle 图片元素/src，跳过 ML 识别（走随机）"
+    );
     reportMlOutcome("no_image");
     finishRiddleMlAnswer(context, null, { stage: "payload", reason: "no_image" });
     return;
   }
   if (!context.payload.blob || context.payload.blob.size === 0) {
-    warnRiddleMlAnswerConsole("warn", "[HVAA][RMA] 图片 blob 为空(canvas 污染/fetch 失败)，本次走随机");
+    warnRiddleMlAnswerConsole(
+      "warn",
+      "[HVAA][RMA] 图片 blob 为空(canvas 污染/fetch 失败)，本次走随机"
+    );
     reportMlDetail("empty_blob (canvas 污染/fetch 失败)");
     reportMlOutcome("empty_blob");
     triggerErrorAlarm();
@@ -400,7 +406,10 @@ function resolveRiddleMlAnswerResult(context) {
   });
 }
 
-function createRiddleMlResponseDecision(result, { detail = null, alarm = false, warn = null } = {}) {
+function createRiddleMlResponseDecision(
+  result,
+  { detail = null, alarm = false, warn = null } = {}
+) {
   return { result, detail, alarm, warn };
 }
 
@@ -408,7 +417,9 @@ function decideGoodRiddleMlAnswer(dict, responseHeaders) {
   // HV 答题常多只小马同现（多答案不少见）→ 取响应里全部命中的答案码，调用侧勾选多个 checkbox。
   // 多答案修复：dict.answer 可能是数组(如 ["ts","ra"])。统一 coerce 后匹配 6 个互不为子串的答案码。
   const rawAnswer = dict.answer;
-  const answers = (Array.isArray(rawAnswer) ? rawAnswer.join(",") : String(rawAnswer ?? "")).toLowerCase();
+  const answers = (
+    Array.isArray(rawAnswer) ? rawAnswer.join(",") : String(rawAnswer ?? "")
+  ).toLowerCase();
   const hits = ANSWER_CODES.filter((code) => answers.includes(code));
   if (!hits.length) {
     return createRiddleMlResponseDecision("no_answer_code", {
@@ -492,7 +503,11 @@ async function requestRiddleMlAnswer(endpoint, imgBlob, postHeaders) {
           applyRiddleMlResponseDecision(decideRiddleMlServiceResponse(res), resolve);
         } catch (e) {
           // 捕获错误兜底：多答案/异形响应等处理异常 → 落库 + resolve，绝不让错误逃逸 console 即丢或 Promise 挂死。
-          warnRiddleMlAnswerConsole("error", "[HVAA][RMA] onload 处理异常(疑多答案/异形响应)，本次走随机:", e);
+          warnRiddleMlAnswerConsole(
+            "error",
+            "[HVAA][RMA] onload 处理异常(疑多答案/异形响应)，本次走随机:",
+            e
+          );
           reportMlDetail("onload_exception " + (e && e.message));
           triggerErrorAlarm();
           resolve("exception");

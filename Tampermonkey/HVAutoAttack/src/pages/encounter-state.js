@@ -129,7 +129,14 @@ function loadEncounterKey() {
           );
         } else if (parsed.dawn) {
           const clock = runEncounterPolicy({ type: EncounterPolicyEvent.READ_CLOCK, state });
-          writeReState(runEncounterPolicy({ type: EncounterPolicyEvent.MARK_GENERATION_ATTEMPTED, state: clock.state, attemptKey: clock.attemptKey, reason: "dailyResetEvent" }));
+          writeReState(
+            runEncounterPolicy({
+              type: EncounterPolicyEvent.MARK_GENERATION_ATTEMPTED,
+              state: clock.state,
+              attemptKey: clock.attemptKey,
+              reason: "dailyResetEvent",
+            })
+          );
         }
         resolve(parsed.key ? readCurrentReState() : null);
       },

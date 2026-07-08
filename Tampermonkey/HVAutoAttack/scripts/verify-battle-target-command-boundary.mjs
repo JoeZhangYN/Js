@@ -88,10 +88,7 @@ requireText(liveTargetOwner, [
   "targetMissing",
   "targetDead",
 ]);
-requireText(owner, [
-  "skillCommandRejected",
-  "skillCommandThrew",
-]);
+requireText(owner, ["skillCommandRejected", "skillCommandThrew"]);
 const ownerText = fs.readFileSync(path.join(root, owner), "utf8");
 const clickTargetBody =
   ownerText.match(/function clickTarget\(targetId\) \{[\s\S]*?\n\}/)?.[0] || "";
@@ -108,10 +105,7 @@ if (/gE\(targetSelector\(targetId\)\)/.test(clickTargetBody)) {
 if (/if\s*\(\s*event\.type\s*===\s*EVENT_/.test(ownerText)) {
   violations.push(`${owner.replaceAll("\\", "/")} must dispatch events through handler table`);
 }
-requireText(ownerTest, [
-  "records missing target command events as not acted",
-  "eventType: null",
-]);
+requireText(ownerTest, ["records missing target command events as not acted", "eventType: null"]);
 requireText(typedSkillFailureTest, [
   "does not click target when required skill command returns typed failure",
   "records typed failed optional skill commands without claiming the skill clicked",

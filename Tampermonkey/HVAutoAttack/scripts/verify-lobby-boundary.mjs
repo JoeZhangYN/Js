@@ -83,8 +83,9 @@ function checkLobbyEntry() {
     violations.push(`${rel(lobbyFile)} must own explicit isekai lobby flow without encounter`);
   }
   const entryBody =
-    text.match(/export async function runLobbyAutomation\(event = \{ type: EVENT_PAGE_READY \}\) \{[\s\S]*?\n\}/)?.[0] ||
-    "";
+    text.match(
+      /export async function runLobbyAutomation\(event = \{ type: EVENT_PAGE_READY \}\) \{[\s\S]*?\n\}/
+    )?.[0] || "";
   if (!/const lobbyEventHandlers\s*=\s*Object\.freeze\(\{[\s\S]*\[EVENT_PAGE_READY\]/.test(text)) {
     violations.push(`${rel(lobbyFile)} must route events through a frozen handler table`);
   }
@@ -121,7 +122,9 @@ function checkLobbyEntry() {
     'value === true || value === 1 || value === "1" || value === "true"',
   ]) {
     if (!text.includes(required)) {
-      violations.push(`${rel(lobbyFile)} must preserve imported lobby option switch truthy values: ${required}`);
+      violations.push(
+        `${rel(lobbyFile)} must preserve imported lobby option switch truthy values: ${required}`
+      );
     }
   }
   if (!text.includes("encounterOutcome?.claimed === true")) {
@@ -139,15 +142,19 @@ function checkLobbyEntry() {
   if (/rerun:\s*runLobbyAutomation\b/.test(text)) {
     violations.push(`${rel(lobbyFile)} encounter rerun must report LobbyEvent.PAGE_READY`);
   }
-  if (!/function rerunLobbyPageReady\(\) \{\s*return runLobbyAutomation\(\{ type: EVENT_PAGE_READY \}\);\s*\}/.test(text)) {
+  if (
+    !/function rerunLobbyPageReady\(\) \{\s*return runLobbyAutomation\(\{ type: EVENT_PAGE_READY \}\);\s*\}/.test(
+      text
+    )
+  ) {
     violations.push(`${rel(lobbyFile)} rerun must report LobbyEvent.PAGE_READY through one helper`);
   }
   const lobbyTestFile = path.join(root, "src/pages/lobby-automation.test.js");
   const isekaiLobbyTestFile = path.join(root, "src/pages/lobby-automation-isekai.test.js");
-  const lobbyTestText = [
-    lobbyTestFile,
-    isekaiLobbyTestFile,
-  ].filter((file) => fs.existsSync(file)).map((file) => fs.readFileSync(file, "utf8")).join("\n");
+  const lobbyTestText = [lobbyTestFile, isekaiLobbyTestFile]
+    .filter((file) => fs.existsSync(file))
+    .map((file) => fs.readFileSync(file, "utf8"))
+    .join("\n");
   if (
     !lobbyTestText.includes("rejects invalid lobby events without running lobby flow") ||
     !lobbyTestText.includes("runLobbyAutomation(null)")
@@ -159,7 +166,9 @@ function checkLobbyEntry() {
     "repair: 0",
   ]) {
     if (!lobbyTestText.includes(required)) {
-      violations.push(`${rel(lobbyTestFile)} must cover lobby option switch compatibility: ${required}`);
+      violations.push(
+        `${rel(lobbyTestFile)} must cover lobby option switch compatibility: ${required}`
+      );
     }
   }
   if (

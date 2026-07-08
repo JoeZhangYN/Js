@@ -18,9 +18,15 @@ function requireCount(label, part, expected) {
 }
 
 for (const [label, part] of [
-  ["Monster Lab placement save guard", "if (!$config.set('ml_plc', _ml.plc.list.filter((m) => m).map((m) => m.json))) {"],
+  [
+    "Monster Lab placement save guard",
+    "if (!$config.set('ml_plc', _ml.plc.list.filter((m) => m).map((m) => m.json))) {",
+  ],
   ["MoogleMail user list save guard", "if (!$config.set('mm_userlist', _mm.userlist.list)) {"],
-  ["list persistence failure alert", "alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');"],
+  [
+    "list persistence failure alert",
+    "alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');",
+  ],
   ["list persistence false return", "return false;"],
   ["list persistence true return", "return true;"],
   ["user list popup failure guard", "if (_mm.userlist.save() === false) return;"],
@@ -30,8 +36,16 @@ for (const [label, part] of [
   }
 }
 
-requireCount("Monster Lab placement save guard", "if (!$config.set('ml_plc', _ml.plc.list.filter((m) => m).map((m) => m.json))) {", 2);
-requireCount("MoogleMail user list save guard", "if (!$config.set('mm_userlist', _mm.userlist.list)) {", 2);
+requireCount(
+  "Monster Lab placement save guard",
+  "if (!$config.set('ml_plc', _ml.plc.list.filter((m) => m).map((m) => m.json))) {",
+  2
+);
+requireCount(
+  "MoogleMail user list save guard",
+  "if (!$config.set('mm_userlist', _mm.userlist.list)) {",
+  2
+);
 requireCount("user list popup failure guard", "if (_mm.userlist.save() === false) return;", 2);
 
 for (const forbidden of [

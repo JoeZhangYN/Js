@@ -92,5 +92,7 @@ function rejectUnknownTurnPreludeEvent(event) {
 }
 
 export function runBattleTurnPrelude(event = { type: EVENT_PREPARE_CURRENT_TURN }) {
-  return battleTurnPreludeEventHandlers[event?.type]?.(event) ?? rejectUnknownTurnPreludeEvent(event);
+  return (
+    battleTurnPreludeEventHandlers[event?.type]?.(event) ?? rejectUnknownTurnPreludeEvent(event)
+  );
 }

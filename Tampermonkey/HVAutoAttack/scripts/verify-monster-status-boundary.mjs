@@ -64,7 +64,10 @@ function checkFile(file) {
         `${where} monster HP updates belong behind runMonsterStatusAutomation(event)`
       );
     }
-    if (relative !== failureOwner && /\b(?:getValue|setValue)\(\s*["']monsterStatus["']/.test(line)) {
+    if (
+      relative !== failureOwner &&
+      /\b(?:getValue|setValue)\(\s*["']monsterStatus["']/.test(line)
+    ) {
       violations.push(
         `${where} monsterStatus persistence belongs in runMonsterStatusAutomation(event)`
       );

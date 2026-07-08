@@ -1,6 +1,16 @@
 import { TimeEvent, runTimeAutomation } from "../core/time.js";
-import { parseEventpaneEncounterKey, parseSearchEncounterKey, planEncounterEntryRoute } from "./encounter-entry-policy.js";
-import { buildGenerationAttemptKey, carryGenerationRecovery, clearGenerationRecovery, markEncounterGenerationAttempted, readGenerationRecovery } from "./encounter-generation-recovery.js";
+import {
+  parseEventpaneEncounterKey,
+  parseSearchEncounterKey,
+  planEncounterEntryRoute,
+} from "./encounter-entry-policy.js";
+import {
+  buildGenerationAttemptKey,
+  carryGenerationRecovery,
+  clearGenerationRecovery,
+  markEncounterGenerationAttempted,
+  readGenerationRecovery,
+} from "./encounter-generation-recovery.js";
 
 const ENCOUNTER_INTERVAL_MS = 30 * 60 * 1000,
   ENCOUNTER_DAILY_LIMIT = 24,
@@ -23,9 +33,11 @@ export const EncounterPolicyEvent = Object.freeze({
 
 const defaultEncounterState = () => ({ date: 0, key: "", count: 0, clear: true });
 
-const isDifferentUtcDay = (dateMs, nowMs) => new Date(dateMs).toISOString().slice(0, 10) !== new Date(nowMs).toISOString().slice(0, 10);
+const isDifferentUtcDay = (dateMs, nowMs) =>
+  new Date(dateMs).toISOString().slice(0, 10) !== new Date(nowMs).toISOString().slice(0, 10);
 
-const msUntilNextUtcDay = (stamp) => runTimeAutomation({ type: TimeEvent.MS_UNTIL_NEXT_UTC_DAY, stamp });
+const msUntilNextUtcDay = (stamp) =>
+  runTimeAutomation({ type: TimeEvent.MS_UNTIL_NEXT_UTC_DAY, stamp });
 
 function normalizeEncounterState(state, nowMs = Date.now()) {
   const normalized = {
@@ -89,7 +101,8 @@ function readEncounterClock(state, nowMs = Date.now()) {
     return countdownEncounterClock(readiness, readiness.remainingMs, "cooldown", nowMs);
   }
   const recovery = readGenerationRecovery(readiness.state, nowMs);
-  if (recovery) return { ...readiness, ...recovery, attemptKey: readiness.state.generationAttemptKey };
+  if (recovery)
+    return { ...readiness, ...recovery, attemptKey: readiness.state.generationAttemptKey };
   const status = readiness.state.clear ? "ready" : "missed";
   return {
     ...readiness,
@@ -152,13 +165,19 @@ const encounterPolicyEventHandlers = Object.freeze({
   [EncounterPolicyEvent.RESET_DAY]: () => defaultEncounterState(),
   [EncounterPolicyEvent.NORMALIZE]: (event) => normalizeEncounterState(event.state, event.nowMs),
   [EncounterPolicyEvent.READ_CLOCK]: (event) => readEncounterClock(event.state, event.nowMs),
-  [EncounterPolicyEvent.PLAN_NEXT_CHECK]: (event) => planNextEncounterCheck(event.state, { nowMs: event.nowMs, jitter: event.jitter }),
-  [EncounterPolicyEvent.PLAN_ACTIVATION]: (event) => planEncounterActivation(event.state, { force: event.force, nowMs: event.nowMs }),
+  [EncounterPolicyEvent.PLAN_NEXT_CHECK]: (event) =>
+    planNextEncounterCheck(event.state, { nowMs: event.nowMs, jitter: event.jitter }),
+  [EncounterPolicyEvent.PLAN_ACTIVATION]: (event) =>
+    planEncounterActivation(event.state, { force: event.force, nowMs: event.nowMs }),
   [EncounterPolicyEvent.PARSE_SEARCH_KEY]: (event) => parseSearchEncounterKey(event.search),
-  [EncounterPolicyEvent.PARSE_EVENTPANE_KEY]: (event) => parseEventpaneEncounterKey(event.eventpane),
-  [EncounterPolicyEvent.MARK_KEY_AVAILABLE]: (event) => markEncounterKeyAvailable(event.state, event.key, event.nowMs),
-  [EncounterPolicyEvent.MARK_ATTEMPTED]: (event) => markEncounterAttempted(event.state, event.key, event.nowMs),
-  [EncounterPolicyEvent.MARK_GENERATION_ATTEMPTED]: (event) => markEncounterGenerationAttempted(event.state, event.attemptKey, event.nowMs, event.reason),
+  [EncounterPolicyEvent.PARSE_EVENTPANE_KEY]: (event) =>
+    parseEventpaneEncounterKey(event.eventpane),
+  [EncounterPolicyEvent.MARK_KEY_AVAILABLE]: (event) =>
+    markEncounterKeyAvailable(event.state, event.key, event.nowMs),
+  [EncounterPolicyEvent.MARK_ATTEMPTED]: (event) =>
+    markEncounterAttempted(event.state, event.key, event.nowMs),
+  [EncounterPolicyEvent.MARK_GENERATION_ATTEMPTED]: (event) =>
+    markEncounterGenerationAttempted(event.state, event.attemptKey, event.nowMs, event.reason),
   [EncounterPolicyEvent.MARK_STARTED]: (event) => markEncounterStarted(event.state, event),
 });
 

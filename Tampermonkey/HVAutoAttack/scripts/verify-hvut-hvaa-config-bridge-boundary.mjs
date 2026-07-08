@@ -11,7 +11,9 @@ const testText = fs.readFileSync(diagnosticTest, "utf8");
 const violations = [];
 
 const failureBody =
-  text.match(/var record_hvut_hvaa_config_bridge_failure = function \(stage, detail\) \{[\s\S]*?\n  \};/)?.[0] || "";
+  text.match(
+    /var record_hvut_hvaa_config_bridge_failure = function \(stage, detail\) \{[\s\S]*?\n  \};/
+  )?.[0] || "";
 const openBody =
   text.match(/var open_hvaa_config_from_hvut = function \(stage\) \{[\s\S]*?\n  \};/)?.[0] || "";
 const textWithoutBridgeEntry = text.replace(openBody, "");
@@ -57,7 +59,9 @@ for (const required of [
 }
 
 if (/window\.HVAA_openConfig/.test(textWithoutBridgeEntry)) {
-  violations.push("HVUT UI must not call window.HVAA_openConfig outside open_hvaa_config_from_hvut");
+  violations.push(
+    "HVUT UI must not call window.HVAA_openConfig outside open_hvaa_config_from_hvut"
+  );
 }
 
 for (const required of [
@@ -84,4 +88,6 @@ if (violations.length) {
   process.exit(1);
 }
 
-console.log("[verify-hvut-hvaa-config-bridge-boundary] OK - HVUT HVAA config bridge failures are persisted");
+console.log(
+  "[verify-hvut-hvaa-config-bridge-boundary] OK - HVUT HVAA config bridge failures are persisted"
+);

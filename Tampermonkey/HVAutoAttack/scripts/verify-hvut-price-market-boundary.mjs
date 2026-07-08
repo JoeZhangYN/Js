@@ -6,17 +6,32 @@ const target = path.normalize("src/i18n/hv-utils.js");
 const text = fs.readFileSync(path.join(root, target), "utf8");
 const violations = [];
 
-const editBody = text.match(/price\.edit = function \(i, filter, callback\) \{[\s\S]*?\n  \};\n  price\.value/)?.[0] || "";
-const resetBody = text.match(/price\.reset = function \(\) \{[\s\S]*?\n  \};\n  price\.items/)?.[0] || "";
-const setBody = text.match(/price\.set = function \(json, replace\) \{[\s\S]*?\n  \};\n  price\.edit/)?.[0] || "";
-const parseBody = text.match(/price\.parse_market = function \(filter, doc = document\) \{[\s\S]*?\n  \};\n  price\.update_market/)?.[0] || "";
+const editBody =
+  text.match(
+    /price\.edit = function \(i, filter, callback\) \{[\s\S]*?\n  \};\n  price\.value/
+  )?.[0] || "";
+const resetBody =
+  text.match(/price\.reset = function \(\) \{[\s\S]*?\n  \};\n  price\.items/)?.[0] || "";
+const setBody =
+  text.match(/price\.set = function \(json, replace\) \{[\s\S]*?\n  \};\n  price\.edit/)?.[0] || "";
+const parseBody =
+  text.match(
+    /price\.parse_market = function \(filter, doc = document\) \{[\s\S]*?\n  \};\n  price\.update_market/
+  )?.[0] || "";
 const updateBody =
-  text.match(/price\.update_market = async function \(filter, key, save\) \{[\s\S]*?\n  \};\n  price\.get_market/)?.[0] ||
-  "";
-const modernMarketBody = text.match(/_mk\.table_init = function \(\) \{[\s\S]*?\n  \};\n\n  _mk\.price_update/)?.[0] || "";
-const legacyMarketBody = text.match(/_mk\.init_list = function \(\) \{[\s\S]*?\n  \};\n\n  _mk\.edit/)?.[0] || "";
-const modernClickBody = text.match(/_mk\.click_linkify = function \(\) \{[\s\S]*?\n  \};\n\n  _mk\.add_crystalpack/)?.[0] || "";
-const legacyClickBody = text.match(/_mk\.click2link = function \(\) \{[\s\S]*?\n  \};\n\n  GM_addStyle/)?.[0] || "";
+  text.match(
+    /price\.update_market = async function \(filter, key, save\) \{[\s\S]*?\n  \};\n  price\.get_market/
+  )?.[0] || "";
+const modernMarketBody =
+  text.match(/_mk\.table_init = function \(\) \{[\s\S]*?\n  \};\n\n  _mk\.price_update/)?.[0] || "";
+const legacyMarketBody =
+  text.match(/_mk\.init_list = function \(\) \{[\s\S]*?\n  \};\n\n  _mk\.edit/)?.[0] || "";
+const modernClickBody =
+  text.match(
+    /_mk\.click_linkify = function \(\) \{[\s\S]*?\n  \};\n\n  _mk\.add_crystalpack/
+  )?.[0] || "";
+const legacyClickBody =
+  text.match(/_mk\.click2link = function \(\) \{[\s\S]*?\n  \};\n\n  GM_addStyle/)?.[0] || "";
 
 if (!editBody) violations.push(`${target} must own price.edit entry`);
 if (!resetBody) violations.push(`${target} must own price.reset entry`);
@@ -103,7 +118,9 @@ if (/catch \(_error\) \{\n\s*return null;/.test(updateBody)) {
 if (/if \(!price\.set\(new_prices\)\) return null;/.test(updateBody)) {
   violations.push(`${target} price update must not keep untyped price persistence failure`);
 }
-if (/const itemid = \/itemid=\(\\d\+\)\/\.exec\(tr\.getAttribute\('onclick'\)\)\[1\];/.test(parseBody)) {
+if (
+  /const itemid = \/itemid=\(\\d\+\)\/\.exec\(tr\.getAttribute\('onclick'\)\)\[1\];/.test(parseBody)
+) {
   violations.push(`${target} price parse must not keep unchecked itemid parse`);
 }
 for (const forbidden of [
@@ -138,7 +155,11 @@ if (!modernMarketBody.includes("if ($price.parse_market(marketPage.filter) === f
 if (!legacyMarketBody.includes("if ($price.parse_market(marketPage.filter) === false) return;")) {
   violations.push(`${target} legacy market init must stop after parse failure`);
 }
-if (/const new_prices = await price\.update_market\(filter, key\);\n\s*p\.textarea\.value/.test(editBody)) {
+if (
+  /const new_prices = await price\.update_market\(filter, key\);\n\s*p\.textarea\.value/.test(
+    editBody
+  )
+) {
   violations.push(`${target} price edit must not save after failed market update`);
 }
 if (/price\.set\(new_prices, replace\);\n\s*}\n\s*p\.close/.test(editBody)) {

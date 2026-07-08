@@ -61,13 +61,18 @@ for (const required of [
   "if (initFailure === false) {",
   "runtime bridge report failed",
 ]) {
-  if (!hvUtilsText.includes(required)) violations.push(`${rel(hvUtilsEntry)} must classify hv-utils init failures`);
+  if (!hvUtilsText.includes(required))
+    violations.push(`${rel(hvUtilsEntry)} must classify hv-utils init failures`);
 }
 if (hvUtilsText.includes("window.HVAA_i18n.recordI18nInitFailure('hv-utils', e)")) {
   violations.push(`${rel(hvUtilsEntry)} must not call the i18n init failure bridge directly`);
 }
-if (/catch \(e\) \{\s*console\.error\("\[HVAA\]\[i18n\] HV Utils 汉化执行出错:"/.test(hvUtilsText)) {
-  violations.push(`${rel(hvUtilsEntry)} must not keep hv-utils init failure as immediate console-only handling`);
+if (
+  /catch \(e\) \{\s*console\.error\("\[HVAA\]\[i18n\] HV Utils 汉化执行出错:"/.test(hvUtilsText)
+) {
+  violations.push(
+    `${rel(hvUtilsEntry)} must not keep hv-utils init failure as immediate console-only handling`
+  );
 }
 
 const helperTestText = read(helperTest);
@@ -76,7 +81,8 @@ for (const required of [
   "keeps i18n init failure evidence when diagnostic console is blocked",
   "I18N_INIT_FAILURE_KEY",
 ]) {
-  if (!helperTestText.includes(required)) violations.push(`${rel(helperTest)} must cover ${required}`);
+  if (!helperTestText.includes(required))
+    violations.push(`${rel(helperTest)} must cover ${required}`);
 }
 
 const fallbackTestText = read(fallbackTest);
@@ -87,23 +93,26 @@ for (const required of [
   'throw new Error("console blocked")',
   "not.toThrow()",
 ]) {
-  if (!fallbackTestText.includes(required)) violations.push(`${rel(fallbackTest)} must cover ${required}`);
+  if (!fallbackTestText.includes(required))
+    violations.push(`${rel(fallbackTest)} must cover ${required}`);
 }
 
 const diagnosticKeysText = read(diagnosticKeys);
 for (const required of [
-  "I18N_INIT_FAILURE: \"HVAA:lastI18nInitFailure\"",
-  "source(\"i18nInitFailure\", DiagnosticEvidenceKey.I18N_INIT_FAILURE)",
+  'I18N_INIT_FAILURE: "HVAA:lastI18nInitFailure"',
+  'source("i18nInitFailure", DiagnosticEvidenceKey.I18N_INIT_FAILURE)',
 ]) {
-  if (!diagnosticKeysText.includes(required)) violations.push(`${rel(diagnosticKeys)} must expose ${required}`);
+  if (!diagnosticKeysText.includes(required))
+    violations.push(`${rel(diagnosticKeys)} must expose ${required}`);
 }
 
 const diagnosticTestText = read(diagnosticTest);
 for (const required of [
   "HVAA:lastI18nInitFailure",
-  "i18nInitFailure: { capability: \"i18nInit\", entry: \"interface\" }",
+  'i18nInitFailure: { capability: "i18nInit", entry: "interface" }',
 ]) {
-  if (!diagnosticTestText.includes(required)) violations.push(`${rel(diagnosticTest)} must cover ${required}`);
+  if (!diagnosticTestText.includes(required))
+    violations.push(`${rel(diagnosticTest)} must cover ${required}`);
 }
 
 if (violations.length) {

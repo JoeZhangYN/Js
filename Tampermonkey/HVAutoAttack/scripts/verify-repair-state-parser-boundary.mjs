@@ -50,15 +50,24 @@ for (const required of ["runRepairStateParser", "RepairStateParseEvent"]) {
     violations.push(`${owner.replaceAll("\\", "/")} must own ${required}`);
   }
 }
-const entryBody = ownerText.match(/export function runRepairStateParser\([^)]*\) \{[\s\S]*?\n\}/)?.[0] || "";
-if (!/const repairStateParseEventHandlers\s*=\s*Object\.freeze\(\{[\s\S]*\[EVENT_PARSE_PERSISTENT\]/.test(ownerText)) {
-  violations.push(`${owner.replaceAll("\\", "/")} must route events through a frozen handler table`);
+const entryBody =
+  ownerText.match(/export function runRepairStateParser\([^)]*\) \{[\s\S]*?\n\}/)?.[0] || "";
+if (
+  !/const repairStateParseEventHandlers\s*=\s*Object\.freeze\(\{[\s\S]*\[EVENT_PARSE_PERSISTENT\]/.test(
+    ownerText
+  )
+) {
+  violations.push(
+    `${owner.replaceAll("\\", "/")} must route events through a frozen handler table`
+  );
 }
 if (/event\.type\s*===/.test(entryBody)) {
   violations.push(`${owner.replaceAll("\\", "/")} entry must dispatch by handler table`);
 }
 if (/repairStateParseEventHandlers\s*\[\s*event\.type\s*\]/.test(entryBody)) {
-  violations.push(`${owner.replaceAll("\\", "/")} entry must reject null parser events instead of reading event.type directly`);
+  violations.push(
+    `${owner.replaceAll("\\", "/")} entry must reject null parser events instead of reading event.type directly`
+  );
 }
 for (const legacy of ["parsePersistentRepairState", "parseIsekaiRepairState"]) {
   if (new RegExp(`export\\s+function\\s+${legacy}\\s*\\(`).test(ownerText)) {

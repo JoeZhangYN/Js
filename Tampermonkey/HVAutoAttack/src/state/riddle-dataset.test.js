@@ -1,8 +1,14 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { RiddleDatasetEvent, RiddleSampleSource, runRiddleDatasetAutomation } from "./riddle-dataset.js";
+import {
+  RiddleDatasetEvent,
+  RiddleSampleSource,
+  runRiddleDatasetAutomation,
+} from "./riddle-dataset.js";
 
 afterEach(() => {
-  vi.useRealTimers(); vi.unstubAllGlobals(); vi.restoreAllMocks();
+  vi.useRealTimers();
+  vi.unstubAllGlobals();
+  vi.restoreAllMocks();
 });
 
 function expectDatasetFailure(stage) {
@@ -19,12 +25,14 @@ describe("riddle dataset entry", () => {
     vi.stubGlobal("GM_setValue", setValue);
     vi.stubGlobal("GM_registerMenuCommand", registerMenu);
 
-    expect(runRiddleDatasetAutomation({
+    expect(
+      runRiddleDatasetAutomation({
         type: "unknown",
         imageDataUrl: "data:image/webp;base64,AAAA",
         answers: "ra",
         source: RiddleSampleSource.ML,
-      })).toBeUndefined();
+      })
+    ).toBeUndefined();
     expect(runRiddleDatasetAutomation(null)).toBeUndefined();
 
     expect(setValue).not.toHaveBeenCalled();

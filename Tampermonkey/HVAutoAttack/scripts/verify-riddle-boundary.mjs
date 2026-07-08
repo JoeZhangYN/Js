@@ -102,18 +102,27 @@ function checkRiddleEntry() {
     violations.push(`${rel(riddleFile)} must route riddle events through riddleEventHandlers`);
   }
   const entryBody =
-    text.match(/export function runRiddleAutomation\(event = \{ type: EVENT_RIDDLE_PAGE \}\) \{[\s\S]*?\n\}/)?.[0] ||
-    "";
+    text.match(
+      /export function runRiddleAutomation\(event = \{ type: EVENT_RIDDLE_PAGE \}\) \{[\s\S]*?\n\}/
+    )?.[0] || "";
   if (/if\s*\(\s*event\.type\s*===/.test(entryBody)) {
     violations.push(`${rel(riddleFile)} entry must route events through handler table`);
   }
   if (/riddleEventHandlers\s*\[\s*event\.type\s*\]/.test(entryBody)) {
-    violations.push(`${rel(riddleFile)} entry must reject null riddle events instead of reading event.type directly`);
+    violations.push(
+      `${rel(riddleFile)} entry must reject null riddle events instead of reading event.type directly`
+    );
   }
   if (/\|\|\s*runCurrentRiddlePage/.test(entryBody)) {
-    violations.push(`${rel(riddleFile)} must reject unknown riddle events instead of falling back to page automation`);
+    violations.push(
+      `${rel(riddleFile)} must reject unknown riddle events instead of falling back to page automation`
+    );
   }
-  for (const forbidden of ["runRiddleAnsweringSession", "runNavigationAutomation", "openRiddlePopup"]) {
+  for (const forbidden of [
+    "runRiddleAnsweringSession",
+    "runNavigationAutomation",
+    "openRiddlePopup",
+  ]) {
     if (entryBody.includes(forbidden)) {
       violations.push(`${rel(riddleFile)} entry must route riddle work through event handlers`);
     }
@@ -139,7 +148,9 @@ function checkRiddleEntry() {
     "unknownRiddleEvent",
   ]) {
     if (!testText.includes(required)) {
-      violations.push(`${rel(riddleTestFile)} must cover riddle default and unknown-event entry semantics`);
+      violations.push(
+        `${rel(riddleTestFile)} must cover riddle default and unknown-event entry semantics`
+      );
     }
   }
 }
@@ -225,9 +236,7 @@ function checkRiddleSubmissionTiming() {
     "runRiddleImageAutomation",
   ]) {
     if (answerEntryBody.includes(forbidden)) {
-      violations.push(
-        `${rel(riddleAnswerFile)} entry must route answering through flow steps`
-      );
+      violations.push(`${rel(riddleAnswerFile)} entry must route answering through flow steps`);
     }
   }
   if (!answerText.includes("runRiddleSubmissionTiming")) {
@@ -252,11 +261,15 @@ function checkRiddleSubmissionTiming() {
       violations.push(`${rel(riddleAnswerFile)} must report ${required} to the timing entry`);
     }
   }
-  if (!answerText.includes("if (!submitRiddleAnswerCommand(answers)) context.pendingSource = null;")) {
+  if (
+    !answerText.includes("if (!submitRiddleAnswerCommand(answers)) context.pendingSource = null;")
+  ) {
     violations.push(`${rel(riddleAnswerFile)} must clear pending source when submit command fails`);
   }
   if (/submit\.click\(\)/.test(answerText)) {
-    violations.push(`${rel(riddleAnswerFile)} must route riddle submit clicks through submitRiddleAnswerCommand`);
+    violations.push(
+      `${rel(riddleAnswerFile)} must route riddle submit clicks through submitRiddleAnswerCommand`
+    );
   }
   const submitCommandText = fs.readFileSync(riddleSubmitCommandFile, "utf8");
   for (const required of [
@@ -299,7 +312,9 @@ function checkRiddleSubmissionTiming() {
       violations.push(`${rel(riddleMlAnswerFailureFile)} must own ${required}`);
     }
   }
-  if (!/globalThis\.sessionStorage\?\.setItem\(RIDDLE_ML_ANSWER_FAILURE_KEY/.test(answerFailureText)) {
+  if (
+    !/globalThis\.sessionStorage\?\.setItem\(RIDDLE_ML_ANSWER_FAILURE_KEY/.test(answerFailureText)
+  ) {
     violations.push(`${rel(riddleMlAnswerFailureFile)} must persist top-level ML answer failures`);
   }
   if (/\.catch\(\(\) => \{\}\)/.test(answerText)) {
@@ -307,16 +322,24 @@ function checkRiddleSubmissionTiming() {
   }
   const answerTestText = fs.readFileSync(path.join(root, "src/pages/riddle.test.js"), "utf8");
   if (
-    !answerTestText.includes("records ML answer failures while keeping random timing fallback active") ||
+    !answerTestText.includes(
+      "records ML answer failures while keeping random timing fallback active"
+    ) ||
     !answerTestText.includes("ml answer failed error=ml blocked fallback=random")
   ) {
-    violations.push("src/pages/riddle.test.js must cover ML answer failure and submit failure fallback");
+    violations.push(
+      "src/pages/riddle.test.js must cover ML answer failure and submit failure fallback"
+    );
   }
   const submitFlowTestText = fs.readFileSync(
     path.join(root, "src/pages/riddle-submit-flow.test.js"),
     "utf8"
   );
-  if (!submitFlowTestText.includes("clears pending automated source when submit command fails before a manual click")) {
+  if (
+    !submitFlowTestText.includes(
+      "clears pending automated source when submit command fails before a manual click"
+    )
+  ) {
     violations.push("src/pages/riddle-submit-flow.test.js must cover stale submit source cleanup");
   }
   const submitCommandTestText = fs.readFileSync(
@@ -392,8 +415,9 @@ function checkRiddleSubmissionTiming() {
     violations.push(`${rel(riddleTimingFile)} must route timing events through handler table`);
   }
   const timingEntryBody =
-    timingText.match(/export function runRiddleSubmissionTiming\(event = \{ type: EVENT_READ_REMAINING \}\) \{[\s\S]*?\n\}/)?.[0] ||
-    "";
+    timingText.match(
+      /export function runRiddleSubmissionTiming\(event = \{ type: EVENT_READ_REMAINING \}\) \{[\s\S]*?\n\}/
+    )?.[0] || "";
   if (/if\s*\(\s*event\.type\s*===/.test(timingEntryBody)) {
     violations.push(`${rel(riddleTimingFile)} entry must route events through handler table`);
   }
@@ -410,17 +434,23 @@ function checkRiddleSubmissionTiming() {
     "scheduleActiveMlSubmission",
   ]) {
     if (timingEntryBody.includes(forbidden)) {
-      violations.push(`${rel(riddleTimingFile)} entry must route timing work through event handlers`);
+      violations.push(
+        `${rel(riddleTimingFile)} entry must route timing work through event handlers`
+      );
     }
   }
   const timingTestFile = path.normalize("src/pages/riddle-submission-timing.test.js");
   const timingTestText = fs.readFileSync(path.join(root, timingTestFile), "utf8");
   if (
-    !timingTestText.includes("rejects unknown and null timing events without reading countdown state") ||
+    !timingTestText.includes(
+      "rejects unknown and null timing events without reading countdown state"
+    ) ||
     !timingTestText.includes("runRiddleSubmissionTiming(null)") ||
     !timingTestText.includes("querySelector).not.toHaveBeenCalled()")
   ) {
-    violations.push(`${timingTestFile.replaceAll("\\", "/")} must cover unknown and null timing events`);
+    violations.push(
+      `${timingTestFile.replaceAll("\\", "/")} must cover unknown and null timing events`
+    );
   }
   for (const required of ["EXTERNAL_SUBMITTED", "ML_ANSWERS_READY"]) {
     if (!timingText.includes(required)) {
@@ -445,9 +475,12 @@ function checkRiddleImageEntry() {
     }
   }
   const entryBody =
-    ownerText.match(/export function runRiddleImageAutomation\([^)]*\) \{[\s\S]*?\n\}/)?.[0] ||
-    "";
-  if (!/const riddleImageEventHandlers\s*=\s*Object\.freeze\(\{[\s\S]*\[EVENT_CAPTURE_SAMPLE\]/.test(ownerText)) {
+    ownerText.match(/export function runRiddleImageAutomation\([^)]*\) \{[\s\S]*?\n\}/)?.[0] || "";
+  if (
+    !/const riddleImageEventHandlers\s*=\s*Object\.freeze\(\{[\s\S]*\[EVENT_CAPTURE_SAMPLE\]/.test(
+      ownerText
+    )
+  ) {
     violations.push(`${rel(riddleImageFile)} must route events through a frozen handler table`);
   }
   if (/event\.type\s*===/.test(entryBody)) {
@@ -476,11 +509,13 @@ function checkRiddleImageEntry() {
     "network failed",
     "toHaveBeenCalledTimes(3)",
     "HVAA:lastRiddleImageFailure",
-    "expectImageFailure(\"capture-data-url\")",
-    "expectImageFailure(\"prepare-ml-payload\")",
+    'expectImageFailure("capture-data-url")',
+    'expectImageFailure("prepare-ml-payload")',
   ]) {
     if (!ownerTestText.includes(required)) {
-      violations.push(`${ownerTest.replaceAll("\\", "/")} must cover riddle image fallback exhaustion`);
+      violations.push(
+        `${ownerTest.replaceAll("\\", "/")} must cover riddle image fallback exhaustion`
+      );
     }
   }
   for (const required of [
@@ -578,8 +613,9 @@ function checkRiddleMlEntry() {
     violations.push(`${rel(riddleMlFile)} must route ML events through a frozen handler table`);
   }
   const mlEntryBody =
-    ownerText.match(/export function runRiddleMlAutomation\(event = \{ type: EVENT_TRY_ANSWER \}\) \{[\s\S]*?\n\}/)?.[0] ||
-    "";
+    ownerText.match(
+      /export function runRiddleMlAutomation\(event = \{ type: EVENT_TRY_ANSWER \}\) \{[\s\S]*?\n\}/
+    )?.[0] || "";
   if (/if\s*\(\s*event\.type\s*===/.test(mlEntryBody)) {
     violations.push(`${rel(riddleMlFile)} entry must route events through handler table`);
   }
@@ -601,7 +637,9 @@ function checkRiddleMlEntry() {
     ? fs.readFileSync(path.join(root, ownerTest), "utf8")
     : "";
   if (
-    !ownerTestText.includes("rejects unknown and null ML events without starting health checks or answering") ||
+    !ownerTestText.includes(
+      "rejects unknown and null ML events without starting health checks or answering"
+    ) ||
     !ownerTestText.includes("keeps disabled ML fallback when answer warning console is blocked") ||
     !ownerTestText.includes("runRiddleMlAutomation(null)") ||
     !ownerTestText.includes("readOption).not.toHaveBeenCalled()")
@@ -680,31 +718,55 @@ function checkRiddleMlEntry() {
   if (!/globalThis\.sessionStorage\?\.setItem\(RIDDLE_ML_ANSWER_FAILURE_KEY/.test(ownerText)) {
     violations.push(`${rel(riddleMlFile)} must persist ML answer fallback evidence`);
   }
-  if (!/stayAwake\(\)\.catch\(\(error\) => \{[\s\S]*recordRiddleMlHealthFailure\("healthCycle",\s*"unhandledFailure"/.test(ownerText)) {
+  if (
+    !/stayAwake\(\)\.catch\(\(error\) => \{[\s\S]*recordRiddleMlHealthFailure\("healthCycle",\s*"unhandledFailure"/.test(
+      ownerText
+    )
+  ) {
     violations.push(`${rel(riddleMlFile)} must classify unhandled health cycle failures`);
   }
-  if (!/catch \(error\) \{[\s\S]*healthStarted = false;[\s\S]*recordRiddleMlHealthFailure\("startHealth",\s*"timerScheduleFailed"/.test(ownerText)) {
-    violations.push(`${rel(riddleMlFile)} must classify health timer scheduling failures and allow retry`);
+  if (
+    !/catch \(error\) \{[\s\S]*healthStarted = false;[\s\S]*recordRiddleMlHealthFailure\("startHealth",\s*"timerScheduleFailed"/.test(
+      ownerText
+    )
+  ) {
+    violations.push(
+      `${rel(riddleMlFile)} must classify health timer scheduling failures and allow retry`
+    );
   }
-  if (!/try\s*{[\s\S]*gmXhr\(\{[\s\S]*method:\s*"HEAD"[\s\S]*}\);[\s\S]*return true;[\s\S]*}\s*catch/.test(ownerText)) {
+  if (
+    !/try\s*{[\s\S]*gmXhr\(\{[\s\S]*method:\s*"HEAD"[\s\S]*}\);[\s\S]*return true;[\s\S]*}\s*catch/.test(
+      ownerText
+    )
+  ) {
     violations.push(`${rel(riddleMlFile)} must classify health HEAD adapter startup failures`);
   }
-  if (!/catch \(err\) \{[\s\S]*recordRiddleMlAnswerFallback\("answerFlow",\s*"exception"/.test(ownerText)) {
-    violations.push(`${rel(riddleMlFile)} must persist unhandled answer flow exceptions before diagnostics`);
+  if (
+    !/catch \(err\) \{[\s\S]*recordRiddleMlAnswerFallback\("answerFlow",\s*"exception"/.test(
+      ownerText
+    )
+  ) {
+    violations.push(
+      `${rel(riddleMlFile)} must persist unhandled answer flow exceptions before diagnostics`
+    );
   }
-  if (!/runRiddleMlAnswerFallbackDiagnostic\("answerFlowConsole"[\s\S]*runRiddleMlAnswerFallbackDiagnostic\("answerFlowStats"[\s\S]*runRiddleMlAnswerFallbackDiagnostic\("answerFlowAlarm"/.test(ownerText)) {
+  if (
+    !/runRiddleMlAnswerFallbackDiagnostic\("answerFlowConsole"[\s\S]*runRiddleMlAnswerFallbackDiagnostic\("answerFlowStats"[\s\S]*runRiddleMlAnswerFallbackDiagnostic\("answerFlowAlarm"/.test(
+      ownerText
+    )
+  ) {
     violations.push(`${rel(riddleMlFile)} must isolate answer flow exception diagnostics`);
   }
   const diagnosticKeysText = fs.readFileSync(diagnosticKeysFile, "utf8");
   for (const required of [
-    "RIDDLE_ML_HEALTH_FAILURE: \"HVAA:lastRiddleMlHealthFailure\"",
-    "RIDDLE_ML_ANSWER_FAILURE: \"HVAA:lastRiddleMlAnswerFailure\"",
-    "RIDDLE_SUBMIT_FAILURE: \"HVAA:lastRiddleSubmitFailure\"",
-    "RIDDLE_IMAGE_FAILURE: \"HVAA:lastRiddleImageFailure\"",
-    "source(\"riddleMlHealthFailure\", DiagnosticEvidenceKey.RIDDLE_ML_HEALTH_FAILURE)",
-    "source(\"riddleMlAnswerFailure\", DiagnosticEvidenceKey.RIDDLE_ML_ANSWER_FAILURE)",
-    "source(\"riddleSubmitFailure\", DiagnosticEvidenceKey.RIDDLE_SUBMIT_FAILURE)",
-    "source(\"riddleImageFailure\", DiagnosticEvidenceKey.RIDDLE_IMAGE_FAILURE)",
+    'RIDDLE_ML_HEALTH_FAILURE: "HVAA:lastRiddleMlHealthFailure"',
+    'RIDDLE_ML_ANSWER_FAILURE: "HVAA:lastRiddleMlAnswerFailure"',
+    'RIDDLE_SUBMIT_FAILURE: "HVAA:lastRiddleSubmitFailure"',
+    'RIDDLE_IMAGE_FAILURE: "HVAA:lastRiddleImageFailure"',
+    'source("riddleMlHealthFailure", DiagnosticEvidenceKey.RIDDLE_ML_HEALTH_FAILURE)',
+    'source("riddleMlAnswerFailure", DiagnosticEvidenceKey.RIDDLE_ML_ANSWER_FAILURE)',
+    'source("riddleSubmitFailure", DiagnosticEvidenceKey.RIDDLE_SUBMIT_FAILURE)',
+    'source("riddleImageFailure", DiagnosticEvidenceKey.RIDDLE_IMAGE_FAILURE)',
   ]) {
     if (!diagnosticKeysText.includes(required)) {
       violations.push(`${rel(diagnosticKeysFile)} must expose ${required}`);
@@ -716,10 +778,10 @@ function checkRiddleMlEntry() {
     "HVAA:lastRiddleMlAnswerFailure",
     "HVAA:lastRiddleSubmitFailure",
     "HVAA:lastRiddleImageFailure",
-    "riddleMlHealthFailure: { capability: \"riddleMlHealth\", stage: \"healthCycle\" }",
-    "riddleMlAnswerFailure: { capability: \"riddleMlAnswer\", stage: \"request\", fallback: \"random\" }",
-    "riddleSubmitFailure: { capability: \"riddleSubmit\", stage: \"click-submit\" }",
-    "riddleImageFailure: { capability: \"riddleImage\", stage: \"prepare-ml-payload\" }",
+    'riddleMlHealthFailure: { capability: "riddleMlHealth", stage: "healthCycle" }',
+    'riddleMlAnswerFailure: { capability: "riddleMlAnswer", stage: "request", fallback: "random" }',
+    'riddleSubmitFailure: { capability: "riddleSubmit", stage: "click-submit" }',
+    'riddleImageFailure: { capability: "riddleImage", stage: "prepare-ml-payload" }',
   ]) {
     if (!diagnosticTestText.includes(required)) {
       violations.push(`${rel(diagnosticTestFile)} must cover ${required}`);
@@ -728,7 +790,9 @@ function checkRiddleMlEntry() {
   const requestBody =
     ownerText.match(/async function requestRiddleMlAnswer\([\s\S]*?\n\}/)?.[0] || "";
   if (
-    !requestBody.includes("applyRiddleMlResponseDecision(decideRiddleMlServiceResponse(res), resolve)")
+    !requestBody.includes(
+      "applyRiddleMlResponseDecision(decideRiddleMlServiceResponse(res), resolve)"
+    )
   ) {
     violations.push(`${rel(riddleMlFile)} request IO must use the ML response decision point`);
   }

@@ -1,6 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { PageKind } from "./page-kind.js";
-import { PAGE_AUTOMATION_FAILURE_KEY, PageAutomationEvent, runPageAutomation } from "./page-automation.js";
+import { PageKind, PageWorld } from "./page-kind.js";
+import {
+  PAGE_AUTOMATION_FAILURE_KEY,
+  PageAutomationEvent,
+  runPageAutomation,
+} from "./page-automation.js";
 
 const mocks = vi.hoisted(() => ({
   runAppStartup: vi.fn(() => true),
@@ -57,6 +61,10 @@ function lastPageAutomationFailure() {
   return JSON.parse(sessionStorage.getItem(PAGE_AUTOMATION_FAILURE_KEY));
 }
 
+function pageReady(kind, page = { kind, world: PageWorld.PERSISTENT, isIsekai: false }) {
+  return { type: PageAutomationEvent.PAGE_READY, kind, page };
+}
+
 describe("runPageAutomation", () => {
   it("rejects unknown page automation events without routing pages", () => {
     expect(runPageAutomation({ type: "unknown", kind: PageKind.RIDDLE })).toBe(false);
@@ -68,11 +76,12 @@ describe("runPageAutomation", () => {
   });
 
   it("reports page-ready events to equipment and game-page capabilities", () => {
-    runPageAutomation({ type: PageAutomationEvent.PAGE_READY, kind: PageKind.RIDDLE });
+    runPageAutomation(pageReady(PageKind.RIDDLE));
 
     expect(mocks.runEquipmentViewAutomation).toHaveBeenCalledWith({
       type: "pageReady",
       kind: PageKind.RIDDLE,
+      page: { kind: PageKind.RIDDLE, world: PageWorld.PERSISTENT, isIsekai: false },
     });
     expect(mocks.runAppStartup).toHaveBeenCalledWith({ type: "gamePageReady" });
     expect(mocks.runPageRefreshAutomation).toHaveBeenCalledWith({
@@ -82,9 +91,15 @@ describe("runPageAutomation", () => {
   });
 
   it("routes battle and lobby game pages through their page entries", () => {
-    runPageAutomation({ type: PageAutomationEvent.PAGE_READY, kind: PageKind.BATTLE });
-    runPageAutomation({ type: PageAutomationEvent.PAGE_READY, kind: PageKind.LOBBY });
-    runPageAutomation({ type: PageAutomationEvent.PAGE_READY, kind: PageKind.ISEKAI_LOBBY });
+    runPageAutomation(pageReady(PageKind.BATTLE));
+    runPageAutomation(pageReady(PageKind.LOBBY));
+    runPageAutomation(
+      pageReady(PageKind.ISEKAI_LOBBY, {
+        kind: PageKind.ISEKAI_LOBBY,
+        world: PageWorld.ISEKAI,
+        isIsekai: true,
+      })
+    );
 
     expect(mocks.runBattleAutomation).toHaveBeenCalledWith({ type: "pageReady" });
     expect(mocks.runLobbyAutomation).toHaveBeenCalledWith({ type: "pageReady" });
@@ -94,7 +109,13 @@ describe("runPageAutomation", () => {
   it("stops routing when cross-site encounter navigation handles the page", () => {
     mocks.runCrossSiteEncounterNavigation.mockReturnValue(true);
 
-    runPageAutomation({ type: PageAutomationEvent.PAGE_READY, kind: PageKind.EHENTAI });
+    runPageAutomation(
+      pageReady(PageKind.EHENTAI, {
+        kind: PageKind.EHENTAI,
+        world: PageWorld.EXTERNAL,
+        isIsekai: false,
+      })
+    );
 
     expect(mocks.runCrossSiteEncounterNavigation).toHaveBeenCalledWith({
       type: "pageReady",
@@ -107,7 +128,7 @@ describe("runPageAutomation", () => {
   it("schedules unknown page reload before game-page startup", () => {
     mocks.runPageRefreshAutomation.mockReturnValueOnce(true);
 
-    runPageAutomation({ type: PageAutomationEvent.PAGE_READY, kind: PageKind.UNKNOWN });
+    runPageAutomation(pageReady(PageKind.UNKNOWN));
 
     expect(mocks.runPageRefreshAutomation).toHaveBeenCalledWith({ type: "unknownPageReady" });
     expect(mocks.runAppStartup).not.toHaveBeenCalled();
@@ -116,7 +137,7 @@ describe("runPageAutomation", () => {
   it("stops game-page routing when startup declines the page", () => {
     mocks.runAppStartup.mockReturnValue(false);
 
-    runPageAutomation({ type: PageAutomationEvent.PAGE_READY, kind: PageKind.BATTLE });
+    runPageAutomation(pageReady(PageKind.BATTLE));
 
     expect(mocks.runPageRefreshAutomation).not.toHaveBeenCalledWith({ type: "gamePageReady" });
     expect(mocks.runBattleAutomation).not.toHaveBeenCalled();
@@ -127,7 +148,7 @@ describe("runPageAutomation", () => {
       throw new Error("equipment blocked");
     });
 
-    expect(runPageAutomation({ type: PageAutomationEvent.PAGE_READY, kind: PageKind.BATTLE })).toBe(false);
+    expect(runPageAutomation(pageReady(PageKind.BATTLE))).toBe(false);
 
     expect(PAGE_AUTOMATION_FAILURE_KEY).toBe("HVAA:lastPageAutomationFailure");
     expect(lastPageAutomationFailure()).toMatchObject({
@@ -145,7 +166,7 @@ describe("runPageAutomation", () => {
       throw new Error("riddle blocked");
     });
 
-    expect(runPageAutomation({ type: PageAutomationEvent.PAGE_READY, kind: PageKind.RIDDLE })).toBe(false);
+    expect(runPageAutomation(pageReady(PageKind.RIDDLE))).toBe(false);
 
     expect(lastPageAutomationFailure()).toMatchObject({
       capability: "pageAutomation",
@@ -164,7 +185,15 @@ describe("runPageAutomation", () => {
       throw new Error("navigation blocked");
     });
 
-    expect(runPageAutomation({ type: PageAutomationEvent.PAGE_READY, kind: PageKind.EHENTAI })).toBe(false);
+    expect(
+      runPageAutomation(
+        pageReady(PageKind.EHENTAI, {
+          kind: PageKind.EHENTAI,
+          world: PageWorld.EXTERNAL,
+          isIsekai: false,
+        })
+      )
+    ).toBe(false);
     expect(lastPageAutomationFailure()).toMatchObject({
       stage: "handleCrossSiteEncounterPageReady",
       reason: "stepException",

@@ -9,7 +9,7 @@ export default [
   {
     files: ["src/**/*.js"],
     languageOptions: {
-      ecmaVersion: 2020,
+      ecmaVersion: 2022,
       sourceType: "module",
       globals: {
         ...globals.browser,
@@ -43,7 +43,7 @@ export default [
         {
           selector: "MemberExpression[property.name=/^(hpRatio|hpNow)$/]",
           message:
-            "裸读 .hpRatio/.hpNow 已废止：决策走统一怪物视图 view.hpPercent(百分比)/view.hpAbsNow(绝对当前)（battle/monster-view.js）。视图源头 monster-view/monster-status-hp 在 config 末尾豁免。",
+            "裸读 .hpRatio/.hpNow 已废止：决策走统一怪物视图 view.hpPercent(百分比)/view.hpAbsNow(绝对当前)（battle/battle-monster-view.js）。视图源头 battle-monster-view/monster-status-hp 在 config 末尾豁免。",
         },
       ],
     },
@@ -55,11 +55,32 @@ export default [
       sourceType: "module",
       globals: { ...globals.node },
     },
+    rules: {
+      "no-regex-spaces": "off",
+      "no-unused-vars": ["warn", { argsIgnorePattern: "^_" }],
+    },
   },
   {
-    // 统一怪物视图"源头"：monster-view join 读 snap.monsters.hpRatio + monsterStatus.hpNow；
+    files: ["src/battle/battle-api-call-script.js"],
+    languageOptions: {
+      globals: {
+        MAIN_URL: "readonly",
+      },
+    },
+  },
+  {
+    files: ["src/battle/battle-api-response-script.js"],
+    languageOptions: {
+      globals: {
+        __HVAA_BATTLE_API_WORLD_CONTEXT__: "readonly",
+        __HVAA_DIAGNOSTIC_EVIDENCE_KEYS__: "readonly",
+      },
+    },
+  },
+  {
+    // 统一怪物视图"源头"：battle-monster-view join 读 snap.monsters.hpRatio + monsterStatus.hpNow；
     // monster-status-hp 写 monsterStatus[i].hpNow。它们是收口点本身，合法访问散落字段 → 豁免 hpRatio/hpNow 锁。
-    files: ["src/battle/monster-view.js", "src/battle/monster-status-hp.js"],
+    files: ["src/battle/battle-monster-view.js", "src/battle/monster-status-hp.js"],
     rules: { "no-restricted-syntax": "off" },
   },
 ];

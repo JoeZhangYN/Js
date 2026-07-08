@@ -10,8 +10,10 @@ const diagnosticText = fs.readFileSync(path.join(root, diagnosticTarget), "utf8"
 const diagnosticTestText = fs.readFileSync(path.join(root, diagnosticTestTarget), "utf8");
 const violations = [];
 
-const initMatch = /init: async function \(screen\) \{[\s\S]*?\n      \},\n      load: async function/.exec(text);
-const loadMatch = /load: async function \(screen, filter\) \{[\s\S]*?\n      \},\n      tab: function/.exec(text);
+const initMatch =
+  /init: async function \(screen\) \{[\s\S]*?\n      \},\n      load: async function/.exec(text);
+const loadMatch =
+  /load: async function \(screen, filter\) \{[\s\S]*?\n      \},\n      tab: function/.exec(text);
 
 for (const required of [
   "var record_hvut_armory_integrate_failure = function (stage, detail) {",
@@ -50,8 +52,14 @@ if (!initMatch) {
   if (body.includes("window.HVAA_i18n.retranslateEquiplist()")) {
     violations.push(`${target} Armory integrate init must not call the i18n bridge directly`);
   }
-  if (body.includes("alert((IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.') + '\\nHVAA:lastHvutArmoryIntegrateFailure');")) {
-    violations.push(`${target} Armory integrate init must show the copyable diagnostic report instead of a key-only alert`);
+  if (
+    body.includes(
+      "alert((IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.') + '\\nHVAA:lastHvutArmoryIntegrateFailure');"
+    )
+  ) {
+    violations.push(
+      `${target} Armory integrate init must show the copyable diagnostic report instead of a key-only alert`
+    );
   }
 }
 
@@ -103,4 +111,6 @@ if (violations.length) {
   process.exit(1);
 }
 
-console.log("[verify-hvut-armory-integrate-boundary] OK - Armory integrate load failures fail closed");
+console.log(
+  "[verify-hvut-armory-integrate-boundary] OK - Armory integrate load failures fail closed"
+);

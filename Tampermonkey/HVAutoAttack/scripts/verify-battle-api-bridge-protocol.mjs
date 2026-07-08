@@ -517,8 +517,8 @@ if (/event\.type\s*===/.test(entryBody)) {
   violations.push(`${owner.replaceAll("\\", "/")} entry must dispatch by handler table`);
 }
 if (
-  !ownerText.includes(
-    "battleApiBridgeEventHandlers[event?.type]?.(event, deps) ?? rejectUnknownApiBridgeEvent(event, deps)"
+  !/battleApiBridgeEventHandlers\[event\?\.type\]\?\.\(event,\s*deps\)\s*\?\?\s*rejectUnknownApiBridgeEvent\(event,\s*deps\)/.test(
+    ownerText
   )
 ) {
   violations.push(

@@ -25,7 +25,9 @@ describe("equipment percentile failure evidence", () => {
       return originalSetItem.call(this, key, value);
     });
 
-    expect(persistEquipmentPercentilePreference("hvAA_equipPercentile_offline_showPercent", false)).toBe(false);
+    expect(
+      persistEquipmentPercentilePreference("hvAA_equipPercentile_offline_showPercent", false)
+    ).toBe(false);
     expect(lastFailure()).toMatchObject({
       capability: "equipmentPercentile",
       stage: "persist-preference",
@@ -53,7 +55,8 @@ describe("equipment percentile failure evidence", () => {
   it("keeps preference fallback when evidence and warning diagnostics fail", () => {
     const originalSetItem = Storage.prototype.setItem;
     vi.spyOn(Storage.prototype, "setItem").mockImplementation(function setItem(key, value) {
-      if (key === "hvAA_equipPercentile_offline_showPercent") throw new Error("preference write blocked");
+      if (key === "hvAA_equipPercentile_offline_showPercent")
+        throw new Error("preference write blocked");
       if (key === EQUIPMENT_PERCENTILE_FAILURE_KEY) throw new Error("session blocked");
       return originalSetItem.call(this, key, value);
     });

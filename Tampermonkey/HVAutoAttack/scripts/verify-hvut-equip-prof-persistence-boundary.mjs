@@ -11,11 +11,14 @@ function requirePart(label, body, part) {
 }
 
 const saveBody =
-  /save: function \(key = _eq\.prof\.current\) \{[\s\S]*?\n    \},\n    name: function/.exec(text)?.[0] || "";
+  /save: function \(key = _eq\.prof\.current\) \{[\s\S]*?\n    \},\n    name: function/.exec(
+    text
+  )?.[0] || "";
 const deleteBody =
-  /delete: function \(key = _eq\.prof\.current\) \{[\s\S]*?\n    \},\n    toggle: function/.exec(text)?.[0] || "";
-const equipUiBody =
-  /node\.equips = \['柳木法杖'[\s\S]*?\n      \}\);/.exec(text)?.[0] || "";
+  /delete: function \(key = _eq\.prof\.current\) \{[\s\S]*?\n    \},\n    toggle: function/.exec(
+    text
+  )?.[0] || "";
+const equipUiBody = /node\.equips = \['柳木法杖'[\s\S]*?\n      \}\);/.exec(text)?.[0] || "";
 
 if (!saveBody) violations.push(`${target} must keep equipment proficiency save entry visible`);
 if (!deleteBody) violations.push(`${target} must keep equipment proficiency delete entry visible`);
@@ -51,7 +54,11 @@ for (const part of [
 for (const [label, body, forbidden] of [
   ["equipment proficiency save", saveBody, "$config.set('eq_prof', json);"],
   ["equipment proficiency delete", deleteBody, "$config.set('eq_prof', json);"],
-  ["equipment proficiency save", saveBody, "data.node.button.classList.remove('hvut-eq-new');\n        data.new = false;\n      }\n      data.json = JSON.parse"],
+  [
+    "equipment proficiency save",
+    saveBody,
+    "data.node.button.classList.remove('hvut-eq-new');\n        data.new = false;\n      }\n      data.json = JSON.parse",
+  ],
   ["equipment proficiency delete", deleteBody, "data.node.button.remove();\n      const index"],
 ]) {
   if (body.includes(forbidden)) {
@@ -67,7 +74,9 @@ for (const part of [
   requirePart("equipment proficiency row UI", equipUiBody, part);
 }
 if (/tr\.children\[\d+\]/.test(equipUiBody)) {
-  violations.push(`${target} equipment proficiency row UI must name generated table cells before binding controls`);
+  violations.push(
+    `${target} equipment proficiency row UI must name generated table cells before binding controls`
+  );
 }
 
 if (violations.length) {
@@ -76,4 +85,6 @@ if (violations.length) {
   process.exit(1);
 }
 
-console.log("[verify-hvut-equip-prof-persistence-boundary] OK - equipment proficiency persistence failures fail closed");
+console.log(
+  "[verify-hvut-equip-prof-persistence-boundary] OK - equipment proficiency persistence failures fail closed"
+);

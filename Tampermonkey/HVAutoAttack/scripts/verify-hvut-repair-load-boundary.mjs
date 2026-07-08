@@ -15,7 +15,9 @@ function requirePart(label, body, part) {
 }
 
 const loadRepair =
-  /battle\.load_repair = async function \(equips\) \{[\s\S]*?\n  \};\n  battle\.update_link/.exec(text)?.[0] || "";
+  /battle\.load_repair = async function \(equips\) \{[\s\S]*?\n  \};\n  battle\.update_link/.exec(
+    text
+  )?.[0] || "";
 if (!loadRepair) violations.push(`${target} must keep battle.load_repair visible`);
 
 for (const required of [
@@ -59,7 +61,9 @@ for (const forbidden of [
   "battle.postoken = $id('equipform', doc).elements.postoken.value;",
 ]) {
   if (loadRepair.includes(forbidden)) {
-    violations.push(`${target} battle.load_repair must classify repair load response instead of ${forbidden}`);
+    violations.push(
+      `${target} battle.load_repair must classify repair load response instead of ${forbidden}`
+    );
   }
 }
 
@@ -81,4 +85,6 @@ if (violations.length) {
   process.exit(1);
 }
 
-console.log("[verify-hvut-repair-load-boundary] OK - battle panel repair load responses fail closed with evidence");
+console.log(
+  "[verify-hvut-repair-load-boundary] OK - battle panel repair load responses fail closed with evidence"
+);

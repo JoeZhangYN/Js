@@ -52,7 +52,11 @@ if (
 
 const entryBody =
   ownerText.match(/export function runBattleAttackAction\([^)]*\) \{[\s\S]*?\n\}/)?.[0] || "";
-if (!/Object\.freeze\(\{[\s\S]*\[EVENT_DECIDE\][\s\S]*\[EVENT_WILL_CLEAR_WITH_BIG_SKILL\]/.test(ownerText)) {
+if (
+  !/Object\.freeze\(\{[\s\S]*\[EVENT_DECIDE\][\s\S]*\[EVENT_WILL_CLEAR_WITH_BIG_SKILL\]/.test(
+    ownerText
+  )
+) {
   violations.push(`${rel(owner)} must route events through a frozen handler table`);
 }
 if (/event\.type\s*===/.test(entryBody)) {
@@ -124,8 +128,7 @@ if (
   violations.push(`${rel(attackPlan)} may export only its event entry`);
 }
 const attackPlanEntryBody =
-  attackPlanText.match(/export function runAttackPlanDecision\([^)]*\) \{[\s\S]*?\n\}/)?.[0] ||
-  "";
+  attackPlanText.match(/export function runAttackPlanDecision\([^)]*\) \{[\s\S]*?\n\}/)?.[0] || "";
 if (!/Object\.freeze\(\{[\s\S]*\[EVENT_DECIDE\]/.test(attackPlanText)) {
   violations.push(`${rel(attackPlan)} must route events through a frozen handler table`);
 }
@@ -173,7 +176,9 @@ for (const relative of ["src/battle", "src/core"]) {
       normalized !== attackDecision &&
       /from\s+["'][^"']*attack\/attack-plan\.js["']/.test(text)
     ) {
-      violations.push(`${rel(normalized)} must not bypass runAttackDecision for attack plan decisions`);
+      violations.push(
+        `${rel(normalized)} must not bypass runAttackDecision for attack plan decisions`
+      );
     }
     if (
       normalized !== attackPlan &&

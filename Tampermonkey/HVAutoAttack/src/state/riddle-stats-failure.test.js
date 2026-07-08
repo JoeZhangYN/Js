@@ -22,8 +22,7 @@ beforeEach(() => {
   mocks.setValue.mockReset();
   mocks.delValue.mockReset();
   mocks.setValue.mockImplementation((item, value) => {
-    window.localStorage[`hvAA_${item}`] =
-      typeof value === "string" ? value : JSON.stringify(value);
+    window.localStorage[`hvAA_${item}`] = typeof value === "string" ? value : JSON.stringify(value);
   });
   mocks.delValue.mockImplementation((item) => {
     window.localStorage.removeItem(`hvAA_${item}`);
@@ -95,9 +94,7 @@ describe("riddle stats persistence failures", () => {
       throw new Error("riddle stats write blocked");
     });
 
-    expect(() =>
-      runRiddleStatsAutomation({ type: RiddleStatsEvent.RECORD_APPEAR })
-    ).not.toThrow();
+    expect(() => runRiddleStatsAutomation({ type: RiddleStatsEvent.RECORD_APPEAR })).not.toThrow();
     expect(runRiddleStatsAutomation({ type: RiddleStatsEvent.RECORD_APPEAR })).toBe(false);
   });
 });

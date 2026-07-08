@@ -97,7 +97,7 @@ function checkEntry() {
   const persistenceTestText = fs.readFileSync(path.join(root, persistenceTest), "utf8");
   for (const required of [
     "keeps pause evidence visible when storage is unavailable",
-    "storageWriteError: \"quota\"",
+    'storageWriteError: "quota"',
   ]) {
     if (!persistenceTestText.includes(required)) {
       violations.push(`${persistenceTest.replaceAll("\\", "/")} must cover ${required}`);
@@ -106,7 +106,9 @@ function checkEntry() {
   const entryBody =
     text.match(/export function runBattlePauseAutomation\([^)]*\) \{[\s\S]*?\n\}/)?.[0] || "";
   if (!/Object\.freeze\(\{[\s\S]*\[EVENT_RENDER_PAUSED\][\s\S]*\[EVENT_PAUSE\]/.test(text)) {
-    violations.push(`${entry.replaceAll("\\", "/")} must route events through a frozen handler table`);
+    violations.push(
+      `${entry.replaceAll("\\", "/")} must route events through a frozen handler table`
+    );
   }
   if (/event\.type\s*===/.test(entryBody)) {
     violations.push(`${entry.replaceAll("\\", "/")} entry must dispatch by handler table`);
@@ -118,7 +120,9 @@ function checkEntry() {
     'recordPauseState("rejected", EVENT_UNKNOWN_PAUSE, { eventType: event?.type ?? null })',
   ]) {
     if (!text.includes(required)) {
-      violations.push(`${entry.replaceAll("\\", "/")} must reject unknown pause events with evidence ${required}`);
+      violations.push(
+        `${entry.replaceAll("\\", "/")} must reject unknown pause events with evidence ${required}`
+      );
     }
   }
   const entryTest = path.normalize("src/battle/pause-automation.test.js");
@@ -134,7 +138,9 @@ function checkEntry() {
     "eventType: null",
   ]) {
     if (!entryTestText.includes(required)) {
-      violations.push(`${entryTest.replaceAll("\\", "/")} must cover pause event rejection ${required}`);
+      violations.push(
+        `${entryTest.replaceAll("\\", "/")} must cover pause event rejection ${required}`
+      );
     }
   }
 }

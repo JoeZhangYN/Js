@@ -97,11 +97,21 @@ describe("runBattleActionEventBridgeAutomation", () => {
     });
     runBattleActionEventBridgeAutomation({ type: BattleActionEventBridgeEvent.INSTALL });
 
-    for (const [nodeId, eventType] of [["eventStart", "actionStarted"], ["eventEnd", "actionEnded"]]) {
+    for (const [nodeId, eventType] of [
+      ["eventStart", "actionStarted"],
+      ["eventEnd", "actionEnded"],
+    ]) {
       expect(() => document.getElementById(nodeId).click()).not.toThrow();
-      expect(mocks.runBattleActionLifecycleEvidence).toHaveBeenCalledWith(expect.objectContaining({
-        result: expect.objectContaining({ reason: "actionLifecycleBridgeThrew", eventType, nodeId, error: "lifecycle failed" }),
-      }));
+      expect(mocks.runBattleActionLifecycleEvidence).toHaveBeenCalledWith(
+        expect.objectContaining({
+          result: expect.objectContaining({
+            reason: "actionLifecycleBridgeThrew",
+            eventType,
+            nodeId,
+            error: "lifecycle failed",
+          }),
+        })
+      );
     }
   });
 

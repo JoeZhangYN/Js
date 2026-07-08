@@ -89,9 +89,10 @@ describe("runBattleStaminaAutomation", () => {
   it("rejects invalid battle stamina events without side effects", () => {
     const d = deps(() => false);
 
-    expect(runBattleStaminaAutomation({ type: "unknown", text: "You lose 7 Stamina" }, d)).toEqual(
-      { lostStamina: 0, paused: false }
-    );
+    expect(runBattleStaminaAutomation({ type: "unknown", text: "You lose 7 Stamina" }, d)).toEqual({
+      lostStamina: 0,
+      paused: false,
+    });
     expect(runBattleStaminaAutomation(null, d)).toEqual({ lostStamina: 0, paused: false });
 
     expect(runStaminaLossLogAutomation({ type: StaminaLossLogEvent.READ })).toEqual({});

@@ -102,10 +102,14 @@ for (const required of [
 }
 
 const rawQueryReferences = [
-  ...text.matchAll(/\b_query\.(?:s|ss|screen|filter|page|equip_slot|hvut|mid|reply|slot|pane|create)\b/g),
+  ...text.matchAll(
+    /\b_query\.(?:s|ss|screen|filter|page|equip_slot|hvut|mid|reply|slot|pane|create)\b/g
+  ),
 ].map((match) => match[0]);
 if (rawQueryReferences.length) {
-  violations.push(`${target} page identity must use resolve_hvut_page_query/page contexts, raw _query refs found: ${rawQueryReferences.join(", ")}`);
+  violations.push(
+    `${target} page identity must use resolve_hvut_page_query/page contexts, raw _query refs found: ${rawQueryReferences.join(", ")}`
+  );
 }
 
 for (const forbidden of [
@@ -153,7 +157,8 @@ for (const forbidden of [
   "var source = query || _query;",
 ]) {
   const allowedInsideHelper =
-    forbidden === "location.href + '&hvut=disabled'" || forbidden === "location.href.replace(/&page=\\d+/, '') + `&page=${p}`";
+    forbidden === "location.href + '&hvut=disabled'" ||
+    forbidden === "location.href.replace(/&page=\\d+/, '') + `&page=${p}`";
   if (allowedInsideHelper) continue;
   if (text.includes(forbidden)) {
     violations.push(`${target} must not rebuild HVUT page URL outside helper: ${forbidden}`);
@@ -162,122 +167,212 @@ for (const forbidden of [
 
 const disableUrlOccurrences = [...text.matchAll(/location\.href \+ '&hvut=disabled'/g)].length;
 if (disableUrlOccurrences !== 1) {
-  violations.push(`${target} must build disable URL only in create_hvut_current_page_disable_url, found ${disableUrlOccurrences}`);
+  violations.push(
+    `${target} must build disable URL only in create_hvut_current_page_disable_url, found ${disableUrlOccurrences}`
+  );
 }
 
-const pageContextRawQueryOccurrences = [...text.matchAll(/var source = query \|\| _query;/g)].length;
+const pageContextRawQueryOccurrences = [...text.matchAll(/var source = query \|\| _query;/g)]
+  .length;
 if (pageContextRawQueryOccurrences !== 0) {
-  violations.push(`${target} page context factories must not read _query before the query entry resolves, found ${pageContextRawQueryOccurrences}`);
+  violations.push(
+    `${target} page context factories must not read _query before the query entry resolves, found ${pageContextRawQueryOccurrences}`
+  );
 }
 
-const abilityUnlockUrlOccurrences = [...text.matchAll(/create_hvut_ability_unlock_url\(\)/g)].length;
+const abilityUnlockUrlOccurrences = [...text.matchAll(/create_hvut_ability_unlock_url\(\)/g)]
+  .length;
 if (abilityUnlockUrlOccurrences !== 1) {
-  violations.push(`${target} must route ability unlock POST through create_hvut_ability_unlock_url, found ${abilityUnlockUrlOccurrences}`);
+  violations.push(
+    `${target} must route ability unlock POST through create_hvut_ability_unlock_url, found ${abilityUnlockUrlOccurrences}`
+  );
 }
 
-const mailPageOccurrences = [...text.matchAll(/location\.href\.replace\(\/&page=\\d\+\/, ''\) \+ `&page=\$\{page\}`/g)].length;
+const mailPageOccurrences = [
+  ...text.matchAll(/location\.href\.replace\(\/&page=\\d\+\/, ''\) \+ `&page=\$\{page\}`/g),
+].length;
 if (mailPageOccurrences !== 0) {
-  violations.push(`${target} must not derive mailbox pages from raw location.href replacement, found ${mailPageOccurrences}`);
+  violations.push(
+    `${target} must not derive mailbox pages from raw location.href replacement, found ${mailPageOccurrences}`
+  );
 }
 
-const mailReplyOccurrences = [...text.matchAll(/\?s=Bazaar&ss=mm&filter=new&reply=\$\{mid\}/g)].length;
+const mailReplyOccurrences = [...text.matchAll(/\?s=Bazaar&ss=mm&filter=new&reply=\$\{mid\}/g)]
+  .length;
 if (mailReplyOccurrences !== 1) {
-  violations.push(`${target} must build mail reply URL only in create_hvut_mail_reply_url, found ${mailReplyOccurrences}`);
+  violations.push(
+    `${target} must build mail reply URL only in create_hvut_mail_reply_url, found ${mailReplyOccurrences}`
+  );
 }
 
 const mailSentOccurrences = [...text.matchAll(/\?s=Bazaar&ss=mm&filter=sent/g)].length;
 if (mailSentOccurrences !== 1) {
-  violations.push(`${target} must build sent mail URL only in create_hvut_mail_sent_url, found ${mailSentOccurrences}`);
+  violations.push(
+    `${target} must build sent mail URL only in create_hvut_mail_sent_url, found ${mailSentOccurrences}`
+  );
 }
 
-const mailPageReadOccurrences = [...text.matchAll(/\?s=Bazaar&ss=mm&filter=\$\{context\?\.(?:filter)\}&mid=\$\{context\?\.(?:mid)\}\$\{pageParam\}/g)].length;
+const mailPageReadOccurrences = [
+  ...text.matchAll(
+    /\?s=Bazaar&ss=mm&filter=\$\{context\?\.(?:filter)\}&mid=\$\{context\?\.(?:mid)\}\$\{pageParam\}/g
+  ),
+].length;
 if (mailPageReadOccurrences !== 1) {
-  violations.push(`${target} must build mail read URL only in create_hvut_mail_read_url, found ${mailPageReadOccurrences}`);
+  violations.push(
+    `${target} must build mail read URL only in create_hvut_mail_read_url, found ${mailPageReadOccurrences}`
+  );
 }
 
-const mailComposeFetchOccurrences = [...text.matchAll(/\$ajax\.fetch\(create_hvut_mail_compose_url/g)].length;
+const mailComposeFetchOccurrences = [
+  ...text.matchAll(/\$ajax\.fetch\(create_hvut_mail_compose_url/g),
+].length;
 if (mailComposeFetchOccurrences !== 9) {
-  violations.push(`${target} must route compose mailbox fetches through create_hvut_mail_compose_url, found ${mailComposeFetchOccurrences}`);
+  violations.push(
+    `${target} must route compose mailbox fetches through create_hvut_mail_compose_url, found ${mailComposeFetchOccurrences}`
+  );
 }
 
-const mailViewFetchOccurrences = [...text.matchAll(/\$ajax\.fetch\(create_hvut_mail_view_url\(mid\), post\)/g)].length;
+const mailViewFetchOccurrences = [
+  ...text.matchAll(/\$ajax\.fetch\(create_hvut_mail_view_url\(mid\), post\)/g),
+].length;
 if (mailViewFetchOccurrences !== 1) {
-  violations.push(`${target} must route mail view/action fetches through create_hvut_mail_view_url, found ${mailViewFetchOccurrences}`);
+  violations.push(
+    `${target} must route mail view/action fetches through create_hvut_mail_view_url, found ${mailViewFetchOccurrences}`
+  );
 }
 
-const mailFilterPageFetchOccurrences = [...text.matchAll(/\$ajax\.fetch\(create_hvut_mail_filter_page_url\(/g)].length;
+const mailFilterPageFetchOccurrences = [
+  ...text.matchAll(/\$ajax\.fetch\(create_hvut_mail_filter_page_url\(/g),
+].length;
 if (mailFilterPageFetchOccurrences !== 2) {
-  violations.push(`${target} must route mailbox page fetches through create_hvut_mail_filter_page_url, found ${mailFilterPageFetchOccurrences}`);
+  violations.push(
+    `${target} must route mailbox page fetches through create_hvut_mail_filter_page_url, found ${mailFilterPageFetchOccurrences}`
+  );
 }
 
-const mailPageOpenOccurrences = [...text.matchAll(/openUrl\(create_hvut_mail_page_url\(p\), hvutRedirectReason\('HV_UTILS_MAIL_PAGE'\)\)/g)].length;
+const mailPageOpenOccurrences = [
+  ...text.matchAll(
+    /openUrl\(create_hvut_mail_page_url\(p\), hvutRedirectReason\('HV_UTILS_MAIL_PAGE'\)\)/g
+  ),
+].length;
 if (mailPageOpenOccurrences !== 2) {
-  violations.push(`${target} must route mailbox page navigation through create_hvut_mail_page_url, found ${mailPageOpenOccurrences}`);
+  violations.push(
+    `${target} must route mailbox page navigation through create_hvut_mail_page_url, found ${mailPageOpenOccurrences}`
+  );
 }
 
-const characterSettingsOpenOccurrences = [...text.matchAll(/openUrl\(create_hvut_character_settings_url\(\), hvutRedirectReason\('HV_UTILS_CHARACTER_SETTINGS'\)\)/g)].length;
+const characterSettingsOpenOccurrences = [
+  ...text.matchAll(
+    /openUrl\(create_hvut_character_settings_url\(\), hvutRedirectReason\('HV_UTILS_CHARACTER_SETTINGS'\)\)/g
+  ),
+].length;
 if (characterSettingsOpenOccurrences !== 2) {
-  violations.push(`${target} must route Character settings navigation through create_hvut_character_settings_url, found ${characterSettingsOpenOccurrences}`);
+  violations.push(
+    `${target} must route Character settings navigation through create_hvut_character_settings_url, found ${characterSettingsOpenOccurrences}`
+  );
 }
 
-const characterSettingsFetchOccurrences = [...text.matchAll(/\$ajax\.fetch\(create_hvut_character_settings_url\(\)/g)].length;
+const characterSettingsFetchOccurrences = [
+  ...text.matchAll(/\$ajax\.fetch\(create_hvut_character_settings_url\(\)/g),
+].length;
 if (characterSettingsFetchOccurrences !== 2) {
-  violations.push(`${target} must route Character settings fetches through create_hvut_character_settings_url, found ${characterSettingsFetchOccurrences}`);
+  violations.push(
+    `${target} must route Character settings fetches through create_hvut_character_settings_url, found ${characterSettingsFetchOccurrences}`
+  );
 }
 
-const characterPageFetchOccurrences = [...text.matchAll(/\$ajax\.fetch\(create_hvut_character_page_url\(\)/g)].length;
+const characterPageFetchOccurrences = [
+  ...text.matchAll(/\$ajax\.fetch\(create_hvut_character_page_url\(\)/g),
+].length;
 if (characterPageFetchOccurrences !== 3) {
-  violations.push(`${target} must route Character page fetches through create_hvut_character_page_url, found ${characterPageFetchOccurrences}`);
+  violations.push(
+    `${target} must route Character page fetches through create_hvut_character_page_url, found ${characterPageFetchOccurrences}`
+  );
 }
 
-const equipmentPageFetchOccurrences = [...text.matchAll(/\$ajax\.fetch\(create_hvut_equipment_page_url\(\)/g)].length;
+const equipmentPageFetchOccurrences = [
+  ...text.matchAll(/\$ajax\.fetch\(create_hvut_equipment_page_url\(\)/g),
+].length;
 if (equipmentPageFetchOccurrences !== 1) {
-  violations.push(`${target} must route Equipment page fetches through create_hvut_equipment_page_url, found ${equipmentPageFetchOccurrences}`);
+  violations.push(
+    `${target} must route Equipment page fetches through create_hvut_equipment_page_url, found ${equipmentPageFetchOccurrences}`
+  );
 }
 
-const itemInventoryFetchOccurrences = [...text.matchAll(/\$ajax\.fetch\(create_hvut_item_inventory_url\(\)/g)].length;
+const itemInventoryFetchOccurrences = [
+  ...text.matchAll(/\$ajax\.fetch\(create_hvut_item_inventory_url\(\)/g),
+].length;
 if (itemInventoryFetchOccurrences !== 1) {
-  violations.push(`${target} must route item inventory fetches through create_hvut_item_inventory_url, found ${itemInventoryFetchOccurrences}`);
+  violations.push(
+    `${target} must route item inventory fetches through create_hvut_item_inventory_url, found ${itemInventoryFetchOccurrences}`
+  );
 }
 
 const trainingUrlOccurrences = [...text.matchAll(/create_hvut_training_url\(\)/g)].length;
 if (trainingUrlOccurrences !== 2) {
-  violations.push(`${target} must route bottom training link/load through create_hvut_training_url, found ${trainingUrlOccurrences}`);
+  violations.push(
+    `${target} must route bottom training link/load through create_hvut_training_url, found ${trainingUrlOccurrences}`
+  );
 }
 
-const bottomBazaarSectionOccurrences = [...text.matchAll(/create_hvut_bazaar_section_url\(ss\)/g)].length;
+const bottomBazaarSectionOccurrences = [...text.matchAll(/create_hvut_bazaar_section_url\(ss\)/g)]
+  .length;
 if (bottomBazaarSectionOccurrences !== 2) {
-  violations.push(`${target} must route bottom Bazaar section link/load through create_hvut_bazaar_section_url, found ${bottomBazaarSectionOccurrences}`);
+  violations.push(
+    `${target} must route bottom Bazaar section link/load through create_hvut_bazaar_section_url, found ${bottomBazaarSectionOccurrences}`
+  );
 }
 
-const itemShopFetchOccurrences = [...text.matchAll(/\$ajax\.fetch\(create_hvut_item_shop_url\(\)/g)].length;
+const itemShopFetchOccurrences = [...text.matchAll(/\$ajax\.fetch\(create_hvut_item_shop_url\(\)/g)]
+  .length;
 if (itemShopFetchOccurrences !== 4) {
-  violations.push(`${target} must route Item Shop fetches through create_hvut_item_shop_url, found ${itemShopFetchOccurrences}`);
+  violations.push(
+    `${target} must route Item Shop fetches through create_hvut_item_shop_url, found ${itemShopFetchOccurrences}`
+  );
 }
 
-const marketBrowseItemsFetchOccurrences = [...text.matchAll(/\$ajax\.fetch\(create_hvut_market_browse_items_url\(filter\)\)/g)].length;
+const marketBrowseItemsFetchOccurrences = [
+  ...text.matchAll(/\$ajax\.fetch\(create_hvut_market_browse_items_url\(filter\)\)/g),
+].length;
 if (marketBrowseItemsFetchOccurrences !== 1) {
-  violations.push(`${target} must route Market browse item fetches through create_hvut_market_browse_items_url, found ${marketBrowseItemsFetchOccurrences}`);
+  violations.push(
+    `${target} must route Market browse item fetches through create_hvut_market_browse_items_url, found ${marketBrowseItemsFetchOccurrences}`
+  );
 }
 
-const shrineFetchOccurrences = [...text.matchAll(/\$ajax\.fetch\(create_hvut_shrine_url\(\)/g)].length;
+const shrineFetchOccurrences = [...text.matchAll(/\$ajax\.fetch\(create_hvut_shrine_url\(\)/g)]
+  .length;
 if (shrineFetchOccurrences !== 2) {
-  violations.push(`${target} must route Shrine offer submit fetches through create_hvut_shrine_url, found ${shrineFetchOccurrences}`);
+  violations.push(
+    `${target} must route Shrine offer submit fetches through create_hvut_shrine_url, found ${shrineFetchOccurrences}`
+  );
 }
 
-const monsterLabSlotFetchOccurrences = [...text.matchAll(/\$ajax\.fetch\(create_hvut_monster_lab_slot_url\(mob\)/g)].length;
+const monsterLabSlotFetchOccurrences = [
+  ...text.matchAll(/\$ajax\.fetch\(create_hvut_monster_lab_slot_url\(mob\)/g),
+].length;
 if (monsterLabSlotFetchOccurrences !== 4) {
-  violations.push(`${target} must route Monster Lab slot fetches through create_hvut_monster_lab_slot_url, found ${monsterLabSlotFetchOccurrences}`);
+  violations.push(
+    `${target} must route Monster Lab slot fetches through create_hvut_monster_lab_slot_url, found ${monsterLabSlotFetchOccurrences}`
+  );
 }
 
-const monsterLabSlotCommandOccurrences = [...text.matchAll(/urls\.push\(\[create_hvut_monster_lab_slot_url\(mob\),/g)].length;
+const monsterLabSlotCommandOccurrences = [
+  ...text.matchAll(/urls\.push\(\[create_hvut_monster_lab_slot_url\(mob\),/g),
+].length;
 if (monsterLabSlotCommandOccurrences !== 12) {
-  violations.push(`${target} must route Monster Lab upgrade commands through create_hvut_monster_lab_slot_url, found ${monsterLabSlotCommandOccurrences}`);
+  violations.push(
+    `${target} must route Monster Lab upgrade commands through create_hvut_monster_lab_slot_url, found ${monsterLabSlotCommandOccurrences}`
+  );
 }
 
-const armoryOrganizeOccurrences = [...text.matchAll(/\$ajax\.fetch\(create_hvut_armory_organize_url\(\)/g)].length;
+const armoryOrganizeOccurrences = [
+  ...text.matchAll(/\$ajax\.fetch\(create_hvut_armory_organize_url\(\)/g),
+].length;
 if (armoryOrganizeOccurrences !== 6) {
-  violations.push(`${target} must route Armory organize fetches through create_hvut_armory_organize_url, found ${armoryOrganizeOccurrences}`);
+  violations.push(
+    `${target} must route Armory organize fetches through create_hvut_armory_organize_url, found ${armoryOrganizeOccurrences}`
+  );
 }
 
 if (violations.length) {

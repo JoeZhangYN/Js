@@ -60,7 +60,9 @@ function checkFile(file) {
       /from\s+["'][^"']*potion-economy\.js["']/.test(line) &&
       /\bisPotionWasteful\b/.test(line)
     ) {
-      violations.push(`${where} potion economy must be consumed through runBattlePotionEconomy(event)`);
+      violations.push(
+        `${where} potion economy must be consumed through runBattlePotionEconomy(event)`
+      );
     }
   });
   if (
@@ -122,7 +124,9 @@ if (!/battlePotionEconomyEventHandlers\[event\?\.type\]/.test(potionEconomyText)
 const potionEconomyTest = path.normalize("src/battle/potion-economy.test.js");
 const potionEconomyTestText = fs.readFileSync(path.join(root, potionEconomyTest), "utf8");
 if (!/runBattlePotionEconomy\(null\)/.test(potionEconomyTestText)) {
-  violations.push(`${potionEconomyTest.replaceAll("\\", "/")} must cover null potion economy events`);
+  violations.push(
+    `${potionEconomyTest.replaceAll("\\", "/")} must cover null potion economy events`
+  );
 }
 for (const required of [
   "runRecoveryLearningAutomation",
@@ -204,7 +208,9 @@ const ownerTestText = fs.readFileSync(path.join(root, ownerTest), "utf8");
 const failureTestText = fs.readFileSync(path.join(root, failureTest), "utf8");
 const failureOwnerText = fs.readFileSync(path.join(root, failureOwner), "utf8");
 if (/if\s*\(\s*event\.type\s*===/.test(ownerEntry)) {
-  violations.push(`${owner.replaceAll("\\", "/")} entry must not reintroduce an event.type if-chain`);
+  violations.push(
+    `${owner.replaceAll("\\", "/")} entry must not reintroduce an event.type if-chain`
+  );
 }
 if (/\bevent\.type\b/.test(ownerEntry) || !/\bevent\?\.type\b/.test(ownerEntry)) {
   violations.push(`${owner.replaceAll("\\", "/")} entry must fail closed for null recovery events`);
@@ -220,11 +226,19 @@ if (!/runRecoveryLearningAutomation\(null\)/.test(ownerTestText)) {
   violations.push(`${ownerTest.replaceAll("\\", "/")} must cover null recovery learning events`);
 }
 
-if (!/function persistLearnedRecovery\(learned\) \{[\s\S]*setValue\(STORAGE_KEYS\.LEARNED_RECOVERY,\s*learned\);[\s\S]*return true;[\s\S]*catch\s*\(error\)\s*{[\s\S]*recordRecoveryLearningFailure\("update-learned",\s*error\);[\s\S]*return false;/.test(failureOwnerText)) {
-  violations.push(`${failureOwner.replaceAll("\\", "/")} must classify learned recovery storage write failures`);
+if (
+  !/function persistLearnedRecovery\(learned\) \{[\s\S]*setValue\(STORAGE_KEYS\.LEARNED_RECOVERY,\s*learned\);[\s\S]*return true;[\s\S]*catch\s*\(error\)\s*{[\s\S]*recordRecoveryLearningFailure\("update-learned",\s*error\);[\s\S]*return false;/.test(
+    failureOwnerText
+  )
+) {
+  violations.push(
+    `${failureOwner.replaceAll("\\", "/")} must classify learned recovery storage write failures`
+  );
 }
 if ((ownerText.match(/\bsetValue\(/g) || []).length !== 0) {
-  violations.push(`${owner.replaceAll("\\", "/")} must not write learned recovery storage directly`);
+  violations.push(
+    `${owner.replaceAll("\\", "/")} must not write learned recovery storage directly`
+  );
 }
 for (const required of [
   "RECOVERY_LEARNING_FAILURE_KEY",

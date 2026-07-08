@@ -13,15 +13,20 @@ function requirePart(label, body, part) {
 }
 
 const helperRegion =
-  /var record_hvut_training_notification_failure = function \(stage, detail\) \{[\s\S]*?\n  var reloadCurrentPage/.exec(text)?.[0] || "";
+  /var record_hvut_training_notification_failure = function \(stage, detail\) \{[\s\S]*?\n  var reloadCurrentPage/.exec(
+    text
+  )?.[0] || "";
 const modernTable =
-  /_tr\.parse_table = function \(\) \{[\s\S]*?\n  \};\n\n  _tr\.parse_progress/.exec(text)?.[0] || "";
+  /_tr\.parse_table = function \(\) \{[\s\S]*?\n  \};\n\n  _tr\.parse_progress/.exec(text)?.[0] ||
+  "";
 const modernProgress =
   /_tr\.parse_progress = function \(\) \{[\s\S]*?\n  \};\n\n  GM_addStyle/.exec(text)?.[0] || "";
 const bottomTraining =
   /_bottom\.tr = \{[\s\S]*?\n  \};\n\n  _bottom\.tr\.init\(\);/.exec(text)?.[0] || "";
 const legacyTraining =
-  /\$input\(\['button', 'Set'\][\s\S]*?\n\} else\n\/\/ \[END 4\] Character - Training/.exec(text)?.[0] || "";
+  /\$input\(\['button', 'Set'\][\s\S]*?\n\} else\n\/\/ \[END 4\] Character - Training/.exec(
+    text
+  )?.[0] || "";
 
 for (const [label, body] of [
   ["training notification helper", helperRegion],
@@ -114,7 +119,9 @@ for (const forbidden of [
   }
 }
 if (bottomTraining.includes("const error = get_message(doc);")) {
-  violations.push(`${target} bottom training notification must classify start responses through classify_hvut_training_notification_response`);
+  violations.push(
+    `${target} bottom training notification must classify start responses through classify_hvut_training_notification_response`
+  );
 }
 if (bottomTraining.includes("json.error = error;")) {
   violations.push(`${target} bottom training notification must use typed response message`);
@@ -122,11 +129,19 @@ if (bottomTraining.includes("json.error = error;")) {
 
 for (const required of [
   'HVUT_TRAINING_NOTIFICATION_FAILURE: "HVAA:lastHvutTrainingNotificationFailure"',
-  'source("hvutTrainingNotificationFailure", DiagnosticEvidenceKey.HVUT_TRAINING_NOTIFICATION_FAILURE)',
 ]) {
   if (!diagnosticText.includes(required)) {
     violations.push(`${diagnosticTarget} must include ${required}`);
   }
+}
+if (
+  !/source\(\s*"hvutTrainingNotificationFailure",\s*DiagnosticEvidenceKey\.HVUT_TRAINING_NOTIFICATION_FAILURE\s*\)/.test(
+    diagnosticText
+  )
+) {
+  violations.push(
+    `${diagnosticTarget} must include hvutTrainingNotificationFailure diagnostic source`
+  );
 }
 
 if (violations.length) {
@@ -135,4 +150,6 @@ if (violations.length) {
   process.exit(1);
 }
 
-console.log("[verify-hvut-training-end-time-boundary] OK - training end-time parse failures fail closed with evidence");
+console.log(
+  "[verify-hvut-training-end-time-boundary] OK - training end-time parse failures fail closed with evidence"
+);

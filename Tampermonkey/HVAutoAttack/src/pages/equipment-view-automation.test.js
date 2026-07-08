@@ -1,9 +1,9 @@
 import { describe, expect, it, vi } from "vitest";
 import { EquipmentViewEvent, runEquipmentViewAutomation } from "./equipment-view-automation.js";
-import { PageKind } from "./page-kind.js";
+import { PageKind, PageWorld } from "./page-kind.js";
 
-function pageReady(kind) {
-  return { type: EquipmentViewEvent.PAGE_READY, kind };
+function pageReady(kind, page = { kind, world: PageWorld.PERSISTENT, isIsekai: false }) {
+  return { type: EquipmentViewEvent.PAGE_READY, kind, page };
 }
 
 describe("runEquipmentViewAutomation", () => {
@@ -52,8 +52,29 @@ describe("runEquipmentViewAutomation", () => {
       })
     ).toBe(true);
 
-    expect(runForgeCostEnhancement).toHaveBeenCalledTimes(1);
+    expect(runForgeCostEnhancement).toHaveBeenCalledWith({
+      kind: PageKind.SHOWEQUIP,
+      world: PageWorld.PERSISTENT,
+      isIsekai: false,
+    });
     expect(runEquipPercentileEnhancement).not.toHaveBeenCalled();
+  });
+
+  it("passes the typed world context to the forge cost executor", () => {
+    const runForgeCostEnhancement = vi.fn();
+    const runEquipPercentileEnhancement = vi.fn();
+    const page = { kind: PageKind.SHOWEQUIP, world: PageWorld.ISEKAI, isIsekai: true };
+
+    expect(
+      runEquipmentViewAutomation(pageReady(PageKind.SHOWEQUIP, page), {
+        readOptionField: () => "off",
+        readOptionEnabled: () => true,
+        runEquipPercentileEnhancement,
+        runForgeCostEnhancement,
+      })
+    ).toBe(true);
+
+    expect(runForgeCostEnhancement).toHaveBeenCalledWith(page);
   });
 
   it("runs percentile enhancement when the percentile mode is enabled", () => {

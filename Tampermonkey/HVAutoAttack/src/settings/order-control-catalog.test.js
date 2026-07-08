@@ -26,7 +26,9 @@ describe("settings order control catalog", () => {
   });
 
   it("keeps item and physical order identities readable through one entry", () => {
-    const items = runSettingsOrderControlCatalog({ type: SettingsOrderControlEvent.READ_ITEM_ORDER });
+    const items = runSettingsOrderControlCatalog({
+      type: SettingsOrderControlEvent.READ_ITEM_ORDER,
+    });
     const skills = runSettingsOrderControlCatalog({
       type: SettingsOrderControlEvent.READ_PHYSICAL_SKILL_ORDER,
     });
@@ -70,6 +72,8 @@ describe("settings order control catalog", () => {
     expect(spellRows.at(-1)).toMatchObject({ label: "Dark", last: true });
     expect(arenaLevels).toContainEqual(expect.objectContaining({ key: "GF", value: "gr" }));
     expect(roundTypes).toContainEqual({ code: "ba", label: "Encounter" });
-    expect(scrolls).toContainEqual(expect.objectContaining({ key: "Go", label: "Scroll of the Gods" }));
+    expect(scrolls).toContainEqual(
+      expect.objectContaining({ key: "Go", label: "Scroll of the Gods" })
+    );
   });
 });

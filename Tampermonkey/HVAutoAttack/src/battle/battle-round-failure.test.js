@@ -19,8 +19,7 @@ beforeEach(() => {
   vi.restoreAllMocks();
   mocks.setValue.mockReset();
   mocks.setValue.mockImplementation((item, value) => {
-    window.localStorage[`hvAA_${item}`] =
-      typeof value === "string" ? value : JSON.stringify(value);
+    window.localStorage[`hvAA_${item}`] = typeof value === "string" ? value : JSON.stringify(value);
   });
 });
 
@@ -35,9 +34,9 @@ describe("battle round persistence failures", () => {
       throw new Error("round type blocked");
     });
 
-    expect(
-      runBattleRoundAutomation({ type: BattleRoundEvent.RECORD_TYPE, roundType: "ar" })
-    ).toBe(false);
+    expect(runBattleRoundAutomation({ type: BattleRoundEvent.RECORD_TYPE, roundType: "ar" })).toBe(
+      false
+    );
 
     expect(lastFailure()).toMatchObject({
       capability: "battleRound",

@@ -57,16 +57,23 @@ for (const required of ["runMaterialShopAutomation", "MaterialShopEvent"]) {
   }
 }
 const entryBody =
-  ownerText.match(/export function runMaterialShopAutomation\([^)]*\) \{[\s\S]*?\n\}/)?.[0] ||
-  "";
-if (!/const materialShopEventHandlers\s*=\s*Object\.freeze\(\{[\s\S]*\[EVENT_ENSURE_MATERIALS\]/.test(ownerText)) {
-  violations.push(`${owner.replaceAll("\\", "/")} must route events through a frozen handler table`);
+  ownerText.match(/export function runMaterialShopAutomation\([^)]*\) \{[\s\S]*?\n\}/)?.[0] || "";
+if (
+  !/const materialShopEventHandlers\s*=\s*Object\.freeze\(\{[\s\S]*\[EVENT_ENSURE_MATERIALS\]/.test(
+    ownerText
+  )
+) {
+  violations.push(
+    `${owner.replaceAll("\\", "/")} must route events through a frozen handler table`
+  );
 }
 if (/event\.type\s*(?:!==|===)|switch\s*\(\s*event\.type\s*\)/.test(entryBody)) {
   violations.push(`${owner.replaceAll("\\", "/")} entry must dispatch by handler table`);
 }
 if (/materialShopEventHandlers\s*\[\s*event\.type\s*\]/.test(entryBody)) {
-  violations.push(`${owner.replaceAll("\\", "/")} entry must reject null material shop events instead of reading event.type directly`);
+  violations.push(
+    `${owner.replaceAll("\\", "/")} entry must reject null material shop events instead of reading event.type directly`
+  );
 }
 for (const legacy of ["parseShopPage", "ensureMaterials"]) {
   if (new RegExp(`export\\s+function\\s+${legacy}\\s*\\(`).test(ownerText)) {
@@ -77,7 +84,9 @@ if (!fs.existsSync(path.join(root, ownerTest))) {
   violations.push(`${ownerTest.replaceAll("\\", "/")} must cover material shop entry`);
 } else {
   const ownerTestText = fs.readFileSync(path.join(root, ownerTest), "utf8");
-  if (!ownerTestText.includes("rejects unknown material shop events without reading the shop page")) {
+  if (
+    !ownerTestText.includes("rejects unknown material shop events without reading the shop page")
+  ) {
     violations.push(`${ownerTest.replaceAll("\\", "/")} must cover unknown material shop events`);
   }
   if (
@@ -89,7 +98,9 @@ if (!fs.existsSync(path.join(root, ownerTest))) {
 }
 
 if (!fs.existsSync(path.join(root, tokenFailureTest))) {
-  violations.push(`${tokenFailureTest.replaceAll("\\", "/")} must cover material shop token failures`);
+  violations.push(
+    `${tokenFailureTest.replaceAll("\\", "/")} must cover material shop token failures`
+  );
 } else {
   const tokenFailureTestText = fs.readFileSync(path.join(root, tokenFailureTest), "utf8");
   for (const required of [
@@ -98,23 +109,29 @@ if (!fs.existsSync(path.join(root, tokenFailureTest))) {
     "calls.filter((c) => c.parm !== undefined)).toHaveLength(0)",
   ]) {
     if (!tokenFailureTestText.includes(required)) {
-      violations.push(`${tokenFailureTest.replaceAll("\\", "/")} must lock missing storetoken as a no-buy failure`);
+      violations.push(
+        `${tokenFailureTest.replaceAll("\\", "/")} must lock missing storetoken as a no-buy failure`
+      );
     }
   }
 }
 
 if (!fs.existsSync(path.join(root, httpFailureTest))) {
-  violations.push(`${httpFailureTest.replaceAll("\\", "/")} must cover material shop HTTP failures`);
+  violations.push(
+    `${httpFailureTest.replaceAll("\\", "/")} must cover material shop HTTP failures`
+  );
 } else {
   const httpFailureTestText = fs.readFileSync(path.join(root, httpFailureTest), "utf8");
   for (const required of [
     "初始商店页读取失败 → buy-error with failure detail",
     "买请求 POST 失败 → buy-error with failure detail",
-    "kind: \"networkError\"",
-    "kind: \"httpStatus\"",
+    'kind: "networkError"',
+    'kind: "httpStatus"',
   ]) {
     if (!httpFailureTestText.includes(required)) {
-      violations.push(`${httpFailureTest.replaceAll("\\", "/")} must cover material shop HTTP failures`);
+      violations.push(
+        `${httpFailureTest.replaceAll("\\", "/")} must cover material shop HTTP failures`
+      );
     }
   }
 }

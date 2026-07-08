@@ -95,7 +95,13 @@ function recordStaminaRecoveryFailure(failure) {
 }
 
 function claimStaminaRecovery() {
-  post(window.location.href, reloadCurrentPage, STAMINA_RECOVERY_POST_BODY, undefined, recordStaminaRecoveryFailure);
+  post(
+    window.location.href,
+    reloadCurrentPage,
+    STAMINA_RECOVERY_POST_BODY,
+    undefined,
+    recordStaminaRecoveryFailure
+  );
   return true;
 }
 

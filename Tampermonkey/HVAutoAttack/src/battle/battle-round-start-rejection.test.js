@@ -98,7 +98,9 @@ describe("runBattleRoundStartAutomation rejection evidence", () => {
         : { monsterAll: 3, monsterAlive: 3 }
     );
 
-    expect(runBattleRoundStartAutomation({ type: BattleRoundStartEvent.ROUND_STARTED })).toBe(false);
+    expect(runBattleRoundStartAutomation({ type: BattleRoundStartEvent.ROUND_STARTED })).toBe(
+      false
+    );
 
     expect(mocks.runBattleRoundAutomation).not.toHaveBeenCalledWith(
       expect.objectContaining({ type: "recordStartCount" })
@@ -128,7 +130,9 @@ describe("runBattleRoundStartAutomation rejection evidence", () => {
       event.type === "recordStartContext" ? failedContext : undefined
     );
 
-    expect(runBattleRoundStartAutomation({ type: BattleRoundStartEvent.ROUND_STARTED })).toBe(false);
+    expect(runBattleRoundStartAutomation({ type: BattleRoundStartEvent.ROUND_STARTED })).toBe(
+      false
+    );
 
     expect(mocks.runBattleStaminaAutomation).not.toHaveBeenCalled();
     expect(mocks.runMonsterStatusAutomation).not.toHaveBeenCalledWith(

@@ -24,7 +24,9 @@ describe("runBattleActionLifecycleEvidence", () => {
       )
     ).toBe(true);
 
-    expect(JSON.parse(window.sessionStorage.getItem("HVAA:lastBattleActionLifecycle"))).toMatchObject({
+    expect(
+      JSON.parse(window.sessionStorage.getItem("HVAA:lastBattleActionLifecycle"))
+    ).toMatchObject({
       phase: "actionEnded",
       result: { outcome: "ongoing", continued: "turn" },
       steps: [{ step: "runTurn", result: true }],

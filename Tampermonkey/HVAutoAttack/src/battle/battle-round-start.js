@@ -110,14 +110,22 @@ function startRound() {
     recordRoundStart(EVENT_ROUND_STARTED, false, steps);
     return false;
   }
-  recordStep(steps, "recordStartCount", runBattleRoundAutomation({
-    type: BattleRoundEvent.RECORD_START_COUNT,
-    initializingText,
-    roundType: roundStartContext.roundType,
-    initialized: roundStartContext.initialized,
-    repaired: monsterStatusOutcome.repaired,
-  }));
-  recordStep(steps, "syncRuntime", runBattleRoundAutomation({ type: BattleRoundEvent.SYNC_RUNTIME }));
+  recordStep(
+    steps,
+    "recordStartCount",
+    runBattleRoundAutomation({
+      type: BattleRoundEvent.RECORD_START_COUNT,
+      initializingText,
+      roundType: roundStartContext.roundType,
+      initialized: roundStartContext.initialized,
+      repaired: monsterStatusOutcome.repaired,
+    })
+  );
+  recordStep(
+    steps,
+    "syncRuntime",
+    runBattleRoundAutomation({ type: BattleRoundEvent.SYNC_RUNTIME })
+  );
   recordStep(
     steps,
     "roundReady",

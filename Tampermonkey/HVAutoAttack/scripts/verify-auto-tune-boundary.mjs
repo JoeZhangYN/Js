@@ -104,20 +104,30 @@ if (/if\s*\(\s*event\.type\s*===\s*EVENT_/.test(ownerText)) {
 }
 const ownerEntry = ownerText.match(/export function runAutoTuneAutomation[\s\S]*?\n}/)?.[0] || "";
 if (/\bevent\.type\b/.test(ownerEntry) || !/\bevent\?\.type\b/.test(ownerEntry)) {
-  violations.push(`${owner.replaceAll("\\", "/")} entry must fail closed for null auto-tune events`);
+  violations.push(
+    `${owner.replaceAll("\\", "/")} entry must fail closed for null auto-tune events`
+  );
 }
 if (!/runAutoTuneAutomation\(null\)/.test(ownerTestText)) {
   violations.push(`${ownerTest.replaceAll("\\", "/")} must cover null auto-tune events`);
 }
 
-if (!/function persistAutoTuneValue[\s\S]*setValue\(storageKey,\s*value\);[\s\S]*return true;[\s\S]*catch\s*\(error\)\s*{[\s\S]*recordAutoTuneFailure\(stage,\s*storageKey,\s*error\);[\s\S]*return false;/.test(ownerText)) {
+if (
+  !/function persistAutoTuneValue[\s\S]*setValue\(storageKey,\s*value\);[\s\S]*return true;[\s\S]*catch\s*\(error\)\s*{[\s\S]*recordAutoTuneFailure\(stage,\s*storageKey,\s*error\);[\s\S]*return false;/.test(
+    ownerText
+  )
+) {
   violations.push(`${owner.replaceAll("\\", "/")} must classify auto-tune storage write failures`);
 }
 if ((ownerText.match(/\bsetValue\(/g) || []).length !== 1) {
-  violations.push(`${owner.replaceAll("\\", "/")} must route auto-tune writes through persistAutoTuneValue`);
+  violations.push(
+    `${owner.replaceAll("\\", "/")} must route auto-tune writes through persistAutoTuneValue`
+  );
 }
 if (!ownerText.includes("return maybeStep(history, pad, key);")) {
-  violations.push(`${owner.replaceAll("\\", "/")} must report pad-step persistence failures from RECORD_BATTLE`);
+  violations.push(
+    `${owner.replaceAll("\\", "/")} must report pad-step persistence failures from RECORD_BATTLE`
+  );
 }
 for (const required of [
   "AUTO_TUNE_FAILURE_KEY",

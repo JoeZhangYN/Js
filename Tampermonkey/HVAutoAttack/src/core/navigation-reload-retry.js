@@ -24,7 +24,13 @@ export function createReloadStopEvidence(attempt, detail) {
 }
 
 export function createReloadStopAudit(reason, attempt, detail) {
-  return { reason, attempt, maxAttempts: RELOAD_MAX_ATTEMPTS, retryDelayMs: RELOAD_RETRY_DELAY_MS, detail };
+  return {
+    reason,
+    attempt,
+    maxAttempts: RELOAD_MAX_ATTEMPTS,
+    retryDelayMs: RELOAD_RETRY_DELAY_MS,
+    detail,
+  };
 }
 
 export function createReloadFailureEvidence(cause, attempt, detail, error) {
@@ -32,5 +38,11 @@ export function createReloadFailureEvidence(cause, attempt, detail, error) {
 }
 
 export function createReloadFailureAudit(reason, attempt, detail, error) {
-  return { reason, attempt, retryDelayMs: RELOAD_RETRY_DELAY_MS, detail, error: error?.message || String(error) };
+  return {
+    reason,
+    attempt,
+    retryDelayMs: RELOAD_RETRY_DELAY_MS,
+    detail,
+    error: error?.message || String(error),
+  };
 }

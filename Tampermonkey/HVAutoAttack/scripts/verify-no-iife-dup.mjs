@@ -26,18 +26,55 @@ import { stripComments } from "./lib/i18n-probe-lex.mjs";
 
 const TARGET = fileURLToPath(new URL("../src/i18n/hv-utils.js", import.meta.url));
 const COLLAPSED_OBJECTS = ["$re", "$price", "$dfct", "$persona", "$equip", "$armory"]; // R1: 整对象收口（bindRe/bindPrice/bindDfct/bindPersona——parse_stats_pane 2026-06-10 续收后全坍缩；bindEquip/bindArmory——同日主世界旧 $equip 体系/旧装备店死段退化后收口, $armory 段内缩进声明）
-const PARTIAL_OBJECTS = { // R2: 部分收口对象 → 字面量内禁止回潮的方法名
-  "$battle": [ // bindBattlePanel 内核 + 数据层(2026-06-10 续收: 能量模型后两版修理机制同构, Forge 流已死)
-    "init_panel", "click", "hover", "hover_repair", "get",
-    "buy_items", "buy", "render_supply_grid", "render_requirement_li", "create_equip_li",
-    "create", "load_dynjs", "update_condition", "repair", "calc_repair", "load_repair",
-    "update_link", "load_items", "load", "parse", "display_condition", "load_inventory",
-    "display_inventory", "render_repair",
+const PARTIAL_OBJECTS = {
+  // R2: 部分收口对象 → 字面量内禁止回潮的方法名
+  $battle: [
+    // bindBattlePanel 内核 + 数据层(2026-06-10 续收: 能量模型后两版修理机制同构, Forge 流已死)
+    "init_panel",
+    "click",
+    "hover",
+    "hover_repair",
+    "get",
+    "buy_items",
+    "buy",
+    "render_supply_grid",
+    "render_requirement_li",
+    "create_equip_li",
+    "create",
+    "load_dynjs",
+    "update_condition",
+    "repair",
+    "calc_repair",
+    "load_repair",
+    "update_link",
+    "load_items",
+    "load",
+    "parse",
+    "display_condition",
+    "load_inventory",
+    "display_inventory",
+    "render_repair",
   ],
-  "$config": [ // bindConfig 配置体系内核 18 方法收口(2026-06-10; init/migration/create/set_panel/set_input 真分叉留各版字面量)
-    "reset", "get", "set", "del", "ls_get", "ls_set", "ls_del",
-    "open", "close", "get_panel", "validate_panel", "validate",
-    "load", "save", "text2obj", "obj2text", "text2array", "array2text",
+  $config: [
+    // bindConfig 配置体系内核 18 方法收口(2026-06-10; init/migration/create/set_panel/set_input 真分叉留各版字面量)
+    "reset",
+    "get",
+    "set",
+    "del",
+    "ls_get",
+    "ls_set",
+    "ls_del",
+    "open",
+    "close",
+    "get_panel",
+    "validate_panel",
+    "validate",
+    "load",
+    "save",
+    "text2obj",
+    "obj2text",
+    "text2array",
+    "array2text",
   ],
 };
 
@@ -47,7 +84,9 @@ const lines = src.split("\n");
 // 定位两 IIFE 区（共享区 < isekaiStart 豁免——bind* 定义合法地住在那里）
 const isekaiStart = lines.findIndex((l) => /^if \(IS_ISEKAI\) \{/.test(l));
 if (isekaiStart < 0) {
-  console.error("[verify-no-iife-dup] FAIL — 找不到 `if (IS_ISEKAI) {` 分发行（文件结构变更？同步更新本 probe）");
+  console.error(
+    "[verify-no-iife-dup] FAIL — 找不到 `if (IS_ISEKAI) {` 分发行（文件结构变更？同步更新本 probe）"
+  );
   process.exit(1);
 }
 
@@ -59,7 +98,9 @@ for (let i = isekaiStart; i < lines.length; i++) {
   for (const obj of COLLAPSED_OBJECTS) {
     if (t.startsWith(`const ${obj} = {`)) {
       if (!/^const \S+ = \{\};?\s*$/.test(t)) {
-        violations.push(`hv-utils.js:${i + 1} ${obj} 在 IIFE 内回潮为非空字面量（应为 \`const ${obj} = {};\` + bind 注入）`);
+        violations.push(
+          `hv-utils.js:${i + 1} ${obj} 在 IIFE 内回潮为非空字面量（应为 \`const ${obj} = {};\` + bind 注入）`
+        );
       }
     }
   }
@@ -73,7 +114,9 @@ for (let i = isekaiStart; i < lines.length; i++) {
     for (let j = i; j < lines.length; j++) {
       const m = /^ {2}([\w$]+)\s*:\s*(?:async\s+)?function/.exec(lines[j]);
       if (m && depth >= 1 && kernel.includes(m[1])) {
-        violations.push(`hv-utils.js:${j + 1} ${obj}.${m[1]} 已收口方法在 IIFE 内回潮（应由 bind 内核提供）`);
+        violations.push(
+          `hv-utils.js:${j + 1} ${obj}.${m[1]} 已收口方法在 IIFE 内回潮（应由 bind 内核提供）`
+        );
       }
       for (const ch of lines[j]) {
         if (ch === "{") depth++;
@@ -88,11 +131,23 @@ for (let i = isekaiStart; i < lines.length; i++) {
 const BANNED_LITERALS = [
   ["hvut-bt-warn", "warn 类已归一 .hvut-warn"],
   ["dynjs_loaded", "dynjs 已统一 dynjs_equip（L1 parse_script_json），旧整体替换容器已拆桥"],
-  ["?s=Forge", "旧 Forge 组端点（re修理/up升级/sa分解/fo重铸）已随能量模型整组消失（bindTop 注释实证），业务走 Bazaar am 体系（修理 screen=repair / 升级分解 modify·salvage）"],
-  ["?s=Character&ss=in", "旧装备库存端点已死（能量模型），容量取数走 ?s=Bazaar&ss=am&screen=organize 的 Inventory Capacity"],
+  [
+    "?s=Forge",
+    "旧 Forge 组端点（re修理/up升级/sa分解/fo重铸）已随能量模型整组消失（bindTop 注释实证），业务走 Bazaar am 体系（修理 screen=repair / 升级分解 modify·salvage）",
+  ],
+  [
+    "?s=Character&ss=in",
+    "旧装备库存端点已死（能量模型），容量取数走 ?s=Bazaar&ss=am&screen=organize 的 Inventory Capacity",
+  ],
   ["?s=Bazaar&ss=es", "旧装备店端点已死（能量模型），出售/分解走 bindArmory（Bazaar am 七屏）"],
-  ["$equip.parse.div(", "旧 parse.div 随主世界旧 $equip 体系退化（2026-06-10），统一 isekai 基准 $equip.parse.elem"],
-  ["$equip.parse.extended(", "旧详情页 #equip_extended 解析随旧页面消失（实站报错证实），无新形态继任"],
+  [
+    "$equip.parse.div(",
+    "旧 parse.div 随主世界旧 $equip 体系退化（2026-06-10），统一 isekai 基准 $equip.parse.elem",
+  ],
+  [
+    "$equip.parse.extended(",
+    "旧详情页 #equip_extended 解析随旧页面消失（实站报错证实），无新形态继任",
+  ],
 ];
 lines.forEach((l, i) => {
   for (const [word, why] of BANNED_LITERALS) {
@@ -107,4 +162,6 @@ if (violations.length) {
   violations.forEach((v) => console.error("  " + v));
   process.exit(1);
 }
-console.log("[verify-no-iife-dup] OK — 收口对象（bindRe/bindPrice/bindDfct/bindPersona/bindEquip/bindArmory/bindBattlePanel 内核/死端点 Forge·ss=in·ss=es）无 IIFE 回潮");
+console.log(
+  "[verify-no-iife-dup] OK — 收口对象（bindRe/bindPrice/bindDfct/bindPersona/bindEquip/bindArmory/bindBattlePanel 内核/死端点 Forge·ss=in·ss=es）无 IIFE 回潮"
+);

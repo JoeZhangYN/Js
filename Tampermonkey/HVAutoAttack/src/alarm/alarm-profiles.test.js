@@ -16,8 +16,12 @@ describe("alarm profile catalog", () => {
   });
 
   it("normalizes runtime alarm kinds through the profile entry", () => {
-    expect(runAlarmProfileCatalog({ type: AlarmProfileEvent.NORMALIZE_KIND, kind: "Riddle" })).toBe("Riddle");
-    expect(runAlarmProfileCatalog({ type: AlarmProfileEvent.NORMALIZE_KIND, kind: "Bad Kind" })).toBe("Common");
+    expect(runAlarmProfileCatalog({ type: AlarmProfileEvent.NORMALIZE_KIND, kind: "Riddle" })).toBe(
+      "Riddle"
+    );
+    expect(
+      runAlarmProfileCatalog({ type: AlarmProfileEvent.NORMALIZE_KIND, kind: "Bad Kind" })
+    ).toBe("Common");
     expect(runAlarmProfileCatalog(null)).toBeUndefined();
   });
 });

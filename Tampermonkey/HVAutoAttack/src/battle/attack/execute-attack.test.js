@@ -147,10 +147,18 @@ describe("runBattleAttackExecution", () => {
   });
 
   it("rejects unknown and null attack execution events as not acted with evidence", () => {
-    for (const [event, eventType] of [[{ type: "unknown" }, "unknown"], [null, null]]) {
+    for (const [event, eventType] of [
+      [{ type: "unknown" }, "unknown"],
+      [null, null],
+    ]) {
       for (const fn of Object.values(mocks)) fn.mockClear();
       expect(runBattleAttackExecution(event)).toBe(false);
-      for (const fn of [mocks.runBattleFocusCommand, mocks.runBattleTargetCommand, mocks.runPhysicalSkillBookkeeping, mocks.runBattleSpiritToggleAutomation]) {
+      for (const fn of [
+        mocks.runBattleFocusCommand,
+        mocks.runBattleTargetCommand,
+        mocks.runPhysicalSkillBookkeeping,
+        mocks.runBattleSpiritToggleAutomation,
+      ]) {
         expect(fn).not.toHaveBeenCalled();
       }
       expect(mocks.runBattleActionEffectEvidence).toHaveBeenCalledWith({

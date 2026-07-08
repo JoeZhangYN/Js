@@ -34,8 +34,7 @@ const ALLOW_MARKER = "i18n-probe-allow";
 // 单行内匹配所有「'asciiKey' : '...' 」条目（key/value 引号可单/双，value 允许转义）。
 // key 限 ASCII 可见字符（含空格 → 支持整句英文 key）；value 经 hasCJK 判定含中文。
 function countCjkEntriesInLine(line) {
-  const re =
-    /(["'])((?:\\.|(?!\1)[\x20-\x7e])+?)\1\s*:\s*(["'])((?:\\.|(?!\3)[^])*?)\3/g;
+  const re = /(["'])((?:\\.|(?!\1)[\x20-\x7e])+?)\1\s*:\s*(["'])((?:\\.|(?!\3)[^])*?)\3/g;
   let m;
   let count = 0;
   while ((m = re.exec(line)) !== null) {
@@ -52,8 +51,7 @@ function isAllowed(rawLines, blockStartLineIdx) {
   for (let i = blockStartLineIdx - 1; i >= 0; i -= 1) {
     const t = rawLines[i].trim();
     if (t.length === 0) continue;
-    const isComment =
-      t.startsWith("//") || t.startsWith("/*") || t.startsWith("*");
+    const isComment = t.startsWith("//") || t.startsWith("/*") || t.startsWith("*");
     if (isComment) {
       if (rawLines[i].includes(ALLOW_MARKER)) return true;
       continue;
@@ -126,8 +124,7 @@ for (let i = 0; i < codeLines.length; i += 1) {
     curEndIdx = -1;
   }
 }
-if (curCount > 0)
-  blocks.push({ startIdx: curStartIdx, endIdx: curEndIdx, count: curCount });
+if (curCount > 0) blocks.push({ startIdx: curStartIdx, endIdx: curEndIdx, count: curCount });
 
 const violations = [];
 for (const b of blocks) {
@@ -146,9 +143,7 @@ if (violations.length > 0) {
     `[verify-no-dup-translation] FAIL: hv-utils 出现 ${violations.length} 处独立翻译表（应走 canonical SSOT 桥 hvaaT/hvaaTEquip）：`
   );
   for (const v of violations) {
-    console.error(
-      `  hv-utils.js:${v.line} ${v.label}（${v.count} 条英→中映射，应走桥）`
-    );
+    console.error(`  hv-utils.js:${v.line} ${v.label}（${v.count} 条英→中映射，应走桥）`);
   }
   console.error(
     `  修复：删除该字面量，调用点改 hvaaT(value, group) / hvaaTEquip(name)，或把数据并入 src/data/i18n/*.js canonical dict。`
@@ -157,6 +152,4 @@ if (violations.length > 0) {
   process.exit(1);
 }
 
-console.log(
-  "[verify-no-dup-translation] OK — hv-utils 无独立翻译表（翻译走 canonical SSOT 桥）"
-);
+console.log("[verify-no-dup-translation] OK — hv-utils 无独立翻译表（翻译走 canonical SSOT 桥）");

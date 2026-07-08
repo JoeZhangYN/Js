@@ -35,11 +35,15 @@ for (const required of [
 }
 
 const battleBodies = [
-  ...text.matchAll(/if \(get_hvut_battle_page_context\(\)\.isBattle(?:List)?\) \{[\s\S]*?\n\} else\n\/\/ Battle/g),
+  ...text.matchAll(
+    /if \(get_hvut_battle_page_context\(\)\.isBattle(?:List)?\) \{[\s\S]*?\n\} else\n\/\/ Battle/g
+  ),
 ].map((match) => match[0]);
 
 if (battleBodies.length !== 2) {
-  violations.push(`${target} must keep both Battle segment bodies visible, found ${battleBodies.length}`);
+  violations.push(
+    `${target} must keep both Battle segment bodies visible, found ${battleBodies.length}`
+  );
 }
 
 for (const [index, body] of battleBodies.entries()) {
@@ -64,15 +68,14 @@ for (const [index, body] of battleBodies.entries()) {
     "create_hvut_battle_page_context();",
   ]) {
     if (body.includes(forbidden)) {
-      violations.push(`${target} Battle body[${index}] must not rebuild subpage identity from raw query: ${forbidden}`);
+      violations.push(
+        `${target} Battle body[${index}] must not rebuild subpage identity from raw query: ${forbidden}`
+      );
     }
   }
 }
 
-for (const forbidden of [
-  "_query.s === 'Battle'",
-  "_query.s === 'Battle' && $id('initform')",
-]) {
+for (const forbidden of ["_query.s === 'Battle'", "_query.s === 'Battle' && $id('initform')"]) {
   if (text.includes(forbidden)) {
     violations.push(`${target} must not rebuild Battle page identity from raw query: ${forbidden}`);
   }
@@ -88,4 +91,6 @@ if (violations.length) {
   process.exit(1);
 }
 
-console.log("[verify-hvut-battle-page-context-boundary] OK - Battle subpage routing uses one context");
+console.log(
+  "[verify-hvut-battle-page-context-boundary] OK - Battle subpage routing uses one context"
+);

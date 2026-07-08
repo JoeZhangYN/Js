@@ -28,7 +28,12 @@ const debugFailureCases = [
   [
     "automation",
     runBattleAutomationEvidence,
-    { type: BattleAutomationEvidenceEvent.RECORD_STARTUP, phase: "pageReady", result: true, steps: [] },
+    {
+      type: BattleAutomationEvidenceEvent.RECORD_STARTUP,
+      phase: "pageReady",
+      result: true,
+      steps: [],
+    },
     "HVAA:lastBattleAutomation",
     { phase: "pageReady" },
   ],
@@ -45,7 +50,11 @@ const debugFailureCases = [
   [
     "effect",
     runBattleActionEffectEvidence,
-    { type: BattleActionEffectEvidenceEvent.RECORD_APPLIED, result: { kind: "noop" }, acted: false },
+    {
+      type: BattleActionEffectEvidenceEvent.RECORD_APPLIED,
+      result: { kind: "noop" },
+      acted: false,
+    },
     "HVAA:lastBattleActionEffect",
     { result: { kind: "noop" }, acted: false },
   ],

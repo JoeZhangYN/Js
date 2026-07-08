@@ -144,7 +144,9 @@ if (!fs.existsSync(path.join(root, typedFailureTest))) {
   }
 }
 if (/return !!runBattle/.test(ownerText)) {
-  violations.push(`${rel(owner)} must not booleanize item command entry results before typed failure normalization`);
+  violations.push(
+    `${rel(owner)} must not booleanize item command entry results before typed failure normalization`
+  );
 }
 if (!fs.existsSync(path.join(root, autoTuneFailureTest))) {
   violations.push(`${rel(autoTuneFailureTest)} must cover auto-tune record failures`);

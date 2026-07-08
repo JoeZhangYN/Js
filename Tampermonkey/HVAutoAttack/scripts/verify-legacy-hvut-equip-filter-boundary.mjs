@@ -39,10 +39,11 @@ for (const file of files) {
     violations.push(`${rel(file.path)} lacks explicit equipment filter expression entry`);
   }
 
-  const callCount = (source.match(/\breturn\s+evaluateEquipFilterExpression\s*\(\s*r\s*\)/g) || []).length;
+  const callCount = (source.match(/\breturn\s+evaluateEquipFilterExpression\s*\(\s*r\s*\)/g) || [])
+    .length;
   if (callCount !== file.expectedCalls) {
     violations.push(
-      `${rel(file.path)} expected ${file.expectedCalls} equipment filter expression calls, found ${callCount}`,
+      `${rel(file.path)} expected ${file.expectedCalls} equipment filter expression calls, found ${callCount}`
     );
   }
 }
@@ -53,4 +54,6 @@ if (violations.length) {
   process.exit(1);
 }
 
-console.log("[verify-legacy-hvut-equip-filter-boundary] OK — legacy HVUT equipment filters use explicit parser");
+console.log(
+  "[verify-legacy-hvut-equip-filter-boundary] OK — legacy HVUT equipment filters use explicit parser"
+);

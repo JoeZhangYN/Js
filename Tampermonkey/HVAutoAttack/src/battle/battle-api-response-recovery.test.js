@@ -111,7 +111,12 @@ describe("runBattleApiResponseRecovery", () => {
     expect(runBattleApiResponseRecovery(event, deps)).toBe("paused");
 
     const state = JSON.parse(window.sessionStorage.getItem("HVAA:battleApiRecovery"));
-    expect(state).toMatchObject({ repeatCount: 2, recoveryAction: "pause", detail, diagnosticEvidence });
+    expect(state).toMatchObject({
+      repeatCount: 2,
+      recoveryAction: "pause",
+      detail,
+      diagnosticEvidence,
+    });
     expect(deps.pause).toHaveBeenCalledWith(expect.objectContaining({ diagnosticEvidence }));
     expect(deps.warn).toHaveBeenCalledWith(
       "[HVAA] battle API response repeated; auto battle paused",

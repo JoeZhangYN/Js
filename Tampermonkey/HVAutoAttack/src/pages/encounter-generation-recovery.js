@@ -60,9 +60,8 @@ export function markEncounterGenerationAttempted(
   if (state.key && !state.clear) return state;
   state.clear = true;
   const key = String(attemptKey || buildGenerationAttemptKey(state, nowMs, "ready"));
-  const previousCount = state.generationAttemptKey === key
-    ? Math.max(0, Number(state.generationFailureCount) || 0)
-    : 0;
+  const previousCount =
+    state.generationAttemptKey === key ? Math.max(0, Number(state.generationFailureCount) || 0) : 0;
   const failureCount = previousCount + 1;
   state.generationAttemptKey = key;
   state.generationFailureCount = failureCount;

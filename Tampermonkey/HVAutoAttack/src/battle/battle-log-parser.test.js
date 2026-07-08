@@ -17,7 +17,7 @@ beforeEach(() => {
 describe("runBattleLogParser", () => {
   it("parses the current rendered battle log through one entry", () => {
     document.body.innerHTML = [
-      "<table id=\"textlog\"><tbody>",
+      '<table id="textlog"><tbody>',
       "<tr><td>Alpha hits you for 100 fire damage</td></tr>",
       "<tr><td>You hit Alpha for 250 crushing damage</td></tr>",
       "</tbody></table>",

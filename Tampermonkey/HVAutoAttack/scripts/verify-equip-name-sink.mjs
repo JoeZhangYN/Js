@@ -65,6 +65,4 @@ if (violations.length > 0) {
   process.exit(1);
 }
 
-console.log(
-  "[verify-equip-name-sink] OK — 装备译名渲染统一走渲染族（块外无直接 hvaaTEquip(eq)）"
-);
+console.log("[verify-equip-name-sink] OK — 装备译名渲染统一走渲染族（块外无直接 hvaaTEquip(eq)）");

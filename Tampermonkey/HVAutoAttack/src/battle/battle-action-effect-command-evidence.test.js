@@ -56,6 +56,8 @@ describe("battle action effect command evidence bridge", () => {
       acted: false,
       failureReason: "actionExecutorRejected",
     });
-    expect(JSON.parse(window.sessionStorage.getItem("HVAA:lastBattleActionEffect")).command).toBeUndefined();
+    expect(
+      JSON.parse(window.sessionStorage.getItem("HVAA:lastBattleActionEffect")).command
+    ).toBeUndefined();
   });
 });

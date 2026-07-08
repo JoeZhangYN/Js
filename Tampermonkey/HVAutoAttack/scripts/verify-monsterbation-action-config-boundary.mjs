@@ -14,7 +14,9 @@ if (!/function\s+ParseMonsterbationConfigValue\s*\(/.test(source)) {
   violations.push("Monsterbation action/regexp config lacks explicit parser entry");
 }
 
-if (!/\bcfg\s*\[\s*evals\s*\[\s*i\s*\]\s*\]\s*=\s*ParseMonsterbationConfigValue\s*\(/.test(source)) {
+if (
+  !/\bcfg\s*\[\s*evals\s*\[\s*i\s*\]\s*\]\s*=\s*ParseMonsterbationConfigValue\s*\(/.test(source)
+) {
   violations.push("Monsterbation action/regexp config does not route through parser entry");
 }
 
@@ -36,4 +38,6 @@ if (violations.length) {
   process.exit(1);
 }
 
-console.log("[verify-monsterbation-action-config-boundary] OK — Monsterbation config uses explicit parsers");
+console.log(
+  "[verify-monsterbation-action-config-boundary] OK — Monsterbation config uses explicit parsers"
+);

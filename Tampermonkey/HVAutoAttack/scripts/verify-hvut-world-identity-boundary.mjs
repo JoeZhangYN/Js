@@ -48,7 +48,9 @@ for (const forbidden of [
   "is_hvut_config_field_disabled(o, { isIsekai: IS_ISEKAI, serverName: _server.name })",
 ]) {
   if (text.includes(forbidden)) {
-    violations.push(`${target} must not rebuild HVUT world/config identity through old path: ${forbidden}`);
+    violations.push(
+      `${target} must not rebuild HVUT world/config identity through old path: ${forbidden}`
+    );
   }
 }
 
@@ -58,4 +60,6 @@ if (violations.length) {
   process.exit(1);
 }
 
-console.log("[verify-hvut-world-identity-boundary] OK - HVUT world identity feeds config segment context");
+console.log(
+  "[verify-hvut-world-identity-boundary] OK - HVUT world identity feeds config segment context"
+);

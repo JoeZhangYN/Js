@@ -1,9 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import {
-  NavigationEvent,
-  NavigationWindowReason,
-  runNavigationAutomation,
-} from "./navigate.js";
+import { NavigationEvent, NavigationWindowReason, runNavigationAutomation } from "./navigate.js";
 
 describe("open window navigation audit", () => {
   afterEach(() => {

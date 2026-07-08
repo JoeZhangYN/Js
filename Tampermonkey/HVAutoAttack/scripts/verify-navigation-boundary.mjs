@@ -68,13 +68,18 @@ if (!owner) {
   if (!source.includes("setTimeout(() => goto(event.reason, event.detail), delayMs)")) {
     violations.push("scheduled reload must preserve reload detail in navigation audit");
   }
-  if (!source.includes("attempt + 1") || !source.includes("createReloadAudit(reason, attempt, detail)")) {
+  if (
+    !source.includes("attempt + 1") ||
+    !source.includes("createReloadAudit(reason, attempt, detail)")
+  ) {
     violations.push("reload retry audit must record attempt and retryDelayMs");
   }
   if (
     !source.includes("shouldStopReloadRetry(attempt)") ||
     !source.includes("createReloadStopEvidence(attempt, detail)") ||
-    !source.includes('recordNavigationDecisionSafely("rejected", { type: EVENT_RELOAD_NOW, reason }, stopEvidence)') ||
+    !source.includes(
+      'recordNavigationDecisionSafely("rejected", { type: EVENT_RELOAD_NOW, reason }, stopEvidence)'
+    ) ||
     !source.includes('writeNavigationAuditSafely("reloadStopped"')
   ) {
     violations.push("reload retry loop must stop and persist rejected evidence at the retry limit");

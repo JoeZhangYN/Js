@@ -80,5 +80,8 @@ export function runBattleLifecycleAutomation(
       }),
   }
 ) {
-  return battleLifecycleHandlers[event?.type]?.(event, deps) ?? rejectUnknownBattleLifecycleEvent(event, deps);
+  return (
+    battleLifecycleHandlers[event?.type]?.(event, deps) ??
+    rejectUnknownBattleLifecycleEvent(event, deps)
+  );
 }

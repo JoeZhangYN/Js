@@ -30,7 +30,9 @@ describe("runBattleActionDecisionEvidence", () => {
       )
     ).toBe(true);
 
-    expect(JSON.parse(window.sessionStorage.getItem("HVAA:lastBattleActionDecision"))).toMatchObject({
+    expect(
+      JSON.parse(window.sessionStorage.getItem("HVAA:lastBattleActionDecision"))
+    ).toMatchObject({
       steps: [
         {
           capability: "survival",
@@ -55,14 +57,24 @@ describe("runBattleActionDecisionEvidence", () => {
       {
         type: BattleActionDecisionEvidenceEvent.RECORD_TRACE,
         steps: [
-          { capability: "survival", result: { kind: "item-plan", plan: { type: "potion" } }, acted: false },
-          { capability: "buffPreparation", result: { kind: "noop", reason: "buffsReady" }, acted: false },
+          {
+            capability: "survival",
+            result: { kind: "item-plan", plan: { type: "potion" } },
+            acted: false,
+          },
+          {
+            capability: "buffPreparation",
+            result: { kind: "noop", reason: "buffsReady" },
+            acted: false,
+          },
         ],
       },
       { sessionStorage: window.sessionStorage, debug: vi.fn() }
     );
 
-    expect(JSON.parse(window.sessionStorage.getItem("HVAA:lastBattleActionDecision"))).toMatchObject({
+    expect(
+      JSON.parse(window.sessionStorage.getItem("HVAA:lastBattleActionDecision"))
+    ).toMatchObject({
       steps: [
         {
           capability: "survival",
@@ -84,12 +96,20 @@ describe("runBattleActionDecisionEvidence", () => {
     runBattleActionDecisionEvidence(
       {
         type: BattleActionDecisionEvidenceEvent.RECORD_TRACE,
-        steps: [{ capability: "attack", result: { kind: "attack-plan", plan: { kind: "target" } }, acted: true }],
+        steps: [
+          {
+            capability: "attack",
+            result: { kind: "attack-plan", plan: { kind: "target" } },
+            acted: true,
+          },
+        ],
       },
       { sessionStorage: window.sessionStorage, debug: vi.fn() }
     );
 
-    expect(JSON.parse(window.sessionStorage.getItem("HVAA:lastBattleActionDecision"))).toMatchObject({
+    expect(
+      JSON.parse(window.sessionStorage.getItem("HVAA:lastBattleActionDecision"))
+    ).toMatchObject({
       steps: [{ result: { kind: "attack-plan", planKind: "target" }, acted: true }],
     });
   });
@@ -113,7 +133,9 @@ describe("runBattleActionDecisionEvidence", () => {
       { sessionStorage: window.sessionStorage, debug: vi.fn() }
     );
 
-    expect(JSON.parse(window.sessionStorage.getItem("HVAA:lastBattleActionDecision"))).toMatchObject({
+    expect(
+      JSON.parse(window.sessionStorage.getItem("HVAA:lastBattleActionDecision"))
+    ).toMatchObject({
       steps: [
         {
           capability: "actionDecision",
@@ -136,9 +158,9 @@ describe("runBattleActionDecisionEvidence", () => {
   it("rejects null decision evidence events without writing diagnostics", () => {
     const debug = vi.fn();
 
-    expect(runBattleActionDecisionEvidence(null, { sessionStorage: window.sessionStorage, debug })).toBe(
-      false
-    );
+    expect(
+      runBattleActionDecisionEvidence(null, { sessionStorage: window.sessionStorage, debug })
+    ).toBe(false);
 
     expect(window.sessionStorage.getItem("HVAA:lastBattleActionDecision")).toBeNull();
     expect(debug).not.toHaveBeenCalled();

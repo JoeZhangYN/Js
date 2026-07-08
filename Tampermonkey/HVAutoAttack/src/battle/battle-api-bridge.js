@@ -7,10 +7,14 @@ import {
 } from "./battle-api-response-recovery.js";
 import { buildApiCallScript } from "./battle-api-call-script.js";
 import { buildApiResponseScript } from "./battle-api-response-script.js";
-import { BattleApiWorldContextEvent, runBattleApiWorldContext } from "./battle-api-world-context.js";
+import {
+  BattleApiWorldContextEvent,
+  runBattleApiWorldContext,
+} from "./battle-api-world-context.js";
 
 const EVENT_INSTALL = "install";
-const ACTION_START_EVENT_NODE_ID = "eventStart", ACTION_END_EVENT_NODE_ID = "eventEnd";
+const ACTION_START_EVENT_NODE_ID = "eventStart",
+  ACTION_END_EVENT_NODE_ID = "eventEnd";
 const MAGIC_DELAY_SESSION_KEY = "delay";
 const ACTION_DELAY_SESSION_KEY = "delay2";
 const REASON_API_RECOVERY_INSTALL_FAILED = "apiRecoveryBridgeInstallFailed";
@@ -121,5 +125,8 @@ export function runBattleApiBridgeAutomation(
       runBattleApiResponseRecovery({ type: BattleApiResponseRecoveryEvent.INSTALL_BRIDGE }),
   }
 ) {
-  return battleApiBridgeEventHandlers[event?.type]?.(event, deps) ?? rejectUnknownApiBridgeEvent(event, deps);
+  return (
+    battleApiBridgeEventHandlers[event?.type]?.(event, deps) ??
+    rejectUnknownApiBridgeEvent(event, deps)
+  );
 }

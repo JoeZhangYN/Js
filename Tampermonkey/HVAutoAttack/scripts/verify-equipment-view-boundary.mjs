@@ -251,13 +251,19 @@ function checkPercentileFailureBoundary() {
       violations.push(`${rel(diagnosticKeysFile)} must expose ${required}`);
     }
   }
-  for (const required of [
-    "HVAA:lastEquipmentPercentileFailure",
-    'equipmentPercentileFailure: { capability: "equipmentPercentile", stage: "persist-preference" }',
-  ]) {
+  for (const required of ["HVAA:lastEquipmentPercentileFailure"]) {
     if (!diagnosticTestText.includes(required)) {
       violations.push(`${rel(diagnosticTestFile)} must cover ${required}`);
     }
+  }
+  if (
+    !/equipmentPercentileFailure:\s*\{[\s\S]*capability:\s*"equipmentPercentile"[\s\S]*stage:\s*"persist-preference"[\s\S]*\}/.test(
+      diagnosticTestText
+    )
+  ) {
+    violations.push(
+      `${rel(diagnosticTestFile)} must cover equipmentPercentileFailure persist-preference evidence`
+    );
   }
 }
 

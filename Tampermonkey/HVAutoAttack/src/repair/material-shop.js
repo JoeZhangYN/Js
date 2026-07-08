@@ -98,71 +98,77 @@ function buyError(doc) {
 function ensureMaterials(required, opt, cb, deps = {}) {
   const post = deps.post || realPost;
   const failBuy = (failure) => cb({ ok: false, reason: "buy-error", detail: failure });
-  post(SHOP_URL, (doc) => {
-    const { storetoken, networth, held, shop } = parseShopPage(doc);
-    const shortfall = computeShortfall(required, held);
+  post(
+    SHOP_URL,
+    (doc) => {
+      const { storetoken, networth, held, shop } = parseShopPage(doc);
+      const shortfall = computeShortfall(required, held);
 
-    if (shortfall.length === 0) {
-      cb({ ok: true, bought: false, spent: 0 });
-      return;
-    }
-    if (!storetoken) {
-      cb({ ok: false, reason: "missing-storetoken", detail: { shortfall } });
-      return;
-    }
-
-    // 解析每项到货架（按名）；缺货架条目 → 未知物品（无法自动买）。
-    let cost = 0;
-    for (const item of shortfall) {
-      const entry = shop[item.name];
-      if (!entry) {
-        cb({ ok: false, reason: "unknown-item", detail: item.name });
+      if (shortfall.length === 0) {
+        cb({ ok: true, bought: false, spent: 0 });
         return;
       }
-      if (item.count > entry.stock) {
-        cb({ ok: false, reason: "no-stock", detail: item.name });
+      if (!storetoken) {
+        cb({ ok: false, reason: "missing-storetoken", detail: { shortfall } });
         return;
       }
-      item.id = entry.matId || entry.id;
-      cost += item.count * entry.price;
-    }
 
-    const cap = Number(opt?.repairCreditCap) || 0;
-    if (cost > cap) {
-      cb({ ok: false, reason: "credit-cap", detail: { cost, cap } });
-      return;
-    }
-    if (cost > networth) {
-      cb({ ok: false, reason: "insufficient-credits", detail: { cost, networth } });
-      return;
-    }
+      // 解析每项到货架（按名）；缺货架条目 → 未知物品（无法自动买）。
+      let cost = 0;
+      for (const item of shortfall) {
+        const entry = shop[item.name];
+        if (!entry) {
+          cb({ ok: false, reason: "unknown-item", detail: item.name });
+          return;
+        }
+        if (item.count > entry.stock) {
+          cb({ ok: false, reason: "no-stock", detail: item.name });
+          return;
+        }
+        item.id = entry.matId || entry.id;
+        cost += item.count * entry.price;
+      }
 
-    // 逐件买（顺序回调链，避免 storetoken 竞态）。任一件出错即停。
-    let i = 0;
-    const buyNext = () => {
-      if (i >= shortfall.length) {
-        cb({ ok: true, bought: true, spent: cost });
+      const cap = Number(opt?.repairCreditCap) || 0;
+      if (cost > cap) {
+        cb({ ok: false, reason: "credit-cap", detail: { cost, cap } });
         return;
       }
-      const item = shortfall[i];
-      i += 1;
-      post(
-        SHOP_URL,
-        (resDoc) => {
-          const err = buyError(resDoc);
-          if (err) {
-            cb({ ok: false, reason: "buy-error", detail: err });
-            return;
-          }
-          buyNext();
-        },
-        `storetoken=${storetoken}&select_mode=shop_pane&select_item=${item.id}&select_count=${item.count}`,
-        undefined,
-        failBuy
-      );
-    };
-    buyNext();
-  }, undefined, undefined, failBuy);
+      if (cost > networth) {
+        cb({ ok: false, reason: "insufficient-credits", detail: { cost, networth } });
+        return;
+      }
+
+      // 逐件买（顺序回调链，避免 storetoken 竞态）。任一件出错即停。
+      let i = 0;
+      const buyNext = () => {
+        if (i >= shortfall.length) {
+          cb({ ok: true, bought: true, spent: cost });
+          return;
+        }
+        const item = shortfall[i];
+        i += 1;
+        post(
+          SHOP_URL,
+          (resDoc) => {
+            const err = buyError(resDoc);
+            if (err) {
+              cb({ ok: false, reason: "buy-error", detail: err });
+              return;
+            }
+            buyNext();
+          },
+          `storetoken=${storetoken}&select_mode=shop_pane&select_item=${item.id}&select_count=${item.count}`,
+          undefined,
+          failBuy
+        );
+      };
+      buyNext();
+    },
+    undefined,
+    undefined,
+    failBuy
+  );
 }
 
 export function runMaterialShopAutomation(event, deps = {}) {

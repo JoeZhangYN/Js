@@ -69,7 +69,9 @@ if (!ownerText.includes("CLEAR_SESSION")) {
   violations.push(`${owner.replaceAll("\\", "/")} must expose CLEAR_SESSION event`);
 }
 if (!ownerText.includes("clearPersistedBattleSession")) {
-  violations.push(`${owner.replaceAll("\\", "/")} must clear persisted session through failure-aware owner`);
+  violations.push(
+    `${owner.replaceAll("\\", "/")} must clear persisted session through failure-aware owner`
+  );
 }
 if (!failureOwnerText.includes("delValue(2)")) {
   violations.push(`${failureOwner.replaceAll("\\", "/")} must own legacy delValue(2) bridge`);
@@ -96,8 +98,14 @@ for (const required of [
     violations.push(`${failureTest.replaceAll("\\", "/")} must cover ${required}`);
   }
 }
-if (!/const battleRuntimeEventHandlers\s*=\s*Object\.freeze\(\{[\s\S]*\[EVENT_CLEAR_SESSION\]: clearSession/.test(ownerText)) {
-  violations.push(`${owner.replaceAll("\\", "/")} must route runtime events through battleRuntimeEventHandlers`);
+if (
+  !/const battleRuntimeEventHandlers\s*=\s*Object\.freeze\(\{[\s\S]*\[EVENT_CLEAR_SESSION\]: clearSession/.test(
+    ownerText
+  )
+) {
+  violations.push(
+    `${owner.replaceAll("\\", "/")} must route runtime events through battleRuntimeEventHandlers`
+  );
 }
 const ownerEntryBody =
   ownerText.match(/export function runBattleRuntimeAutomation\([^)]*\) \{[\s\S]*?\n\}/)?.[0] || "";
@@ -105,7 +113,9 @@ if (/event\.type\s*!==|event\.type\s*===/.test(ownerEntryBody)) {
   violations.push(`${owner.replaceAll("\\", "/")} entry must dispatch by handler table`);
 }
 if (!ownerText.includes("battleRuntimeEventHandlers[event?.type]")) {
-  violations.push(`${owner.replaceAll("\\", "/")} must reject null runtime events without clearing session`);
+  violations.push(
+    `${owner.replaceAll("\\", "/")} must reject null runtime events without clearing session`
+  );
 }
 const ownerTestText = fs.readFileSync(path.join(root, ownerTest), "utf8");
 if (!ownerTestText.includes("runBattleRuntimeAutomation(null)")) {

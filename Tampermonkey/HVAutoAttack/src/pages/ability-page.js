@@ -103,7 +103,10 @@ function syncSpellAoeToOption(spellAoe) {
 function parseAbilityPage() {
   const abilityTop = gE("#ability_top");
   if (!abilityTop) {
-    recordAbilityAoeFailure("capture-ability-page", { kind: "domMissing", selector: "#ability_top" });
+    recordAbilityAoeFailure("capture-ability-page", {
+      kind: "domMissing",
+      selector: "#ability_top",
+    });
     return { captured: false, reason: "abilitySurfaceMissing" };
   }
   const spellAoe = {};

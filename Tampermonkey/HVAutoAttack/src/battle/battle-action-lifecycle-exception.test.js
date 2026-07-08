@@ -35,7 +35,12 @@ describe("battle action lifecycle step exceptions", () => {
       "actionStarted",
       false,
       expect.arrayContaining([
-        { step: "startDelay", result: false, reason: "actionLifecycleStepThrew", error: "delay exploded" },
+        {
+          step: "startDelay",
+          result: false,
+          reason: "actionLifecycleStepThrew",
+          error: "delay exploded",
+        },
       ])
     );
   });
@@ -58,7 +63,10 @@ describe("battle action lifecycle step exceptions", () => {
       "actionEnded",
       expect.objectContaining({ outcome: "rejected", failedStep: "isCompletionReached" }),
       expect.arrayContaining([
-        expect.objectContaining({ step: "isCompletionReached", reason: "actionLifecycleStepThrew" }),
+        expect.objectContaining({
+          step: "isCompletionReached",
+          reason: "actionLifecycleStepThrew",
+        }),
       ])
     );
   });

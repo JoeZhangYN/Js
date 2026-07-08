@@ -50,16 +50,23 @@ for (const required of ["runRepairBackendAutomation", "RepairBackendEvent"]) {
   }
 }
 const entryBody =
-  ownerText.match(/export function runRepairBackendAutomation\([^)]*\) \{[\s\S]*?\n\}/)?.[0] ||
-  "";
-if (!/const repairBackendEventHandlers\s*=\s*Object\.freeze\(\{[\s\S]*\[EVENT_CREATE\]/.test(ownerText)) {
-  violations.push(`${owner.replaceAll("\\", "/")} must route events through a frozen handler table`);
+  ownerText.match(/export function runRepairBackendAutomation\([^)]*\) \{[\s\S]*?\n\}/)?.[0] || "";
+if (
+  !/const repairBackendEventHandlers\s*=\s*Object\.freeze\(\{[\s\S]*\[EVENT_CREATE\]/.test(
+    ownerText
+  )
+) {
+  violations.push(
+    `${owner.replaceAll("\\", "/")} must route events through a frozen handler table`
+  );
 }
 if (/event\.type\s*(?:!==|===)|switch\s*\(\s*event\.type\s*\)/.test(entryBody)) {
   violations.push(`${owner.replaceAll("\\", "/")} entry must dispatch by handler table`);
 }
 if (/repairBackendEventHandlers\s*\[\s*event\.type\s*\]/.test(entryBody)) {
-  violations.push(`${owner.replaceAll("\\", "/")} entry must reject null backend events instead of reading event.type directly`);
+  violations.push(
+    `${owner.replaceAll("\\", "/")} entry must reject null backend events instead of reading event.type directly`
+  );
 }
 if (/export\s+function\s+makeRepairBackend\s*\(/.test(ownerText)) {
   violations.push(`${owner.replaceAll("\\", "/")} legacy makeRepairBackend export is forbidden`);
@@ -105,14 +112,18 @@ const ownerTestText = fs.existsSync(path.join(root, ownerTest))
 for (const required of [
   "makeRepairBackend 主世界 Armory repair authority",
   'href: "?s=Bazaar&ss=am&screen=repair"',
-  'postoken=tokp&eqids[]=5',
+  "postoken=tokp&eqids[]=5",
 ]) {
   if (!ownerTestText.includes(required)) {
-    violations.push(`${ownerTest.replaceAll("\\", "/")} must lock current main-world repair authority: ${required}`);
+    violations.push(
+      `${ownerTest.replaceAll("\\", "/")} must lock current main-world repair authority: ${required}`
+    );
   }
 }
 if (ownerText.includes("?s=Forge&ss=re") || ownerText.includes("select_item=")) {
-  violations.push(`${owner.replaceAll("\\", "/")} must not use retired persistent Forge repair authority`);
+  violations.push(
+    `${owner.replaceAll("\\", "/")} must not use retired persistent Forge repair authority`
+  );
 }
 
 if (violations.length) {

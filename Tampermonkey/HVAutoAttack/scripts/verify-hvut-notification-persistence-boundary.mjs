@@ -20,19 +20,24 @@ function requireCount(label, part, expected) {
 const trainingParse =
   /_tr\.parse_progress = function \(\) \{[\s\S]*?\n  \};\n\n  GM_addStyle/.exec(text)?.[0] || "";
 const legacyTraining =
-  /_tr\.json\.error = '';[\s\S]*?\n\} else\n\/\/ \[END 4\] Character - Training/.exec(text)?.[0] || "";
+  /_tr\.json\.error = '';[\s\S]*?\n\} else\n\/\/ \[END 4\] Character - Training/.exec(text)?.[0] ||
+  "";
 const bottomTraining =
   /_bottom\.tr = \{[\s\S]*?\n  \};\n\n  _bottom\.tr\.init\(\);/.exec(text)?.[0] || "";
 const lotteryLoader =
-  /_bottom\.load_lottery = async function \(ss\) \{[\s\S]*?\n  \};\n\n  \$element\('div', _bottom\.node\.div/.exec(text)?.[0] || "";
-const lotteryToggles =
-  text.match(/_lt\.toggle = function \(show\) \{[\s\S]*?\n    \};/g) || [];
+  /_bottom\.load_lottery = async function \(ss\) \{[\s\S]*?\n  \};\n\n  \$element\('div', _bottom\.node\.div/.exec(
+    text
+  )?.[0] || "";
+const lotteryToggles = text.match(/_lt\.toggle = function \(show\) \{[\s\S]*?\n    \};/g) || [];
 
 if (!trainingParse) violations.push(`${target} must keep training parse_progress entry visible`);
-if (!legacyTraining) violations.push(`${target} must keep legacy training notification persistence visible`);
-if (!bottomTraining) violations.push(`${target} must keep bottom training notification entry visible`);
+if (!legacyTraining)
+  violations.push(`${target} must keep legacy training notification persistence visible`);
+if (!bottomTraining)
+  violations.push(`${target} must keep bottom training notification entry visible`);
 if (!lotteryLoader) violations.push(`${target} must keep lottery notification loader visible`);
-if (lotteryToggles.length !== 2) violations.push(`${target} must keep two lottery toggle entries visible`);
+if (lotteryToggles.length !== 2)
+  violations.push(`${target} must keep two lottery toggle entries visible`);
 
 for (const [label, body] of [
   ["training parse_progress", trainingParse],
@@ -79,7 +84,11 @@ for (const [index, body] of lotteryToggles.entries()) {
   }
 }
 
-requireCount("training notification parse guard", "if (!$config.set('tr_notif', _tr.json, 'hvut_')) {", 2);
+requireCount(
+  "training notification parse guard",
+  "if (!$config.set('tr_notif', _tr.json, 'hvut_')) {",
+  2
+);
 requireCount("lottery toggle guard", "if (!$config.set('lt_notif', _lt.json, 'hvut_')) {", 2);
 
 for (const [label, body, forbidden] of [
@@ -90,7 +99,9 @@ for (const [label, body, forbidden] of [
   ["lottery toggle", lotteryToggles.join("\n"), "$config.set('lt_notif', _lt.json, 'hvut_');"],
 ]) {
   if (body.includes(forbidden)) {
-    violations.push(`${target} ${label} must not ignore notification persistence result: ${forbidden}`);
+    violations.push(
+      `${target} ${label} must not ignore notification persistence result: ${forbidden}`
+    );
   }
 }
 
@@ -100,4 +111,6 @@ if (violations.length) {
   process.exit(1);
 }
 
-console.log("[verify-hvut-notification-persistence-boundary] OK - notification persistence failures fail closed");
+console.log(
+  "[verify-hvut-notification-persistence-boundary] OK - notification persistence failures fail closed"
+);

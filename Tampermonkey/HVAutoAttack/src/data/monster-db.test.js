@@ -6,8 +6,15 @@ import { parseScanResult, checkScanResultValidity, RESIST_KEYS } from "./monster
 
 // 真实 scan 面板（9 抗 + 战斗参数齐全；结构逐字对齐实测 DOM）。
 const RESISTS = [
-  ["Fire", "+", 50], ["Cold", "+", 37], ["Elec", "+", 75], ["Wind", "+", 50],
-  ["Holy", "+", 62], ["Dark", "+", 62], ["Crushing", "+", 25], ["Slashing", "+", 25], ["Piercing", "+", 0],
+  ["Fire", "+", 50],
+  ["Cold", "+", 37],
+  ["Elec", "+", 75],
+  ["Wind", "+", 50],
+  ["Holy", "+", 62],
+  ["Dark", "+", 62],
+  ["Crushing", "+", 25],
+  ["Slashing", "+", 25],
+  ["Piercing", "+", 0],
 ];
 const resistDiv = ([label, s, v]) =>
   `<div style="width:110px; float:left; padding-right:10px"><div style="width:60px; float:left; text-align:right">${label}:</div><div style="width:40px; float:left; text-align:right; font-weight:bold; padding-left:5px">${s}${v}%</div><div style="clear:both"></div></div>`;
@@ -67,12 +74,19 @@ describe("parseScanResult（真实 HV scan 面板）", () => {
 
   it("新增战斗参数（命中/闪避物·法/招架/法抗/MP·SP/cur·maxHP）全部抓到", () => {
     expect(info).toMatchObject({
-      accuracy: 296, hitChance: 87.1,
-      evade: 609.3, evadeVsAttack: 17.1, evadeVsMagic: 58.2,
-      parry: 912.5, parryChance: 24.9,
-      magicResist: 821.3, magicResistChance: 54.9,
-      mpPct: 43, spPct: 41,
-      curHP: 110762, maxHP: 110816,
+      accuracy: 296,
+      hitChance: 87.1,
+      evade: 609.3,
+      evadeVsAttack: 17.1,
+      evadeVsMagic: 58.2,
+      parry: 912.5,
+      parryChance: 24.9,
+      magicResist: 821.3,
+      magicResistChance: 54.9,
+      mpPct: 43,
+      spPct: 41,
+      curHP: 110762,
+      maxHP: 110816,
     });
   });
 
@@ -83,7 +97,8 @@ describe("parseScanResult（真实 HV scan 面板）", () => {
   });
 
   it("缺九抗（不完整 scan）→ null（与旧'抗性不全不入库'语义一致）", () => {
-    const partial = "<strong>Scanning Foo...</strong> Monster Class:</strong></td><td>Beast, Power Level 100</td>";
+    const partial =
+      "<strong>Scanning Foo...</strong> Monster Class:</strong></td><td>Beast, Power Level 100</td>";
     expect(parseScanResult(partial, "2026-06-25")).toBeNull();
   });
 });

@@ -124,16 +124,16 @@ function checkEntry() {
     violations.push(`${entry.replaceAll("\\", "/")} must own the debug snapshot invariant check`);
   }
   if (
-    /\bexport\s+(?:function|const)\s+(?!BattleTurnContextEvent\b|runBattleTurnContext\b)/.test(
-      text
-    )
+    /\bexport\s+(?:function|const)\s+(?!BattleTurnContextEvent\b|runBattleTurnContext\b)/.test(text)
   ) {
     violations.push(`${entry.replaceAll("\\", "/")} may export only its event entry`);
   }
   const entryBody =
     text.match(/export function runBattleTurnContext\([^)]*\) \{[\s\S]*?\n\}/)?.[0] || "";
   if (!/Object\.freeze\(\{[\s\S]*\[EVENT_PREPARE\]/.test(text)) {
-    violations.push(`${entry.replaceAll("\\", "/")} must route events through a frozen handler table`);
+    violations.push(
+      `${entry.replaceAll("\\", "/")} must route events through a frozen handler table`
+    );
   }
   if (/event\.type\s*===/.test(entryBody)) {
     violations.push(`${entry.replaceAll("\\", "/")} entry must dispatch by handler table`);
@@ -193,9 +193,7 @@ function checkSnapshotEntry() {
   if (!/export function runBattleSnapshot\(/.test(text)) {
     violations.push(`${snapshotImpl.replaceAll("\\", "/")} must expose runBattleSnapshot()`);
   }
-  if (
-    /\bexport\s+(?:function|const)\s+(?!BattleSnapshotEvent\b|runBattleSnapshot\b)/.test(text)
-  ) {
+  if (/\bexport\s+(?:function|const)\s+(?!BattleSnapshotEvent\b|runBattleSnapshot\b)/.test(text)) {
     violations.push(`${snapshotImpl.replaceAll("\\", "/")} may export only its event entry`);
   }
   if (/\bassertNoDomRefs\b/.test(text)) {

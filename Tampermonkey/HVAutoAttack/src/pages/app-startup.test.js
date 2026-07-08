@@ -14,12 +14,24 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock("../dom/query.js", () => ({ gE: mocks.gE }));
 vi.mock("../state/store.js", () => ({ g: mocks.g }));
-vi.mock("../state/option.js", () => ({ OptionEvent: Object.freeze({ SYNC_STARTUP_OPTION: "syncStartupOption" }), runOptionAutomation: mocks.runOptionAutomation }));
+vi.mock("../state/option.js", () => ({
+  OptionEvent: Object.freeze({ SYNC_STARTUP_OPTION: "syncStartupOption" }),
+  runOptionAutomation: mocks.runOptionAutomation,
+}));
 vi.mock("../core/lang.js", () => ({ _alert: mocks.alert }));
 vi.mock("../style/inject.js", () => ({ addStyle: mocks.addStyle }));
-vi.mock("../state/riddle-dataset.js", () => ({ RiddleDatasetEvent: Object.freeze({ REGISTER_EXPORT_MENU: "registerExportMenu" }), runRiddleDatasetAutomation: mocks.runRiddleDatasetAutomation }));
-vi.mock("../state/cd-tracker.js", () => ({ CdRuntimeEvent: Object.freeze({ LOAD: "load" }), runCdRuntimeAutomation: mocks.runCdRuntimeAutomation }));
-vi.mock("./ability-page.js", () => ({ AbilityAoeEvent: Object.freeze({ LOAD_STORED_AOE: "loadStoredAoe" }), runAbilityAoeAutomation: mocks.runAbilityAoeAutomation }));
+vi.mock("../state/riddle-dataset.js", () => ({
+  RiddleDatasetEvent: Object.freeze({ REGISTER_EXPORT_MENU: "registerExportMenu" }),
+  runRiddleDatasetAutomation: mocks.runRiddleDatasetAutomation,
+}));
+vi.mock("../state/cd-tracker.js", () => ({
+  CdRuntimeEvent: Object.freeze({ LOAD: "load" }),
+  runCdRuntimeAutomation: mocks.runCdRuntimeAutomation,
+}));
+vi.mock("./ability-page.js", () => ({
+  AbilityAoeEvent: Object.freeze({ LOAD_STORED_AOE: "loadStoredAoe" }),
+  runAbilityAoeAutomation: mocks.runAbilityAoeAutomation,
+}));
 
 beforeEach(() => {
   for (const fn of Object.values(mocks)) fn.mockReset();
@@ -58,18 +70,31 @@ describe("runAppStartup", () => {
   });
 
   it("delegates option version and language sync to the option entry", () => {
-    mocks.runOptionAutomation.mockReturnValue({ configured: true, lang: "2", previousVersion: "9.9", currentVersion: "10.0", versionUpdated: true });
+    mocks.runOptionAutomation.mockReturnValue({
+      configured: true,
+      lang: "2",
+      previousVersion: "9.9",
+      currentVersion: "10.0",
+      versionUpdated: true,
+    });
 
     expect(runAppStartup({ type: AppStartupEvent.GAME_PAGE_READY })).toBe(true);
 
     expect(mocks.g).toHaveBeenCalledWith("version", "10.0");
-    expect(mocks.runOptionAutomation).toHaveBeenCalledWith({ type: "syncStartupOption", currentVersion: "10.0" });
+    expect(mocks.runOptionAutomation).toHaveBeenCalledWith({
+      type: "syncStartupOption",
+      currentVersion: "10.0",
+    });
     expect(mocks.addStyle).toHaveBeenCalledWith("2");
     expect(mocks.runAbilityAoeAutomation).toHaveBeenCalledWith({ type: "loadStoredAoe" });
   });
 
   it("runs configured game-page startup in business order", () => {
-    mocks.runOptionAutomation.mockReturnValue({ configured: true, lang: "2", versionUpdated: false });
+    mocks.runOptionAutomation.mockReturnValue({
+      configured: true,
+      lang: "2",
+      versionUpdated: false,
+    });
 
     expect(runAppStartup({ type: AppStartupEvent.GAME_PAGE_READY })).toBe(true);
 
@@ -88,7 +113,10 @@ describe("runAppStartup", () => {
 
     expect(runAppStartup({ type: AppStartupEvent.GAME_PAGE_READY })).toBe(false);
 
-    expect(mocks.runOptionAutomation).toHaveBeenCalledWith({ type: "syncStartupOption", currentVersion: "10.0" });
+    expect(mocks.runOptionAutomation).toHaveBeenCalledWith({
+      type: "syncStartupOption",
+      currentVersion: "10.0",
+    });
     expect(mocks.g).toHaveBeenCalledWith("lang", "1");
     expect(click).toHaveBeenCalled();
     expect(mocks.runAbilityAoeAutomation).not.toHaveBeenCalled();
@@ -134,8 +162,14 @@ describe("runAppStartup", () => {
   });
 
   it("isolates default-font warning failures and continues startup", () => {
-    mocks.runOptionAutomation.mockReturnValue({ configured: true, lang: "2", versionUpdated: false });
-    mocks.gE.mockImplementation((selector) => (selector === '[class^="c5"],[class^="c4"]' ? {} : null));
+    mocks.runOptionAutomation.mockReturnValue({
+      configured: true,
+      lang: "2",
+      versionUpdated: false,
+    });
+    mocks.gE.mockImplementation((selector) =>
+      selector === '[class^="c5"],[class^="c4"]' ? {} : null
+    );
     mocks.alert.mockImplementation(() => {
       throw new Error("alert blocked");
     });

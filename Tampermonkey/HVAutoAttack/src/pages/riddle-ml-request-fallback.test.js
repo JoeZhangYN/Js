@@ -58,7 +58,10 @@ describe("riddle ML request fallback", () => {
     await expect(runRiddleMlAutomation({ type: RiddleMlEvent.TRY_ANSWER })).resolves.toBeNull();
 
     expect(mocks.runRiddleStatsAutomation).toHaveBeenCalledWith(
-      expect.objectContaining({ type: "recordDetail", detail: expect.stringContaining("onload_exception") })
+      expect.objectContaining({
+        type: "recordDetail",
+        detail: expect.stringContaining("onload_exception"),
+      })
     );
     expect(mocks.runRiddleStatsAutomation).toHaveBeenCalledWith({
       type: "recordOutcome",

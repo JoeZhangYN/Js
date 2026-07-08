@@ -98,19 +98,31 @@ function checkEntry() {
     violations.push(`${rel(entryFile)} must route game pages through GAME_PAGE_AUTOMATION`);
   }
   const entryBody =
-    text.match(/export function runPageAutomation\(event = \{ type: EVENT_PAGE_READY \}\) \{[\s\S]*?\n\}/)?.[0] ||
-    "";
-  if (!/const pageAutomationEventHandlers\s*=\s*Object\.freeze\(\{[\s\S]*\[EVENT_PAGE_READY\]/.test(text)) {
+    text.match(
+      /export function runPageAutomation\(event = \{ type: EVENT_PAGE_READY \}\) \{[\s\S]*?\n\}/
+    )?.[0] || "";
+  if (
+    !/const pageAutomationEventHandlers\s*=\s*Object\.freeze\(\{[\s\S]*\[EVENT_PAGE_READY\]/.test(
+      text
+    )
+  ) {
     violations.push(`${rel(entryFile)} must route events through a frozen handler table`);
   }
   if (/event\.type\s*(?:!==|===)|switch\s*\(\s*event\.type\s*\)/.test(entryBody)) {
     violations.push(`${rel(entryFile)} entry must dispatch by handler table`);
   }
   if (entryBody.includes("pageAutomationEventHandlers[event.type]")) {
-    violations.push(`${rel(entryFile)} entry must reject null page automation events without throwing`);
+    violations.push(
+      `${rel(entryFile)} entry must reject null page automation events without throwing`
+    );
   }
-  if (!entryBody.includes("pageAutomationEventHandlers[event?.type]") || !entryBody.includes("return false")) {
-    violations.push(`${rel(entryFile)} entry must fail closed for unknown or null page automation events`);
+  if (
+    !entryBody.includes("pageAutomationEventHandlers[event?.type]") ||
+    !entryBody.includes("return false")
+  ) {
+    violations.push(
+      `${rel(entryFile)} entry must fail closed for unknown or null page automation events`
+    );
   }
   for (const forbidden of [
     "runEquipmentViewAutomation",
@@ -137,7 +149,9 @@ function checkEntry() {
   if (!/globalThis\.sessionStorage\?\.setItem\(PAGE_AUTOMATION_FAILURE_KEY/.test(text)) {
     violations.push(`${rel(entryFile)} must persist page automation failure evidence`);
   }
-  if (!/catch\s*\(error\)\s*{[\s\S]*recordPageAutomationFailure\(stage,\s*"stepException"/.test(text)) {
+  if (
+    !/catch\s*\(error\)\s*{[\s\S]*recordPageAutomationFailure\(stage,\s*"stepException"/.test(text)
+  ) {
     violations.push(`${rel(entryFile)} must classify page-ready step exceptions`);
   }
   const entryTestFile = path.join(root, "src/pages/page-automation.test.js");
@@ -178,7 +192,7 @@ function checkEntry() {
   }
   const diagnosticKeysText = fs.readFileSync(diagnosticKeysFile, "utf8");
   for (const required of [
-    "PAGE_AUTOMATION_FAILURE: \"HVAA:lastPageAutomationFailure\"",
+    'PAGE_AUTOMATION_FAILURE: "HVAA:lastPageAutomationFailure"',
     'source("pageAutomationFailure", DiagnosticEvidenceKey.PAGE_AUTOMATION_FAILURE)',
   ]) {
     if (!diagnosticKeysText.includes(required)) {

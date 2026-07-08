@@ -1,5 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { CrossSiteEncounterEvent, runCrossSiteEncounterNavigation } from "./cross-site-encounter-navigation.js";
+import {
+  CrossSiteEncounterEvent,
+  runCrossSiteEncounterNavigation,
+} from "./cross-site-encounter-navigation.js";
 import { CROSS_SITE_ENCOUNTER_FAILURE_KEY } from "./cross-site-encounter-failure.js";
 import { PageKind } from "./page-kind.js";
 

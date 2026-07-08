@@ -8,25 +8,41 @@
 
 /** 法师属性 spell_type 值域 ['Fire','Cold','Elec','Wind','Holy','Dark'] */
 export const SPELL_TYPE = {
-  'Fire': '火焰', 'Cold': '冰冷', 'Elec': '闪电',
-  'Wind': '疾风', 'Holy': '神圣', 'Dark': '黑暗',
+  Fire: "火焰",
+  Cold: "冰冷",
+  Elec: "闪电",
+  Wind: "疾风",
+  Holy: "神圣",
+  Dark: "黑暗",
 };
 
 /** 装备分类 eq.info.category 值域（带 " Weapon" 后缀） */
 export const EQ_CATEGORY = {
-  'One-handed Weapon': '单手武器', 'Two-handed Weapon': '双手武器',
-  'Staff': '法杖', 'Shield': '盾牌',
-  'Cloth Armor': '布甲', 'Light Armor': '轻甲', 'Heavy Armor': '重甲',
-  'Unknown': '未知',
+  "One-handed Weapon": "单手武器",
+  "Two-handed Weapon": "双手武器",
+  Staff: "法杖",
+  Shield: "盾牌",
+  "Cloth Armor": "布甲",
+  "Light Armor": "轻甲",
+  "Heavy Armor": "重甲",
+  Unknown: "未知",
 };
 
 /** 能力点分类 ab.category 值域（无 " Weapon" 后缀） */
 export const AB_CATEGORY = {
-  'General': '通用',
-  'One-handed': '单手', 'Two-handed': '双手', 'Dual-wielding': '双持',
-  'Staff': '法杖',
-  'Cloth Armor': '布甲', 'Light Armor': '轻甲', 'Heavy Armor': '重甲',
-  'Elemental': '元素魔法', 'Divine': '神圣魔法', 'Forbidden': '黑暗魔法',
-  'Supportive 1': '增益魔法 1', 'Deprecating 1': '减益魔法 1',
-  'Supportive 2': '增益魔法 2', 'Deprecating 2': '减益魔法 2',
+  General: "通用",
+  "One-handed": "单手",
+  "Two-handed": "双手",
+  "Dual-wielding": "双持",
+  Staff: "法杖",
+  "Cloth Armor": "布甲",
+  "Light Armor": "轻甲",
+  "Heavy Armor": "重甲",
+  Elemental: "元素魔法",
+  Divine: "神圣魔法",
+  Forbidden: "黑暗魔法",
+  "Supportive 1": "增益魔法 1",
+  "Deprecating 1": "减益魔法 1",
+  "Supportive 2": "增益魔法 2",
+  "Deprecating 2": "减益魔法 2",
 };

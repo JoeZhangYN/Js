@@ -59,7 +59,10 @@ function rejectUnknownActionSpeedEvent(event, deps) {
   };
   const storage = deps.sessionStorage ?? window.sessionStorage;
   try {
-    storage.setItem(ACTION_SPEED_EVIDENCE_KEY, JSON.stringify({ ...evidence, storageWriteOk: true }));
+    storage.setItem(
+      ACTION_SPEED_EVIDENCE_KEY,
+      JSON.stringify({ ...evidence, storageWriteOk: true })
+    );
     evidence.storageWriteOk = true;
   } catch (error) {
     evidence.storageWriteOk = false;
@@ -81,7 +84,10 @@ export function runBattleActionSpeedAutomation(
     debug: (...args) => console.debug(...args),
   }
 ) {
-  return battleActionSpeedEventHandlers[event?.type]?.(event, deps) ?? rejectUnknownActionSpeedEvent(event, deps);
+  return (
+    battleActionSpeedEventHandlers[event?.type]?.(event, deps) ??
+    rejectUnknownActionSpeedEvent(event, deps)
+  );
 }
 
 const battleActionSpeedEventHandlers = Object.freeze({

@@ -1,5 +1,9 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { RiddleDatasetEvent, RiddleSampleSource, runRiddleDatasetAutomation } from "./riddle-dataset.js";
+import {
+  RiddleDatasetEvent,
+  RiddleSampleSource,
+  runRiddleDatasetAutomation,
+} from "./riddle-dataset.js";
 import { RIDDLE_DATASET_FAILURE_KEY } from "./riddle-dataset-failure.js";
 
 afterEach(() => {

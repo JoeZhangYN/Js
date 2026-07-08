@@ -20,19 +20,44 @@ vi.mock("./monster-status-automation.js", () => ({
 
 /** snap.monsters 形态怪物 */
 const sm = (over = {}) => ({
-  id: 1, order: 0, isDead: false, isBoss: false, name: "X", hpRatio: 1, buffs: [], buffEffects: [],
+  id: 1,
+  order: 0,
+  isDead: false,
+  isBoss: false,
+  name: "X",
+  hpRatio: 1,
+  buffs: [],
+  buffEffects: [],
   ...over,
 });
 /** monsterStatus 形态记录（含 monsterId/level；库 join 现按 MID 而非 name） */
 const st = (over = {}) => ({
-  id: 1, order: 0, monsterId: 100, level: 365, isDead: false, hp: 1000, hpNow: 1000, finWeight: 1,
+  id: 1,
+  order: 0,
+  monsterId: 100,
+  level: 365,
+  isDead: false,
+  hp: 1000,
+  hpNow: 1000,
+  finWeight: 1,
   ...over,
 });
 /** 满九抗库记录 */
 const fullDb = (over = {}) => ({
-  monsterName: "X", monsterClass: "Arthropod", plvl: 300, attack: "Piercing",
-  fire: 50, cold: -20, elec: 0, wind: 10, holy: -50, dark: 30,
-  crushing: 5, slashing: -10, piercing: 0, lastUpdate: "2026-06-25",
+  monsterName: "X",
+  monsterClass: "Arthropod",
+  plvl: 300,
+  attack: "Piercing",
+  fire: 50,
+  cold: -20,
+  elec: 0,
+  wind: 10,
+  holy: -50,
+  dark: 30,
+  crushing: 5,
+  slashing: -10,
+  piercing: 0,
+  lastUpdate: "2026-06-25",
   ...over,
 });
 
@@ -45,15 +70,18 @@ describe("joinMonsterView", () => {
   }
 
   it("R1: monsterStatus 被 finWeight sort 乱序 → 仍按 order 字段对齐(非下标)", () => {
-    const view = readView([
-      sm({ id: 1, order: 0, name: "A", hpRatio: 0.5 }),
-      sm({ id: 2, order: 1, name: "B", hpRatio: 0.9 }),
-      sm({ id: 3, order: 2, name: "C", hpRatio: 0.3 }),
-    ], [
-      st({ order: 2, id: 3, hp: 1000, hpNow: 300, finWeight: 1 }),
-      st({ order: 0, id: 1, hp: 2000, hpNow: 1000, finWeight: 2 }),
-      st({ order: 1, id: 2, hp: 5000, hpNow: 4500, finWeight: 3 }),
-    ]);
+    const view = readView(
+      [
+        sm({ id: 1, order: 0, name: "A", hpRatio: 0.5 }),
+        sm({ id: 2, order: 1, name: "B", hpRatio: 0.9 }),
+        sm({ id: 3, order: 2, name: "C", hpRatio: 0.3 }),
+      ],
+      [
+        st({ order: 2, id: 3, hp: 1000, hpNow: 300, finWeight: 1 }),
+        st({ order: 0, id: 1, hp: 2000, hpNow: 1000, finWeight: 2 }),
+        st({ order: 1, id: 2, hp: 5000, hpNow: 4500, finWeight: 3 }),
+      ]
+    );
     // view[0] = order 0 = id 1：按 order 对齐应拿 hpNow=1000/hp=2000，若错用下标会拿 order 2 的 300/1000
     expect(view[0]).toMatchObject({ id: 1, order: 0, hpAbsNow: 1000, hpMax: 2000, finWeight: 2 });
     expect(view[1]).toMatchObject({ id: 2, order: 1, hpAbsNow: 4500, hpMax: 5000 });
@@ -89,7 +117,9 @@ describe("joinMonsterView", () => {
   });
 
   it("只 maxHP 的库记录 → resists undefined 但 dbMaxHP 有（按 MID）", () => {
-    const view = readView([sm()], [st({ monsterId: 300 })], { 300: { monsterId: 300, maxHP: 900 } });
+    const view = readView([sm()], [st({ monsterId: 300 })], {
+      300: { monsterId: 300, maxHP: 900 },
+    });
     expect(view[0].resists).toBeUndefined();
     expect(view[0].dbMaxHP).toBe(900);
   });
@@ -123,10 +153,14 @@ describe("monsterHpVars", () => {
   const v = (over) => ({ order: 0, isDead: false, hpPercent: 1, ...over });
 
   it("多怪存活 → solo 退 100；lowest/first 生效(百分比)", () => {
-    const view = [v({ order: 0, hpPercent: 0.8 }), v({ order: 1, hpPercent: 0.3 }), v({
-      order: 2,
-      hpPercent: 0.5,
-    })];
+    const view = [
+      v({ order: 0, hpPercent: 0.8 }),
+      v({ order: 1, hpPercent: 0.3 }),
+      v({
+        order: 2,
+        hpPercent: 0.5,
+      }),
+    ];
     expect(runBattleMonsterView({ type: BattleMonsterViewEvent.READ_HP_VARS, view })).toEqual({
       soloMonsterHpPercent: 100,
       lowestMonsterHpPercent: 30,

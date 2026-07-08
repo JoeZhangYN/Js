@@ -39,7 +39,9 @@ function isAutoTuneEnabled() {
 
 function recordAutoTuneFailure(stage, storageKey, error) {
   const evidence = {
-    capability: "autoTune", stage, storageKey,
+    capability: "autoTune",
+    stage,
+    storageKey,
     failure: { kind: "storageWrite", error: error?.message || String(error) },
   };
   try {
@@ -74,7 +76,11 @@ function getCurrentPad() {
 /** UI 重置按钮调用：清掉历史 + 复位 1.3。 */
 function resetAutoTune() {
   const padPersisted = persistAutoTuneValue("reset-pad", STORAGE_KEYS.AUTO_TUNE_PAD, 1.3);
-  const historyPersisted = persistAutoTuneValue("reset-history", STORAGE_KEYS.AUTO_TUNE_HISTORY, {});
+  const historyPersisted = persistAutoTuneValue(
+    "reset-history",
+    STORAGE_KEYS.AUTO_TUNE_HISTORY,
+    {}
+  );
   return padPersisted && historyPersisted;
 }
 
@@ -138,12 +144,20 @@ function maybeStep(history, pad, key) {
 
   // 探索：未访问的邻居优先（确保 line search 覆盖）
   if (lowerKey && !history[lowerKey]) {
-    const persisted = persistAutoTuneValue("explore-lower-pad", STORAGE_KEYS.AUTO_TUNE_PAD, parseFloat(lowerKey));
+    const persisted = persistAutoTuneValue(
+      "explore-lower-pad",
+      STORAGE_KEYS.AUTO_TUNE_PAD,
+      parseFloat(lowerKey)
+    );
     if (persisted) console.log(`[auto-tune] explore ${pad} → ${lowerKey}`);
     return persisted;
   }
   if (upperKey && !history[upperKey]) {
-    const persisted = persistAutoTuneValue("explore-upper-pad", STORAGE_KEYS.AUTO_TUNE_PAD, parseFloat(upperKey));
+    const persisted = persistAutoTuneValue(
+      "explore-upper-pad",
+      STORAGE_KEYS.AUTO_TUNE_PAD,
+      parseFloat(upperKey)
+    );
     if (persisted) console.log(`[auto-tune] explore ${pad} → ${upperKey}`);
     return persisted;
   }

@@ -2,18 +2,12 @@ import {
   CriticalBuffDecisionEvent,
   runCriticalBuffDecision,
 } from "./critical-buff-guard/decide-critical-buff.js";
-import {
-  BattleDefendDecisionEvent,
-  runBattleDefendDecision,
-} from "./defense/decide-defend.js";
+import { BattleDefendDecisionEvent, runBattleDefendDecision } from "./defense/decide-defend.js";
 import {
   BattleAutoPauseDecisionEvent,
   runBattleAutoPauseDecision,
 } from "./pause/decide-auto-pause.js";
-import {
-  BattleFleeDecisionEvent,
-  runBattleFleeDecision,
-} from "./escape/decide-flee.js";
+import { BattleFleeDecisionEvent, runBattleFleeDecision } from "./escape/decide-flee.js";
 import { BattleItemDecisionEvent, runBattleItemDecision } from "./item/decide-item.js";
 
 const EVENT_DECIDE = "decide";

@@ -76,14 +76,12 @@ function recordKillBugRecovery(result, detail, reason = EVENT_RECOVER) {
 }
 
 function rejectUnknownKillBugEvent(event) {
-  recordKillBugRecovery(
-    "rejected",
-    { eventType: event?.type ?? null },
-    EVENT_UNKNOWN_KILL_BUG
-  );
+  recordKillBugRecovery("rejected", { eventType: event?.type ?? null }, EVENT_UNKNOWN_KILL_BUG);
   return false;
 }
 
 export function runBattleKillBugRecovery(event = { type: EVENT_RECOVER }) {
-  return battleKillBugRecoveryEventHandlers[event?.type]?.(event) ?? rejectUnknownKillBugEvent(event);
+  return (
+    battleKillBugRecoveryEventHandlers[event?.type]?.(event) ?? rejectUnknownKillBugEvent(event)
+  );
 }

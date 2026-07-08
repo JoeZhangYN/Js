@@ -53,7 +53,9 @@ for (const required of [
 }
 
 const bindArmoryBody =
-  /const bindArmory = function \(armory, ctx\) \{[\s\S]*?\n\};\n\nif \(IS_ISEKAI\)/.exec(text)?.[0] || "";
+  /const bindArmory = function \(armory, ctx\) \{[\s\S]*?\n\};\n\nif \(IS_ISEKAI\)/.exec(
+    text
+  )?.[0] || "";
 
 if (!bindArmoryBody) {
   violations.push(`${target} must keep bindArmory body visible for page context guard`);
@@ -61,12 +63,14 @@ if (!bindArmoryBody) {
 
 const externalArmoryBodies = [
   ...text.matchAll(
-    /\/\/\* \[(?:10|20)\] Armory - Equiplist[\s\S]*?\/\/ \[END (?:11|21)\] (?:Armory|Bazaar - Armory Modify)/g,
+    /\/\/\* \[(?:10|20)\] Armory - Equiplist[\s\S]*?\/\/ \[END (?:11|21)\] (?:Armory|Bazaar - Armory Modify)/g
   ),
 ];
 
 if (externalArmoryBodies.length !== 2) {
-  violations.push(`${target} must keep two external Armory ingress bodies visible, found ${externalArmoryBodies.length}`);
+  violations.push(
+    `${target} must keep two external Armory ingress bodies visible, found ${externalArmoryBodies.length}`
+  );
 }
 
 externalArmoryBodies.forEach((match, index) => {
@@ -77,7 +81,9 @@ externalArmoryBodies.forEach((match, index) => {
     "get_hvut_armory_page_context($config).isModify",
   ]) {
     if (!body.includes(required)) {
-      violations.push(`${target} external Armory body[${index}] must consume page context: ${required}`);
+      violations.push(
+        `${target} external Armory body[${index}] must consume page context: ${required}`
+      );
     }
   }
   for (const forbidden of [
@@ -87,7 +93,9 @@ externalArmoryBodies.forEach((match, index) => {
     "$id('equiplist')",
   ]) {
     if (body.includes(forbidden)) {
-      violations.push(`${target} external Armory body[${index}] must not rebuild ingress identity: ${forbidden}`);
+      violations.push(
+        `${target} external Armory body[${index}] must not rebuild ingress identity: ${forbidden}`
+      );
     }
   }
 });
@@ -110,7 +118,9 @@ for (const forbidden of [
   "armoryPage.integrateAll",
 ]) {
   if (bindArmoryBody.includes(forbidden)) {
-    violations.push(`${target} Armory must consume page context instead of raw query: ${forbidden}`);
+    violations.push(
+      `${target} Armory must consume page context instead of raw query: ${forbidden}`
+    );
   }
 }
 
@@ -120,4 +130,6 @@ if (violations.length) {
   process.exit(1);
 }
 
-console.log("[verify-hvut-armory-page-context-boundary] OK - Armory screen/filter routing uses one page context");
+console.log(
+  "[verify-hvut-armory-page-context-boundary] OK - Armory screen/filter routing uses one page context"
+);

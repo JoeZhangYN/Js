@@ -41,7 +41,9 @@ describe("repair automation entry", () => {
     const makeBackend = vi.fn();
     const scheduleIdleArena = vi.fn();
 
-    expect(runRepairAutomation({ type: "unknown" }, { makeBackend, scheduleIdleArena })).toBe(false);
+    expect(runRepairAutomation({ type: "unknown" }, { makeBackend, scheduleIdleArena })).toBe(
+      false
+    );
     expect(runRepairAutomation(null, { makeBackend, scheduleIdleArena })).toBe(false);
     expect(makeBackend).not.toHaveBeenCalled();
     expect(scheduleIdleArena).not.toHaveBeenCalled();

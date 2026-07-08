@@ -43,7 +43,9 @@ if (/import\s*\{[^}]*\b(?:parseEffectName|parseEffectTurns)\b/.test(ownerText)) 
 }
 const conditionEvalText = read(conditionEval);
 if (!conditionEvalText.includes("runBattleEffectParse")) {
-  violations.push(`${rel(conditionEval)} must consume effect parsing through runBattleEffectParse(event)`);
+  violations.push(
+    `${rel(conditionEval)} must consume effect parsing through runBattleEffectParse(event)`
+  );
 }
 if (/import\s*\{[^}]*\b(?:parseEffectName|parseEffectTurns)\b/.test(conditionEvalText)) {
   violations.push(`${rel(conditionEval)} must not import raw effect parser functions`);
@@ -69,13 +71,14 @@ if (
   violations.push(`${rel(effectParse)} may export only its event query entry`);
 }
 const effectParseEntryBody =
-  effectParseText.match(/export function runBattleEffectParse\([^)]*\) \{[\s\S]*?\n\}/)?.[0] ||
-  "";
+  effectParseText.match(/export function runBattleEffectParse\([^)]*\) \{[\s\S]*?\n\}/)?.[0] || "";
 if (/battleEffectParseEventHandlers\[event\.type\]/.test(effectParseEntryBody)) {
   violations.push(`${rel(effectParse)} entry must fail closed for invalid effect parse events`);
 }
 if (!/battleEffectParseEventHandlers\[event\?\.type\]/.test(effectParseEntryBody)) {
-  violations.push(`${rel(effectParse)} entry must dispatch invalid effect parse events through optional type`);
+  violations.push(
+    `${rel(effectParse)} entry must dispatch invalid effect parse events through optional type`
+  );
 }
 const effectParseTest = path.normalize("src/battle/effect-parse.test.js");
 const effectParseTestText = read(effectParseTest);

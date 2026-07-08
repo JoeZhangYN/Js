@@ -61,7 +61,13 @@ function criticalAlarmTriggered(result) {
 }
 
 function isCriticalPausePlan(plan) {
-  return plan && typeof plan.name === "string" && Number.isFinite(plan.turns) && Number.isFinite(plan.mp) && Number.isFinite(plan.mpFloor);
+  return (
+    plan &&
+    typeof plan.name === "string" &&
+    Number.isFinite(plan.turns) &&
+    Number.isFinite(plan.mp) &&
+    Number.isFinite(plan.mpFloor)
+  );
 }
 
 function rejectCriticalPausePlan(plan) {

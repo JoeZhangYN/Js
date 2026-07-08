@@ -20,7 +20,10 @@ function requireParts(label, value, parts) {
 
 const bindTr = body(/const bindTr = function \(tr, ctx\) \{[\s\S]*?\n\};\n\n\/\/ \$re/, "bindTr");
 const setBody = body(/tr\.set = function \(reload\) \{[\s\S]*?\n  \};\n\n  tr\.cancel/, "tr.set");
-const cancelBody = body(/tr\.cancel = function \(reload\) \{[\s\S]*?\n  \};\n\};\n\n\/\/ \$re/, "tr.cancel");
+const cancelBody = body(
+  /tr\.cancel = function \(reload\) \{[\s\S]*?\n  \};\n\};\n\n\/\/ \$re/,
+  "tr.cancel"
+);
 
 requireParts("tr.set", setBody, [
   "if (!ctx.config.set('tr_notif', tr.json, 'hvut_')) {",
@@ -47,4 +50,6 @@ if (violations.length) {
   process.exit(1);
 }
 
-console.log("[verify-hvut-training-notification-storage-boundary] OK - training notification storage failures fail closed");
+console.log(
+  "[verify-hvut-training-notification-storage-boundary] OK - training notification storage failures fail closed"
+);

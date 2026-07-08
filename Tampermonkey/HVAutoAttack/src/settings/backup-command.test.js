@@ -21,27 +21,30 @@ describe("settings backup command entry", () => {
     expect(
       runSettingsBackupCommand({ type: SettingsBackupCommandEvent.HAS_CODE, code: "main" })
     ).toBe(true);
-    expect(
-      runSettingsBackupCommand({ type: SettingsBackupCommandEvent.RENDER_LIST_ITEMS })
-    ).toBe("<li>main</li>");
+    expect(runSettingsBackupCommand({ type: SettingsBackupCommandEvent.RENDER_LIST_ITEMS })).toBe(
+      "<li>main</li>"
+    );
   });
 
   it("returns typed save, delete, and restore command results", () => {
     runOptionAutomation({ type: OptionEvent.WRITE, option: { version: "10.0", lang: "1" } });
 
-    expect(runSettingsBackupCommand({ type: SettingsBackupCommandEvent.SAVE_CURRENT, code: "a" }))
-      .toMatchObject({ ok: true, type: SettingsBackupCommandEvent.SAVE_CURRENT, code: "a" });
-    expect(runSettingsBackupCommand({ type: SettingsBackupCommandEvent.DELETE, code: "a" }))
-      .toMatchObject({ ok: true, type: SettingsBackupCommandEvent.DELETE, code: "a" });
     expect(
-      runSettingsBackupCommand({ type: SettingsBackupCommandEvent.RENDER_LIST_ITEMS })
-    ).toBe("");
+      runSettingsBackupCommand({ type: SettingsBackupCommandEvent.SAVE_CURRENT, code: "a" })
+    ).toMatchObject({ ok: true, type: SettingsBackupCommandEvent.SAVE_CURRENT, code: "a" });
+    expect(
+      runSettingsBackupCommand({ type: SettingsBackupCommandEvent.DELETE, code: "a" })
+    ).toMatchObject({ ok: true, type: SettingsBackupCommandEvent.DELETE, code: "a" });
+    expect(runSettingsBackupCommand({ type: SettingsBackupCommandEvent.RENDER_LIST_ITEMS })).toBe(
+      ""
+    );
 
     runSettingsBackupCommand({ type: SettingsBackupCommandEvent.SAVE_CURRENT, code: "restore" });
     runOptionAutomation({ type: OptionEvent.WRITE, option: { version: "10.0", lang: "2" } });
 
-    expect(runSettingsBackupCommand({ type: SettingsBackupCommandEvent.RESTORE, code: "restore" }))
-      .toMatchObject({ ok: true, type: SettingsBackupCommandEvent.RESTORE, code: "restore" });
+    expect(
+      runSettingsBackupCommand({ type: SettingsBackupCommandEvent.RESTORE, code: "restore" })
+    ).toMatchObject({ ok: true, type: SettingsBackupCommandEvent.RESTORE, code: "restore" });
   });
 
   it("preserves failure messages without claiming backup command success", () => {
@@ -50,13 +53,14 @@ describe("settings backup command entry", () => {
       throw new Error("quota");
     };
 
-    expect(runSettingsBackupCommand({ type: SettingsBackupCommandEvent.SAVE_CURRENT, code: "bad" }))
-      .toMatchObject({
-        ok: false,
-        type: SettingsBackupCommandEvent.SAVE_CURRENT,
-        code: "bad",
-        message: { l2: "Failed to backup configuration" },
-      });
+    expect(
+      runSettingsBackupCommand({ type: SettingsBackupCommandEvent.SAVE_CURRENT, code: "bad" })
+    ).toMatchObject({
+      ok: false,
+      type: SettingsBackupCommandEvent.SAVE_CURRENT,
+      code: "bad",
+      message: { l2: "Failed to backup configuration" },
+    });
     expect(JSON.parse(sessionStorage.getItem(OPTION_BACKUP_FAILURE_KEY))).toMatchObject({
       capability: "optionBackup",
       action: "saveCurrent",

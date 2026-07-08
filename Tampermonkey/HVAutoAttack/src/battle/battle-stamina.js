@@ -68,8 +68,10 @@ export function runBattleStaminaAutomation(
       runBattlePauseAutomation({ type: BattlePauseEvent.PAUSE, reason: "staminaLoss", detail }),
   }
 ) {
-  return battleStaminaEventHandlers[event?.type]?.(event, deps) ?? {
-    lostStamina: 0,
-    paused: false,
-  };
+  return (
+    battleStaminaEventHandlers[event?.type]?.(event, deps) ?? {
+      lostStamina: 0,
+      paused: false,
+    }
+  );
 }

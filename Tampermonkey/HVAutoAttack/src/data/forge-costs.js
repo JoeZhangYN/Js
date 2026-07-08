@@ -61,10 +61,26 @@ function buildConfig(costs, catalystCost) {
     wood: { midGrade: costs.MidGradeWood, highGrade: costs.HighGradeWood, special: 0 },
     leather: { midGrade: costs.MidGradeLeather, highGrade: costs.HighGradeLeather, special: 0 },
     metal: { midGrade: costs.MidGradeMetal, highGrade: costs.HighGradeMetal, special: 0 },
-    phase: { midGrade: costs.MidGradeCloth, highGrade: costs.HighGradeCloth, special: costs.CrystallizedPhazon },
-    shade: { midGrade: costs.MidGradeLeather, highGrade: costs.HighGradeLeather, special: costs.ShadeFragment },
-    power: { midGrade: costs.MidGradeMetal, highGrade: costs.HighGradeMetal, special: costs.RepurposedActuator },
-    force: { midGrade: costs.MidGradeWood, highGrade: costs.HighGradeWood, special: costs.DefenseMatrixModulator },
+    phase: {
+      midGrade: costs.MidGradeCloth,
+      highGrade: costs.HighGradeCloth,
+      special: costs.CrystallizedPhazon,
+    },
+    shade: {
+      midGrade: costs.MidGradeLeather,
+      highGrade: costs.HighGradeLeather,
+      special: costs.ShadeFragment,
+    },
+    power: {
+      midGrade: costs.MidGradeMetal,
+      highGrade: costs.HighGradeMetal,
+      special: costs.RepurposedActuator,
+    },
+    force: {
+      midGrade: costs.MidGradeWood,
+      highGrade: costs.HighGradeWood,
+      special: costs.DefenseMatrixModulator,
+    },
     unknown: { midGrade: -1, highGrade: -1, special: -1 },
   };
   const rangesNonDamage = {

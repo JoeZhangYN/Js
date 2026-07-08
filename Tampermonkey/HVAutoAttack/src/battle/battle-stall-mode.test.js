@@ -2,7 +2,9 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { BattleStallModeEvent, runBattleStallModeAutomation } from "./battle-stall-mode.js";
 
 const mocks = vi.hoisted(() => ({
-  runBattlePlayerBuffState: vi.fn((event) => event.state?.playerBuffs?.includes(event.img) || false),
+  runBattlePlayerBuffState: vi.fn(
+    (event) => event.state?.playerBuffs?.includes(event.img) || false
+  ),
 }));
 
 vi.mock("./player-buff-state.js", () => ({

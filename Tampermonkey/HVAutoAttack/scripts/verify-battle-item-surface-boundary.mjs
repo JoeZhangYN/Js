@@ -48,7 +48,9 @@ if (/battleItemSurfaceEventHandlers\[event\.type\]/.test(entryBody)) {
   violations.push(`${rel(owner)} entry must fail closed for invalid item surface events`);
 }
 if (!/battleItemSurfaceEventHandlers\[event\?\.type\]/.test(entryBody)) {
-  violations.push(`${rel(owner)} entry must dispatch invalid item surface events through optional type`);
+  violations.push(
+    `${rel(owner)} entry must dispatch invalid item surface events through optional type`
+  );
 }
 if (!fs.existsSync(path.join(root, ownerTest))) {
   violations.push(`${rel(ownerTest)} must cover item surface entry contract`);

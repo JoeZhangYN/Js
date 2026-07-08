@@ -74,7 +74,12 @@ describe("monster status automation", () => {
     g("bossAll", 2);
     g("bossAlive", 1);
 
-    expect(runMonsterStatusAutomation({ type: MonsterStatusEvent.READ_COMBATANT_COUNTS })).toEqual({ monsterAll: 4, monsterAlive: 3, bossAll: 2, bossAlive: 1 });
+    expect(runMonsterStatusAutomation({ type: MonsterStatusEvent.READ_COMBATANT_COUNTS })).toEqual({
+      monsterAll: 4,
+      monsterAlive: 3,
+      bossAll: 2,
+      bossAlive: 1,
+    });
   });
 
   it("exposes monster identity by combatant order through the entry", () => {
@@ -159,12 +164,20 @@ describe("monster status automation", () => {
 
     expect(g("monsterStatus")).toBe(status);
     expect(getValue(STORAGE_KEYS.MONSTER_STATUS, true)).toBeNull();
-    expect(JSON.parse(sessionStorage.getItem("HVAA:lastBattleMonsterStatusRepair"))).toMatchObject({ result: "rejected", reason: "unknownMonsterStatusEvent", detail: { eventType: "unknown" } });
+    expect(JSON.parse(sessionStorage.getItem("HVAA:lastBattleMonsterStatusRepair"))).toMatchObject({
+      result: "rejected",
+      reason: "unknownMonsterStatusEvent",
+      detail: { eventType: "unknown" },
+    });
   });
 
   it("rejects null monster status events without side effects", () => {
     expect(runMonsterStatusAutomation(null)).toBe(false);
 
-    expect(JSON.parse(sessionStorage.getItem("HVAA:lastBattleMonsterStatusRepair"))).toMatchObject({ result: "rejected", reason: "unknownMonsterStatusEvent", detail: { eventType: null } });
+    expect(JSON.parse(sessionStorage.getItem("HVAA:lastBattleMonsterStatusRepair"))).toMatchObject({
+      result: "rejected",
+      reason: "unknownMonsterStatusEvent",
+      detail: { eventType: null },
+    });
   });
 });

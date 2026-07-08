@@ -28,9 +28,9 @@ function clearPendingUsage() {
 }
 
 function expectCaptureFailure(stage) {
-  expect(JSON.parse(sessionStorage.getItem("HVAA:lastBattleActionUsageCaptureFailure"))).toMatchObject(
-    { capability: "battleActionUsageCapture", stage }
-  );
+  expect(
+    JSON.parse(sessionStorage.getItem("HVAA:lastBattleActionUsageCaptureFailure"))
+  ).toMatchObject({ capability: "battleActionUsageCapture", stage });
 }
 
 describe("runBattleActionUsageCapture failure evidence", () => {

@@ -7,7 +7,9 @@ const text = fs.readFileSync(path.join(root, target), "utf8");
 const violations = [];
 
 const itemshopBody =
-  /_mm\.itemshop = async function \(mid, items\) \{[\s\S]*?\n    \};\n\n    \/\/ 代重铸服务/.exec(text)?.[0] || "";
+  /_mm\.itemshop = async function \(mid, items\) \{[\s\S]*?\n    \};\n\n    \/\/ 代重铸服务/.exec(
+    text
+  )?.[0] || "";
 
 if (!itemshopBody) {
   violations.push(`${target} must keep MoogleMail itemshop workflow visible`);
@@ -36,7 +38,9 @@ if (!itemshopBody) {
     "$mail.request(mail);\n    };",
   ]) {
     if (itemshopBody.includes(forbidden)) {
-      violations.push(`${target} MoogleMail itemshop workflow must not keep unchecked path: ${forbidden}`);
+      violations.push(
+        `${target} MoogleMail itemshop workflow must not keep unchecked path: ${forbidden}`
+      );
     }
   }
 }
@@ -47,4 +51,6 @@ if (violations.length) {
   process.exit(1);
 }
 
-console.log("[verify-hvut-mooglemail-itemshop-boundary] OK - MoogleMail itemshop workflow stops on failed side effects");
+console.log(
+  "[verify-hvut-mooglemail-itemshop-boundary] OK - MoogleMail itemshop workflow stops on failed side effects"
+);

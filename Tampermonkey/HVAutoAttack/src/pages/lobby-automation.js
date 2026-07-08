@@ -95,6 +95,7 @@ async function handleLobbyEncounter() {
   if (!isAutomaticEncounterEnabled()) return false;
   const encounterOutcome = await runEncounterAutomation({
     type: EncounterEvent.LOBBY_TICK,
+    isIsekai: false,
     rerun: rerunLobbyPageReady,
   });
   return encounterOutcome?.claimed === true;

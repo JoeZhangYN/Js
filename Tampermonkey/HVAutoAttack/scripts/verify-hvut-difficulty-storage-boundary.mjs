@@ -18,18 +18,27 @@ function requireParts(label, value, parts) {
   }
 }
 
-const bindDfct = body(/const bindDfct = function \(dfct, ctx\) \{[\s\S]*?\n\};\n\n\/\/ \$persona/, "bindDfct");
+const bindDfct = body(
+  /const bindDfct = function \(dfct, ctx\) \{[\s\S]*?\n\};\n\n\/\/ \$persona/,
+  "bindDfct"
+);
 const init = body(/dfct\.init = function \(\) \{[\s\S]*?\n  \};\n  dfct\.create/, "dfct.init");
 const changeOutcome = body(
   /dfct\.change_outcome = async function \(value\) \{[\s\S]*?\n  \};\n  dfct\.change/,
-  "dfct.change_outcome",
+  "dfct.change_outcome"
 );
-const change = body(/dfct\.change = async function \(value\) \{[\s\S]*?\n  \};\n  dfct\.set_button_outcome/, "dfct.change");
+const change = body(
+  /dfct\.change = async function \(value\) \{[\s\S]*?\n  \};\n  dfct\.set_button_outcome/,
+  "dfct.change"
+);
 const setButtonOutcome = body(
   /dfct\.set_button_outcome = function \(doc\) \{[\s\S]*?\n  \};\n  dfct\.set_button/,
-  "dfct.set_button_outcome",
+  "dfct.set_button_outcome"
 );
-const setButton = body(/dfct\.set_button = function \(doc\) \{[\s\S]*?\n  \};\n\};\n\n\/\/ \$persona/, "dfct.set_button");
+const setButton = body(
+  /dfct\.set_button = function \(doc\) \{[\s\S]*?\n  \};\n\};\n\n\/\/ \$persona/,
+  "dfct.set_button"
+);
 
 for (const [label, value] of [
   ["dfct.init", init],
@@ -83,7 +92,9 @@ for (const forbidden of [
   "return dfct.set_button(doc);",
 ]) {
   if (bindDfct.includes(forbidden)) {
-    violations.push(`${target} bindDfct must not ignore difficulty cache persistence: ${forbidden}`);
+    violations.push(
+      `${target} bindDfct must not ignore difficulty cache persistence: ${forbidden}`
+    );
   }
 }
 
@@ -93,4 +104,6 @@ if (violations.length) {
   process.exit(1);
 }
 
-console.log("[verify-hvut-difficulty-storage-boundary] OK - difficulty cache storage failures fail closed");
+console.log(
+  "[verify-hvut-difficulty-storage-boundary] OK - difficulty cache storage failures fail closed"
+);

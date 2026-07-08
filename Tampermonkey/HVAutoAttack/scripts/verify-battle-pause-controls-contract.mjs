@@ -53,16 +53,21 @@ if (
   violations.push(`${owner.replaceAll("\\", "/")} may export only its event entry`);
 }
 const entryBody =
-  ownerText.match(/export function runBattlePauseControlsAutomation\([^)]*\) \{[\s\S]*?\n\}/)
-    ?.[0] || "";
+  ownerText.match(
+    /export function runBattlePauseControlsAutomation\([^)]*\) \{[\s\S]*?\n\}/
+  )?.[0] || "";
 if (!/Object\.freeze\(\{[\s\S]*\[EVENT_INSTALL\]/.test(ownerText)) {
-  violations.push(`${owner.replaceAll("\\", "/")} must route events through a frozen handler table`);
+  violations.push(
+    `${owner.replaceAll("\\", "/")} must route events through a frozen handler table`
+  );
 }
 if (/event\.type\s*===/.test(entryBody)) {
   violations.push(`${owner.replaceAll("\\", "/")} entry must dispatch by handler table`);
 }
 if (!ownerText.includes("battlePauseControlsEventHandlers[event?.type]")) {
-  violations.push(`${owner.replaceAll("\\", "/")} must reject null events without pause-control side effects`);
+  violations.push(
+    `${owner.replaceAll("\\", "/")} must reject null events without pause-control side effects`
+  );
 }
 for (const [constant, key] of [
   ["PAUSE_BUTTON_OPTION_KEY", "pauseButton"],

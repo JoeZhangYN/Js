@@ -25,9 +25,9 @@ describe("riddle submission timing", () => {
   it("reads M:SS countdown text", () => {
     document.body.innerHTML = '<div id="riddlecounter">2:30</div>';
 
-    expect(
-      runRiddleSubmissionTiming({ type: RiddleSubmissionTimingEvent.READ_REMAINING })
-    ).toBe(150);
+    expect(runRiddleSubmissionTiming({ type: RiddleSubmissionTimingEvent.READ_REMAINING })).toBe(
+      150
+    );
   });
 
   it("submits ML answers after the humanized delay without waiting for the end", async () => {

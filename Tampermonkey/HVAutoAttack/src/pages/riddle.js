@@ -63,7 +63,11 @@ function submittedCodes() {
   return hits.join(",");
 }
 
-const createRiddleAnsweringContext = () => ({ mlAnswer: null, pendingSource: null, sampled: false });
+const createRiddleAnsweringContext = () => ({
+  mlAnswer: null,
+  pendingSource: null,
+  sampled: false,
+});
 
 function recordRiddleAppearance() {
   runAlarmAutomation({ type: AlarmEvent.TRIGGER, kind: "Riddle" });
@@ -147,7 +151,8 @@ function captureSubmission(context) {
 function installOptionalSubmissionSampleCapture(context) {
   if (readOptionEnabled("mlBackupOnFail")) {
     const submitBtn = document.getElementById("riddlesubmit");
-    if (submitBtn) submitBtn.addEventListener("click", () => captureSubmission(context), { capture: true });
+    if (submitBtn)
+      submitBtn.addEventListener("click", () => captureSubmission(context), { capture: true });
   }
 }
 
