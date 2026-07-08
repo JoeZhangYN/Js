@@ -5,10 +5,8 @@ const root = process.cwd();
 const srcDir = path.join(root, "src");
 const owner = path.normalize("src/core/lang.js");
 const ownerTest = path.normalize("src/core/lang.test.js");
-const legacyHvutFiles = new Set([
-  path.normalize("src/i18n/hv-utils.js"),
-  path.normalize("src/i18n/equip-translate.js"),
-]);
+const legacyHvutFiles = new Set([path.normalize("src/i18n/hv-utils.js")]);
+const equipTranslate = path.normalize("src/i18n/equip-translate.js");
 const violations = [];
 
 function rel(file) {
@@ -80,6 +78,19 @@ if (
   )
 ) {
   violations.push("src/settings/render.js must confirm stamina log reset through typed feedback");
+}
+
+const equipTranslateText = fs.readFileSync(path.join(root, equipTranslate), "utf8");
+for (const required of [
+  "UserFeedbackEvent.ALERT",
+  "runUserFeedbackAutomation",
+  "reportEquipHideInitFailure",
+]) {
+  if (!equipTranslateText.includes(required)) {
+    violations.push(
+      `${equipTranslate.replaceAll("\\", "/")} must route equip UI failures through ${required}`
+    );
+  }
 }
 
 const ownerTestText = fs.readFileSync(path.join(root, ownerTest), "utf8");

@@ -6,6 +6,7 @@
 
 // 切换原文使用的变量
 import { EQUIP_ITEMS, EQUIP_EQUIPS, EQUIP_INFO, EQUIP_EXTRA } from "../data/i18n/equip-dict.js";
+import { UserFeedbackEvent, runUserFeedbackAutomation } from "../core/lang.js";
 import { registerRestore, ensureRestoreButton, registerRetranslate, isTranslated, isSkipped } from "./core/restore-controller.js";
 import { recordI18nInitFailure } from "./core/init-failure.js";
 import { langPostProcess } from "./core/lang-post.js";
@@ -17,6 +18,18 @@ var translatedList = new Map(), translated = true;
 // 可以调用对应translateItems/translateEquips/translateEquipsInfo/translateExtra方法直接翻译页面元素
 // 否则需要先调用loadItems/loadEquips/loadEquipsInfo/loadExtra加载对应字典之后才能使用translate方法
 var dictItems, dictEquips, dictEquipsInfo, dictExtra;
+
+function reportEquipHideInitFailure(error) {
+    recordI18nInitFailure("equip", error);
+    runUserFeedbackAutomation({
+        type: UserFeedbackEvent.ALERT,
+        copy: {
+            l0: "锁定装备显示切换初始化失败。",
+            l1: "鎖定裝備顯示切換初始化失敗。",
+            l2: "Failed to initialize locked-equipment visibility toggle.",
+        },
+    });
+}
 
 function main(){
     var lklist = [
@@ -91,7 +104,7 @@ function main(){
                     equhide.innerHTML = "隐";
                 }
             }
-            catch(e){alert(e)}
+            catch(e){reportEquipHideInitFailure(e)}
             equhide.onclick = function(){
                 equipdiv = document.querySelectorAll(".il");
                 this.title = "点击"+localStorage.hideflag;
