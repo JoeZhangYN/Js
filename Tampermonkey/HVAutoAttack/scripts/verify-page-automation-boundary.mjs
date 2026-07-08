@@ -91,7 +91,7 @@ function checkEntry() {
     violations.push(`${rel(entryFile)} must own explicit page-ready routing order`);
   }
   if (
-    !/\[PageKind\.RIDDLE\]: runRiddlePageAutomation[\s\S]*\[PageKind\.BATTLE\]: runBattlePageAutomation[\s\S]*\[PageKind\.LOBBY\]: runLobbyPageAutomation/.test(
+    !/\[PageKind\.RIDDLE\]: runRiddlePageAutomation[\s\S]*\[PageKind\.BATTLE\]: runBattlePageAutomation[\s\S]*\[PageKind\.LOBBY\]: runLobbyPageAutomation[\s\S]*\[PageKind\.ISEKAI_LOBBY\]: runIsekaiLobbyPageAutomation/.test(
       text
     )
   ) {
@@ -155,6 +155,8 @@ function checkEntry() {
     "records game-page child automation failures at the page routing boundary",
     "keeps page routing failure evidence when diagnostic console is blocked",
     "stepException",
+    "isekaiPageReady",
+    "PageKind.ISEKAI_LOBBY",
   ]) {
     if (!entryTestText.includes(required)) {
       violations.push(`${rel(entryTestFile)} must cover ${required}`);

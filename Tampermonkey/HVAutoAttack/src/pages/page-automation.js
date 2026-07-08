@@ -27,6 +27,7 @@ const GAME_PAGE_AUTOMATION = Object.freeze({
   [PageKind.RIDDLE]: runRiddlePageAutomation,
   [PageKind.BATTLE]: runBattlePageAutomation,
   [PageKind.LOBBY]: runLobbyPageAutomation,
+  [PageKind.ISEKAI_LOBBY]: runIsekaiLobbyPageAutomation,
 });
 
 const PAGE_READY_FLOW_STEPS = [
@@ -86,6 +87,10 @@ function runBattlePageAutomation() {
 
 function runLobbyPageAutomation() {
   runLobbyAutomation({ type: LobbyEvent.PAGE_READY });
+}
+
+function runIsekaiLobbyPageAutomation() {
+  runLobbyAutomation({ type: LobbyEvent.ISEKAI_PAGE_READY });
 }
 
 function runGamePageAutomation(kind) {

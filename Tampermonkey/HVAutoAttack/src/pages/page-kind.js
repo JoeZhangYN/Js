@@ -11,6 +11,7 @@ export const PageKind = Object.freeze({
   RIDDLE: "riddle", // 答题页（#riddlecounter 存在）
   BATTLE: "battle", // 战斗中（#textlog 存在 + 无 navbar）
   LOBBY: "lobby", // 战外大厅（#navbar 存在 + 无 riddle/battle）
+  ISEKAI_LOBBY: "isekaiLobby", // 异世界战外大厅（独立编排，不跑主世界遭遇战）
   SHOWEQUIP: "showequip", // 装备详情（#eu span 存在或 URL 含 /equip/ 或 showequip.php）
   UNKNOWN: "unknown", // 其他（如载入中、报错页）
 });
@@ -32,6 +33,9 @@ function detectPageKind({ document: doc = document, location = window.location }
     /showequip\.php/.test(location.pathname)
   ) {
     return PageKind.SHOWEQUIP;
+  }
+  if (doc.getElementById("navbar") && /\/isekai\/?/.test(location.pathname)) {
+    return PageKind.ISEKAI_LOBBY;
   }
   if (doc.getElementById("navbar")) return PageKind.LOBBY;
   return PageKind.UNKNOWN;

@@ -51,6 +51,7 @@ function checkLobbyEntry() {
   for (const required of [
     "lobbyEventHandlers",
     "LOBBY_READY_FLOW_STEPS",
+    "ISEKAI_LOBBY_READY_FLOW_STEPS",
     "clearBattleSession",
     "refreshLobbyDayRecord",
     "captureLobbyAbilityPage",
@@ -60,6 +61,8 @@ function checkLobbyEntry() {
     "runNextBattleAutomation",
     "runLobbyReadyFlow",
     "rerunLobbyPageReady",
+    "rerunIsekaiLobbyPageReady",
+    "EVENT_ISEKAI_PAGE_READY",
   ]) {
     if (!text.includes(required)) {
       violations.push(`${rel(lobbyFile)} must name lobby-ready flow step ${required}`);
@@ -71,6 +74,13 @@ function checkLobbyEntry() {
     )
   ) {
     violations.push(`${rel(lobbyFile)} must own explicit lobby-ready flow order`);
+  }
+  if (
+    !/const ISEKAI_LOBBY_READY_FLOW_STEPS = \[\s*clearBattleSession,\s*refreshLobbyDayRecord,\s*captureLobbyAbilityPage,\s*runQuickSiteLobbyReady,\s*stopWhenStaminaRequires,\s*runNextBattleAutomation,\s*\]/.test(
+      text
+    )
+  ) {
+    violations.push(`${rel(lobbyFile)} must own explicit isekai lobby flow without encounter`);
   }
   const entryBody =
     text.match(/export async function runLobbyAutomation\(event = \{ type: EVENT_PAGE_READY \}\) \{[\s\S]*?\n\}/)?.[0] ||
@@ -99,6 +109,9 @@ function checkLobbyEntry() {
   }
   if (!text.includes("LobbyEvent") || !text.includes("EVENT_PAGE_READY")) {
     violations.push(`${rel(lobbyFile)} must own LobbyEvent.PAGE_READY wiring`);
+  }
+  if (!text.includes("ISEKAI_PAGE_READY: EVENT_ISEKAI_PAGE_READY")) {
+    violations.push(`${rel(lobbyFile)} must own LobbyEvent.ISEKAI_PAGE_READY wiring`);
   }
   if (!text.includes("OptionEvent.READ_FIELD")) {
     violations.push(`${rel(lobbyFile)} must read lobby option switches through option entry`);
@@ -130,7 +143,11 @@ function checkLobbyEntry() {
     violations.push(`${rel(lobbyFile)} rerun must report LobbyEvent.PAGE_READY through one helper`);
   }
   const lobbyTestFile = path.join(root, "src/pages/lobby-automation.test.js");
-  const lobbyTestText = fs.existsSync(lobbyTestFile) ? fs.readFileSync(lobbyTestFile, "utf8") : "";
+  const isekaiLobbyTestFile = path.join(root, "src/pages/lobby-automation-isekai.test.js");
+  const lobbyTestText = [
+    lobbyTestFile,
+    isekaiLobbyTestFile,
+  ].filter((file) => fs.existsSync(file)).map((file) => fs.readFileSync(file, "utf8")).join("\n");
   if (
     !lobbyTestText.includes("rejects invalid lobby events without running lobby flow") ||
     !lobbyTestText.includes("runLobbyAutomation(null)")
@@ -152,9 +169,22 @@ function checkLobbyEntry() {
   ) {
     violations.push(`${rel(lobbyTestFile)} must cover malformed encounter claim evidence`);
   }
+  for (const required of [
+    "routes isekai lobby flow without encounter orchestration",
+    "reruns the isekai lobby workflow without falling back to main encounter flow",
+    "runEncounterAutomation).not.toHaveBeenCalled()",
+    "LobbyEvent.ISEKAI_PAGE_READY",
+  ]) {
+    if (!lobbyTestText.includes(required)) {
+      violations.push(`${rel(lobbyTestFile)} must cover isekai lobby identity flow: ${required}`);
+    }
+  }
   const pageText = fs.readFileSync(path.join(root, "src/pages/page-automation.js"), "utf8");
   if (!pageText.includes("LobbyEvent.PAGE_READY")) {
     violations.push("src/pages/page-automation.js must report LobbyEvent.PAGE_READY");
+  }
+  if (!pageText.includes("LobbyEvent.ISEKAI_PAGE_READY")) {
+    violations.push("src/pages/page-automation.js must report LobbyEvent.ISEKAI_PAGE_READY");
   }
   if (/runLobbyAutomation\(\s*\)/.test(pageText)) {
     violations.push("src/pages/page-automation.js must not call no-arg lobby entry");

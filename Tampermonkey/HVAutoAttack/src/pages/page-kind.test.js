@@ -44,6 +44,13 @@ describe("runPageKindAutomation", () => {
         location: locationWith(),
       })
     ).toBe(PageKind.LOBBY);
+    expect(
+      runPageKindAutomation({
+        type: PageKindEvent.DETECT_CURRENT,
+        document: docWith('<div id="navbar"></div>'),
+        location: locationWith({ pathname: "/isekai/" }),
+      })
+    ).toBe(PageKind.ISEKAI_LOBBY);
   });
 
   it("detects equipment pages and unknown pages", () => {

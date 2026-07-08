@@ -109,9 +109,9 @@ function planNextEncounterCheck(state, { nowMs = Date.now(), jitter = Math.rando
   return { delayMs, reason: clock.reason, status: clock.status, clock };
 }
 
-function planEncounterActivation(state, { force: _force = false, nowMs = Date.now(), isIsekai = false } = {}) {
+function planEncounterActivation(state, { force: _force = false, nowMs = Date.now() } = {}) {
   const readiness = readEncounterReadiness(state, nowMs);
-  return planEncounterEntryRoute(readiness, { isIsekai });
+  return planEncounterEntryRoute(readiness);
 }
 
 function markEncounterKeyAvailable(state, key, nowMs = Date.now()) {
@@ -153,7 +153,7 @@ const encounterPolicyEventHandlers = Object.freeze({
   [EncounterPolicyEvent.NORMALIZE]: (event) => normalizeEncounterState(event.state, event.nowMs),
   [EncounterPolicyEvent.READ_CLOCK]: (event) => readEncounterClock(event.state, event.nowMs),
   [EncounterPolicyEvent.PLAN_NEXT_CHECK]: (event) => planNextEncounterCheck(event.state, { nowMs: event.nowMs, jitter: event.jitter }),
-  [EncounterPolicyEvent.PLAN_ACTIVATION]: (event) => planEncounterActivation(event.state, { force: event.force, nowMs: event.nowMs, isIsekai: event.isIsekai }),
+  [EncounterPolicyEvent.PLAN_ACTIVATION]: (event) => planEncounterActivation(event.state, { force: event.force, nowMs: event.nowMs }),
   [EncounterPolicyEvent.PARSE_SEARCH_KEY]: (event) => parseSearchEncounterKey(event.search),
   [EncounterPolicyEvent.PARSE_EVENTPANE_KEY]: (event) => parseEventpaneEncounterKey(event.eventpane),
   [EncounterPolicyEvent.MARK_KEY_AVAILABLE]: (event) => markEncounterKeyAvailable(event.state, event.key, event.nowMs),

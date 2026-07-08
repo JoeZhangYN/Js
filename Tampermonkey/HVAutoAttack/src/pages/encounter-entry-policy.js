@@ -6,15 +6,7 @@ export const parseSearchEncounterKey = (search = "") => /\?s=Battle&ss=ba&encoun
 
 export const parseEventpaneEncounterKey = (eventpane = "") => eventpane.match(/\?s=Battle&amp;ss=ba&amp;encounter=([A-Za-z0-9=]+)/)?.[1];
 
-export function planEncounterEntryRoute(readiness, { isIsekai = false } = {}) {
-  if (isIsekai) {
-    return {
-      action: "none",
-      handled: false,
-      recovery: "isekaiEncounterSuppressed",
-      state: readiness.state,
-    };
-  }
+export function planEncounterEntryRoute(readiness) {
   if (readiness.canEnter) {
     return {
       action: "enter",

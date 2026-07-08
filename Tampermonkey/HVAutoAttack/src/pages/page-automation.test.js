@@ -33,7 +33,7 @@ vi.mock("./equipment-view-automation.js", () => ({
 }));
 vi.mock("./riddle-automation.js", () => ({ runRiddleAutomation: mocks.runRiddleAutomation }));
 vi.mock("./lobby-automation.js", () => ({
-  LobbyEvent: Object.freeze({ PAGE_READY: "pageReady" }),
+  LobbyEvent: Object.freeze({ PAGE_READY: "pageReady", ISEKAI_PAGE_READY: "isekaiPageReady" }),
   runLobbyAutomation: mocks.runLobbyAutomation,
 }));
 vi.mock("../battle/battle-automation.js", () => ({
@@ -84,9 +84,11 @@ describe("runPageAutomation", () => {
   it("routes battle and lobby game pages through their page entries", () => {
     runPageAutomation({ type: PageAutomationEvent.PAGE_READY, kind: PageKind.BATTLE });
     runPageAutomation({ type: PageAutomationEvent.PAGE_READY, kind: PageKind.LOBBY });
+    runPageAutomation({ type: PageAutomationEvent.PAGE_READY, kind: PageKind.ISEKAI_LOBBY });
 
     expect(mocks.runBattleAutomation).toHaveBeenCalledWith({ type: "pageReady" });
     expect(mocks.runLobbyAutomation).toHaveBeenCalledWith({ type: "pageReady" });
+    expect(mocks.runLobbyAutomation).toHaveBeenCalledWith({ type: "isekaiPageReady" });
   });
 
   it("stops routing when cross-site encounter navigation handles the page", () => {

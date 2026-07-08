@@ -11,13 +11,17 @@ import { AbilityAoeEvent, runAbilityAoeAutomation } from "./ability-page.js";
 import { BattleRuntimeEvent, runBattleRuntimeAutomation } from "../battle/battle-runtime.js";
 
 const EVENT_PAGE_READY = "pageReady";
+const EVENT_ISEKAI_PAGE_READY = "isekaiPageReady";
 
 export const LobbyEvent = Object.freeze({
   PAGE_READY: EVENT_PAGE_READY,
+  ISEKAI_PAGE_READY: EVENT_ISEKAI_PAGE_READY,
 });
 
 const lobbyEventHandlers = Object.freeze({
-  [EVENT_PAGE_READY]: () => runLobbyReadyFlow(),
+  [EVENT_PAGE_READY]: () => runLobbyReadyFlow(LOBBY_READY_FLOW_STEPS, rerunLobbyPageReady),
+  [EVENT_ISEKAI_PAGE_READY]: () =>
+    runLobbyReadyFlow(ISEKAI_LOBBY_READY_FLOW_STEPS, rerunIsekaiLobbyPageReady),
 });
 
 const LOBBY_READY_FLOW_STEPS = [
@@ -26,6 +30,15 @@ const LOBBY_READY_FLOW_STEPS = [
   captureLobbyAbilityPage,
   runQuickSiteLobbyReady,
   handleLobbyEncounter,
+  stopWhenStaminaRequires,
+  runNextBattleAutomation,
+];
+
+const ISEKAI_LOBBY_READY_FLOW_STEPS = [
+  clearBattleSession,
+  refreshLobbyDayRecord,
+  captureLobbyAbilityPage,
+  runQuickSiteLobbyReady,
   stopWhenStaminaRequires,
   runNextBattleAutomation,
 ];
@@ -51,15 +64,19 @@ function rerunLobbyPageReady() {
   return runLobbyAutomation({ type: EVENT_PAGE_READY });
 }
 
+function rerunIsekaiLobbyPageReady() {
+  return runLobbyAutomation({ type: EVENT_ISEKAI_PAGE_READY });
+}
+
 function clearBattleSession() {
   runBattleRuntimeAutomation({ type: BattleRuntimeEvent.CLEAR_SESSION });
   return false;
 }
 
-function refreshLobbyDayRecord() {
+function refreshLobbyDayRecord(context) {
   runDayRecordAutomation({
     type: DayRecordEvent.REFRESH_AND_SCHEDULE_NEXT_UTC_DAY,
-    rerun: rerunLobbyPageReady,
+    rerun: context.rerun,
   });
   return false;
 }
@@ -87,9 +104,10 @@ function stopWhenStaminaRequires() {
   return shouldStopForStamina();
 }
 
-async function runLobbyReadyFlow() {
-  for (const step of LOBBY_READY_FLOW_STEPS) {
-    if (await step()) return;
+async function runLobbyReadyFlow(steps, rerun) {
+  const context = { rerun };
+  for (const step of steps) {
+    if (await step(context)) return;
   }
 }
 
