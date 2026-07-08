@@ -6,12 +6,17 @@ import { IDLE_ARENA_FAILURE_KEY } from "./idle-arena-failure.js";
 
 const mocks = vi.hoisted(() => ({
   post: vi.fn(),
+  runDiagnosticConsoleAutomation: vi.fn(),
   runOptionAutomation: vi.fn(),
   runNavigationAutomation: vi.fn(),
   setValue: vi.fn(),
 }));
 
 vi.mock("../dom/http.js", () => ({ post: mocks.post }));
+vi.mock("../core/diagnostic-console.js", () => ({
+  DiagnosticConsoleEvent: Object.freeze({ WARN: "warn" }),
+  runDiagnosticConsoleAutomation: mocks.runDiagnosticConsoleAutomation,
+}));
 vi.mock("../core/navigate.js", () => ({
   NavigationEvent: Object.freeze({ RELOAD_NOW: "reloadNow" }),
   NavigationReloadReason: Object.freeze({ PAGE_REFRESH: "pageRefresh" }),
@@ -33,6 +38,7 @@ beforeEach(() => {
   vi.useFakeTimers();
   vi.restoreAllMocks();
   mocks.post.mockReset();
+  mocks.runDiagnosticConsoleAutomation.mockReset();
   mocks.runOptionAutomation.mockReset();
   mocks.runNavigationAutomation.mockReset();
   mocks.setValue.mockReset();
@@ -70,9 +76,7 @@ describe("runIdleArenaAutomation failure fallback", () => {
         if (key === IDLE_ARENA_FAILURE_KEY) throw new Error("quota");
       }),
     });
-    vi.spyOn(console, "warn").mockImplementation(() => {
-      throw new Error("console blocked");
-    });
+    mocks.runDiagnosticConsoleAutomation.mockImplementation(() => false);
     mocks.runOptionAutomation.mockImplementation((event) => {
       if (event.key === "idleArenaGrTime") return 0;
       return event.fallback;
@@ -97,7 +101,6 @@ describe("runIdleArenaAutomation failure fallback", () => {
     mocks.setValue.mockImplementation(() => {
       throw new Error("arena write blocked");
     });
-    vi.spyOn(console, "warn").mockImplementation(() => {});
     mocks.runOptionAutomation.mockImplementation((event) => {
       if (event.key === "idleArenaGrTime") return 0;
       return event.fallback;
@@ -113,10 +116,13 @@ describe("runIdleArenaAutomation failure fallback", () => {
     expect(mocks.setValue).toHaveBeenCalled();
     expect(mocks.setValue.mock.results.some((result) => result.type === "throw")).toBe(true);
     expect(vi.getTimerCount()).toBe(0);
-    expect(console.warn).toHaveBeenCalledWith(
-      "[HVAA] idle arena request failed",
-      expect.objectContaining({ stage: "token-persist" })
-    );
+    expect(mocks.runDiagnosticConsoleAutomation).toHaveBeenCalledWith({
+      type: "warn",
+      args: [
+        "[HVAA] idle arena request failed",
+        expect.objectContaining({ stage: "token-persist" }),
+      ],
+    });
   });
 
   it("records battle-start progress persistence failure without throwing from callback", () => {
@@ -132,7 +138,6 @@ describe("runIdleArenaAutomation failure fallback", () => {
     mocks.setValue.mockImplementation(() => {
       throw new Error("arena write blocked");
     });
-    vi.spyOn(console, "warn").mockImplementation(() => {});
     mocks.runOptionAutomation.mockImplementation((event) => {
       if (event.key === "idleArenaValue") return "1";
       return event.fallback;
@@ -142,10 +147,13 @@ describe("runIdleArenaAutomation failure fallback", () => {
     expect(() => runIdleArenaAutomation({ type: IdleArenaEvent.START_NEXT_BATTLE })).not.toThrow();
     expect(mocks.setValue).toHaveBeenCalled();
     expect(mocks.setValue.mock.results.some((result) => result.type === "throw")).toBe(true);
-    expect(console.warn).toHaveBeenCalledWith(
-      "[HVAA] idle arena request failed",
-      expect.objectContaining({ stage: "battle-start-persist" })
-    );
+    expect(mocks.runDiagnosticConsoleAutomation).toHaveBeenCalledWith({
+      type: "warn",
+      args: [
+        "[HVAA] idle arena request failed",
+        expect.objectContaining({ stage: "battle-start-persist" }),
+      ],
+    });
     expect(mocks.runNavigationAutomation).not.toHaveBeenCalled();
   });
 });

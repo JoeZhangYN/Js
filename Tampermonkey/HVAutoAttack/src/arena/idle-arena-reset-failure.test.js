@@ -1,10 +1,21 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
+const mocks = vi.hoisted(() => ({
+  runDiagnosticConsoleAutomation: vi.fn(),
+}));
+
+vi.mock("../core/diagnostic-console.js", () => ({
+  DiagnosticConsoleEvent: Object.freeze({ WARN: "warn" }),
+  runDiagnosticConsoleAutomation: mocks.runDiagnosticConsoleAutomation,
+}));
+
 import { IdleArenaEvent, runIdleArenaAutomation } from "./idle-arena.js";
 import { IDLE_ARENA_FAILURE_KEY } from "./idle-arena-failure.js";
 
 beforeEach(() => {
   vi.unstubAllGlobals();
   sessionStorage.clear();
+  mocks.runDiagnosticConsoleAutomation.mockReset();
   vi.restoreAllMocks();
 });
 
@@ -21,7 +32,6 @@ describe("idle arena reset failure", () => {
         throw new Error("arena delete blocked");
       })
     );
-    vi.spyOn(console, "warn").mockImplementation(() => {});
 
     expect(runIdleArenaAutomation({ type: IdleArenaEvent.RESET_PROGRESS })).toBe(false);
 
@@ -31,6 +41,13 @@ describe("idle arena reset failure", () => {
       source: "idleArena",
       stage: "reset-progress",
       failure: { kind: "storageDelete", error: "arena delete blocked" },
+    });
+    expect(mocks.runDiagnosticConsoleAutomation).toHaveBeenCalledWith({
+      type: "warn",
+      args: [
+        "[HVAA] idle arena request failed",
+        expect.objectContaining({ stage: "reset-progress" }),
+      ],
     });
   });
 });

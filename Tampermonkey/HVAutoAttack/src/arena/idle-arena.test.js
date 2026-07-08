@@ -5,9 +5,14 @@ import { STORAGE_KEYS } from "../state/persist-keys.js";
 
 const mocks = vi.hoisted(() => ({
   post: vi.fn(),
+  runDiagnosticConsoleAutomation: vi.fn(),
   runOptionAutomation: vi.fn(),
 }));
 
+vi.mock("../core/diagnostic-console.js", () => ({
+  DiagnosticConsoleEvent: Object.freeze({ WARN: "warn" }),
+  runDiagnosticConsoleAutomation: mocks.runDiagnosticConsoleAutomation,
+}));
 vi.mock("../dom/http.js", () => ({ post: mocks.post }));
 vi.mock("../state/option.js", () => ({
   OptionEvent: Object.freeze({
@@ -21,6 +26,7 @@ beforeEach(() => {
   vi.useRealTimers();
   vi.restoreAllMocks();
   mocks.post.mockReset();
+  mocks.runDiagnosticConsoleAutomation.mockReset();
   mocks.runOptionAutomation.mockReset();
 });
 
@@ -81,7 +87,6 @@ describe("runIdleArenaAutomation", () => {
   it("records token fetch request failures and stops waiting for all token pages", async () => {
     vi.useFakeTimers();
     const failure = { kind: "networkError", href: "?s=Battle&ss=gr", retries: 4 };
-    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
     mocks.runOptionAutomation.mockImplementation((event) => {
       if (event.key === "idleArenaGrTime") return 0;
       return event.fallback;
@@ -105,15 +110,17 @@ describe("runIdleArenaAutomation", () => {
       stage: "token-fetch",
       failure,
     });
-    expect(warn).toHaveBeenCalledWith(
-      "[HVAA] idle arena request failed",
-      expect.objectContaining({ stage: "token-fetch", failure })
-    );
+    expect(mocks.runDiagnosticConsoleAutomation).toHaveBeenCalledWith({
+      type: "warn",
+      args: [
+        "[HVAA] idle arena request failed",
+        expect.objectContaining({ stage: "token-fetch", failure }),
+      ],
+    });
   });
 
   it("records battle start request failures without advancing arena progress", () => {
     const failure = { kind: "httpStatus", href: "?s=Battle&ss=ar", status: 500 };
-    vi.spyOn(console, "warn").mockImplementation(() => {});
     setValue(STORAGE_KEYS.ARENA, {
       date: currentUtcDateKey(),
       gr: 0,

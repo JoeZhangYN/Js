@@ -121,6 +121,9 @@ for (const required of [
 }
 for (const required of [
   "IDLE_ARENA_FAILURE_KEY",
+  "DiagnosticConsoleEvent",
+  "runDiagnosticConsoleAutomation",
+  "DiagnosticConsoleEvent.WARN",
   "persistIdleArenaProgress",
   "clearPersistedIdleArenaProgress",
   "stage",
@@ -133,6 +136,11 @@ for (const required of [
   if (!failureOwnerText.includes(required)) {
     violations.push(`${failureOwner.replaceAll("\\", "/")} must own ${required}`);
   }
+}
+if (/\bconsole\.(?:warn|error|log|info|debug)\s*\(/.test(failureOwnerText)) {
+  violations.push(
+    `${failureOwner.replaceAll("\\", "/")} idle arena diagnostics must use runDiagnosticConsoleAutomation(event)`
+  );
 }
 for (const required of [
   'IDLE_ARENA_FAILURE: "HVAA:lastIdleArenaFailure"',
@@ -229,6 +237,7 @@ if (!fs.existsSync(path.join(root, ownerTest))) {
     "records battle start request failures without advancing arena progress",
     "HVAA:lastIdleArenaFailure",
     "[HVAA] idle arena request failed",
+    "runDiagnosticConsoleAutomation",
     'capability: "idleArena"',
     'stage: "token-fetch"',
     'stage: "battle-start"',
@@ -248,7 +257,8 @@ if (!fs.existsSync(path.join(root, ownerTest))) {
     "IDLE_ARENA_FAILURE_KEY",
     'throw new Error("quota")',
     'throw new Error("arena write blocked")',
-    'throw new Error("console blocked")',
+    "runDiagnosticConsoleAutomation",
+    "mockImplementation(() => false)",
     "expect(vi.getTimerCount()).toBe(0)",
     'stage: "token-fetch"',
     'stage: "token-persist"',
@@ -266,6 +276,7 @@ if (!fs.existsSync(path.join(root, ownerTest))) {
     'throw new Error("arena delete blocked")',
     'stage: "reset-progress"',
     'failure: { kind: "storageDelete", error: "arena delete blocked" }',
+    "runDiagnosticConsoleAutomation",
   ]) {
     if (!resetFailureTestText.includes(required)) {
       violations.push(`${resetFailureTest.replaceAll("\\", "/")} must cover ${required}`);
