@@ -3,6 +3,10 @@ import {
   NavigationReloadReason,
   runNavigationAutomation,
 } from "../core/navigate.js";
+import {
+  DiagnosticConsoleEvent,
+  runDiagnosticConsoleAutomation,
+} from "../core/diagnostic-console.js";
 import { readRecentDiagnosticEvidence } from "../core/diagnostic-evidence.js";
 import { BattlePauseEvent, runBattlePauseAutomation } from "./pause-automation.js";
 import {
@@ -133,7 +137,11 @@ export function runBattleApiResponseRecovery(
         detail: state,
       }),
     readDiagnosticEvidence: () => readRecentDiagnosticEvidence(window.sessionStorage),
-    warn: (...args) => console.warn(...args),
+    warn: (...args) =>
+      runDiagnosticConsoleAutomation({
+        type: DiagnosticConsoleEvent.WARN,
+        args,
+      }),
   }
 ) {
   return (

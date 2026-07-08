@@ -343,6 +343,8 @@ const recoveryText = requireText(recovery, [
   "buildRejectedRecoveryState",
   "handleRejectedApiResponse",
   "recordRecoveryEffectResult",
+  "DiagnosticConsoleEvent.WARN",
+  "runDiagnosticConsoleAutomation",
   '"reloadResult"',
   '"pauseResult"',
   '"reloadError"',
@@ -354,6 +356,11 @@ const recoveryText = requireText(recovery, [
   "deps.reload(state)",
   "repeatCount >= REPEAT_PAUSE_THRESHOLD",
 ]);
+if (/\bwarn:\s*\(\.\.\.args\)\s*=>\s*console\.warn\(\.\.\.args\)/.test(recoveryText)) {
+  violations.push(
+    `${recovery} default recovery diagnostics must use runDiagnosticConsoleAutomation(event)`
+  );
+}
 const recoveryStateText = requireText(recoveryState, [
   "DiagnosticEvidenceKey.BATTLE_API_RESPONSE_RECOVERY",
   "API_RECOVERY_SESSION_KEY",
