@@ -15,6 +15,10 @@ import { RiddleStatsEvent, runRiddleStatsAutomation } from "../state/riddle-stat
 import { RiddleImageEvent, runRiddleImageAutomation } from "./riddle-image.js";
 import { TimeEvent, runTimeAutomation } from "../core/time.js";
 import { OptionEvent, runOptionAutomation } from "../state/option.js";
+import {
+  DiagnosticConsoleEvent,
+  runDiagnosticConsoleAutomation,
+} from "../core/diagnostic-console.js";
 
 const ML_ENDPOINT_DEFAULT = "https://rdma.ooguy.com/help2";
 const STATUS_ENDPOINT = "https://rdma.ooguy.com/status";
@@ -56,6 +60,18 @@ function mlHealthErrorText(error) {
   return error?.message || String(error);
 }
 
+const riddleMlConsoleEvents = Object.freeze({
+  warn: DiagnosticConsoleEvent.WARN,
+  error: DiagnosticConsoleEvent.ERROR,
+  info: DiagnosticConsoleEvent.INFO,
+});
+
+function runRiddleMlConsole(method, ...args) {
+  const type = riddleMlConsoleEvents[method];
+  if (!type) return false;
+  return runDiagnosticConsoleAutomation({ type, args });
+}
+
 function recordRiddleMlHealthFailure(stage, reason, detail = {}) {
   const evidence = {
     capability: "riddleMlHealth",
@@ -65,14 +81,10 @@ function recordRiddleMlHealthFailure(stage, reason, detail = {}) {
   };
   try {
     globalThis.sessionStorage?.setItem(RIDDLE_ML_HEALTH_FAILURE_KEY, JSON.stringify(evidence));
-  } catch (_error) {
+  } catch {
     // Health recovery must not depend on diagnostic storage.
   }
-  try {
-    console.warn("[HVAA][RMA] health check failed", evidence);
-  } catch (_error) {
-    // Console hooks are diagnostic only.
-  }
+  runRiddleMlConsole("warn", "[HVAA][RMA] health check failed", evidence);
   return evidence;
 }
 
@@ -86,14 +98,10 @@ function recordRiddleMlAnswerFallback(stage, reason, detail = {}) {
   };
   try {
     globalThis.sessionStorage?.setItem(RIDDLE_ML_ANSWER_FAILURE_KEY, JSON.stringify(evidence));
-  } catch (_error) {
+  } catch {
     // Random answer fallback must not depend on diagnostic storage.
   }
-  try {
-    console.warn("[HVAA][RMA] ML answer fallback", evidence);
-  } catch (_error) {
-    // Console hooks are diagnostic only.
-  }
+  runRiddleMlConsole("warn", "[HVAA][RMA] ML answer fallback", evidence);
   return evidence;
 }
 
@@ -106,16 +114,16 @@ function runRiddleMlAnswerFallbackDiagnostic(stage, run) {
 }
 
 function warnRiddleMlAnswerConsole(method, ...args) {
-  runRiddleMlAnswerFallbackDiagnostic("answerConsole", () => console[method](...args));
+  runRiddleMlAnswerFallbackDiagnostic("answerConsole", () => {
+    if (!runRiddleMlConsole(method, ...args)) throw new Error("diagnostic console blocked");
+  });
 }
 
 function warnRiddleMlHealthConsole(method, ...args) {
-  try {
-    console[method](...args);
-  } catch (error) {
+  if (!runRiddleMlConsole(method, ...args)) {
     recordRiddleMlHealthFailure("healthConsole", "consoleFailed", {
       method,
-      error: mlHealthErrorText(error),
+      error: "diagnostic console blocked",
     });
   }
 }
@@ -571,9 +579,11 @@ async function tryMLAnswer() {
     return context.answer;
   } catch (err) {
     recordRiddleMlAnswerFallback("answerFlow", "exception", { error: mlHealthErrorText(err) });
-    runRiddleMlAnswerFallbackDiagnostic("answerFlowConsole", () =>
-      console.error("[HVAA][RMA] tryMLAnswer error", err)
-    );
+    runRiddleMlAnswerFallbackDiagnostic("answerFlowConsole", () => {
+      if (!runRiddleMlConsole("error", "[HVAA][RMA] tryMLAnswer error", err)) {
+        throw new Error("diagnostic console blocked");
+      }
+    });
     runRiddleMlAnswerFallbackDiagnostic("answerFlowStats", () => {
       reportMlDetail("exception " + mlHealthErrorText(err));
       reportMlOutcome("exception");

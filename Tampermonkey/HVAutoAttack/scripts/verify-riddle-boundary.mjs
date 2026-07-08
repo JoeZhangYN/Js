@@ -652,16 +652,19 @@ function checkRiddleMlEntry() {
     }
   }
   const ownerTest = path.normalize("src/pages/riddle-ml.test.js");
+  const ownerDiagnosticTest = path.normalize("src/pages/riddle-ml-diagnostic.test.js");
   const requestFallbackTest = path.normalize("src/pages/riddle-ml-request-fallback.test.js");
   const healthFailureTest = path.normalize("src/pages/riddle-ml-health-failure.test.js");
-  const ownerTestText = fs.existsSync(path.join(root, ownerTest))
-    ? fs.readFileSync(path.join(root, ownerTest), "utf8")
-    : "";
+  const healthDiagnosticTest = path.normalize("src/pages/riddle-ml-health-diagnostic.test.js");
+  const ownerTestText = [ownerTest, ownerDiagnosticTest]
+    .filter((file) => fs.existsSync(path.join(root, file)))
+    .map((file) => fs.readFileSync(path.join(root, file), "utf8"))
+    .join("\n");
   if (
     !ownerTestText.includes(
       "rejects unknown and null ML events without starting health checks or answering"
     ) ||
-    !ownerTestText.includes("keeps disabled ML fallback when answer warning console is blocked") ||
+    !ownerTestText.includes("keeps disabled ML fallback when answer typed warning is blocked") ||
     !ownerTestText.includes("runRiddleMlAutomation(null)") ||
     !ownerTestText.includes("readOption).not.toHaveBeenCalled()")
   ) {
@@ -670,9 +673,10 @@ function checkRiddleMlEntry() {
   const requestFallbackTestText = fs.existsSync(path.join(root, requestFallbackTest))
     ? fs.readFileSync(path.join(root, requestFallbackTest), "utf8")
     : "";
-  const healthFailureTestText = fs.existsSync(path.join(root, healthFailureTest))
-    ? fs.readFileSync(path.join(root, healthFailureTest), "utf8")
-    : "";
+  const healthFailureTestText = [healthFailureTest, healthDiagnosticTest]
+    .filter((file) => fs.existsSync(path.join(root, file)))
+    .map((file) => fs.readFileSync(path.join(root, file), "utf8"))
+    .join("\n");
   for (const required of [
     "resolves to random fallback when ML onload response handling throws",
     "classifies ML POST transport errors and resolves to random fallback",
@@ -684,10 +688,10 @@ function checkRiddleMlEntry() {
     "responseHeaders: {}",
     "onerror status=0",
     "timeout (>12s)",
-    "keeps duplicate ML requests random when fallback evidence and warning both fail",
+    "keeps duplicate ML requests random when fallback evidence and typed warning both fail",
     "keeps unhandled answer flow exceptions random when diagnostics fail",
     'throw new Error("quota")',
-    'throw new Error("console blocked")',
+    "runDiagnosticConsoleAutomation",
     'throw new Error("stats blocked")',
     'throw new Error("alarm blocked")',
     "resolves.toBeNull()",
@@ -700,17 +704,17 @@ function checkRiddleMlEntry() {
     "RIDDLE_ML_HEALTH_FAILURE_KEY",
     "records HEAD non-200 health evidence without blocking the health timer",
     "records GM storage failures instead of letting health state writes reject",
-    "isolates console hook failures during health diagnostics",
+    "isolates typed console failures during health diagnostics",
     "records request startup failures from the health HEAD adapter",
     "records health timer scheduling failures and allows a retry",
-    "keeps health timer running when failure evidence and warning both fail",
+    "keeps health timer running when failure evidence and typed warning both fail",
     "requestStartFailed",
     "timerScheduleFailed",
     "gmSetFailed",
     "consoleFailed",
     'throw new Error("timer blocked")',
     'throw new Error("quota")',
-    'throw new Error("console blocked")',
+    "diagnostic console blocked",
     "not.toThrow()",
   ]) {
     if (!healthFailureTestText.includes(required)) {
@@ -720,9 +724,14 @@ function checkRiddleMlEntry() {
   for (const required of [
     "RIDDLE_ML_HEALTH_FAILURE_KEY",
     "RIDDLE_ML_ANSWER_FAILURE_KEY",
+    "DiagnosticConsoleEvent.WARN",
+    "DiagnosticConsoleEvent.ERROR",
+    "DiagnosticConsoleEvent.INFO",
+    "runDiagnosticConsoleAutomation",
     "recordRiddleMlHealthFailure",
     "recordRiddleMlAnswerFallback",
     "runRiddleMlAnswerFallbackDiagnostic",
+    "runRiddleMlConsole",
     "warnRiddleMlAnswerConsole",
     "readRiddleMlHealthValue",
     "writeRiddleMlHealthValue",
@@ -732,6 +741,11 @@ function checkRiddleMlEntry() {
     if (!ownerText.includes(required)) {
       violations.push(`${rel(riddleMlFile)} must own ${required}`);
     }
+  }
+  if (/\bconsole\.(?:log|warn|error|info|debug)\s*\(/.test(ownerText)) {
+    violations.push(
+      `${rel(riddleMlFile)} must route ML diagnostics through the typed diagnostic console entry`
+    );
   }
   if (!/globalThis\.sessionStorage\?\.setItem\(RIDDLE_ML_HEALTH_FAILURE_KEY/.test(ownerText)) {
     violations.push(`${rel(riddleMlFile)} must persist ML health failure evidence`);

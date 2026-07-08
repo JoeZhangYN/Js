@@ -82,19 +82,6 @@ describe("riddle ML entry", () => {
     expect(mocks.gmXhr).not.toHaveBeenCalled();
   });
 
-  it("keeps disabled ML fallback when answer warning console is blocked", async () => {
-    vi.spyOn(console, "warn").mockImplementation(() => {
-      throw new Error("console blocked");
-    });
-    runOptionAutomation({ type: OptionEvent.WRITE, option: { version: "10.0", mlAnswer: false } });
-
-    await expect(runRiddleMlAutomation({ type: RiddleMlEvent.TRY_ANSWER })).resolves.toBeNull();
-
-    expectAnswerFailure("disabled");
-    expect(mocks.runRiddleImageAutomation).not.toHaveBeenCalled();
-    expect(mocks.gmXhr).not.toHaveBeenCalled();
-  });
-
   it("runs the ML answer attempt as payload, request, and outcome flow", async () => {
     runOptionAutomation({
       type: OptionEvent.WRITE,

@@ -2,9 +2,15 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
   gmXhr: vi.fn(),
+  runDiagnosticConsoleAutomation: vi.fn(),
   runAlarmAutomation: vi.fn(),
   runRiddleImageAutomation: vi.fn(),
   runRiddleStatsAutomation: vi.fn(),
+}));
+
+vi.mock("../core/diagnostic-console.js", () => ({
+  DiagnosticConsoleEvent: Object.freeze({ WARN: "warn", ERROR: "error", INFO: "info" }),
+  runDiagnosticConsoleAutomation: mocks.runDiagnosticConsoleAutomation,
 }));
 
 vi.mock("../dom/gm-xhr.js", () => ({
@@ -55,6 +61,7 @@ beforeEach(() => {
   delete globalThis.GM_getValue;
   delete globalThis.GM_setValue;
   vi.clearAllMocks();
+  mocks.runDiagnosticConsoleAutomation.mockReturnValue(true);
   vi.useFakeTimers();
   vi.setSystemTime(new Date("2026-07-02T02:00:00Z"));
 });
@@ -100,26 +107,6 @@ describe("riddle ML health failure evidence", () => {
     });
   });
 
-  it("isolates console hook failures during health diagnostics", async () => {
-    const { RIDDLE_ML_HEALTH_FAILURE_KEY, RiddleMlEvent, runRiddleMlAutomation } =
-      await loadSubject();
-    vi.spyOn(console, "warn").mockImplementation(() => {
-      throw new Error("console blocked");
-    });
-    mocks.gmXhr.mockImplementation(({ onload }) => onload({ status: 503 }));
-
-    expect(runRiddleMlAutomation({ type: RiddleMlEvent.START_HEALTH })).toBe(true);
-    const evidence = await readHealthFailureEvidence(RIDDLE_ML_HEALTH_FAILURE_KEY);
-
-    expect(evidence).toMatchObject({
-      capability: "riddleMlHealth",
-      stage: "healthConsole",
-      reason: "consoleFailed",
-      method: "warn",
-      error: "console blocked",
-    });
-  });
-
   it("records request startup failures from the health HEAD adapter", async () => {
     const { RIDDLE_ML_HEALTH_FAILURE_KEY, RiddleMlEvent, runRiddleMlAutomation } =
       await loadSubject();
@@ -158,16 +145,14 @@ describe("riddle ML health failure evidence", () => {
     expect(vi.getTimerCount()).toBe(1);
   });
 
-  it("keeps health timer running when failure evidence and warning both fail", async () => {
+  it("keeps health timer running when failure evidence and typed warning both fail", async () => {
     const { RIDDLE_ML_HEALTH_FAILURE_KEY, RiddleMlEvent, runRiddleMlAutomation } =
       await loadSubject();
     vi.spyOn(Storage.prototype, "setItem").mockImplementation(function setItem(key, value) {
       if (key === RIDDLE_ML_HEALTH_FAILURE_KEY) throw new Error("quota");
       return Reflect.apply(Storage.prototype.setItem, this, [key, value]);
     });
-    vi.spyOn(console, "warn").mockImplementation(() => {
-      throw new Error("console blocked");
-    });
+    mocks.runDiagnosticConsoleAutomation.mockReturnValue(false);
     mocks.gmXhr.mockImplementation(({ onload }) => onload({ status: 503 }));
 
     expect(() => runRiddleMlAutomation({ type: RiddleMlEvent.START_HEALTH })).not.toThrow();

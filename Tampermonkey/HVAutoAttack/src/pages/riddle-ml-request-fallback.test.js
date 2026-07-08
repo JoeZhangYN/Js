@@ -4,9 +4,15 @@ import { RiddleMlEvent, runRiddleMlAutomation } from "./riddle-ml.js";
 
 const mocks = vi.hoisted(() => ({
   gmXhr: vi.fn(),
+  runDiagnosticConsoleAutomation: vi.fn(),
   runAlarmAutomation: vi.fn(),
   runRiddleImageAutomation: vi.fn(),
   runRiddleStatsAutomation: vi.fn(),
+}));
+
+vi.mock("../core/diagnostic-console.js", () => ({
+  DiagnosticConsoleEvent: Object.freeze({ WARN: "warn", ERROR: "error", INFO: "info" }),
+  runDiagnosticConsoleAutomation: mocks.runDiagnosticConsoleAutomation,
 }));
 
 vi.mock("../dom/gm-xhr.js", () => ({
@@ -37,6 +43,7 @@ beforeEach(() => {
   sessionStorage.clear();
   runOptionAutomation({ type: OptionEvent.CLEAR });
   vi.clearAllMocks();
+  mocks.runDiagnosticConsoleAutomation.mockReturnValue(true);
   mocks.runRiddleImageAutomation.mockResolvedValue({ blob: { size: 12 } });
 });
 
@@ -46,7 +53,6 @@ afterEach(() => {
 
 describe("riddle ML request fallback", () => {
   it("resolves to random fallback when ML onload response handling throws", async () => {
-    vi.spyOn(console, "error").mockImplementation(() => undefined);
     mocks.gmXhr.mockImplementation(({ onload }) => {
       onload({
         status: 200,
@@ -77,7 +83,6 @@ describe("riddle ML request fallback", () => {
   });
 
   it("classifies ML POST transport errors and resolves to random fallback", async () => {
-    vi.spyOn(console, "warn").mockImplementation(() => undefined);
     mocks.gmXhr.mockImplementation(({ onerror }) => {
       onerror({ status: 0, statusText: "CORS blocked" });
     });
@@ -104,7 +109,6 @@ describe("riddle ML request fallback", () => {
   });
 
   it("classifies ML POST timeouts and resolves to random fallback", async () => {
-    vi.spyOn(console, "warn").mockImplementation(() => undefined);
     mocks.gmXhr.mockImplementation(({ ontimeout }) => {
       ontimeout();
     });
@@ -128,14 +132,12 @@ describe("riddle ML request fallback", () => {
     expect(mocks.runAlarmAutomation).toHaveBeenCalledWith({ type: "trigger", kind: "Error" });
   });
 
-  it("keeps duplicate ML requests random when fallback evidence and warning both fail", async () => {
+  it("keeps duplicate ML requests random when fallback evidence and typed warning both fail", async () => {
     vi.spyOn(Storage.prototype, "setItem").mockImplementation(function setItem(key, value) {
       if (key === "HVAA:lastRiddleMlAnswerFailure") throw new Error("quota");
       return Reflect.apply(Storage.prototype.setItem, this, [key, value]);
     });
-    vi.spyOn(console, "warn").mockImplementation(() => {
-      throw new Error("console blocked");
-    });
+    mocks.runDiagnosticConsoleAutomation.mockReturnValue(false);
     mocks.gmXhr.mockImplementation(() => {});
 
     runRiddleMlAutomation({ type: RiddleMlEvent.TRY_ANSWER });
@@ -145,9 +147,7 @@ describe("riddle ML request fallback", () => {
   });
 
   it("keeps unhandled answer flow exceptions random when diagnostics fail", async () => {
-    vi.spyOn(console, "error").mockImplementation(() => {
-      throw new Error("console blocked");
-    });
+    mocks.runDiagnosticConsoleAutomation.mockReturnValue(false);
     mocks.runRiddleImageAutomation.mockRejectedValue(new Error("image pipeline blocked"));
     mocks.runRiddleStatsAutomation.mockImplementation(() => {
       throw new Error("stats blocked");
