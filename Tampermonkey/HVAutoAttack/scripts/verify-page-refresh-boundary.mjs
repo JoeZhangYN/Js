@@ -78,6 +78,8 @@ for (const required of [
   "UNKNOWN_PAGE_READY",
   "UNKNOWN_PAGE_RELOAD_MINUTES",
   "recordPageRefreshFailure",
+  "DiagnosticConsoleEvent.WARN",
+  "runDiagnosticConsoleAutomation",
 ]) {
   if (!ownerText.includes(required)) {
     violations.push(`${owner.replaceAll("\\", "/")} must own ${required} page refresh policy`);
@@ -138,6 +140,11 @@ for (const internal of ["scheduleUnknownPageRefresh(", "scheduleGamePageRefresh(
 if (!/globalThis\.sessionStorage\?\.setItem\(PAGE_REFRESH_FAILURE_KEY/.test(ownerText)) {
   violations.push(`${owner.replaceAll("\\", "/")} must persist page refresh failure evidence`);
 }
+if (/\bconsole\.(?:log|warn|error|info|debug)\s*\(/.test(ownerText)) {
+  violations.push(
+    `${owner.replaceAll("\\", "/")} page refresh diagnostics must use the typed diagnostic console entry`
+  );
+}
 if (
   !/catch\s*\(error\)\s*{[\s\S]*recordPageRefreshFailure\("scheduleReload",\s*"scheduleFailed"/.test(
     ownerText
@@ -160,9 +167,9 @@ for (const required of [
   "HVAA:lastPageRefreshFailure",
   "does not report scheduled reload success when the reload adapter fails",
   "keeps reload scheduling failure evidence when diagnostic console is blocked",
-  "does not report scheduled reload success when failure evidence and warning both fail",
+  "does not report scheduled reload success when failure evidence and diagnostic console both fail",
   'throw new Error("quota")',
-  'throw new Error("console blocked")',
+  "runDiagnosticConsoleAutomation",
   "scheduleFailed",
 ]) {
   if (!testText.includes(required)) {

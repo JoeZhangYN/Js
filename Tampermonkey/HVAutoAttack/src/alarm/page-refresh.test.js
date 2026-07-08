@@ -1,4 +1,14 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+
+const mocks = vi.hoisted(() => ({
+  runDiagnosticConsoleAutomation: vi.fn(),
+}));
+
+vi.mock("../core/diagnostic-console.js", () => ({
+  DiagnosticConsoleEvent: Object.freeze({ WARN: "warn" }),
+  runDiagnosticConsoleAutomation: mocks.runDiagnosticConsoleAutomation,
+}));
+
 import {
   PAGE_REFRESH_FAILURE_KEY,
   PageRefreshEvent,
@@ -8,6 +18,7 @@ import {
 beforeEach(() => {
   sessionStorage.clear();
   vi.restoreAllMocks();
+  mocks.runDiagnosticConsoleAutomation.mockReset();
 });
 
 function lastPageRefreshFailure() {
@@ -109,12 +120,17 @@ describe("runPageRefreshAutomation", () => {
       minutes: 5,
       error: "timer blocked",
     });
+    expect(mocks.runDiagnosticConsoleAutomation).toHaveBeenCalledWith({
+      type: "warn",
+      args: [
+        "[HVAA] page refresh failed",
+        expect.objectContaining({ capability: "pageRefresh", stage: "scheduleReload" }),
+      ],
+    });
   });
 
   it("keeps reload scheduling failure evidence when diagnostic console is blocked", () => {
-    vi.spyOn(console, "warn").mockImplementation(() => {
-      throw new Error("console blocked");
-    });
+    mocks.runDiagnosticConsoleAutomation.mockImplementation(() => false);
 
     expect(
       runPageRefreshAutomation(
@@ -134,14 +150,12 @@ describe("runPageRefreshAutomation", () => {
     });
   });
 
-  it("does not report scheduled reload success when failure evidence and warning both fail", () => {
+  it("does not report scheduled reload success when failure evidence and diagnostic console both fail", () => {
     vi.spyOn(Storage.prototype, "setItem").mockImplementation(function setItem(key, value) {
       if (key === PAGE_REFRESH_FAILURE_KEY) throw new Error("quota");
       return Reflect.apply(Storage.prototype.setItem, this, [key, value]);
     });
-    vi.spyOn(console, "warn").mockImplementation(() => {
-      throw new Error("console blocked");
-    });
+    mocks.runDiagnosticConsoleAutomation.mockImplementation(() => false);
 
     expect(
       runPageRefreshAutomation(

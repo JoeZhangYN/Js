@@ -14,6 +14,10 @@ import {
   NavigationReloadReason,
   runNavigationAutomation,
 } from "../core/navigate.js";
+import {
+  DiagnosticConsoleEvent,
+  runDiagnosticConsoleAutomation,
+} from "../core/diagnostic-console.js";
 import { OptionEvent, runOptionAutomation } from "../state/option.js";
 
 const EVENT_GAME_PAGE_READY = "gamePageReady";
@@ -35,14 +39,13 @@ function recordPageRefreshFailure(stage, reason, detail = {}) {
   const evidence = { capability: "pageRefresh", stage, reason, ...detail };
   try {
     globalThis.sessionStorage?.setItem(PAGE_REFRESH_FAILURE_KEY, JSON.stringify(evidence));
-  } catch (_error) {
+  } catch {
     // Reload scheduling failure handling must not depend on diagnostic storage.
   }
-  try {
-    console.warn("[HVAA] page refresh failed", evidence);
-  } catch (_error) {
-    // Console hooks are diagnostic only.
-  }
+  runDiagnosticConsoleAutomation({
+    type: DiagnosticConsoleEvent.WARN,
+    args: ["[HVAA] page refresh failed", evidence],
+  });
   return evidence;
 }
 
