@@ -1,6 +1,16 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { g } from "../state/store.js";
 import { OptionEvent, runOptionAutomation } from "../state/option.js";
+
+const mocks = vi.hoisted(() => ({
+  runDiagnosticConsoleAutomation: vi.fn(),
+}));
+
+vi.mock("../core/diagnostic-console.js", () => ({
+  DiagnosticConsoleEvent: Object.freeze({ WARN: "warn" }),
+  runDiagnosticConsoleAutomation: mocks.runDiagnosticConsoleAutomation,
+}));
+
 import {
   REPAIR_BACKEND_FAILURE_KEY,
   RepairEvent,
@@ -10,6 +20,7 @@ import {
 beforeEach(() => {
   sessionStorage.clear();
   vi.restoreAllMocks();
+  mocks.runDiagnosticConsoleAutomation.mockReset();
   runOptionAutomation({
     type: OptionEvent.WRITE,
     option: { version: "10.0", idleArena: true, repairValue: 50 },
@@ -21,7 +32,6 @@ beforeEach(() => {
 describe("repair backend failure recovery", () => {
   it("stops idle arena when backend fetch-state fails", () => {
     const failure = { kind: "networkError", href: "?s=Forge&ss=re", retries: 4 };
-    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
     const backend = {
       fetchState: (_cb, onFailure) => onFailure(failure),
       submitRepair: vi.fn(),
@@ -42,18 +52,20 @@ describe("repair backend failure recovery", () => {
       stage: "requestFailure",
       failure,
     });
-    expect(warn).toHaveBeenCalledWith(
-      "[HVAA] repair backend request failed",
-      expect.objectContaining({
-        capability: "repairBackend",
-        stage: "requestFailure",
-      })
-    );
+    expect(mocks.runDiagnosticConsoleAutomation).toHaveBeenCalledWith({
+      type: "warn",
+      args: [
+        "[HVAA] repair backend request failed",
+        expect.objectContaining({
+          capability: "repairBackend",
+          stage: "requestFailure",
+        }),
+      ],
+    });
   });
 
   it("stops idle arena when backend submit-repair fails", () => {
     const failure = { kind: "httpStatus", href: "?s=Forge&ss=re", status: 500 };
-    vi.spyOn(console, "warn").mockImplementation(() => {});
     const backend = {
       fetchState: (cb) => cb({ equips: [{ id: "1", conditionPct: 20, materials: [] }] }),
       submitRepair: (_ids, _cb, onFailure) => onFailure(failure),
@@ -75,9 +87,7 @@ describe("repair backend failure recovery", () => {
   });
 
   it("still stops idle arena when backend failure diagnostics are blocked", () => {
-    vi.spyOn(console, "warn").mockImplementation(() => {
-      throw new Error("console blocked");
-    });
+    mocks.runDiagnosticConsoleAutomation.mockImplementation(() => false);
     const originalSetItem = Storage.prototype.setItem;
     vi.spyOn(Storage.prototype, "setItem").mockImplementation(function setItem(key, value) {
       if (key === REPAIR_BACKEND_FAILURE_KEY) throw new Error("session blocked");

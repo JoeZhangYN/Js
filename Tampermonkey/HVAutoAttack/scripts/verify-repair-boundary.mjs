@@ -4,6 +4,7 @@ import path from "node:path";
 const root = process.cwd();
 const srcDir = path.join(root, "src");
 const owner = path.normalize("src/repair/repair-orchestrator.js");
+const backendFailure = path.normalize("src/repair/repair-backend-failure.js");
 const ownerTest = path.normalize("src/repair/repair-orchestrator.test.js");
 const backendFailureTest = path.normalize("src/repair/repair-orchestrator-backend-failure.test.js");
 const diagnosticKeys = path.normalize("src/core/diagnostic-evidence-keys.js");
@@ -48,6 +49,7 @@ function checkFile(file) {
 walk(srcDir);
 
 const ownerText = fs.readFileSync(path.join(root, owner), "utf8");
+const backendFailureText = fs.readFileSync(path.join(root, backendFailure), "utf8");
 for (const required of ["runRepairAutomation", "RepairEvent"]) {
   if (!ownerText.includes(required)) {
     violations.push(`${owner.replaceAll("\\", "/")} must own ${required}`);
@@ -78,6 +80,15 @@ if (/export\s+function\s+runRepair\s*\(/.test(ownerText)) {
 }
 for (const required of [
   "stopBackendFailure",
+  "recordRepairBackendFailure",
+  "BACKEND_FAIL_MSG",
+  "维修请求失败",
+]) {
+  if (!ownerText.includes(required)) {
+    violations.push(`${owner.replaceAll("\\", "/")} must own backend failure recovery ${required}`);
+  }
+}
+for (const required of [
   "REPAIR_BACKEND_FAILURE_KEY",
   "HVAA:lastRepairBackendFailure",
   'capability: "repairBackend"',
@@ -85,12 +96,24 @@ for (const required of [
   "sessionStorage.setItem(REPAIR_BACKEND_FAILURE_KEY",
   "[HVAA] repair backend request failed",
   "Repair stop recovery must not depend on diagnostic storage.",
-  "Console hooks must not block repair stop recovery.",
-  "维修请求失败",
+  "DiagnosticConsoleEvent.WARN",
+  "runDiagnosticConsoleAutomation",
 ]) {
-  if (!ownerText.includes(required)) {
-    violations.push(`${owner.replaceAll("\\", "/")} must own backend failure recovery ${required}`);
+  if (!backendFailureText.includes(required)) {
+    violations.push(
+      `${backendFailure.replaceAll("\\", "/")} must own backend failure recovery ${required}`
+    );
   }
+}
+if (/\bconsole\.(?:log|warn|error|info|debug)\s*\(/.test(ownerText)) {
+  violations.push(
+    `${owner.replaceAll("\\", "/")} repair diagnostics must use the typed diagnostic console entry`
+  );
+}
+if (/\bconsole\.(?:log|warn|error|info|debug)\s*\(/.test(backendFailureText)) {
+  violations.push(
+    `${backendFailure.replaceAll("\\", "/")} repair diagnostics must use the typed diagnostic console entry`
+  );
 }
 if (!ownerText.includes("OptionEvent.READ_FIELD")) {
   violations.push(`${owner.replaceAll("\\", "/")} must read repair options through option entry`);
@@ -140,7 +163,7 @@ if (!fs.existsSync(path.join(root, backendFailureTest))) {
     "REPAIR_BACKEND_FAILURE_KEY",
     "HVAA:lastRepairBackendFailure",
     "session blocked",
-    "console blocked",
+    "runDiagnosticConsoleAutomation",
     "requestFailure",
     "[HVAA] repair backend request failed",
     "维修请求失败",
