@@ -1947,6 +1947,9 @@ try {
     ALERT_MONSTER_UPGRADE_STOCK_SHORTAGE: 'alertMonsterUpgradeStockShortage',
     ALERT_MOOGLEMAIL_DB_IMPORT_READ_FAILED: 'alertMoogleMailDbImportReadFailed',
     ALERT_MOOGLEMAIL_DB_IMPORT_PARSE_FAILED: 'alertMoogleMailDbImportParseFailed',
+    ALERT_MOOGLEMAIL_COMPOSE_REMOVE_ATTACHED_ITEMS: 'alertMoogleMailComposeRemoveAttachedItems',
+    ALERT_MOOGLEMAIL_COMPOSE_ITEM_COUNT_SHORTAGE: 'alertMoogleMailComposeItemCountShortage',
+    ALERT_MOOGLEMAIL_COMPOSE_RECIPIENT_MISSING: 'alertMoogleMailComposeRecipientMissing',
   });
   var HVUT_FEEDBACK_COPY = Object.freeze({
     equipForumLinkPrompt: { main: '论坛链接:', isekai: 'Forum Link:' },
@@ -1976,6 +1979,18 @@ try {
       main: '解析文件失败\n请选择一个有效的MoogleMail数据库json文件',
       isekai: '解析文件失败\n请选择一个有效的MoogleMail数据库json文件',
     },
+    moogleMailComposeRemoveAttachedItemsAlert: {
+      main: '请移除附加的物品。',
+      isekai: '请移除附加的物品。',
+    },
+    moogleMailComposeItemCountShortageAlert: {
+      main: '物品数量不足',
+      isekai: 'Insufficient number of items',
+    },
+    moogleMailComposeRecipientMissingAlert: {
+      main: '没有收件人',
+      isekai: '没有收件人',
+    },
   });
   var resolve_hvut_feedback_copy = function (key) {
     var copy = HVUT_FEEDBACK_COPY[key] || {};
@@ -2001,7 +2016,10 @@ try {
     }
     if (event?.type === HVUT_FEEDBACK_EVENT.ALERT_MONSTER_UPGRADE_STOCK_SHORTAGE ||
       event?.type === HVUT_FEEDBACK_EVENT.ALERT_MOOGLEMAIL_DB_IMPORT_READ_FAILED ||
-      event?.type === HVUT_FEEDBACK_EVENT.ALERT_MOOGLEMAIL_DB_IMPORT_PARSE_FAILED) {
+      event?.type === HVUT_FEEDBACK_EVENT.ALERT_MOOGLEMAIL_DB_IMPORT_PARSE_FAILED ||
+      event?.type === HVUT_FEEDBACK_EVENT.ALERT_MOOGLEMAIL_COMPOSE_REMOVE_ATTACHED_ITEMS ||
+      event?.type === HVUT_FEEDBACK_EVENT.ALERT_MOOGLEMAIL_COMPOSE_ITEM_COUNT_SHORTAGE ||
+      event?.type === HVUT_FEEDBACK_EVENT.ALERT_MOOGLEMAIL_COMPOSE_RECIPIENT_MISSING) {
       alert(format_hvut_feedback_copy(event.copy, event.values));
       return;
     }
@@ -2064,6 +2082,24 @@ try {
     return run_hvut_user_feedback({
       type: HVUT_FEEDBACK_EVENT.ALERT_MOOGLEMAIL_DB_IMPORT_PARSE_FAILED,
       copy: 'moogleMailDbImportParseFailedAlert',
+    });
+  };
+  var alert_hvut_mooglemail_compose_remove_attached_items = function () {
+    return run_hvut_user_feedback({
+      type: HVUT_FEEDBACK_EVENT.ALERT_MOOGLEMAIL_COMPOSE_REMOVE_ATTACHED_ITEMS,
+      copy: 'moogleMailComposeRemoveAttachedItemsAlert',
+    });
+  };
+  var alert_hvut_mooglemail_compose_item_count_shortage = function () {
+    return run_hvut_user_feedback({
+      type: HVUT_FEEDBACK_EVENT.ALERT_MOOGLEMAIL_COMPOSE_ITEM_COUNT_SHORTAGE,
+      copy: 'moogleMailComposeItemCountShortageAlert',
+    });
+  };
+  var alert_hvut_mooglemail_compose_recipient_missing = function () {
+    return run_hvut_user_feedback({
+      type: HVUT_FEEDBACK_EVENT.ALERT_MOOGLEMAIL_COMPOSE_RECIPIENT_MISSING,
+      copy: 'moogleMailComposeRecipientMissingAlert',
     });
   };
   var create_hvut_current_page_disable_url = function () {
@@ -10649,7 +10685,7 @@ if (get_hvut_mail_page_context().isMoogleMail && $config.settings.moogleMail) {
   // MM WRITE
   if (mailPage.shouldUseHvutCompose) {
     if ($id('mmail_attachremove')) {
-      alert('请移除附加的物品。');
+      alert_hvut_mooglemail_compose_remove_attached_items();
       openUrl(create_hvut_current_page_disable_url(), hvutRedirectReason('HV_UTILS_DISABLE'));
       return;
     }
@@ -10743,11 +10779,11 @@ if (get_hvut_mail_page_context().isMoogleMail && $config.settings.moogleMail) {
           }
         }
         if (selected.some((e) => e.data.count > e.data.stock)) {
-          alert('Insufficient number of items');
+          alert_hvut_mooglemail_compose_item_count_shortage();
           return;
         }
         if (!_mm.write.node.to_name.value) {
-          alert('没有收件人');
+          alert_hvut_mooglemail_compose_recipient_missing();
           return;
         }
         _mm.write.pack.current = true;
@@ -16607,7 +16643,7 @@ if (get_hvut_mail_page_context().isMoogleMail && $config.settings.moogleMail) {
   // MM WRITE
   if (mailPage.shouldUseHvutCompose) {
     if ($id('mmail_attachremove')) {
-      alert('请移除附加的物品。');
+      alert_hvut_mooglemail_compose_remove_attached_items();
       openUrl(create_hvut_current_page_disable_url(), hvutRedirectReason('HV_UTILS_DISABLE'));
       return;
     }
@@ -16661,11 +16697,11 @@ if (get_hvut_mail_page_context().isMoogleMail && $config.settings.moogleMail) {
         return;
       }
       if (selected.some((e) => e.data.count > e.data.stock)) {
-        alert('物品数量不足'); // Insufficient items, kupo!
+        alert_hvut_mooglemail_compose_item_count_shortage();
         return;
       }
       if (!_mm.node.write_to_name.value) {
-        alert('没有收件人');
+        alert_hvut_mooglemail_compose_recipient_missing();
         return;
       }
       _mm.write_pack.current = true;
