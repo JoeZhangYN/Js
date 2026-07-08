@@ -147,17 +147,25 @@ for (const required of [
   "recordIncomingBurstLearningFailure",
   "incomingBurstLearning",
   "persistLearnedIncomingBurst",
+  "DiagnosticConsoleEvent.WARN",
+  "runDiagnosticConsoleAutomation",
   "STORAGE_KEYS.LEARNED_INCOMING_BURST",
 ]) {
   if (!failureOwnerText.includes(required)) {
     violations.push(`${failureOwner.replaceAll("\\", "/")} must own ${required}`);
   }
 }
+if (/\bconsole\.(?:log|warn|error|info|debug)\s*\(/.test(failureOwnerText)) {
+  violations.push(
+    `${failureOwner.replaceAll("\\", "/")} incoming-burst learning diagnostics must use the typed diagnostic console entry`
+  );
+}
 for (const required of [
   "INCOMING_BURST_LEARNING_FAILURE_KEY",
   "update-learned",
   "storageWrite",
   "incoming burst learning write blocked",
+  "runDiagnosticConsoleAutomation",
 ]) {
   if (!failureTestText.includes(required)) {
     violations.push(`${failureTest.replaceAll("\\", "/")} must cover ${required}`);

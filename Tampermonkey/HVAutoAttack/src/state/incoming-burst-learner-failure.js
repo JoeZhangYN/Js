@@ -1,5 +1,9 @@
 import { STORAGE_KEYS } from "./persist-keys.js";
 import { setValue } from "./storage.js";
+import {
+  DiagnosticConsoleEvent,
+  runDiagnosticConsoleAutomation,
+} from "../core/diagnostic-console.js";
 
 export const INCOMING_BURST_LEARNING_FAILURE_KEY = "HVAA:lastIncomingBurstLearningFailure";
 
@@ -11,14 +15,13 @@ export function recordIncomingBurstLearningFailure(stage, error) {
   };
   try {
     sessionStorage.setItem(INCOMING_BURST_LEARNING_FAILURE_KEY, JSON.stringify(evidence));
-  } catch (_error) {
+  } catch {
     // Incoming burst learning evidence is diagnostic only.
   }
-  try {
-    console.warn("[HVAA] incoming burst learning persistence failed", evidence);
-  } catch (_error) {
-    // Console hooks are diagnostic only.
-  }
+  runDiagnosticConsoleAutomation({
+    type: DiagnosticConsoleEvent.WARN,
+    args: ["[HVAA] incoming burst learning persistence failed", evidence],
+  });
   return evidence;
 }
 
