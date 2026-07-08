@@ -1945,6 +1945,8 @@ try {
     CONFIRM_MOOGLEMAIL_MESSAGE_RETURN: 'confirmMoogleMailMessageReturn',
     CONFIRM_MOOGLEMAIL_DB_CLEAR: 'confirmMoogleMailDbClear',
     ALERT_MONSTER_UPGRADE_STOCK_SHORTAGE: 'alertMonsterUpgradeStockShortage',
+    ALERT_MOOGLEMAIL_DB_IMPORT_READ_FAILED: 'alertMoogleMailDbImportReadFailed',
+    ALERT_MOOGLEMAIL_DB_IMPORT_PARSE_FAILED: 'alertMoogleMailDbImportParseFailed',
   });
   var HVUT_FEEDBACK_COPY = Object.freeze({
     equipForumLinkPrompt: { main: '论坛链接:', isekai: 'Forum Link:' },
@@ -1965,6 +1967,14 @@ try {
     monsterUpgradeStockShortageAlert: {
       main: '水晶或混沌令牌不足',
       isekai: '水晶或混沌令牌不足',
+    },
+    moogleMailDbImportReadFailedAlert: {
+      main: '读取文件失败',
+      isekai: '读取文件失败',
+    },
+    moogleMailDbImportParseFailedAlert: {
+      main: '解析文件失败\n请选择一个有效的MoogleMail数据库json文件',
+      isekai: '解析文件失败\n请选择一个有效的MoogleMail数据库json文件',
     },
   });
   var resolve_hvut_feedback_copy = function (key) {
@@ -1989,7 +1999,9 @@ try {
       event?.type === HVUT_FEEDBACK_EVENT.CONFIRM_MOOGLEMAIL_DB_CLEAR) {
       return confirm(format_hvut_feedback_copy(event.copy, event.values));
     }
-    if (event?.type === HVUT_FEEDBACK_EVENT.ALERT_MONSTER_UPGRADE_STOCK_SHORTAGE) {
+    if (event?.type === HVUT_FEEDBACK_EVENT.ALERT_MONSTER_UPGRADE_STOCK_SHORTAGE ||
+      event?.type === HVUT_FEEDBACK_EVENT.ALERT_MOOGLEMAIL_DB_IMPORT_READ_FAILED ||
+      event?.type === HVUT_FEEDBACK_EVENT.ALERT_MOOGLEMAIL_DB_IMPORT_PARSE_FAILED) {
       alert(format_hvut_feedback_copy(event.copy, event.values));
       return;
     }
@@ -2040,6 +2052,18 @@ try {
     return run_hvut_user_feedback({
       type: HVUT_FEEDBACK_EVENT.ALERT_MONSTER_UPGRADE_STOCK_SHORTAGE,
       copy: 'monsterUpgradeStockShortageAlert',
+    });
+  };
+  var alert_hvut_mooglemail_db_import_read_failed = function () {
+    return run_hvut_user_feedback({
+      type: HVUT_FEEDBACK_EVENT.ALERT_MOOGLEMAIL_DB_IMPORT_READ_FAILED,
+      copy: 'moogleMailDbImportReadFailedAlert',
+    });
+  };
+  var alert_hvut_mooglemail_db_import_parse_failed = function () {
+    return run_hvut_user_feedback({
+      type: HVUT_FEEDBACK_EVENT.ALERT_MOOGLEMAIL_DB_IMPORT_PARSE_FAILED,
+      copy: 'moogleMailDbImportParseFailedAlert',
     });
   };
   var create_hvut_current_page_disable_url = function () {
@@ -11460,7 +11484,7 @@ if (get_hvut_mail_page_context().isMoogleMail && $config.settings.moogleMail) {
             db_import(e.target.result);
           };
           reader.onerror = function () {
-            alert('读取文件失败');
+            alert_hvut_mooglemail_db_import_read_failed();
             stop();
           };
           reader.readAsText(file);
@@ -11491,13 +11515,13 @@ if (get_hvut_mail_page_context().isMoogleMail && $config.settings.moogleMail) {
             json.forEach((obj) => {
               const { database, store, values } = obj;
               if (database !== dbname) {
-                console.log('无效的数据库');
+                record_hvut_mooglemail_action_failure('dbImportInvalidDatabase', { database: database, expected: dbname });
                 complete();
                 return;
               }
               if (!stores.includes(store)) {
                 complete();
-                console.log('无效的对象存储');
+                record_hvut_mooglemail_action_failure('dbImportInvalidStore', { store: store, stores: stores });
                 return;
               }
               const conn = _mm.db.conn('readwrite', store);
@@ -11511,7 +11535,7 @@ if (get_hvut_mail_page_context().isMoogleMail && $config.settings.moogleMail) {
               });
             });
           } catch (e) {
-            alert('解析文件失败\n请选择一个有效的MoogleMail数据库json文件');
+            alert_hvut_mooglemail_db_import_parse_failed();
             stop();
             return;
           }
@@ -17370,7 +17394,7 @@ if (get_hvut_mail_page_context().isMoogleMail && $config.settings.moogleMail) {
             db_import(e.target.result);
           };
           reader.onerror = function () {
-            alert('读取文件失败');
+            alert_hvut_mooglemail_db_import_read_failed();
             stop();
           };
           reader.readAsText(file);
@@ -17399,13 +17423,13 @@ if (get_hvut_mail_page_context().isMoogleMail && $config.settings.moogleMail) {
             json.forEach((obj) => {
               const { database, store, values } = obj;
               if (database !== dbname) {
-                console.log('无效的数据库');
+                record_hvut_mooglemail_action_failure('legacyDbImportInvalidDatabase', { database: database, expected: dbname });
                 complete();
                 return;
               }
               if (!stores.includes(store)) {
                 complete();
-                console.log('无效的对象存储');
+                record_hvut_mooglemail_action_failure('legacyDbImportInvalidStore', { store: store, stores: stores });
                 return;
               }
               const conn = _mm.db.conn('readwrite', store);
@@ -17419,7 +17443,7 @@ if (get_hvut_mail_page_context().isMoogleMail && $config.settings.moogleMail) {
               });
             });
           } catch (e) {
-            alert('解析文件失败\n请选择一个有效的MoogleMail数据库json文件');
+            alert_hvut_mooglemail_db_import_parse_failed();
             stop();
             return;
           }

@@ -114,12 +114,14 @@ for (const required of [
   "const stop = function () {",
   "_mm.db.node.import.disabled = false;",
   "const file = input.files[0];\n          if (!file) {\n            return;\n          }\n          if (_mm.db.node.import) {\n            _mm.db.node.import.disabled = true;",
-  "reader.onerror = function () {\n            alert('读取文件失败');\n            stop();",
+  "reader.onerror = function () {\n            alert_hvut_mooglemail_db_import_read_failed();\n            stop();",
   "if (completed === 0) {\n              stop();\n              return;\n            }",
   "conn.tx.onerror = stop;",
   "conn.tx.onabort = stop;",
   "_mm.db.node.import.value = '完成';\n                }\n                stop();",
-  "alert('解析文件失败\\n请选择一个有效的MoogleMail数据库json文件');\n            stop();",
+  "alert_hvut_mooglemail_db_import_parse_failed();\n            stop();",
+  "record_hvut_mooglemail_action_failure('dbImportInvalidDatabase', { database: database, expected: dbname });",
+  "record_hvut_mooglemail_action_failure('dbImportInvalidStore', { store: store, stores: stores });",
 ]) {
   requirePart("modern db import", modernImport, required);
 }
@@ -140,12 +142,14 @@ for (const required of [
   "const stop = function () {",
   "_mm.node.db_import.disabled = false;",
   "const file = input.files[0];\n          if (!file) {\n            return;\n          }\n          _mm.node.db_import.disabled = true;",
-  "reader.onerror = function () {\n            alert('读取文件失败');\n            stop();",
+  "reader.onerror = function () {\n            alert_hvut_mooglemail_db_import_read_failed();\n            stop();",
   "if (completed === 0) {\n              stop();\n              return;\n            }",
   "conn.tx.onerror = stop;",
   "conn.tx.onabort = stop;",
   "_mm.node.db_import.value = '完成';\n                stop();",
-  "alert('解析文件失败\\n请选择一个有效的MoogleMail数据库json文件');\n            stop();",
+  "alert_hvut_mooglemail_db_import_parse_failed();\n            stop();",
+  "record_hvut_mooglemail_action_failure('legacyDbImportInvalidDatabase', { database: database, expected: dbname });",
+  "record_hvut_mooglemail_action_failure('legacyDbImportInvalidStore', { store: store, stores: stores });",
 ]) {
   requirePart("legacy db import", legacyImport, required);
 }
@@ -194,9 +198,13 @@ for (const required of [
 for (const forbidden of [
   "clear: function () {\n        if (confirm",
   "conn.os.clear();\n        }",
+  "alert('读取文件失败')",
+  "alert('解析文件失败\\n请选择一个有效的MoogleMail数据库json文件')",
+  "console.log('无效的数据库')",
+  "console.log('无效的对象存储')",
 ]) {
   if (text.includes(forbidden))
-    violations.push(`${target} must not keep unchecked MoogleMail DB clear path: ${forbidden}`);
+    violations.push(`${target} must not keep unchecked MoogleMail DB path: ${forbidden}`);
 }
 
 if (violations.length) {
