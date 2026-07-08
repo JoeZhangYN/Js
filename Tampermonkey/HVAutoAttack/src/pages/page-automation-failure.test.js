@@ -7,6 +7,7 @@ import {
 } from "./page-automation.js";
 
 const mocks = vi.hoisted(() => ({
+  runDiagnosticConsoleAutomation: vi.fn(),
   runAppStartup: vi.fn(() => true),
   runBattleAutomation: vi.fn(),
   runCrossSiteEncounterNavigation: vi.fn(() => false),
@@ -14,6 +15,11 @@ const mocks = vi.hoisted(() => ({
   runLobbyAutomation: vi.fn(),
   runPageRefreshAutomation: vi.fn(() => false),
   runRiddleAutomation: vi.fn(),
+}));
+
+vi.mock("../core/diagnostic-console.js", () => ({
+  DiagnosticConsoleEvent: Object.freeze({ WARN: "warn" }),
+  runDiagnosticConsoleAutomation: mocks.runDiagnosticConsoleAutomation,
 }));
 
 vi.mock("../alarm/page-refresh.js", () => ({
@@ -58,14 +64,12 @@ afterEach(() => {
 });
 
 describe("runPageAutomation failure fallback", () => {
-  it("does not continue page routing when failure evidence and warning both fail", () => {
+  it("does not continue page routing when failure evidence and typed warning both fail", () => {
     vi.spyOn(Storage.prototype, "setItem").mockImplementation(function setItem(key, value) {
       if (key === PAGE_AUTOMATION_FAILURE_KEY) throw new Error("quota");
       return Reflect.apply(Storage.prototype.setItem, this, [key, value]);
     });
-    vi.spyOn(console, "warn").mockImplementation(() => {
-      throw new Error("console blocked");
-    });
+    mocks.runDiagnosticConsoleAutomation.mockImplementation(() => false);
     mocks.runEquipmentViewAutomation.mockImplementation(() => {
       throw new Error("equipment blocked");
     });

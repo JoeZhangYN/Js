@@ -59,6 +59,8 @@ function checkEntry() {
   for (const required of [
     "PageAutomationEvent",
     "PAGE_AUTOMATION_FAILURE_KEY",
+    "DiagnosticConsoleEvent.WARN",
+    "runDiagnosticConsoleAutomation",
     "EVENT_PAGE_READY",
     "pageAutomationEventHandlers",
     "recordPageAutomationFailure",
@@ -149,6 +151,11 @@ function checkEntry() {
   if (!/globalThis\.sessionStorage\?\.setItem\(PAGE_AUTOMATION_FAILURE_KEY/.test(text)) {
     violations.push(`${rel(entryFile)} must persist page automation failure evidence`);
   }
+  if (/\bconsole\.(?:log|warn|error|info|debug)\s*\(/.test(text)) {
+    violations.push(
+      `${rel(entryFile)} must route page automation diagnostics through the typed diagnostic console entry`
+    );
+  }
   if (
     !/catch\s*\(error\)\s*{[\s\S]*recordPageAutomationFailure\(stage,\s*"stepException"/.test(text)
   ) {
@@ -180,10 +187,10 @@ function checkEntry() {
     ? fs.readFileSync(failureTestFile, "utf8")
     : "";
   for (const required of [
-    "does not continue page routing when failure evidence and warning both fail",
+    "does not continue page routing when failure evidence and typed warning both fail",
     "PAGE_AUTOMATION_FAILURE_KEY",
     'throw new Error("quota")',
-    'throw new Error("console blocked")',
+    "runDiagnosticConsoleAutomation",
     "expect(mocks.runBattleAutomation).not.toHaveBeenCalled()",
   ]) {
     if (!failureTestText.includes(required)) {

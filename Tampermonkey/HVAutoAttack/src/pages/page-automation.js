@@ -1,5 +1,9 @@
 // 页面自动化编排入口：init 只上报页面类型，本入口决定具体页面能力顺序。
 import { PageRefreshEvent, runPageRefreshAutomation } from "../alarm/page-refresh.js";
+import {
+  DiagnosticConsoleEvent,
+  runDiagnosticConsoleAutomation,
+} from "../core/diagnostic-console.js";
 import { AppStartupEvent, runAppStartup } from "./app-startup.js";
 import {
   CrossSiteEncounterEvent,
@@ -58,14 +62,13 @@ function recordPageAutomationFailure(stage, reason, detail = {}) {
   const evidence = { capability: "pageAutomation", stage, reason, ...detail };
   try {
     globalThis.sessionStorage?.setItem(PAGE_AUTOMATION_FAILURE_KEY, JSON.stringify(evidence));
-  } catch (_error) {
+  } catch {
     // Page routing failure handling must not depend on diagnostic storage.
   }
-  try {
-    console.warn("[HVAA] page automation failed", evidence);
-  } catch (_error) {
-    // Console hooks are diagnostic only.
-  }
+  runDiagnosticConsoleAutomation({
+    type: DiagnosticConsoleEvent.WARN,
+    args: ["[HVAA] page automation failed", evidence],
+  });
   return evidence;
 }
 
