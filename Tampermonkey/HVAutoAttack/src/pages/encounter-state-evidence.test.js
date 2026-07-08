@@ -2,18 +2,27 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { EncounterStateEvent, runEncounterStateAutomation } from "./encounter-state.js";
 import { ENCOUNTER_STATE_FAILURE_KEY } from "./encounter-state-failure.js";
 
+const mocks = vi.hoisted(() => ({
+  runDiagnosticConsoleAutomation: vi.fn(),
+}));
+
+vi.mock("../core/diagnostic-console.js", () => ({
+  DiagnosticConsoleEvent: Object.freeze({ WARN: "warn" }),
+  runDiagnosticConsoleAutomation: mocks.runDiagnosticConsoleAutomation,
+}));
+
 const HVUT_RE_KEY = "hvut_re";
 const ENCOUNTER_STATE_FAILURE_STORAGE_KEY = "HVAA:lastEncounterStateFailure";
 
 beforeEach(() => {
   localStorage.clear();
   sessionStorage.clear();
+  mocks.runDiagnosticConsoleAutomation.mockReset();
   vi.restoreAllMocks();
 });
 
 describe("encounter state failure evidence", () => {
   it("persists corrupted encounter state evidence while failing closed", () => {
-    vi.spyOn(console, "warn").mockImplementation(() => {});
     localStorage.setItem(HVUT_RE_KEY, "{bad-json");
 
     const state = runEncounterStateAutomation({ type: EncounterStateEvent.READ_CURRENT });
@@ -26,12 +35,17 @@ describe("encounter state failure evidence", () => {
       detail: { key: HVUT_RE_KEY },
     });
     expect(ENCOUNTER_STATE_FAILURE_KEY).toBe(ENCOUNTER_STATE_FAILURE_STORAGE_KEY);
+    expect(mocks.runDiagnosticConsoleAutomation).toHaveBeenCalledWith({
+      type: "warn",
+      args: [
+        "[HVAA] encounter state failed",
+        expect.objectContaining({ stage: "read-local-json" }),
+      ],
+    });
   });
 
-  it("keeps encounter state fallback working when console warning throws", () => {
-    vi.spyOn(console, "warn").mockImplementation(() => {
-      throw new Error("warn blocked");
-    });
+  it("keeps encounter state fallback working when typed warning fails", () => {
+    mocks.runDiagnosticConsoleAutomation.mockImplementation(() => false);
     localStorage.setItem(HVUT_RE_KEY, "{bad-json");
 
     expect(() =>
@@ -42,13 +56,11 @@ describe("encounter state failure evidence", () => {
     });
   });
 
-  it("keeps encounter state fallback working when failure evidence storage and warning fail", () => {
+  it("keeps encounter state fallback working when failure evidence storage and typed warning fail", () => {
     vi.spyOn(window.sessionStorage, "setItem").mockImplementation(() => {
       throw new Error("quota");
     });
-    vi.spyOn(console, "warn").mockImplementation(() => {
-      throw new Error("warn blocked");
-    });
+    mocks.runDiagnosticConsoleAutomation.mockImplementation(() => false);
     localStorage.setItem(HVUT_RE_KEY, "{bad-json");
 
     let state;

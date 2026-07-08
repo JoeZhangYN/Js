@@ -4,18 +4,26 @@ import {
   recordEncounterStateFailure,
 } from "./encounter-state-failure.js";
 
+const mocks = vi.hoisted(() => ({
+  runDiagnosticConsoleAutomation: vi.fn(),
+}));
+
+vi.mock("../core/diagnostic-console.js", () => ({
+  DiagnosticConsoleEvent: Object.freeze({ WARN: "warn" }),
+  runDiagnosticConsoleAutomation: mocks.runDiagnosticConsoleAutomation,
+}));
+
 beforeEach(() => {
   sessionStorage.clear();
+  mocks.runDiagnosticConsoleAutomation.mockReset();
 });
 
 describe("recordEncounterStateFailure", () => {
   it("records encounter state failures as structured evidence", () => {
-    const warn = vi.fn();
-
     const evidence = recordEncounterStateFailure(
       "read-local-json",
       { key: "hvut_re", error: "bad json" },
-      { sessionStorage, warn }
+      { sessionStorage }
     );
 
     expect(evidence).toMatchObject({
@@ -24,21 +32,22 @@ describe("recordEncounterStateFailure", () => {
       detail: { key: "hvut_re", error: "bad json" },
     });
     expect(JSON.parse(sessionStorage.getItem(ENCOUNTER_STATE_FAILURE_KEY))).toMatchObject(evidence);
-    expect(warn).toHaveBeenCalledWith(
-      "[HVAA] encounter state failed",
-      expect.objectContaining({ stage: "read-local-json" })
-    );
+    expect(mocks.runDiagnosticConsoleAutomation).toHaveBeenCalledWith({
+      type: "warn",
+      args: [
+        "[HVAA] encounter state failed",
+        expect.objectContaining({ stage: "read-local-json" }),
+      ],
+    });
   });
 
-  it("does not throw when evidence storage and console warning both fail", () => {
+  it("does not throw when evidence storage and typed warning both fail", () => {
     const blockedStorage = {
       setItem: () => {
         throw new Error("storage blocked");
       },
     };
-    const warn = () => {
-      throw new Error("warn blocked");
-    };
+    mocks.runDiagnosticConsoleAutomation.mockImplementation(() => false);
 
     expect(() =>
       recordEncounterStateFailure(
@@ -46,7 +55,6 @@ describe("recordEncounterStateFailure", () => {
         { key: "hvut_re" },
         {
           sessionStorage: blockedStorage,
-          warn,
         }
       )
     ).not.toThrow();

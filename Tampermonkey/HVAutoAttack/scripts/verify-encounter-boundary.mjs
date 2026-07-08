@@ -521,11 +521,13 @@ for (const required of [
 }
 for (const required of [
   "ENCOUNTER_STATE_FAILURE_KEY",
+  "DiagnosticConsoleEvent.WARN",
+  "runDiagnosticConsoleAutomation",
   "HVAA:lastEncounterStateFailure",
   'capability: "encounterState"',
   'source: "encounterState"',
   "storage?.setItem",
-  'warn("[HVAA] encounter state failed"',
+  '"[HVAA] encounter state failed"',
 ]) {
   if (!stateFailureText.includes(required)) {
     violations.push(
@@ -533,9 +535,14 @@ for (const required of [
     );
   }
 }
+if (/\bconsole\.(?:log|warn|error|info|debug)\s*\(/.test(stateFailureText)) {
+  violations.push(
+    `${stateFailureFile.replaceAll("\\", "/")} must route encounter state diagnostics through the typed diagnostic console entry`
+  );
+}
 for (const required of [
   "records encounter state failures as structured evidence",
-  "does not throw when evidence storage and console warning both fail",
+  "does not throw when evidence storage and typed warning both fail",
 ]) {
   if (!stateFailureTestText.includes(required)) {
     violations.push(`${stateFailureTest.replaceAll("\\", "/")} must cover ${required}`);
@@ -543,12 +550,12 @@ for (const required of [
 }
 for (const required of [
   "persists corrupted encounter state evidence while failing closed",
-  "keeps encounter state fallback working when console warning throws",
-  "keeps encounter state fallback working when failure evidence storage and warning fail",
+  "keeps encounter state fallback working when typed warning fails",
+  "keeps encounter state fallback working when failure evidence storage and typed warning fail",
   "HVAA:lastEncounterStateFailure",
   'capability: "encounterState"',
   'throw new Error("quota")',
-  'throw new Error("warn blocked")',
+  "runDiagnosticConsoleAutomation",
   "not.toThrow()",
 ]) {
   if (!stateEvidenceTestText.includes(required)) {

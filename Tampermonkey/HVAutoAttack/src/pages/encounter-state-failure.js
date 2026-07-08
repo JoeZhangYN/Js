@@ -1,3 +1,8 @@
+import {
+  DiagnosticConsoleEvent,
+  runDiagnosticConsoleAutomation,
+} from "../core/diagnostic-console.js";
+
 export const ENCOUNTER_STATE_FAILURE_KEY = "HVAA:lastEncounterStateFailure";
 
 function errorText(error) {
@@ -15,7 +20,6 @@ function safeDetail(detail) {
 
 export function recordEncounterStateFailure(stage, detail, deps = {}) {
   const storage = deps.sessionStorage || globalThis.sessionStorage;
-  const warn = deps.warn || ((...args) => console.warn(...args));
   const evidence = {
     capability: "encounterState",
     source: "encounterState",
@@ -24,13 +28,12 @@ export function recordEncounterStateFailure(stage, detail, deps = {}) {
   };
   try {
     storage?.setItem(ENCOUNTER_STATE_FAILURE_KEY, JSON.stringify(evidence));
-  } catch (_error) {
+  } catch {
     // Failure evidence must not break encounter state fallback.
   }
-  try {
-    warn("[HVAA] encounter state failed", { stage, detail });
-  } catch (_error) {
-    // Console hooks are diagnostic only.
-  }
+  runDiagnosticConsoleAutomation({
+    type: DiagnosticConsoleEvent.WARN,
+    args: ["[HVAA] encounter state failed", evidence],
+  });
   return evidence;
 }
