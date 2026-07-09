@@ -68,7 +68,6 @@ requireParts("re.clock", clock, [
 ]);
 requireParts("re.hv", hv, [
   "if (re.init() === false) return false;",
-  "if (re.check() === false) return false;",
   "return re.clock(button);",
 ]);
 requireParts("re.ba", ba, [
@@ -105,7 +104,7 @@ requireParts("bindRe encounter bridge calls", bindRe, [
   "run_hvut_encounter_bridge('WIDGET_TICK', { state: re.json })",
   "run_hvut_encounter_bridge('WIDGET_LINK_FOUND', { state: re.json, key })",
   "run_hvut_encounter_bridge('WIDGET_RESET_DAY')",
-  "run_hvut_encounter_bridge('WIDGET_STARTED_ENCOUNTER', { state: re.json, search: location.search })",
+  "run_hvut_encounter_bridge('WIDGET_STARTED_ENCOUNTER', { state: re.json, search: location.search, pageType: re.type })",
   "run_hvut_encounter_bridge('WIDGET_TIMER_ELAPSED'",
   "run_hvut_encounter_bridge('WIDGET_CLICKED'",
   "run_hvut_encounter_bridge('WIDGET_NEWS_LOADED'",

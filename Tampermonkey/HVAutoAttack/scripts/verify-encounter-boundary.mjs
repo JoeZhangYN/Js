@@ -1048,6 +1048,7 @@ for (const required of [
   "does not classify low equipment capacity text as encounter equipment-full failure",
   "does not classify untyped equipment full text outside the news error box",
   "handles plain battle-page countdown clicks without requesting a news load",
+  "ignores root-page started checks even when a stale encounter key is present",
   "Inventory Capacity:",
   "54",
   "500",
@@ -1057,6 +1058,11 @@ for (const required of [
       `${widgetPolicyTest.replaceAll("\\", "/")} must lock low-capacity text as non equipment-full encounter failure`
     );
   }
+}
+if (!widgetPolicyText.includes('if (event.pageType !== "ba") return readWidgetState(event.state);')) {
+  violations.push(
+    `${widgetPolicyFile.replaceAll("\\", "/")} must reject widget started events outside the battle page`
+  );
 }
 if (/Inventory Capacity:[\s\S]{0,180}equipmentInventoryFull/.test(widgetPolicyText)) {
   violations.push(

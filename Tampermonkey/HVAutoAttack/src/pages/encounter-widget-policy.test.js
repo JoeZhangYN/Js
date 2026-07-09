@@ -119,6 +119,7 @@ describe("planEncounterWidgetEvent", () => {
       type: "widgetStartedEncounter",
       state: { date: Date.now() - 10 * 60 * 1000, key: "abc", count: 40, clear: false },
       search: "?s=Battle&ss=ba&encounter=abc",
+      pageType: "ba",
     });
 
     expect(outcome).toMatchObject({

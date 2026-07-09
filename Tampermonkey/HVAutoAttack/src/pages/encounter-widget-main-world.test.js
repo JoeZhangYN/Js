@@ -64,13 +64,14 @@ describe("main-world encounter widget timing", () => {
     });
   });
 
-  it("ignores root-page started checks without an encounter key", () => {
+  it("ignores root-page started checks even when a stale encounter key is present", () => {
     const state = { date: 0, key: "", count: 0, clear: true };
 
     const outcome = planEncounterWidgetEvent({
       type: "widgetStartedEncounter",
       state,
-      search: "",
+      search: "?s=Battle&ss=ba&encounter=abc=",
+      pageType: "hv",
     });
 
     expect(outcome).toMatchObject({ state, count: 0, status: "ready" });

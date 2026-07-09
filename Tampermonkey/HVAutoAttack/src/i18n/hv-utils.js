@@ -3121,7 +3121,6 @@ const bindRe = function (re, ctx) {
   };
   re.hv = function () {
     if (re.init() === false) return false;
-    if (re.check() === false) return false;
     const button = $element('div', ctx.top.node.div, ['!width: 80px; cursor: pointer;']);
     return re.clock(button);
   };
@@ -3181,7 +3180,7 @@ const bindRe = function (re, ctx) {
     return true;
   };
   re.check = function () {
-    return applyEncounterState(run_hvut_encounter_bridge('WIDGET_STARTED_ENCOUNTER', { state: re.json, search: location.search }));
+    return applyEncounterState(run_hvut_encounter_bridge('WIDGET_STARTED_ENCOUNTER', { state: re.json, search: location.search, pageType: re.type }));
   };
   re.refresh = function () {
     const readiness = run_hvut_encounter_bridge('WIDGET_TICK', { state: re.json }) ?? { state: re.json, remainingMs: 0 };

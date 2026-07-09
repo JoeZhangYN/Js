@@ -36,6 +36,7 @@ function runWidgetLinkFound(event) {
 }
 
 function runWidgetStartedEncounter(event) {
+  if (event.pageType !== "ba") return readWidgetState(event.state);
   const key =
     event.key ||
     runEncounterPolicy({
@@ -88,12 +89,11 @@ function planWidgetTimerElapsed(event) {
 
 function planWidgetNewsLoaded(event) {
   if (event.pageType === "is") return suppressIsekaiNavigation(readWidgetState(event.state));
-  const eventpane = event.eventpane || "";
   const key =
     event.key ||
     runEncounterPolicy({
       type: EncounterPolicyEvent.PARSE_EVENTPANE_KEY,
-      eventpane,
+      eventpane: event.eventpane || "",
     }) ||
     runEncounterPolicy({
       type: EncounterPolicyEvent.PARSE_SEARCH_KEY,
@@ -108,7 +108,7 @@ function planWidgetNewsLoaded(event) {
     if (event.engage) return planWidgetEngage({ ...event, state });
     return { ...readWidgetState(state), action: "ready" };
   }
-  if (eventpane.includes("It is the dawn of a new day") || event.dawn) {
+  if ((event.eventpane || "").includes("It is the dawn of a new day") || event.dawn) {
     const current = readWidgetState(event.state);
     const state = event.engage
       ? runEncounterPolicy({
@@ -124,7 +124,7 @@ function planWidgetNewsLoaded(event) {
       unavailableReason: "dailyResetEvent",
     };
   }
-  const unavailableReason = classifyWidgetUnavailableReason(eventpane);
+  const unavailableReason = classifyWidgetUnavailableReason(event.eventpane || "");
   const current = readWidgetState(event.state);
   const state =
     event.engage && unavailableReason === "encounterKeyMissing"
