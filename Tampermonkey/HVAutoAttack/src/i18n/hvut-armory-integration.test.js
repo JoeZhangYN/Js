@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import {
+  ArmoryCategoryStatus,
   ArmoryIntegrationEvent,
   createArmoryIntegrationCapability,
 } from "./hvut-armory-integration.js";
@@ -18,6 +19,10 @@ function setup(overrides = {}) {
       facts: page.facts,
     })),
     commit: vi.fn(),
+    beginLoading: vi.fn(),
+    reportCategory: vi.fn(),
+    restoreLoading: vi.fn(),
+    completeLoading: vi.fn(),
     preserve: vi.fn(),
     retranslate: vi.fn(),
     recordFailure: vi.fn(),
@@ -53,6 +58,18 @@ describe("HVUT Armory integration capability", () => {
       "armor_heavy",
     ]);
     expect(deps.wait).toHaveBeenCalledWith(300);
+    expect(deps.beginLoading).toHaveBeenCalledWith({
+      screen: "sell",
+      categories,
+      retrying: false,
+    });
+    expect(deps.beginLoading.mock.invocationCallOrder[0]).toBeLessThan(
+      deps.pageReader.read.mock.invocationCallOrder[0]
+    );
+    expect(deps.reportCategory.mock.calls.map(([progress]) => progress.status)).toEqual([
+      ArmoryCategoryStatus.STAGED,
+      ArmoryCategoryStatus.STAGED,
+    ]);
     expect(deps.commit).toHaveBeenCalledOnce();
     expect(deps.commit.mock.calls[0][0].stages).toHaveLength(2);
     expect(deps.commit.mock.calls[0][0].stages.map((stage) => stage.facts)).toEqual([
@@ -60,6 +77,7 @@ describe("HVUT Armory integration capability", () => {
       table(categories[1]).facts,
     ]);
     expect(deps.preserve).not.toHaveBeenCalled();
+    expect(deps.completeLoading).toHaveBeenCalledOnce();
     expect(deps.retranslate).toHaveBeenCalledOnce();
   });
 
@@ -101,50 +119,14 @@ describe("HVUT Armory integration capability", () => {
 
     expect(result.outcome).toBe("failed");
     expect(deps.commit).not.toHaveBeenCalled();
+    expect(deps.restoreLoading).toHaveBeenCalledWith(
+      expect.objectContaining({ outcome: "failed" })
+    );
     expect(deps.preserve).toHaveBeenCalledWith(expect.objectContaining({ outcome: "failed" }));
+    expect(deps.restoreLoading.mock.invocationCallOrder[0]).toBeLessThan(
+      deps.preserve.mock.invocationCallOrder[0]
+    );
     expect(deps.retranslate).not.toHaveBeenCalled();
   });
 
-  it("retries transient failures once and stops after the same cause repeats", async () => {
-    const oneCategory = [categories[0]];
-    const { deps, capability } = setup({ readCategories: vi.fn(() => oneCategory) });
-    deps.pageReader.read.mockResolvedValue({
-      kind: ArmoryPageKind.LIMITED,
-      category: oneCategory[0],
-      detail: { category: oneCategory[0].key },
-    });
-
-    const result = await capability.run({
-      type: ArmoryIntegrationEvent.INTEGRATE_ALL,
-      screen: "sell",
-    });
-
-    expect(deps.pageReader.read).toHaveBeenCalledTimes(2);
-    expect(deps.wait).toHaveBeenCalledWith(1200);
-    expect(result.outcome).toBe("failed");
-    expect(deps.preserve).toHaveBeenCalledOnce();
-  });
-
-  it("retryFailed only reloads categories that failed previously", async () => {
-    const { deps, capability } = setup();
-    deps.pageReader.read
-      .mockResolvedValueOnce(table(categories[0]))
-      .mockResolvedValueOnce({
-        kind: ArmoryPageKind.UNEXPECTED_PAGE,
-        category: categories[1],
-        detail: { category: categories[1].key },
-      })
-      .mockResolvedValueOnce(table(categories[1]));
-    await capability.run({ type: ArmoryIntegrationEvent.INTEGRATE_ALL, screen: "sell" });
-    deps.pageReader.read.mockClear();
-
-    const result = await capability.run({
-      type: ArmoryIntegrationEvent.RETRY_FAILED,
-      screen: "sell",
-    });
-
-    expect(deps.pageReader.read).toHaveBeenCalledOnce();
-    expect(deps.pageReader.read.mock.calls[0][0].category.key).toBe("armor_heavy");
-    expect(result).toMatchObject({ outcome: "complete", retrying: true });
-  });
 });

@@ -6023,6 +6023,7 @@ const bindArmory = function (armory, ctx) {
         }
         $armory.integrate.bridge = bridge;
         $armory.integrate.capability = bridge.create({
+          table: $armory.node.table,
           stageCategory: $armory.integrate.stage,
           commit: $armory.integrate.commit,
           preserve: $armory.integrate.preserve,
@@ -6047,7 +6048,13 @@ const bindArmory = function (armory, ctx) {
       retry: async function (screen) {
         const capability = $armory.integrate.capability || $armory.integrate.create();
         if (!capability) return false;
-        return capability.run({ type: $armory.integrate.bridge.events.RETRY_FAILED, screen: screen });
+        try {
+          return await capability.run({ type: $armory.integrate.bridge.events.RETRY_FAILED, screen: screen });
+        } catch (error) {
+          const evidence = record_hvut_armory_integrate_failure('capabilityExecutionFailed', { screen: screen, retrying: true, error: error?.message || String(error) });
+          show_hvut_runtime_failure_report(render_hvut_armory_integrate_failure_log(evidence));
+          return false;
+        }
       },
       stage: async function (page, screen) {
         const table = page.table;
@@ -6075,7 +6082,7 @@ const bindArmory = function (armory, ctx) {
           $armory.node.protected = null;
         } else {
           Array.from(table.tBodies).forEach((body) => {
-            const category = body.dataset.hvutArmoryCategory || body.dataset.hvutArmoryFailure;
+            const category = body.dataset.hvutArmoryCategory || body.dataset.hvutArmoryFailure || body.dataset.hvutArmoryLoading;
             if (attempted.has(category)) body.remove();
           });
         }
