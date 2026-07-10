@@ -25,7 +25,7 @@ for (const required of [
   "return run_hvut_i18n_bridge('t', [value, group], 'translateBridgeMissing'",
   "return run_hvut_i18n_bridge('translateEquipName', [name], 'translateEquipNameBridgeMissing'",
   "var registered = run_hvut_i18n_bridge('registerI18nRender', [node, bound], 'registerI18nRenderBridgeMissing'",
-  "run_hvut_i18n_bridge('retranslateEquiplist', [], 'retranslateEquiplistBridgeMissing', { surface: 'armoryIntegrate' }, false);",
+  "run_hvut_i18n_bridge('retranslateEquiplist', [], 'retranslateEquiplistBridgeMissing', { surface: 'armoryIntegrate' }, false)",
   "run_hvut_i18n_bridge('recordI18nInitFailure', ['hv-utils', e], 'recordI18nInitFailureBridgeMissing'",
 ]) {
   if (!text.includes(required)) {

@@ -5,9 +5,11 @@ const root = process.cwd();
 const target = path.normalize("src/i18n/hv-utils.js");
 const diagnosticTarget = path.normalize("src/core/diagnostic-evidence-keys.js");
 const diagnosticTestTarget = path.normalize("src/core/diagnostic-evidence.test.js");
+const readerTarget = path.normalize("src/i18n/hvut-armory-page-reader.js");
 const text = fs.readFileSync(path.join(root, target), "utf8");
 const diagnosticText = fs.readFileSync(path.join(root, diagnosticTarget), "utf8");
 const diagnosticTestText = fs.readFileSync(path.join(root, diagnosticTestTarget), "utf8");
+const readerText = fs.readFileSync(path.join(root, readerTarget), "utf8");
 const violations = [];
 const armoryScriptParse =
   /script: \{\n      parse: function \(doc, screen, assign\) \{[\s\S]*?\n      \},\n      assign: function/.exec(
@@ -45,10 +47,19 @@ for (const required of [
   "if (screen === 'sell' && !Object.keys(json.eqitems).length) {",
   "json.eqitems = parseSellEqitemsFromTable();",
   "return accepted;",
-  "href: create_hvut_armory_screen_url(screen, { filter: filter || '' })",
 ]) {
   if (!text.includes(required)) {
     violations.push(`${target} must keep Armory page parse boundary: ${required}`);
+  }
+}
+
+for (const required of [
+  'url.search = new URLSearchParams({ s: "Bazaar", ss: "am", screen, filter }).toString();',
+  "requestedUrl,",
+  "finalUrl: response?.url || requestedUrl",
+]) {
+  if (!readerText.includes(required)) {
+    violations.push(`${readerTarget} must keep typed Armory page identity evidence: ${required}`);
   }
 }
 

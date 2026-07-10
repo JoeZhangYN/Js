@@ -2,108 +2,79 @@ import fs from "node:fs";
 import path from "node:path";
 
 const root = process.cwd();
-const target = path.normalize("src/i18n/hv-utils.js");
+const hvutTarget = path.normalize("src/i18n/hv-utils.js");
+const ownerTarget = path.normalize("src/i18n/hvut-armory-integration.js");
+const readerTarget = path.normalize("src/i18n/hvut-armory-page-reader.js");
+const bridgeTarget = path.normalize("src/i18n/hvut-armory-integration-bridge.js");
+const mainTarget = path.normalize("src/main.js");
 const diagnosticTarget = path.normalize("src/core/diagnostic-evidence-keys.js");
 const diagnosticTestTarget = path.normalize("src/core/diagnostic-evidence.test.js");
-const text = fs.readFileSync(path.join(root, target), "utf8");
-const diagnosticText = fs.readFileSync(path.join(root, diagnosticTarget), "utf8");
-const diagnosticTestText = fs.readFileSync(path.join(root, diagnosticTestTarget), "utf8");
+const read = (target) => fs.readFileSync(path.join(root, target), "utf8");
+const hvut = read(hvutTarget);
+const owner = read(ownerTarget);
+const reader = read(readerTarget);
+const bridge = read(bridgeTarget);
+const main = read(mainTarget);
+const diagnostic = read(diagnosticTarget);
+const diagnosticTest = read(diagnosticTestTarget);
 const violations = [];
 
-const initMatch =
-  /init: async function \(screen\) \{[\s\S]*?\n      \},\n      load: async function/.exec(text);
-const loadMatch =
-  /load: async function \(screen, filter\) \{[\s\S]*?\n      \},\n      tab: function/.exec(text);
-
-for (const required of [
-  "var record_hvut_armory_integrate_failure = function (stage, detail) {",
-  "capability: 'hvutArmoryIntegrate'",
-  "sessionStorage.setItem('HVAA:lastHvutArmoryIntegrateFailure'",
-  "console.warn('[HVUT] Armory integrate failed', evidence)",
-  "var render_hvut_armory_integrate_failure_log = function (integrateEvidence) {",
-  "HVAA:lastHvutArmoryPageFailure",
-]) {
-  if (!text.includes(required)) {
-    violations.push(`${target} must define Armory integrate evidence with ${required}`);
+function requireAll(target, text, needles) {
+  for (const needle of needles) {
+    if (!text.includes(needle)) violations.push(`${target} must include ${needle}`);
   }
 }
 
-if (!initMatch) {
-  violations.push(`${target} must keep the Armory integrate init entry visible`);
-} else {
-  const body = initMatch[0];
-  for (const required of [
-    "const results = await Promise.all($armory.filters.map((filter) => $armory.integrate.load(screen, filter)));",
-    "run_hvut_i18n_bridge('retranslateEquiplist', [], 'retranslateEquiplistBridgeMissing', { surface: 'armoryIntegrate' }, false);",
-    "if (!results.every((r) => r)) {",
-    "const failedFilters = $armory.filters.filter((_filter, index) => !results[index]);",
-    "const evidence = record_hvut_armory_integrate_failure('integrateIncomplete', { screen: screen, failedFilters: failedFilters });",
-    "show_hvut_runtime_failure_report(render_hvut_armory_integrate_failure_log(evidence));",
-    "return false;",
-    "return true;",
-  ]) {
-    if (!body.includes(required)) {
-      violations.push(`${target} Armory integrate init must guard completion with ${required}`);
-    }
-  }
-  if (/\n\s*await Promise\.all\(\$armory\.filters\.map[\s\S]*?\);\n\s*\/\/ filter=all/.test(body)) {
-    violations.push(`${target} Armory integrate init must not ignore load results`);
-  }
-  if (body.includes("window.HVAA_i18n.retranslateEquiplist()")) {
-    violations.push(`${target} Armory integrate init must not call the i18n bridge directly`);
-  }
-  if (
-    body.includes(
-      "alert((IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.') + '\\nHVAA:lastHvutArmoryIntegrateFailure');"
-    )
-  ) {
-    violations.push(
-      `${target} Armory integrate init must show the copyable diagnostic report instead of a key-only alert`
-    );
-  }
+requireAll(ownerTarget, owner, [
+  "export function createArmoryIntegrationCapability(options)",
+  "for (let index = 0; index < categories.length; index += 1)",
+  'const outcome = failures.length ? (stages.length || empty.length ? "partial" : "failed") : "complete";',
+  'if (outcome === "failed") deps.preserve(result);',
+  "await deps.commit(result);",
+  'deps.recordFailure("integrateIncomplete"',
+]);
+if (/Promise\.all\s*\(/.test(owner)) {
+  violations.push(
+    `${ownerTarget} must serialize Armory category reads instead of using Promise.all`
+  );
 }
 
-if (!loadMatch) {
-  violations.push(`${target} must keep the Armory integrate load entry visible`);
-} else {
-  const body = loadMatch[0];
-  for (const required of [
-    "let page;",
-    "try {\n          page = await $armory.page.load(screen, filter, true);",
-    "catch (error) {\n          record_hvut_armory_integrate_failure('loadRequest'",
-    "const table = page?.table;",
-    "if (page?.kind === 'empty') {",
-    "if (!table) {\n          record_hvut_armory_integrate_failure('loadTableMissing'",
-    "if (!table.tBodies[0]) {\n            record_hvut_armory_integrate_failure('loadTableBodyMissing'",
-    "$armory.filter.update();\n        return true;",
-  ]) {
-    if (!body.includes(required)) {
-      violations.push(`${target} Armory integrate load must fail closed with ${required}`);
-    }
-  }
-  if (/const table = await \$armory\.page\.load\(screen, filter, true\);/.test(body)) {
-    violations.push(`${target} Armory integrate load must not leave raw async load failures`);
-  }
+requireAll(readerTarget, reader, [
+  'credentials: "same-origin"',
+  "finalUrl: response?.url || requestedUrl",
+  'UNEXPECTED_PAGE: "unexpectedPage"',
+  'LIMITED: "limited"',
+  'filterbar?.querySelectorAll?.("a[href]")',
+]);
+requireAll(bridgeTarget, bridge, [
+  "createArmoryIntegrationCapability",
+  "createArmoryPageReader",
+  "readArmoryCategories",
+  "target.HVAA_armoryIntegration = bridge",
+]);
+requireAll(mainTarget, main, ['import "./i18n/hvut-armory-integration-bridge.js"']);
+requireAll(hvutTarget, hvut, [
+  "window.HVAA_armoryIntegration",
+  "stageCategory: $armory.integrate.stage",
+  "commit: $armory.integrate.commit",
+  "preserve: $armory.integrate.preserve",
+  "Array.from(table.tBodies).forEach((body) => body.remove());",
+  "重试失败分类",
+  "show_hvut_runtime_failure_report(render_hvut_armory_integrate_failure_log(evidence));",
+]);
+if (hvut.includes("Promise.all($armory.filters.map((filter) => $armory.integrate.load")) {
+  violations.push(`${hvutTarget} must not retain the destructive parallel Armory loader`);
 }
 
-for (const required of [
+requireAll(diagnosticTarget, diagnostic, [
   'HVUT_ARMORY_INTEGRATE_FAILURE: "HVAA:lastHvutArmoryIntegrateFailure"',
   'source("hvutArmoryIntegrateFailure", DiagnosticEvidenceKey.HVUT_ARMORY_INTEGRATE_FAILURE)',
-]) {
-  if (!diagnosticText.includes(required)) {
-    violations.push(`${diagnosticTarget} must include ${required}`);
-  }
-}
-
-for (const required of [
+]);
+requireAll(diagnosticTestTarget, diagnosticTest, [
   "HVAA:lastHvutArmoryIntegrateFailure",
   "hvutArmoryIntegrateFailure",
   'capability: "hvutArmoryIntegrate"',
-]) {
-  if (!diagnosticTestText.includes(required)) {
-    violations.push(`${diagnosticTestTarget} must cover ${required}`);
-  }
-}
+]);
 
 if (violations.length) {
   console.error("[verify-hvut-armory-integrate-boundary] FAIL");
@@ -112,5 +83,5 @@ if (violations.length) {
 }
 
 console.log(
-  "[verify-hvut-armory-integrate-boundary] OK - Armory integrate load failures fail closed"
+  "[verify-hvut-armory-integrate-boundary] OK - Armory integration is factory-bound, serialized, atomic, and diagnosable"
 );

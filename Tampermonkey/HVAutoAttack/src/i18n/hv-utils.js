@@ -6036,63 +6036,104 @@ const bindArmory = function (armory, ctx) {
     },
 
     integrate: {
+      capability: null,
+      bridge: null,
+      create: function () {
+        const bridge = typeof window !== 'undefined' ? window.HVAA_armoryIntegration : null;
+        if (!bridge || typeof bridge.create !== 'function') {
+          record_hvut_armory_integrate_failure('capabilityBridgeMissing', {});
+          return null;
+        }
+        $armory.integrate.bridge = bridge;
+        $armory.integrate.capability = bridge.create({
+          stageCategory: $armory.integrate.stage,
+          commit: $armory.integrate.commit,
+          preserve: $armory.integrate.preserve,
+          retranslate: () => run_hvut_i18n_bridge('retranslateEquiplist', [], 'retranslateEquiplistBridgeMissing', { surface: 'armoryIntegrate' }, false),
+          recordFailure: record_hvut_armory_integrate_failure,
+        });
+        return $armory.integrate.capability;
+      },
       init: async function (screen) {
         if (!$armory.pageContext.shouldIntegrateAll) return false;
-        $armory.node.table.tBodies[0].remove();
-        $armory.equiplist = [];
-        // Promise.all 收集并发 load（行为同原 forEach 并发，仅多一个"全部注入完成"汇合点）。
-        const results = await Promise.all($armory.filters.map((filter) => $armory.integrate.load(screen, filter)));
-        // filter=all 聚合: 各分类装备由 fetch 异步 replaceWith 注入 #equiplist, 晚于界面汉化 start(),
-        // #equiplist 是静态字典(observer 不监听 childList) → 装备名/分类标签漏翻成英文。注入全部完成后
-        // 经 i18n bridge 回调界面汉化重翻 #equiplist, 修"切到所有翻译失效"(异世界独有路径)。
-        run_hvut_i18n_bridge('retranslateEquiplist', [], 'retranslateEquiplistBridgeMissing', { surface: 'armoryIntegrate' }, false);
-        if (!results.every((r) => r)) {
-          const failedFilters = $armory.filters.filter((_filter, index) => !results[index]);
-          const evidence = record_hvut_armory_integrate_failure('integrateIncomplete', { screen: screen, failedFilters: failedFilters });
+        const capability = $armory.integrate.capability || $armory.integrate.create();
+        if (!capability) return false;
+        try {
+          return await capability.run({ type: $armory.integrate.bridge.events.INTEGRATE_ALL, screen: screen });
+        } catch (error) {
+          const evidence = record_hvut_armory_integrate_failure('capabilityExecutionFailed', { screen: screen, error: error?.message || String(error) });
           show_hvut_runtime_failure_report(render_hvut_armory_integrate_failure_log(evidence));
           return false;
         }
-        return true;
       },
-      load: async function (screen, filter) {
-        const holder = $element('tbody', $armory.node.table, [`/<tr class="hvut-eqp-category"><td colspan="10">Loading... [${filter}]</td></tr>`]);
-        let page;
-        try {
-          page = await $armory.page.load(screen, filter, true);
-        } catch (error) {
-          record_hvut_armory_integrate_failure('loadRequest', { screen: screen, filter: filter, href: create_hvut_armory_screen_url(screen, { filter: filter || '' }), error: error?.message || String(error) });
-          holder.remove();
-          return false;
-        }
-        const table = page?.table;
-        if (page?.kind === 'empty') {
-          holder.remove();
-          $armory.filter.update();
-          return true;
-        }
-        if (!table) {
-          record_hvut_armory_integrate_failure('loadTableMissing', { screen: screen, filter: filter });
-          holder.remove();
-          return false;
+      retry: async function (screen) {
+        const capability = $armory.integrate.capability || $armory.integrate.create();
+        if (!capability) return false;
+        return capability.run({ type: $armory.integrate.bridge.events.RETRY_FAILED, screen: screen });
+      },
+      stage: async function (page, screen) {
+        const table = page.table;
+        if ($armory.page.init(page.doc, screen, true) === false) {
+          return { kind: 'rejected', reason: 'pageFactsRejected' };
         }
         const equiplist = $equip.list.table(table);
-        if (equiplist.length) {
-          $armory.equiplist = $armory.equiplist.concat(equiplist);
-          $armory.modify[screen]?.(equiplist, table, filter);
-          if (!$id('equipcount')) {
-            $qs('.eqselall').replaceWith($qs('.eqselall', table));
-          }
-          if (!table.tBodies[0]) {
-            record_hvut_armory_integrate_failure('loadTableBodyMissing', { screen: screen, filter: filter });
-            holder.remove();
-            return false;
-          }
-          holder.replaceWith(table.tBodies[0]);
+        if (!equiplist.length) return { kind: 'empty', category: page.category.key };
+        const body = table.tBodies[0];
+        if (!body) return { kind: 'rejected', reason: 'tableBodyMissing' };
+        body.dataset.hvutArmoryCategory = page.category.key;
+        return { kind: 'table', category: page.category.key, table: table, body: body, equiplist: equiplist };
+      },
+      commit: async function (result) {
+        const table = $armory.node.table;
+        const attempted = new Set([
+          ...result.stages.map((stage) => stage.category),
+          ...result.empty,
+          ...result.failures.map((failure) => failure.category),
+        ]);
+        if (!result.retrying) {
+          Array.from(table.tBodies).forEach((body) => body.remove());
+          $armory.equiplist = [];
+          $armory.node.protected = null;
         } else {
-          holder.remove();
+          Array.from(table.tBodies).forEach((body) => {
+            const category = body.dataset.hvutArmoryCategory || body.dataset.hvutArmoryFailure;
+            if (attempted.has(category)) body.remove();
+          });
         }
+        for (const stage of result.stages) {
+          table.appendChild(stage.body);
+          $armory.equiplist = $armory.equiplist.concat(stage.equiplist);
+          try {
+            await $armory.modify[$armory.pageContext.screen]?.(stage.equiplist, table, stage.category);
+          } catch (error) {
+            record_hvut_armory_integrate_failure('categoryModifyFailed', { screen: $armory.pageContext.screen, filter: stage.category, error: error?.message || String(error) });
+          }
+        }
+        for (const failure of result.failures) {
+          const body = $element('tbody', table, { dataset: { hvutArmoryFailure: failure.category } });
+          const row = $element('tr', body, ['.hvut-eqp-category']);
+          const cell = $element('td', row, { colSpan: 10 });
+          $element('span', cell, `加载失败 [${failure.category}] `);
+          $input(['button', '重试失败分类'], cell, null, () => { $armory.integrate.retry($armory.pageContext.screen); });
+        }
+        if (!table.tBodies.length) {
+          $element('tbody', table, ['/<tr class="hvut-eqp-category"><td colspan="10">No equipment</td></tr>']);
+        }
+        const order = new Map($armory.filters.map((key, index) => [key, index]));
+        Array.from(table.tBodies)
+          .sort((a, b) => (order.get(a.dataset.hvutArmoryCategory || a.dataset.hvutArmoryFailure) ?? 99) - (order.get(b.dataset.hvutArmoryCategory || b.dataset.hvutArmoryFailure) ?? 99))
+          .forEach((body) => table.appendChild(body));
+        const selectAll = $qsa('.eqselall', table);
+        selectAll.slice(1).forEach((node) => node.remove());
         $armory.filter.update();
-        return true;
+      },
+      preserve: function (result) {
+        const evidence = record_hvut_armory_integrate_failure('integrateIncomplete', {
+          screen: $armory.pageContext.screen,
+          failedFilters: result.failures.map((failure) => failure.category),
+          failures: result.failures,
+        });
+        show_hvut_runtime_failure_report(render_hvut_armory_integrate_failure_log(evidence));
       },
       tab: function () {
         if (!$armory.pageContext.shouldShowAllFilter && !$armory.pageContext.isAllFilter) return;
