@@ -22,6 +22,7 @@
  * @property {(resp:{status:number,statusText:string,response:*,responseText:string,responseHeaders:string})=>void=} onload
  * @property {(err:{status:number,statusText:string,error?:string})=>void=} onerror
  * @property {()=>void=} ontimeout
+ * @property {()=>void=} onabort
  */
 
 /** 任一字符码点 > 0xFF（超出 Latin-1）即返回 true。导出供读取端预判脏值（如 ML API key 自愈）。 */

@@ -4,7 +4,6 @@ import {
   runCrossSiteEncounterNavigation,
 } from "./cross-site-encounter-navigation.js";
 import { PageKind } from "./page-kind.js";
-import { STORAGE_KEYS } from "../state/persist-keys.js";
 
 function pageReady(kind) {
   return { type: CrossSiteEncounterEvent.PAGE_READY, kind };
@@ -39,7 +38,7 @@ describe("runCrossSiteEncounterNavigation", () => {
     const openUrl = vi.fn(() => true);
     const document = window.document.implementation.createHTMLDocument("");
     document.body.innerHTML =
-      '<div id="eventpane"><div><a href="https://e-hentai.org/encounter.php">fight</a></div></div>';
+      '<div id="eventpane"><div><a href="?s=Battle&amp;ss=ba&amp;encounter=abc=">fight</a></div></div>';
 
     expect(
       runCrossSiteEncounterNavigation(pageReady(PageKind.EHENTAI), {
@@ -52,7 +51,7 @@ describe("runCrossSiteEncounterNavigation", () => {
     ).toBe(true);
 
     expect(openUrl).toHaveBeenCalledWith(
-      "https://hentaiverse.org/encounter.php",
+      "https://hentaiverse.org/?s=Battle&ss=ba&encounter=abc=",
       "crossSiteEncounter"
     );
   });
@@ -61,7 +60,7 @@ describe("runCrossSiteEncounterNavigation", () => {
     const openUrl = vi.fn(() => false);
     const document = window.document.implementation.createHTMLDocument("");
     document.body.innerHTML =
-      '<div id="eventpane"><div><a href="https://e-hentai.org/encounter.php">fight</a></div></div>';
+      '<div id="eventpane"><div><a href="?s=Battle&amp;ss=ba&amp;encounter=abc=">fight</a></div></div>';
 
     expect(
       runCrossSiteEncounterNavigation(pageReady(PageKind.EHENTAI), {
@@ -74,8 +73,49 @@ describe("runCrossSiteEncounterNavigation", () => {
     ).toBe(false);
 
     expect(openUrl).toHaveBeenCalledWith(
-      "https://hentaiverse.org/encounter.php",
+      "https://hentaiverse.org/?s=Battle&ss=ba&encounter=abc=",
       "crossSiteEncounter"
+    );
+  });
+
+  it("blocks an encounter generation page with no route instead of redirecting to bare HV", () => {
+    const openUrl = vi.fn();
+    const recordFailure = vi.fn();
+    const handleGenerationPage = vi.fn(() => ({
+      action: "blocked",
+      handled: true,
+      generation: { reason: "dailyResetEvent" },
+    }));
+    const document = window.document.implementation.createHTMLDocument("");
+    document.body.innerHTML = '<div id="eventpane">It is the dawn of a new day!</div>';
+
+    expect(
+      runCrossSiteEncounterNavigation(pageReady(PageKind.EHENTAI), {
+        document: () => document,
+        getValue: () => "https://hentaiverse.org",
+        href: () => "https://e-hentai.org/news.php?encounter",
+        openUrl,
+        recordFailure,
+        handleGenerationPage,
+      })
+    ).toBe(true);
+
+    expect(openUrl).not.toHaveBeenCalled();
+    expect(handleGenerationPage).toHaveBeenCalledWith(
+      expect.objectContaining({
+        eventpane: "It is the dawn of a new day!",
+        source: expect.objectContaining({ identity: "persistentEncounterGeneration" }),
+      })
+    );
+    expect(recordFailure).toHaveBeenCalledWith(
+      "generation-result-unavailable",
+      expect.objectContaining({
+        kind: "encounterGenerationUnavailable",
+        request: { method: "GET", url: "https://e-hentai.org/news.php?encounter" },
+      })
+    );
+    expect(recordFailure.mock.invocationCallOrder[0]).toBeLessThan(
+      handleGenerationPage.mock.invocationCallOrder[0]
     );
   });
 

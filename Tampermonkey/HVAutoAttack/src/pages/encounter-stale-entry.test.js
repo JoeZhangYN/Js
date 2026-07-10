@@ -57,7 +57,7 @@ describe("encounter stale entry recovery", () => {
     });
   });
 
-  it("navigates to encounter generation when the ready window opens without a stored key", async () => {
+  it("loads generation without cross-site navigation when the ready window has no stored key", async () => {
     localStorage.setItem(
       HVUT_RE_KEY,
       JSON.stringify({
@@ -68,17 +68,27 @@ describe("encounter stale entry recovery", () => {
       })
     );
 
+    mocks.gmXhr.mockImplementation(({ onload }) =>
+      onload({ responseText: '<div id="eventpane">No encounter available.</div>' })
+    );
+
     const outcome = await runEncounterAutomation({
       type: EncounterEvent.LOBBY_TICK,
       rerun: vi.fn(),
     });
 
     expect(outcome).toMatchObject({
-      action: "navigated",
-      href: "https://e-hentai.org/news.php?encounter",
-      handled: true,
-      claimed: true,
+      claimed: false,
+      generation: {
+        status: "unavailable",
+        reason: "encounterKeyMissing",
+        recovery: { reason: "generationBackoff" },
+      },
     });
+    expect(mocks.gmXhr).toHaveBeenCalledWith(
+      expect.objectContaining({ url: "https://e-hentai.org/news.php?encounter" })
+    );
+    expect(mocks.runNavigationAutomation).not.toHaveBeenCalled();
   });
 
   it("does not let a forced widget click revive an already attempted key", () => {

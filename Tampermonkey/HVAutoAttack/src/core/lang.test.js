@@ -48,6 +48,26 @@ describe("runUserFeedbackAutomation", () => {
     expect(window.prompt).toHaveBeenCalledWith("Language", 0);
   });
 
+  it("renders blocking errors as copy-ready diagnostic prompts", () => {
+    runUserFeedbackAutomation({
+      type: UserFeedbackEvent.BLOCKING_ERROR,
+      incident: "encounter-generation:test",
+      page: "https://e-hentai.org/news.php?encounter",
+      copy: { l0: "已阻断", l1: "已阻斷", l2: "Automation blocked" },
+      evidence: {
+        capability: "encounterGeneration",
+        stage: "generationResult",
+        reason: "encounterKeyMissing",
+      },
+    });
+
+    expect(window.prompt).toHaveBeenCalledWith(
+      "Automation blocked",
+      expect.stringContaining("incident: encounter-generation:test")
+    );
+    expect(window.prompt.mock.calls[0][1]).toContain("reason: encounterKeyMissing");
+  });
+
   it("keeps the legacy _alert wrapper as a compatibility delegate", () => {
     _alert(0, "提醒", "提醒", "Notice");
     expect(window.alert).toHaveBeenCalledWith("Notice");

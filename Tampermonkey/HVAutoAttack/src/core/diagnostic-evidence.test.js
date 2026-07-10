@@ -74,6 +74,10 @@ describe("readRecentDiagnosticEvidence", () => {
         capability: "crossSiteEncounter",
         stage: "persist-return-origin",
       },
+      "HVAA:lastEncounterGenerationIncident": {
+        capability: "encounterGeneration",
+        stage: "generationResult",
+      },
       "HVAA:lastIdleArenaFailure": { capability: "idleArena", stage: "battle-start" },
       "HVAA:lastCdRuntimeFailure": { capability: "cdRuntime", stage: "persist" },
       "HVAA:lastAutoTuneFailure": { capability: "autoTune", stage: "record-history" },
@@ -283,6 +287,10 @@ describe("readRecentDiagnosticEvidence", () => {
       crossSiteEncounterFailure: {
         capability: "crossSiteEncounter",
         stage: "persist-return-origin",
+      },
+      encounterGenerationIncident: {
+        capability: "encounterGeneration",
+        stage: "generationResult",
       },
       idleArenaFailure: { capability: "idleArena", stage: "battle-start" },
       cdRuntimeFailure: { capability: "cdRuntime", stage: "persist" },

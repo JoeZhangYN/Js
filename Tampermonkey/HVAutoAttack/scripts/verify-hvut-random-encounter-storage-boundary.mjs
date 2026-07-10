@@ -66,10 +66,7 @@ requireParts("re.clock", clock, [
   "if (applyEncounterState(dayState) === false) return false;",
   "return true;",
 ]);
-requireParts("re.hv", hv, [
-  "if (re.init() === false) return false;",
-  "return re.clock(button);",
-]);
+requireParts("re.hv", hv, ["if (re.init() === false) return false;", "return re.clock(button);"]);
 requireParts("re.ba", ba, [
   "if (re.init() === false) return false;",
   "if (re.check() === false) return false;",
@@ -86,6 +83,9 @@ requireParts("re.eh", eh, [
 requireParts("re.run", run, [
   "html = await $ajax.fetch('https://hentaiverse.org/');",
   "record_hvut_random_encounter_failure('widgetHvAvailabilityFetch'",
+  "run_hvut_encounter_bridge('WIDGET_GENERATION_FAILED'",
+  "if (applyEncounterState(outcome) === false) return false;",
+  "if (outcome?.handled) return false;",
   "re.start();",
   "return false;",
   "hvAvailable: true",
@@ -94,6 +94,7 @@ requireParts("re.load", load, [
   "if (re.get() === false) return false;",
   "$ajax.fetch(href || 'https://e-hentai.org/news.php')",
   "record_hvut_random_encounter_failure('widgetNewsLoadFetch'",
+  "run_hvut_encounter_bridge('WIDGET_GENERATION_FAILED'",
   "re.start();",
   "return false;",
   "if (applyEncounterState(outcome) === false) return false;",
@@ -108,6 +109,7 @@ requireParts("bindRe encounter bridge calls", bindRe, [
   "run_hvut_encounter_bridge('WIDGET_TIMER_ELAPSED'",
   "run_hvut_encounter_bridge('WIDGET_CLICKED'",
   "run_hvut_encounter_bridge('WIDGET_NEWS_LOADED'",
+  "run_hvut_encounter_bridge('WIDGET_GENERATION_FAILED'",
 ]);
 
 requireParts("random encounter failure recorder", text, [

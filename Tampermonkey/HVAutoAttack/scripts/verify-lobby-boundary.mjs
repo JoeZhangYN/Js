@@ -37,10 +37,10 @@ function checkLobbyEntry() {
   if (!/export const LobbyEvent\s*=\s*Object\.freeze\(/.test(text)) {
     violations.push(`${rel(lobbyFile)} must expose LobbyEvent`);
   }
-  if (!/export async function runLobbyAutomation\(\s*event\b/.test(text)) {
+  if (!/export (?:async )?function runLobbyAutomation\(\s*event\b/.test(text)) {
     violations.push(`${rel(lobbyFile)} must expose runLobbyAutomation(event)`);
   }
-  if (/export async function runLobbyAutomation\(\s*\)/.test(text)) {
+  if (/export (?:async )?function runLobbyAutomation\(\s*\)/.test(text)) {
     violations.push(`${rel(lobbyFile)} must not expose no-arg lobby entry`);
   }
   if (!/await runEncounterAutomation\(/.test(text)) {
@@ -84,7 +84,7 @@ function checkLobbyEntry() {
   }
   const entryBody =
     text.match(
-      /export async function runLobbyAutomation\(event = \{ type: EVENT_PAGE_READY \}\) \{[\s\S]*?\n\}/
+      /export (?:async )?function runLobbyAutomation\(event = \{ type: EVENT_PAGE_READY \}\) \{[\s\S]*?\n\}/
     )?.[0] || "";
   if (!/const lobbyEventHandlers\s*=\s*Object\.freeze\(\{[\s\S]*\[EVENT_PAGE_READY\]/.test(text)) {
     violations.push(`${rel(lobbyFile)} must route events through a frozen handler table`);
@@ -127,8 +127,16 @@ function checkLobbyEntry() {
       );
     }
   }
-  if (!text.includes("encounterOutcome?.claimed === true")) {
-    violations.push(`${rel(lobbyFile)} must stop only for explicit encounter claims`);
+  if (
+    !text.includes("encounterOutcome?.claimed === true") ||
+    !text.includes("encounterOutcome?.blocked === true")
+  ) {
+    violations.push(`${rel(lobbyFile)} must stop for explicit encounter claims or blocks`);
+  }
+  for (const required of ["pendingLobbyFlows", "pendingLobbyFlows.has(identity)", ".finally("]) {
+    if (!text.includes(required)) {
+      violations.push(`${rel(lobbyFile)} must singleflight complete lobby flows with ${required}`);
+    }
   }
   if (/from\s+["']\.\.\/state\/store\.js["']/.test(text)) {
     violations.push(`${rel(lobbyFile)} must not import store for lobby option switches`);
@@ -150,11 +158,21 @@ function checkLobbyEntry() {
     violations.push(`${rel(lobbyFile)} rerun must report LobbyEvent.PAGE_READY through one helper`);
   }
   const lobbyTestFile = path.join(root, "src/pages/lobby-automation.test.js");
+  const lobbyRecoveryTestFile = path.join(root, "src/pages/lobby-automation-recovery.test.js");
   const isekaiLobbyTestFile = path.join(root, "src/pages/lobby-automation-isekai.test.js");
-  const lobbyTestText = [lobbyTestFile, isekaiLobbyTestFile]
+  const lobbyTestText = [lobbyTestFile, lobbyRecoveryTestFile, isekaiLobbyTestFile]
     .filter((file) => fs.existsSync(file))
     .map((file) => fs.readFileSync(file, "utf8"))
     .join("\n");
+  for (const required of [
+    "stops later lobby automation when encounter recovery is blocked",
+    "coalesces concurrent UTC wakeups across the complete lobby workflow",
+    "releases the lobby singleflight after a rejected workflow",
+  ]) {
+    if (!lobbyTestText.includes(required)) {
+      violations.push(`${rel(lobbyTestFile)} must cover ${required}`);
+    }
+  }
   if (
     !lobbyTestText.includes("rejects invalid lobby events without running lobby flow") ||
     !lobbyTestText.includes("runLobbyAutomation(null)")

@@ -56,11 +56,11 @@
     "reason": "formatted baseline snapshot test verbosity"
   },
   "core/diagnostic-evidence-keys.js": {
-    "maxSloc": 195,
+    "maxSloc": 197,
     "reason": "formatted baseline diagnostic evidence registry debt"
   },
   "core/diagnostic-evidence.test.js": {
-    "maxSloc": 417,
+    "maxSloc": 425,
     "reason": "formatted baseline diagnostic evidence test verbosity"
   },
   "core/navigate.js": {
@@ -82,14 +82,6 @@
   "pages/encounter-policy.js": {
     "maxSloc": 169,
     "reason": "formatted baseline encounter policy split debt"
-  },
-  "pages/encounter-state.js": {
-    "maxSloc": 153,
-    "reason": "formatted baseline encounter state split debt"
-  },
-  "pages/encounter-state.test.js": {
-    "maxSloc": 154,
-    "reason": "formatted baseline encounter state test verbosity"
   },
   "pages/encounter-widget-policy.js": {
     "maxSloc": 166,

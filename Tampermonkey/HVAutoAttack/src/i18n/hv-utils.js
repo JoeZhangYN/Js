@@ -3228,6 +3228,9 @@ const bindRe = function (re, ctx) {
         html = await $ajax.fetch('https://hentaiverse.org/');
       } catch (error) {
         record_hvut_random_encounter_failure('widgetHvAvailabilityFetch', { reason: 'requestFailed', error: error?.message || String(error) });
+        const outcome = run_hvut_encounter_bridge('WIDGET_GENERATION_FAILED', { state: re.json, request: { method: 'GET', url: 'https://hentaiverse.org/' }, reason: 'generationRequestFailed', detail: { error: error?.message || String(error) }, pageType: re.type });
+        if (applyEncounterState(outcome) === false) return false;
+        if (outcome?.handled) return false;
         re.start();
         return false;
       }
@@ -3250,6 +3253,9 @@ const bindRe = function (re, ctx) {
       html = await $ajax.fetch(href || 'https://e-hentai.org/news.php');
     } catch (error) {
       record_hvut_random_encounter_failure('widgetNewsLoadFetch', { reason: 'requestFailed', error: error?.message || String(error) });
+      const outcome = run_hvut_encounter_bridge('WIDGET_GENERATION_FAILED', { state: re.json, request: { method: 'GET', url: href || 'https://e-hentai.org/news.php' }, reason: 'generationRequestFailed', detail: { error: error?.message || String(error) }, pageType: re.type });
+      if (applyEncounterState(outcome) === false) return false;
+      if (outcome?.handled) return false;
       re.start();
       return false;
     }

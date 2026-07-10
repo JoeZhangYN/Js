@@ -12,6 +12,7 @@ import { BattleRuntimeEvent, runBattleRuntimeAutomation } from "../battle/battle
 
 const EVENT_PAGE_READY = "pageReady";
 const EVENT_ISEKAI_PAGE_READY = "isekaiPageReady";
+const pendingLobbyFlows = new Map();
 
 export const LobbyEvent = Object.freeze({
   PAGE_READY: EVENT_PAGE_READY,
@@ -98,7 +99,7 @@ async function handleLobbyEncounter() {
     isIsekai: false,
     rerun: rerunLobbyPageReady,
   });
-  return encounterOutcome?.claimed === true;
+  return encounterOutcome?.claimed === true || encounterOutcome?.blocked === true;
 }
 
 function stopWhenStaminaRequires() {
@@ -112,6 +113,16 @@ async function runLobbyReadyFlow(steps, rerun) {
   }
 }
 
-export async function runLobbyAutomation(event = { type: EVENT_PAGE_READY }) {
-  return lobbyEventHandlers[event?.type]?.(event);
+export function runLobbyAutomation(event = { type: EVENT_PAGE_READY }) {
+  const handler = lobbyEventHandlers[event?.type];
+  if (!handler) return Promise.resolve(undefined);
+  const identity = event?.type;
+  if (pendingLobbyFlows.has(identity)) return pendingLobbyFlows.get(identity);
+  const pending = Promise.resolve()
+    .then(() => handler(event))
+    .finally(() => {
+      if (pendingLobbyFlows.get(identity) === pending) pendingLobbyFlows.delete(identity);
+    });
+  pendingLobbyFlows.set(identity, pending);
+  return pending;
 }

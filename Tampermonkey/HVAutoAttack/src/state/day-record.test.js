@@ -69,6 +69,8 @@ describe("runDayRecordAutomation", () => {
 
     schedule.mock.calls[0][0]();
     expect(rerun).toHaveBeenCalledTimes(1);
+    expect(schedule).toHaveBeenCalledTimes(2);
+    expect(mocks.runTimeAutomation).toHaveBeenCalledWith({ type: "epochMs" });
   });
 
   it("cancels the previous UTC day rollover timer before scheduling a new one", () => {

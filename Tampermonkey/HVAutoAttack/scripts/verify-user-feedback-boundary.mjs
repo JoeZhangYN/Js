@@ -50,6 +50,8 @@ for (const required of [
   "EVENT_ALERT",
   "EVENT_CONFIRM",
   "EVENT_PROMPT",
+  "EVENT_BLOCKING_ERROR",
+  "buildBlockingErrorReport",
 ]) {
   if (!ownerText.includes(required)) {
     violations.push(`${owner.replaceAll("\\", "/")} must own ${required}`);
@@ -97,6 +99,7 @@ const ownerTestText = fs.readFileSync(path.join(root, ownerTest), "utf8");
 for (const required of [
   "selects localized text through the typed feedback entry",
   "routes confirm and prompt through one typed browser feedback adapter",
+  "renders blocking errors as copy-ready diagnostic prompts",
   "keeps the legacy _alert wrapper as a compatibility delegate",
 ]) {
   if (!ownerTestText.includes(required)) {

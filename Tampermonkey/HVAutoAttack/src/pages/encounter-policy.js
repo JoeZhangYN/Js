@@ -1,9 +1,9 @@
 import { TimeEvent, runTimeAutomation } from "../core/time.js";
+import { planEncounterEntryRoute } from "./encounter-entry-policy.js";
 import {
   parseEventpaneEncounterKey,
   parseSearchEncounterKey,
-  planEncounterEntryRoute,
-} from "./encounter-entry-policy.js";
+} from "./encounter-generation-result.js";
 import {
   buildGenerationAttemptKey,
   carryGenerationRecovery,

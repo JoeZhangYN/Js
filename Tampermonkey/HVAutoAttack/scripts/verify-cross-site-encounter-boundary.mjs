@@ -6,6 +6,7 @@ const initFile = path.join(root, "src/pages/init.js");
 const entryFile = path.join(root, "src/pages/cross-site-encounter-navigation.js");
 const failureFile = path.join(root, "src/pages/cross-site-encounter-failure.js");
 const entryTestFile = path.join(root, "src/pages/cross-site-encounter-navigation.test.js");
+const identityTestFile = path.join(root, "src/pages/cross-site-encounter-identity.test.js");
 const failureTestFile = path.join(root, "src/pages/cross-site-encounter-failure.test.js");
 const srcDir = path.join(root, "src");
 const violations = [];
@@ -69,6 +70,11 @@ function checkEntry() {
     "STORAGE_KEYS.URL",
     "persistCrossSiteReturnOrigin",
     "return Boolean(",
+    "classifyEncounterGenerationResult",
+    "EncounterGenerationResultStatus.AVAILABLE",
+    "blockUnavailableEncounter",
+    "EncounterEvent.GENERATION_PAGE_READY",
+    'recordFailure("generation-result-unavailable"',
   ]) {
     if (!text.includes(required)) {
       violations.push(`${rel(entryFile)} must own ${required} cross-site navigation wiring`);
@@ -94,12 +100,31 @@ function checkEntry() {
     );
   }
   const testText = fs.readFileSync(entryTestFile, "utf8");
+  const identityTestText = fs.readFileSync(identityTestFile, "utf8");
   if (
     !testText.includes("rejects unknown and null events without storing or navigating") ||
     !testText.includes("runCrossSiteEncounterNavigation(null") ||
-    !testText.includes("does not report encounter redirect success when URL navigation is blocked")
+    !testText.includes(
+      "does not report encounter redirect success when URL navigation is blocked"
+    ) ||
+    !testText.includes(
+      "blocks an encounter generation page with no route instead of redirecting to bare HV"
+    )
   ) {
     violations.push(`${rel(entryTestFile)} must cover cross-site navigation rejection events`);
+  }
+  if (
+    !identityTestText.includes(
+      "blocks a non-encounter anchor instead of redirecting it to the bare HV origin"
+    ) ||
+    !identityTestText.includes("openUrl).not.toHaveBeenCalled()")
+  ) {
+    violations.push(`${rel(identityTestFile)} must reject non-encounter cross-site anchors`);
+  }
+  if (/readReturnOrigin\(deps\)\}\$\{readEncounterPath\(deps\)/.test(text)) {
+    violations.push(
+      `${rel(entryFile)} must not turn a missing encounter path into a bare HV route`
+    );
   }
   const failureTestText = fs.readFileSync(failureTestFile, "utf8");
   for (const required of [
@@ -137,7 +162,9 @@ function walk(dir, visitor) {
 
 function checkReturnOriginStorageOwner() {
   const allowed = new Set(
-    [entryFile, failureFile, entryTestFile, failureTestFile].map((file) => path.normalize(file))
+    [entryFile, failureFile, entryTestFile, identityTestFile, failureTestFile].map((file) =>
+      path.normalize(file)
+    )
   );
   walk(srcDir, (file) => {
     if (allowed.has(path.normalize(file))) return;

@@ -24,6 +24,15 @@ function clearScheduledDayRollover(cancel) {
   scheduledDayRollover = undefined;
 }
 
+function handleUtcDayRollover(event) {
+  scheduledDayRollover = undefined;
+  refreshAndScheduleNextUtcDay({
+    ...event,
+    nowMs: runTimeAutomation({ type: TimeEvent.EPOCH_MS }),
+  });
+  event.rerun();
+}
+
 function refreshAndScheduleNextUtcDay(event) {
   const deps = {
     cancel: event.cancel || clearTimeout,
@@ -34,10 +43,7 @@ function refreshAndScheduleNextUtcDay(event) {
   clearScheduledDayRollover(deps.cancel);
   if (typeof event.rerun !== "function") return dateNow;
   scheduledDayRollover = deps.schedule(
-    () => {
-      scheduledDayRollover = undefined;
-      event.rerun();
-    },
+    () => handleUtcDayRollover(event),
     runTimeAutomation({
       type: TimeEvent.MS_UNTIL_NEXT_UTC_DAY,
       stamp: deps.nowMs,

@@ -11,12 +11,37 @@ const entryExecutionFailureTest = path.normalize(
 const stateHelper = path.normalize("src/pages/encounter-state.js");
 const stateTest = path.normalize("src/pages/encounter-state.test.js");
 const stateDawnRecoveryTest = path.normalize("src/pages/encounter-state-dawn-recovery.test.js");
+const stateGenerationFile = path.normalize("src/pages/encounter-generation-state.js");
+const generationRequestFile = path.normalize("src/pages/encounter-generation-request.js");
+const stateStorageFile = path.normalize("src/pages/encounter-state-storage.js");
+const stateStorageTest = path.normalize("src/pages/encounter-state-storage.test.js");
+const stateGenerationFailureTest = path.normalize(
+  "src/pages/encounter-state-generation-failure.test.js"
+);
+const generationRequestFailureTest = path.normalize(
+  "src/pages/encounter-generation-request-failure.test.js"
+);
 const stateEvidenceTest = path.normalize("src/pages/encounter-state-evidence.test.js");
 const stateFailureFile = path.normalize("src/pages/encounter-state-failure.js");
 const stateFailureTest = path.normalize("src/pages/encounter-state-failure.test.js");
 const entryPolicyFile = path.normalize("src/pages/encounter-entry-policy.js");
 const generationRecoveryFile = path.normalize("src/pages/encounter-generation-recovery.js");
 const generationRecoveryTest = path.normalize("src/pages/encounter-generation-recovery.test.js");
+const generationResultFile = path.normalize("src/pages/encounter-generation-result.js");
+const generationResultTest = path.normalize("src/pages/encounter-generation-result.test.js");
+const generationBlockFile = path.normalize("src/pages/encounter-generation-block.js");
+const generationIncidentFile = path.normalize("src/pages/encounter-generation-incident.js");
+const generationBlockTest = path.normalize("src/pages/encounter-generation-block.test.js");
+const dawnLoopRecoveryTest = path.normalize("src/pages/encounter-dawn-loop-recovery.test.js");
+const clearedKeyGenerationTest = path.normalize(
+  "src/pages/encounter-cleared-key-generation.test.js"
+);
+const circuitResumeTest = path.normalize("src/pages/encounter-circuit-resume.test.js");
+const persistenceLoopTest = path.normalize("src/pages/encounter-persistence-loop-recovery.test.js");
+const widgetFailureFlowTest = path.normalize("src/pages/encounter-widget-failure-flow.test.js");
+const lobbyFlowFile = path.normalize("src/pages/encounter-lobby-flow.js");
+const lobbyActiveBlockFile = path.normalize("src/pages/encounter-lobby-active-block.js");
+const crossSiteStaleTest = path.normalize("src/pages/encounter-cross-site-stale.test.js");
 const policyFile = path.normalize("src/pages/encounter-policy.js");
 const policyTest = path.normalize("src/pages/encounter-policy.test.js");
 const policyRouteTest = path.normalize("src/pages/encounter-policy-route.test.js");
@@ -27,6 +52,7 @@ const bridgeFile = path.normalize("src/pages/encounter-bridge.js");
 const hvUtilsFile = path.normalize("src/i18n/hv-utils.js");
 const legacyWidgetFile = path.normalize("src/pages/encounter-widget.js");
 const widgetPolicyFile = path.normalize("src/pages/encounter-widget-policy.js");
+const widgetStateFile = path.normalize("src/pages/encounter-widget-state.js");
 const widgetPolicyTest = path.normalize("src/pages/encounter-widget-policy.test.js");
 const widgetMainWorldTest = path.normalize("src/pages/encounter-widget-main-world.test.js");
 const widgetGenerationRecoveryTest = path.normalize(
@@ -77,8 +103,15 @@ function checkFile(file) {
     if (
       relative !== owner &&
       relative !== stateHelper &&
+      relative !== stateStorageFile &&
+      relative !== stateStorageTest &&
       relative !== stateTest &&
       relative !== stateDawnRecoveryTest &&
+      relative !== stateGenerationFailureTest &&
+      relative !== dawnLoopRecoveryTest &&
+      relative !== clearedKeyGenerationTest &&
+      relative !== circuitResumeTest &&
+      relative !== persistenceLoopTest &&
       relative !== stateEvidenceTest &&
       relative !== stateFailureTest &&
       relative !== policyFile &&
@@ -90,8 +123,11 @@ function checkFile(file) {
     if (
       relative !== owner &&
       relative !== entryExecutionFile &&
+      relative !== lobbyFlowFile &&
       relative !== stateTest &&
       relative !== stateDawnRecoveryTest &&
+      relative !== stateGenerationFailureTest &&
+      relative !== generationRequestFailureTest &&
       relative !== stateEvidenceTest &&
       relative !== bridgeFile &&
       /from\s+["']\.\/encounter-state\.js["']/.test(line)
@@ -160,6 +196,7 @@ function checkFile(file) {
     if (
       relative !== policyFile &&
       relative !== entryPolicyFile &&
+      relative !== generationResultFile &&
       /encounter=\(\[A-Za-z0-9=\]\+\)/.test(line)
     ) {
       violations.push(`${where} encounter key parsing belongs in encounter-policy.js`);
@@ -211,6 +248,7 @@ function checkFile(file) {
     }
     if (
       relative !== owner &&
+      relative !== lobbyFlowFile &&
       relative !== lobbyScheduleFile &&
       relative !== lobbyScheduleTest &&
       /from\s+["']\.\/encounter-lobby-schedule\.js["']/.test(line)
@@ -270,6 +308,9 @@ walk(srcDir);
 const ownerText = fs.readFileSync(path.join(root, owner), "utf8");
 const entryExecutionText = fs.readFileSync(path.join(root, entryExecutionFile), "utf8");
 const stateHelperText = fs.readFileSync(path.join(root, stateHelper), "utf8");
+const stateGenerationText = fs.readFileSync(path.join(root, stateGenerationFile), "utf8");
+const generationRequestText = fs.readFileSync(path.join(root, generationRequestFile), "utf8");
+const stateStorageText = fs.readFileSync(path.join(root, stateStorageFile), "utf8");
 const stateFailureText = fs.readFileSync(path.join(root, stateFailureFile), "utf8");
 const stateFailureTestText = fs.readFileSync(path.join(root, stateFailureTest), "utf8");
 const stateEvidenceTestText = fs.readFileSync(path.join(root, stateEvidenceTest), "utf8");
@@ -278,6 +319,20 @@ const diagnosticTestText = fs.readFileSync(path.join(root, diagnosticTest), "utf
 const policyText = fs.readFileSync(path.join(root, policyFile), "utf8");
 const entryPolicyText = fs.readFileSync(path.join(root, entryPolicyFile), "utf8");
 const generationRecoveryText = fs.readFileSync(path.join(root, generationRecoveryFile), "utf8");
+const generationResultText = fs.readFileSync(path.join(root, generationResultFile), "utf8");
+const generationBlockText = fs.readFileSync(path.join(root, generationBlockFile), "utf8");
+const generationIncidentText = fs.readFileSync(path.join(root, generationIncidentFile), "utf8");
+const generationBlockTestText = fs.readFileSync(path.join(root, generationBlockTest), "utf8");
+const generationRequestFailureTestText = fs.readFileSync(
+  path.join(root, generationRequestFailureTest),
+  "utf8"
+);
+const persistenceLoopTestText = fs.readFileSync(path.join(root, persistenceLoopTest), "utf8");
+const widgetFailureFlowTestText = fs.readFileSync(path.join(root, widgetFailureFlowTest), "utf8");
+const lobbyFlowText = fs.readFileSync(path.join(root, lobbyFlowFile), "utf8");
+const lobbyActiveBlockText = fs.readFileSync(path.join(root, lobbyActiveBlockFile), "utf8");
+const dawnLoopRecoveryTestText = fs.readFileSync(path.join(root, dawnLoopRecoveryTest), "utf8");
+const crossSiteStaleTestText = fs.readFileSync(path.join(root, crossSiteStaleTest), "utf8");
 const policyTestText = [policyTest, policyRouteTest, generationRecoveryTest]
   .map((file) => fs.readFileSync(path.join(root, file), "utf8"))
   .join("\n");
@@ -287,11 +342,12 @@ const policyCorruptStateTestText = fs.existsSync(path.join(root, policyCorruptSt
 const rejectionText = fs.readFileSync(path.join(root, rejectionFile), "utf8");
 const hvUtilsText = fs.readFileSync(path.join(root, hvUtilsFile), "utf8");
 const widgetPolicyText = fs.readFileSync(path.join(root, widgetPolicyFile), "utf8");
-const widgetUnavailableText = fs.readFileSync(
-  path.join(root, "src/pages/encounter-widget-unavailable.js"),
-  "utf8"
-);
-const widgetPolicyTestText = [widgetPolicyTest, widgetMainWorldTest, widgetGenerationRecoveryTest]
+const widgetPolicyTestText = [
+  widgetPolicyTest,
+  widgetMainWorldTest,
+  widgetGenerationRecoveryTest,
+  generationResultTest,
+]
   .map((file) => fs.readFileSync(path.join(root, file), "utf8"))
   .join("\n");
 const entryExecutionFailureTestText = fs.readFileSync(
@@ -314,9 +370,10 @@ if (
 for (const required of [
   "does not claim a widget encounter when navigation is blocked",
   "does not claim a gallery encounter when opening the battle tab is blocked",
-  "navigationFailed",
-  "handled: false",
+  'action: "blocked"',
+  "blocked: true",
   "clear: false",
+  "blocks before navigation when attempted-state persistence is rejected",
 ]) {
   if (!entryExecutionFailureTestText.includes(required)) {
     violations.push(
@@ -324,16 +381,16 @@ for (const required of [
     );
   }
 }
-for (const [label, action] of [
-  ["navigate", "const navigated = runNavigationAutomation"],
-  ["open", "const opened = runNavigationAutomation"],
-]) {
-  const actionIndex = entryExecutionText.indexOf(action);
-  const markIndex = entryExecutionText.indexOf("markEncounterAttempted", actionIndex);
-  if (actionIndex < 0 || markIndex < 0 || markIndex < actionIndex) {
-    violations.push(
-      `${entryExecutionFile.replaceAll("\\", "/")} must mark encounter attempted only after ${label} navigation succeeds`
-    );
+const prepareIndex = entryExecutionText.indexOf("const prepared = prepareEntry(outcome)");
+const navigationIndex = entryExecutionText.indexOf("const navigated = runNavigationAutomation");
+if (prepareIndex < 0 || navigationIndex < 0 || prepareIndex > navigationIndex) {
+  violations.push(
+    `${entryExecutionFile.replaceAll("\\", "/")} must persist attempted state before navigation`
+  );
+}
+for (const required of ["statePersistenceFailed", "restoreEncounterEntry", "rollback"]) {
+  if (!entryExecutionText.includes(required)) {
+    violations.push(`${entryExecutionFile.replaceAll("\\", "/")} must preserve ${required}`);
   }
 }
 for (const required of ["isAutomaticEncounterEnabled", "EVENT_RANDOM_ENCOUNTER_STARTED"]) {
@@ -471,7 +528,13 @@ if (!stateEntryMatch) {
     }
   }
 }
-const stateTestText = [stateTest, stateDawnRecoveryTest]
+const stateTestText = [
+  stateTest,
+  stateDawnRecoveryTest,
+  stateGenerationFailureTest,
+  generationRequestFailureTest,
+  stateStorageTest,
+]
   .map((file) => fs.readFileSync(path.join(root, file), "utf8"))
   .join("\n");
 if (
@@ -483,11 +546,13 @@ if (
   violations.push(`${stateTest.replaceAll("\\", "/")} must cover unknown and null state events`);
 }
 for (const required of [
-  "returns null without writing encounter state when news key loading fails",
-  "returns null without writing encounter state when news key loading times out",
+  "backs off and preserves typed evidence when news key loading fails",
+  "backs off and preserves typed evidence when news key loading times out",
   "fails closed to default state when stored encounter JSON is corrupted",
-  "falls back to localStorage when GM encounter state read fails",
-  "falls back to localStorage when GM encounter state write fails",
+  "fails closed instead of mixing local state when GM encounter state read fails",
+  "does not report local fallback as persistence when GM encounter state write fails",
+  "uses GM as the only authority when GM and local state conflict",
+  "fails closed when only half of the GM storage authority exists",
   "records encounter local state write failures without throwing",
   "[HVAA] encounter state failed",
   "read-local-json",
@@ -505,7 +570,6 @@ for (const required of [
 for (const required of [
   "warnEncounterStateFailure",
   "recordEncounterStateFailure",
-  "parseStoredReState",
   "read-local-json",
   "read-gm",
   "write-gm",
@@ -513,7 +577,12 @@ for (const required of [
   "load-key-error",
   "load-key-timeout",
 ]) {
-  if (!stateHelperText.includes(required)) {
+  if (
+    !stateHelperText.includes(required) &&
+    !stateGenerationText.includes(required) &&
+    !stateStorageText.includes(required) &&
+    !generationRequestText.includes(required)
+  ) {
     violations.push(
       `${stateHelper.replaceAll("\\", "/")} must own encounter state failure ${required}`
     );
@@ -535,6 +604,16 @@ for (const required of [
     );
   }
 }
+for (const required of [
+  "generates and enters a different key after the old key cooldown",
+  "backs off when generation returns the same already attempted key",
+  "encounterKeyAlreadyAttempted",
+]) {
+  const text = fs.readFileSync(path.join(root, clearedKeyGenerationTest), "utf8");
+  if (!text.includes(required)) {
+    violations.push(`${clearedKeyGenerationTest.replaceAll("\\", "/")} must cover ${required}`);
+  }
+}
 if (/\bconsole\.(?:log|warn|error|info|debug)\s*\(/.test(stateFailureText)) {
   violations.push(
     `${stateFailureFile.replaceAll("\\", "/")} must route encounter state diagnostics through the typed diagnostic console entry`
@@ -546,6 +625,37 @@ for (const required of [
 ]) {
   if (!stateFailureTestText.includes(required)) {
     violations.push(`${stateFailureTest.replaceAll("\\", "/")} must cover ${required}`);
+  }
+}
+for (const required of [
+  "EncounterGenerationIncidentEvent.RECORD",
+  "EncounterGenerationIncidentEvent.MARK_DISPLAYED",
+  "incidentPersistence",
+]) {
+  if (!generationBlockText.includes(required)) {
+    violations.push(`${generationBlockFile.replaceAll("\\", "/")} must preserve ${required}`);
+  }
+}
+for (const required of [
+  "GM_setValue",
+  "EVENT_READ_ACTIVE",
+  "sharedAuthorityUnavailable",
+  "alreadyActive",
+  "ENCOUNTER_GENERATION_INCIDENT",
+]) {
+  if (!generationIncidentText.includes(required)) {
+    violations.push(`${generationIncidentFile.replaceAll("\\", "/")} must preserve ${required}`);
+  }
+}
+for (const required of [
+  "persists the complete incident before opening the blocking prompt",
+  "deduplicates the same blocking incident after it was displayed",
+  "keeps cross-site automation blocked when shared incident storage is unavailable",
+  "toBeLessThan",
+  "toHaveBeenCalledTimes(2)",
+]) {
+  if (!generationBlockTestText.includes(required)) {
+    violations.push(`${generationBlockTest.replaceAll("\\", "/")} must cover ${required}`);
   }
 }
 for (const required of [
@@ -608,7 +718,7 @@ if (/isLobbyOptionEnabled\(["']encounter["']\)/.test(lobbyText)) {
     "src/pages/lobby-automation.js must not bypass encounter-option-gate with raw encounter option reads"
   );
 }
-if (!/EncounterPolicyEvent\.READ_CLOCK/.test(ownerText)) {
+if (!/EncounterPolicyEvent\.READ_CLOCK/.test(lobbyFlowText)) {
   violations.push(
     `${owner.replaceAll("\\", "/")} lobby countdown and widget countdown must read one encounter clock query`
   );
@@ -836,7 +946,8 @@ if (
 if (/\bNEXT_CHECK_DELAY\b/.test(policyText)) {
   violations.push(`${policyFile.replaceAll("\\", "/")} must not expose raw next-check delay`);
 }
-if (!/EncounterPolicyEvent\.READ_CLOCK/.test(widgetPolicyText)) {
+const widgetStateText = fs.readFileSync(path.join(root, widgetStateFile), "utf8");
+if (!/EncounterPolicyEvent\.READ_CLOCK/.test(widgetStateText)) {
   violations.push(
     `${widgetPolicyFile.replaceAll("\\", "/")} widget countdown must use the encounter clock query`
   );
@@ -897,7 +1008,7 @@ for (const required of [
   "generationCircuitOpenUntil",
   'reason: "generationBackoff"',
   'reason: "generationCircuitOpen"',
-  'event.engage && unavailableReason === "encounterKeyMissing"',
+  "classifyEncounterGenerationResult",
   'reason: "dailyResetEvent"',
   'action: "dailyResetEvent"',
   'unavailableReason: "dailyResetEvent"',
@@ -912,6 +1023,108 @@ for (const required of [
     violations.push(
       `${widgetPolicyFile.replaceAll("\\", "/")} must preserve missing-key generation readiness evidence: ${required}`
     );
+  }
+}
+for (const required of [
+  "blocks a dawn response without cross-site navigation or a second generation request",
+  "coalesces simultaneous rollover ticks into one generation request",
+  "blocks with copy-ready evidence when the same generation attempt opens the circuit",
+  "vi.getTimerCount()",
+]) {
+  if (!dawnLoopRecoveryTestText.includes(required)) {
+    violations.push(`${dawnLoopRecoveryTest.replaceAll("\\", "/")} must cover ${required}`);
+  }
+}
+if (
+  !crossSiteStaleTestText.includes(
+    "treats a stale cross-site generation page as an immediate blocking result"
+  )
+) {
+  violations.push(`${crossSiteStaleTest.replaceAll("\\", "/")} must cover stale page blocking`);
+}
+for (const required of [
+  'action: "generate"',
+  'request: { method: "GET", url: ENCOUNTER_GENERATION_URL }',
+]) {
+  if (!entryPolicyText.includes(required)) {
+    violations.push(`${entryPolicyFile.replaceAll("\\", "/")} must plan ${required}`);
+  }
+}
+if (/action:\s*["']navigate["'][^\n]+ENCOUNTER_GENERATION_URL/.test(entryPolicyText)) {
+  violations.push(
+    `${entryPolicyFile.replaceAll("\\", "/")} must not collapse generation requests into navigation`
+  );
+}
+for (const required of [
+  "pendingLobbyGeneration",
+  "blockActiveEncounterIncident",
+  "blockEncounterEntry",
+  "EncounterStateEvent.LOAD_KEY",
+  'generation.status !== "available"',
+  'outcome?.action !== "navigated" || !outcome?.state?.key',
+]) {
+  if (!lobbyFlowText.includes(required)) {
+    violations.push(`${lobbyFlowFile.replaceAll("\\", "/")} must preserve ${required}`);
+  }
+}
+for (const required of [
+  "EncounterGenerationIncidentEvent.READ_ACTIVE",
+  "runEncounterGenerationIncident",
+  "showEncounterGenerationBlock",
+]) {
+  if (!lobbyActiveBlockText.includes(required)) {
+    violations.push(`${lobbyActiveBlockFile.replaceAll("\\", "/")} must preserve ${required}`);
+  }
+}
+for (const required of [
+  "EncounterGenerationStateEvent",
+  "executeEncounterGenerationRequest",
+  "generationStatePersistenceFailed",
+  'recovery.reason === "generationCircuitOpen"',
+]) {
+  if (!stateGenerationText.includes(required)) {
+    violations.push(`${stateGenerationFile.replaceAll("\\", "/")} must preserve ${required}`);
+  }
+}
+for (const required of [
+  "classifyEncounterGenerationResult",
+  "EncounterGenerationFailureReason.REQUEST_REJECTED",
+  "load-key-error",
+  "load-key-timeout",
+  "load-key-exception",
+  "load-key-callback-exception",
+  "ENCOUNTER_GENERATION_REQUEST_TIMEOUT_MS",
+  "onabort",
+]) {
+  if (!generationRequestText.includes(required)) {
+    violations.push(`${generationRequestFile.replaceAll("\\", "/")} must preserve ${required}`);
+  }
+}
+for (const required of [
+  "settles with typed recovery when response parsing throws",
+  "settles through its watchdog when GM never invokes a callback",
+  "timeout: 15_000",
+]) {
+  if (!generationRequestFailureTestText.includes(required)) {
+    violations.push(`${generationRequestFailureTest.replaceAll("\\", "/")} must cover ${required}`);
+  }
+}
+for (const required of [
+  "blocks a stale-GM second tick without issuing another generation request",
+  "gmXhr).toHaveBeenCalledOnce()",
+  "feedbackDeduplicated: true",
+]) {
+  if (!persistenceLoopTestText.includes(required)) {
+    violations.push(`${persistenceLoopTest.replaceAll("\\", "/")} must cover ${required}`);
+  }
+}
+for (const required of [
+  "UserFeedbackEvent.BLOCKING_ERROR",
+  "encounter-generation:",
+  "generationResult",
+]) {
+  if (!generationBlockText.includes(required)) {
+    violations.push(`${generationBlockFile.replaceAll("\\", "/")} must own ${required}`);
   }
 }
 for (const required of [
@@ -943,6 +1156,33 @@ if (!/\bWIDGET_TIMER_ELAPSED\b/.test(ownerText)) {
   violations.push(
     `${owner.replaceAll("\\", "/")} must expose widget timer expiry as an encounter event`
   );
+}
+for (const required of [
+  "WIDGET_GENERATION_FAILED",
+  "handleWidgetGenerationFailed",
+  "recordWidgetGeneration",
+]) {
+  if (!ownerText.includes(required)) {
+    violations.push(`${owner.replaceAll("\\", "/")} must own ${required}`);
+  }
+}
+for (const required of [
+  "blocks the widget on the first dawn response and stops its ready loop",
+  "backs off a widget fetch failure before its timer can request again",
+  'reason: "generationBackoff"',
+]) {
+  if (!widgetFailureFlowTestText.includes(required)) {
+    violations.push(`${widgetFailureFlowTest.replaceAll("\\", "/")} must cover ${required}`);
+  }
+}
+for (const required of [
+  "run_hvut_encounter_bridge('WIDGET_GENERATION_FAILED'",
+  "if (applyEncounterState(outcome) === false) return false;",
+  "if (outcome?.handled) return false;",
+]) {
+  if (!hvUtilsText.includes(required)) {
+    violations.push(`${hvUtilsFile.replaceAll("\\", "/")} must preserve ${required}`);
+  }
 }
 if (!/\bWIDGET_TIMER_ELAPSED\b/.test(hvUtilsText)) {
   violations.push(
@@ -1028,7 +1268,7 @@ for (const required of [
   "messagebox_error",
   "Your equipment inventory is full",
 ]) {
-  if (!widgetPolicyText.includes(required) && !widgetUnavailableText.includes(required)) {
+  if (!widgetPolicyText.includes(required) && !generationResultText.includes(required)) {
     violations.push(
       `${widgetPolicyFile.replaceAll("\\", "/")} must classify widget unavailable reason ${required}`
     );
@@ -1039,7 +1279,7 @@ for (const required of [
     );
   }
 }
-if (!widgetPolicyText.includes("classifyWidgetUnavailableReason")) {
+if (!widgetPolicyText.includes("classifyEncounterGenerationResult")) {
   violations.push(
     `${widgetPolicyFile.replaceAll("\\", "/")} must classify widget unavailable reasons through one function`
   );
@@ -1059,12 +1299,14 @@ for (const required of [
     );
   }
 }
-if (!widgetPolicyText.includes('if (event.pageType !== "ba") return readWidgetState(event.state);')) {
+if (
+  !widgetPolicyText.includes('if (event.pageType !== "ba") return readWidgetState(event.state);')
+) {
   violations.push(
     `${widgetPolicyFile.replaceAll("\\", "/")} must reject widget started events outside the battle page`
   );
 }
-if (/Inventory Capacity:[\s\S]{0,180}equipmentInventoryFull/.test(widgetPolicyText)) {
+if (/Inventory Capacity:[\s\S]{0,180}equipmentInventoryFull/.test(generationResultText)) {
   violations.push(
     `${widgetPolicyFile.replaceAll("\\", "/")} must not derive equipment-full reason from capacity text`
   );

@@ -24,9 +24,18 @@ describe("encounter state dawn recovery", () => {
       });
     });
 
-    const state = await runEncounterStateAutomation({ type: EncounterStateEvent.LOAD_KEY });
+    const result = await runEncounterStateAutomation({
+      type: EncounterStateEvent.LOAD_KEY,
+      request: { method: "GET", url: "https://e-hentai.org/news.php?encounter" },
+    });
 
-    expect(state).toBeNull();
+    expect(result).toMatchObject({
+      status: "unavailable",
+      reason: "dailyResetEvent",
+      persisted: true,
+      blocked: true,
+      recovery: { status: "countdown", reason: "generationBackoff" },
+    });
     expect(JSON.parse(localStorage.getItem(HVUT_RE_KEY))).toMatchObject({
       date: 0,
       key: "",

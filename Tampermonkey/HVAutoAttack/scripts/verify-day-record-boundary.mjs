@@ -48,6 +48,8 @@ for (const required of [
   "TimeEvent.MS_UNTIL_NEXT_UTC_DAY",
   "REFRESH_AND_SCHEDULE_NEXT_UTC_DAY",
   "UTC_DAY_ROLLOVER_GRACE_MS",
+  "handleUtcDayRollover",
+  "TimeEvent.EPOCH_MS",
 ]) {
   if (!ownerText.includes(required)) {
     violations.push(`${owner.replaceAll("\\", "/")} must own ${required}`);
@@ -83,6 +85,11 @@ for (const internal of ["syncUtcDate(", "refreshAndScheduleNextUtcDay("]) {
 }
 if (!/runDayRecordAutomation\(null\)/.test(ownerTestText)) {
   violations.push(`${ownerTest.replaceAll("\\", "/")} must cover null day-record events`);
+}
+if (!ownerTestText.includes("schedule).toHaveBeenCalledTimes(2)")) {
+  violations.push(
+    `${ownerTest.replaceAll("\\", "/")} must prove rollover reschedules before lobby rerun`
+  );
 }
 
 const lobbyText = fs.readFileSync(path.join(root, lobby), "utf8");

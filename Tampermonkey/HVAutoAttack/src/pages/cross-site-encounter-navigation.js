@@ -6,8 +6,16 @@ import {
   NavigationRedirectReason,
   runNavigationAutomation,
 } from "../core/navigate.js";
+import { EncounterEvent, runEncounterAutomation } from "./encounter.js";
+import {
+  classifyEncounterGenerationResult,
+  EncounterGenerationResultStatus,
+} from "./encounter-generation-result.js";
 import { PageKind } from "./page-kind.js";
-import { persistCrossSiteReturnOrigin } from "./cross-site-encounter-failure.js";
+import {
+  persistCrossSiteReturnOrigin,
+  recordCrossSiteEncounterFailure,
+} from "./cross-site-encounter-failure.js";
 
 const DEFAULT_HV_ORIGIN = "https://hentaiverse.org";
 const EHENTAI_ENCOUNTER_URL = "https://e-hentai.org/news.php?encounter";
@@ -27,16 +35,37 @@ function readReturnOrigin(deps) {
   return DEFAULT_HV_ORIGIN;
 }
 
-function readEncounterPath(deps) {
-  const eventLink = deps.document().querySelector("#eventpane>div>a");
-  return eventLink ? `/${eventLink.href.split("/")[3]}` : "";
+function blockUnavailableEncounter(deps, eventpane, result) {
+  const source = {
+    identity: "persistentEncounterGeneration",
+    pageKind: PageKind.EHENTAI,
+    href: deps.href(),
+  };
+  const request = { method: "GET", url: EHENTAI_ENCOUNTER_URL };
+  deps.recordFailure("generation-result-unavailable", {
+    kind: "encounterGenerationUnavailable",
+    source,
+    request,
+    result,
+  });
+  const generation = deps.handleGenerationPage({
+    eventpane,
+    request,
+    source,
+  });
+  return Boolean(generation?.handled);
 }
 
 function redirectToEncounterOrigin(deps) {
   if (deps.href() !== EHENTAI_ENCOUNTER_URL) return true;
+  const eventpane = deps.document().querySelector("#eventpane")?.innerHTML || "";
+  const result = classifyEncounterGenerationResult({ eventpane });
+  if (result.status !== EncounterGenerationResultStatus.AVAILABLE) {
+    return blockUnavailableEncounter(deps, eventpane, result);
+  }
   return Boolean(
     deps.openUrl(
-      `${readReturnOrigin(deps)}${readEncounterPath(deps)}`,
+      `${readReturnOrigin(deps)}/?s=Battle&ss=ba&encounter=${result.key}`,
       NavigationRedirectReason.CROSS_SITE_ENCOUNTER
     )
   );
@@ -58,6 +87,14 @@ function makeDeps(deps) {
     origin: deps.origin || (() => window.location.origin),
     referrer: deps.referrer || (() => document.referrer),
     persistReturnOrigin: deps.persistReturnOrigin || persistCrossSiteReturnOrigin,
+    recordFailure: deps.recordFailure || recordCrossSiteEncounterFailure,
+    handleGenerationPage:
+      deps.handleGenerationPage ||
+      ((event) =>
+        runEncounterAutomation({
+          type: EncounterEvent.GENERATION_PAGE_READY,
+          ...event,
+        })),
   };
 }
 

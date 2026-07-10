@@ -118,6 +118,19 @@ describe("runEncounterPolicy route contract", () => {
     });
   });
 
+  it("generates a new key after the attempted key cooldown expires", () => {
+    expect(
+      runEncounterPolicy({
+        type: EncounterPolicyEvent.PLAN_ACTIVATION,
+        state: { date: 1000, key: "abc", count: 1, clear: true },
+        nowMs: 1000 + 31 * 60 * 1000,
+      })
+    ).toMatchObject({
+      action: "generate",
+      request: { method: "GET", url: "https://e-hentai.org/news.php?encounter" },
+    });
+  });
+
   it("does not reactivate the same key after it has been attempted", () => {
     const attempted = { date: 1000, key: "abc", count: 1, clear: true };
 
