@@ -1,7 +1,11 @@
 import { StaminaEvent, runStaminaAutomation } from "../state/stamina.js";
-import { executeEncounterEntry } from "./encounter-entry-execution.js";
 import { showEncounterGenerationBlock } from "./encounter-generation-block.js";
 import { blockActiveEncounterIncident } from "./encounter-lobby-active-block.js";
+import {
+  blockEncounterEntry,
+  enterPlannedEncounter,
+  planStoredEncounterEntry,
+} from "./encounter-lobby-entry.js";
 import {
   EncounterLobbyScheduleEvent,
   runEncounterLobbySchedule,
@@ -28,36 +32,6 @@ function waitForNextCheck(state, event) {
 function scheduleBlockedOutcome(outcome, state, event) {
   if (!state) return outcome;
   return { ...outcome, retry: waitForNextCheck(state, event) };
-}
-
-function planStoredEncounterEntry(state, event) {
-  return runEncounterPolicy({
-    type: EncounterPolicyEvent.PLAN_ACTIVATION,
-    state,
-    isIsekai: Boolean(event?.isIsekai),
-  });
-}
-
-function enterPlannedEncounter(plan) {
-  const outcome = executeEncounterEntry(plan);
-  return outcome?.handled || outcome?.blocked ? outcome : undefined;
-}
-
-function blockEncounterEntry(outcome, source, event) {
-  return scheduleBlockedOutcome(
-    showEncounterGenerationBlock(
-      {
-        status: "persistenceFailed",
-        reason: outcome.reason,
-        state: outcome.state,
-        persistence: outcome.persistence || outcome.rollback?.persistence,
-        blocked: true,
-      },
-      source
-    ),
-    outcome.state,
-    event
-  );
 }
 
 function claimEnteredEncounter(outcome) {
@@ -87,7 +61,12 @@ async function loadAndEnterEncounter(plan, event) {
 }
 
 function finishLobbyGeneration(generation, event) {
-  if (generation.entry?.blocked) return blockEncounterEntry(generation.entry, "lobbyEntry", event);
+  if (generation.entry?.blocked)
+    return scheduleBlockedOutcome(
+      blockEncounterEntry(generation.entry, "lobbyEntry"),
+      generation.entry.state,
+      event
+    );
   const entered = claimEnteredEncounter(generation.entry);
   if (entered) return entered;
   if (generation.blocked)
@@ -165,7 +144,8 @@ export function runEncounterLobbyFlow(event) {
   if (clock.status === "countdown") return waitForNextCheck(state, event);
   const plan = planStoredEncounterEntry(state, event);
   const entry = enterPlannedEncounter(plan);
-  if (entry?.blocked) return blockEncounterEntry(entry, "lobbyEntry", event);
+  if (entry?.blocked)
+    return scheduleBlockedOutcome(blockEncounterEntry(entry, "lobbyEntry"), entry.state, event);
   const entered = claimEnteredEncounter(entry);
   if (entered) return entered;
   if (runStaminaAutomation({ type: StaminaEvent.SHOULD_RESTORE_FOR_BATTLE })) {

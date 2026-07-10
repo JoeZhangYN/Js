@@ -1,4 +1,5 @@
 import { DiagnosticEvidenceKey } from "../core/diagnostic-evidence-keys.js";
+import { clearEncounterGenerationIncident } from "./encounter-generation-incident-clear.js";
 
 const EVENT_RECORD = "record";
 const EVENT_MARK_DISPLAYED = "markDisplayed";
@@ -67,40 +68,10 @@ function readActiveIncident() {
   return stored || readMirroredIncident();
 }
 
-function clearMirroredIncident() {
-  try {
-    globalThis.sessionStorage?.removeItem(DiagnosticEvidenceKey.ENCOUNTER_GENERATION_INCIDENT);
-    return { ok: true, scope: "originSession" };
-  } catch (error) {
-    return { ok: false, scope: "originSession", error: errorText(error) };
-  }
-}
-
 function clearIncident(event) {
   const authority = selectAuthority();
-  const mirror = clearMirroredIncident();
   if (event.incident?.id) displayedIncidentIds.delete(event.incident.id);
-  if (authority.authority === "unavailable") {
-    return { ok: false, kind: "clearFailed", ...authority, mirror };
-  }
-  if (authority.authority === "session") {
-    return mirror.ok
-      ? { ok: true, kind: "cleared", ...authority, mirror }
-      : { ok: false, kind: "clearFailed", ...authority, reason: "sessionClearFailed", mirror };
-  }
-  try {
-    GM_setValue(DiagnosticEvidenceKey.ENCOUNTER_GENERATION_INCIDENT, null);
-    return { ok: true, kind: "cleared", ...authority, mirror };
-  } catch (error) {
-    return {
-      ok: false,
-      kind: "clearFailed",
-      ...authority,
-      reason: "gmClearFailed",
-      error: errorText(error),
-      mirror,
-    };
-  }
+  return clearEncounterGenerationIncident(authority);
 }
 
 function persistIncident(incident, authority) {

@@ -37,9 +37,7 @@ function renderPaused() {
   setPauseButtonText("<l0>继续</l0><l1>繼續</l1><l2>Continue</l2>");
 }
 
-function errorText(error) {
-  return error?.message || String(error);
-}
+const errorText = (error) => error?.message || String(error);
 
 function persistEmergencyPause(event, primaryError) {
   const emergency = {

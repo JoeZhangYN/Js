@@ -31,8 +31,12 @@ const generationResultFile = path.normalize("src/pages/encounter-generation-resu
 const generationResultTest = path.normalize("src/pages/encounter-generation-result.test.js");
 const generationBlockFile = path.normalize("src/pages/encounter-generation-block.js");
 const generationIncidentFile = path.normalize("src/pages/encounter-generation-incident.js");
+const generationIncidentClearFile = path.normalize(
+  "src/pages/encounter-generation-incident-clear.js"
+);
 const generationBlockTest = path.normalize("src/pages/encounter-generation-block.test.js");
 const dawnLoopRecoveryTest = path.normalize("src/pages/encounter-dawn-loop-recovery.test.js");
+const dawnIncidentExpiryTest = path.normalize("src/pages/encounter-dawn-incident-expiry.test.js");
 const clearedKeyGenerationTest = path.normalize(
   "src/pages/encounter-cleared-key-generation.test.js"
 );
@@ -109,6 +113,7 @@ function checkFile(file) {
       relative !== stateDawnRecoveryTest &&
       relative !== stateGenerationFailureTest &&
       relative !== dawnLoopRecoveryTest &&
+      relative !== dawnIncidentExpiryTest &&
       relative !== clearedKeyGenerationTest &&
       relative !== circuitResumeTest &&
       relative !== persistenceLoopTest &&
@@ -322,6 +327,10 @@ const generationRecoveryText = fs.readFileSync(path.join(root, generationRecover
 const generationResultText = fs.readFileSync(path.join(root, generationResultFile), "utf8");
 const generationBlockText = fs.readFileSync(path.join(root, generationBlockFile), "utf8");
 const generationIncidentText = fs.readFileSync(path.join(root, generationIncidentFile), "utf8");
+const generationIncidentClearText = fs.readFileSync(
+  path.join(root, generationIncidentClearFile),
+  "utf8"
+);
 const generationBlockTestText = fs.readFileSync(path.join(root, generationBlockTest), "utf8");
 const generationRequestFailureTestText = fs.readFileSync(
   path.join(root, generationRequestFailureTest),
@@ -332,6 +341,7 @@ const widgetFailureFlowTestText = fs.readFileSync(path.join(root, widgetFailureF
 const lobbyFlowText = fs.readFileSync(path.join(root, lobbyFlowFile), "utf8");
 const lobbyActiveBlockText = fs.readFileSync(path.join(root, lobbyActiveBlockFile), "utf8");
 const dawnLoopRecoveryTestText = fs.readFileSync(path.join(root, dawnLoopRecoveryTest), "utf8");
+const dawnIncidentExpiryTestText = fs.readFileSync(path.join(root, dawnIncidentExpiryTest), "utf8");
 const crossSiteStaleTestText = fs.readFileSync(path.join(root, crossSiteStaleTest), "utf8");
 const policyTestText = [policyTest, policyRouteTest, generationRecoveryTest]
   .map((file) => fs.readFileSync(path.join(root, file), "utf8"))
@@ -380,6 +390,13 @@ for (const required of [
       `${entryExecutionFailureTest.replaceAll("\\", "/")} must cover failed encounter navigation without claiming success: ${required}`
     );
   }
+}
+if (
+  !dawnIncidentExpiryTestText.includes(
+    "retries a displayed dawn incident after its recovery window expires"
+  )
+) {
+  violations.push(`${dawnIncidentExpiryTest.replaceAll("\\", "/")} must cover incident expiry`);
 }
 const prepareIndex = entryExecutionText.indexOf("const prepared = prepareEntry(outcome)");
 const navigationIndex = entryExecutionText.indexOf("const navigated = runNavigationAutomation");
@@ -637,7 +654,6 @@ for (const required of [
   }
 }
 for (const required of [
-  "GM_setValue",
   "EVENT_READ_ACTIVE",
   "EVENT_CLEAR",
   "sharedAuthorityUnavailable",
@@ -646,6 +662,13 @@ for (const required of [
 ]) {
   if (!generationIncidentText.includes(required)) {
     violations.push(`${generationIncidentFile.replaceAll("\\", "/")} must preserve ${required}`);
+  }
+}
+for (const required of ["GM_setValue", "clearMirroredIncident", "gmClearFailed"]) {
+  if (!generationIncidentClearText.includes(required)) {
+    violations.push(
+      `${generationIncidentClearFile.replaceAll("\\", "/")} must preserve ${required}`
+    );
   }
 }
 for (const required of [
