@@ -2,11 +2,17 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
   runDiagnosticConsoleAutomation: vi.fn(),
+  runUserFeedbackAutomation: vi.fn(),
 }));
 
 vi.mock("../../core/diagnostic-console.js", () => ({
-  DiagnosticConsoleEvent: Object.freeze({ WARN: "warn" }),
+  DiagnosticConsoleEvent: Object.freeze({ WARN: "warn", DEBUG: "debug" }),
   runDiagnosticConsoleAutomation: mocks.runDiagnosticConsoleAutomation,
+}));
+
+vi.mock("../../core/lang.js", () => ({
+  UserFeedbackEvent: Object.freeze({ BLOCKING_ERROR: "blockingError" }),
+  runUserFeedbackAutomation: mocks.runUserFeedbackAutomation,
 }));
 
 import {
@@ -20,6 +26,7 @@ beforeEach(() => {
   document.body.innerHTML = '<button class="pauseChange"></button>';
   mocks.runDiagnosticConsoleAutomation.mockReset();
   mocks.runDiagnosticConsoleAutomation.mockReturnValue(true);
+  mocks.runUserFeedbackAutomation.mockReset();
 });
 
 afterEach(() => {
@@ -59,7 +66,9 @@ describe("runCriticalBuffPauseExecution", () => {
       detail: { eventType: null },
     });
 
-    expect(mocks.runDiagnosticConsoleAutomation).not.toHaveBeenCalled();
+    expect(mocks.runDiagnosticConsoleAutomation).not.toHaveBeenCalledWith(
+      expect.objectContaining({ type: "warn" })
+    );
     expect(document.title).toBe("");
     expect(document.querySelector(".pauseChange").innerHTML).toBe("");
   });
@@ -69,7 +78,9 @@ describe("runCriticalBuffPauseExecution", () => {
       runCriticalBuffPauseExecution({ type: CriticalBuffPauseExecutionEvent.APPLY_PLAN })
     ).toBe(false);
 
-    expect(mocks.runDiagnosticConsoleAutomation).not.toHaveBeenCalled();
+    expect(mocks.runDiagnosticConsoleAutomation).not.toHaveBeenCalledWith(
+      expect.objectContaining({ type: "warn" })
+    );
     expect(document.title).toBe("");
     expect(document.querySelector(".pauseChange").innerHTML).toBe("");
     expect(JSON.parse(sessionStorage.getItem("HVAA:lastBattlePause"))).toMatchObject({

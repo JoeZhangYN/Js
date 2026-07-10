@@ -4,6 +4,12 @@ const mocks = vi.hoisted(() => ({
   runDiagnosticConsoleAutomation: vi.fn(),
   runAlarmAutomation: vi.fn(),
   runBattlePauseAutomation: vi.fn(),
+  runUserFeedbackAutomation: vi.fn(),
+}));
+
+vi.mock("../../core/lang.js", () => ({
+  UserFeedbackEvent: Object.freeze({ BLOCKING_ERROR: "blockingError" }),
+  runUserFeedbackAutomation: mocks.runUserFeedbackAutomation,
 }));
 
 vi.mock("../../core/diagnostic-console.js", () => ({
@@ -34,6 +40,7 @@ beforeEach(() => {
   mocks.runDiagnosticConsoleAutomation.mockReturnValue(true);
   mocks.runAlarmAutomation.mockReset();
   mocks.runBattlePauseAutomation.mockReset();
+  mocks.runUserFeedbackAutomation.mockReset();
 });
 
 describe("critical buff pause execution result semantics", () => {
@@ -54,7 +61,13 @@ describe("critical buff pause execution result semantics", () => {
       reason: "criticalBuff",
       detail: expect.objectContaining({ ...plan, alarmResult: false }),
     });
-    expect(document.title).toContain("Spark of Life");
+    expect(document.title).toBe("");
+    expect(mocks.runUserFeedbackAutomation).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: "blockingError",
+        evidence: expect.objectContaining({ reason: "criticalPauseFailed", plan }),
+      })
+    );
   });
 
   it("still pauses when the alarm side effect fails", () => {

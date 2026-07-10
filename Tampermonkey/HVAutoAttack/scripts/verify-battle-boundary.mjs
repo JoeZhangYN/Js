@@ -2870,7 +2870,9 @@ function checkCriticalBuffEntry() {
     "runBattlePauseEvidence",
     "document.title",
     "const pauseResult = runBattlePauseAutomation",
-    "return Boolean(pauseResult)",
+    "if (!pauseResult) return blockCriticalPauseFailure",
+    "UserFeedbackEvent.BLOCKING_ERROR",
+    "criticalPauseFailed",
     "invalidCriticalBuffPausePlan",
     "unknownCriticalPauseExecutionEvent",
     "rejectUnknownCriticalPauseEvent",
@@ -2949,6 +2951,9 @@ function checkCriticalBuffEntry() {
       "warningError",
       "runDiagnosticConsoleAutomation",
       "runBattlePauseAutomation",
+      "runUserFeedbackAutomation",
+      'expect(document.title).toBe("")',
+      "criticalPauseFailed",
       "toBe(false)",
     ]) {
       if (!resultTestText.includes(required)) {

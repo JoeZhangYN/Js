@@ -57,6 +57,10 @@ function checkEntry() {
     "BattlePauseEvidenceEvent.RECORD_STATE",
     "runBattlePauseEvidence",
     "recordPauseState",
+    "EMERGENCY_PAUSE_SESSION_KEY",
+    "persistEmergencyPause",
+    "readEmergencyPause",
+    "clearEmergencyPause",
   ]) {
     if (!text.includes(required)) {
       violations.push(`${entry.replaceAll("\\", "/")} must record pause evidence ${required}`);
@@ -115,7 +119,6 @@ function checkEntry() {
   }
   for (const required of [
     "unknownPauseEvent",
-    "pausePersistenceFailed",
     "battlePauseEventHandlers[event?.type]",
     'recordPauseState("rejected", EVENT_UNKNOWN_PAUSE, { eventType: event?.type ?? null })',
   ]) {
@@ -130,10 +133,12 @@ function checkEntry() {
   for (const required of [
     "rejects unknown events without touching pause state",
     "rejects null events with pause evidence instead of throwing",
-    "does not report pause success when disabled persistence fails",
-    "does not report toggle pause success when disabled persistence fails",
+    "establishes an emergency tab pause when disabled persistence fails",
+    "toggles an emergency tab pause and resumes it through the same entry",
+    "keeps the runtime emergency pause active when session storage is unavailable",
     "disabled write blocked",
-    "pausePersistenceFailed",
+    "HVAA:emergencyBattlePause",
+    "degraded: true",
     "unknownPauseEvent",
     "eventType: null",
   ]) {

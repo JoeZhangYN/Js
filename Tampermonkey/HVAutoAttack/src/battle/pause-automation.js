@@ -10,6 +10,9 @@ const EVENT_RENDER_IF_PAUSED = "renderIfPaused";
 const EVENT_PAUSE = "pause";
 const EVENT_TOGGLE = "toggle";
 const EVENT_UNKNOWN_PAUSE = "unknownPauseEvent";
+const EMERGENCY_PAUSE_SESSION_KEY = "HVAA:emergencyBattlePause";
+let emergencyPauseMemory = null;
+let emergencyPauseMemoryOnly = false;
 
 export const BattlePauseEvent = Object.freeze({
   RENDER_PAUSED: EVENT_RENDER_PAUSED,
@@ -34,14 +37,71 @@ function renderPaused() {
   setPauseButtonText("<l0>继续</l0><l1>繼續</l1><l2>Continue</l2>");
 }
 
-function pauseBattle() {
+function errorText(error) {
+  return error?.message || String(error);
+}
+
+function persistEmergencyPause(event, primaryError) {
+  const emergency = {
+    reason: event.reason || EVENT_PAUSE,
+    detail: event.detail,
+    primaryError: errorText(primaryError),
+    at: new Date().toISOString(),
+  };
+  emergencyPauseMemory = emergency;
+  try {
+    sessionStorage.setItem(EMERGENCY_PAUSE_SESSION_KEY, JSON.stringify(emergency));
+    emergencyPauseMemoryOnly = false;
+    return { ok: true, scope: "tabSession", emergency };
+  } catch (error) {
+    emergencyPauseMemoryOnly = true;
+    return { ok: true, scope: "runtimeMemory", emergency, storageError: errorText(error) };
+  }
+}
+
+function readEmergencyPause() {
+  if (emergencyPauseMemoryOnly) return emergencyPauseMemory;
+  try {
+    const raw = sessionStorage.getItem(EMERGENCY_PAUSE_SESSION_KEY);
+    if (!raw) {
+      emergencyPauseMemory = null;
+      return null;
+    }
+    emergencyPauseMemory = JSON.parse(raw);
+  } catch {
+    // Runtime memory remains authoritative when session storage is unavailable.
+  }
+  return emergencyPauseMemory;
+}
+
+function clearEmergencyPause() {
+  emergencyPauseMemory = null;
+  emergencyPauseMemoryOnly = false;
+  try {
+    sessionStorage.removeItem(EMERGENCY_PAUSE_SESSION_KEY);
+    return { ok: true, scope: "tabSession" };
+  } catch (error) {
+    return { ok: true, scope: "runtimeMemory", storageError: errorText(error) };
+  }
+}
+
+function readPauseState() {
+  return {
+    persistent: Boolean(getValue(STORAGE_KEYS.DISABLED)),
+    emergency: readEmergencyPause(),
+  };
+}
+
+function pauseBattle(event) {
   try {
     setValue(STORAGE_KEYS.DISABLED, true);
   } catch (error) {
-    return { ok: false, error: error?.message || String(error) };
+    const emergency = persistEmergencyPause(event, error);
+    setPauseButtonText("<l0>继续</l0><l1>繼續</l1><l2>Continue</l2>");
+    return { ok: true, degraded: true, primaryError: errorText(error), emergency };
   }
   setPauseButtonText("<l0>继续</l0><l1>繼續</l1><l2>Continue</l2>");
-  return { ok: true };
+  return { ok: true, degraded: false };
 }
 
 function recordPauseState(state, reason, detail) {
@@ -53,11 +113,22 @@ function recordPauseState(state, reason, detail) {
   });
 }
 
-function resumeBattle(resume) {
+function resumeBattle(resume, pauseState) {
+  if (pauseState.persistent) {
+    try {
+      delValue(0);
+    } catch (error) {
+      recordPauseState("failed", "pauseResumePersistenceFailed", {
+        error: errorText(error),
+      });
+      return false;
+    }
+  }
+  const emergency = clearEmergencyPause();
   setPauseButtonText("<l0>暂停</l0><l1>暫停</l1><l2>Pause</l2>");
-  delValue(0);
-  recordPauseState("resumed", "toggle");
+  recordPauseState("resumed", "toggle", { emergency });
   resume?.();
+  return true;
 }
 
 function handleRenderPaused() {
@@ -66,35 +137,29 @@ function handleRenderPaused() {
 }
 
 function handleRenderIfPaused() {
-  if (!getValue(STORAGE_KEYS.DISABLED)) return false;
+  const pauseState = readPauseState();
+  if (!pauseState.persistent && !pauseState.emergency) return false;
   renderPaused();
   return true;
 }
 
 function handleToggle(deps) {
-  if (getValue(STORAGE_KEYS.DISABLED)) {
-    resumeBattle(deps.resume);
+  const pauseState = readPauseState();
+  if (pauseState.persistent || pauseState.emergency) {
+    return resumeBattle(deps.resume, pauseState);
   } else {
-    const pause = pauseBattle();
-    if (!pause.ok) {
-      recordPauseState("failed", "pausePersistenceFailed", pause);
-      return false;
-    }
-    recordPauseState("paused", "toggle");
+    const pause = pauseBattle({ reason: "toggle" });
+    recordPauseState("paused", "toggle", pause.degraded ? { persistence: pause } : undefined);
   }
   return true;
 }
 
 function handlePause(event) {
-  const pause = pauseBattle();
-  if (!pause.ok) {
-    recordPauseState("failed", "pausePersistenceFailed", {
-      requestedReason: event.reason || EVENT_PAUSE,
-      ...pause,
-    });
-    return false;
-  }
-  recordPauseState("paused", event.reason || EVENT_PAUSE, event.detail);
+  const pause = pauseBattle(event);
+  recordPauseState("paused", event.reason || EVENT_PAUSE, {
+    ...event.detail,
+    ...(pause.degraded ? { persistence: pause } : {}),
+  });
   return true;
 }
 

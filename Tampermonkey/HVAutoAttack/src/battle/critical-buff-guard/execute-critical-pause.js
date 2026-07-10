@@ -3,6 +3,7 @@ import {
   DiagnosticConsoleEvent,
   runDiagnosticConsoleAutomation,
 } from "../../core/diagnostic-console.js";
+import { UserFeedbackEvent, runUserFeedbackAutomation } from "../../core/lang.js";
 import { BattlePauseEvent, runBattlePauseAutomation } from "../pause-automation.js";
 import { BattlePauseEvidenceEvent, runBattlePauseEvidence } from "../battle-pause-evidence.js";
 
@@ -32,8 +33,34 @@ function executeCriticalPause(plan) {
     reason: "criticalBuff",
     detail: { ...plan, ...warning, ...alarm },
   });
+  if (!pauseResult) return blockCriticalPauseFailure(plan, warning, alarm);
   document.title = `hvAA 暂停: ${plan.name} 即将消失但 MP 不足`;
-  return Boolean(pauseResult);
+  return true;
+}
+
+function blockCriticalPauseFailure(plan, warning, alarm) {
+  try {
+    runUserFeedbackAutomation({
+      type: UserFeedbackEvent.BLOCKING_ERROR,
+      incident: `critical-buff-pause:${plan.name}`,
+      copy: {
+        l0: "关键增益即将消失，但自动暂停失败。请复制诊断信息后反馈。",
+        l1: "關鍵增益即將消失，但自動暫停失敗。請複製診斷資訊後回報。",
+        l2: "A critical buff is expiring, but automatic pause failed. Copy the report for support.",
+      },
+      evidence: {
+        capability: "criticalBuffPause",
+        stage: "pauseExecution",
+        reason: "criticalPauseFailed",
+        plan,
+        warning,
+        alarm,
+      },
+    });
+  } catch {
+    // The pause evidence was persisted before this best-effort blocking prompt.
+  }
+  return false;
 }
 
 function warnCriticalPause(plan) {

@@ -7,6 +7,7 @@ beforeEach(() => {
   localStorage.clear();
   sessionStorage.clear();
   document.body.innerHTML = '<button class="pauseChange"></button>';
+  vi.restoreAllMocks();
   vi.unstubAllGlobals();
 });
 
@@ -64,7 +65,7 @@ describe("battle pause automation", () => {
     });
   });
 
-  it("does not report pause success when disabled persistence fails", () => {
+  it("establishes an emergency tab pause when disabled persistence fails", () => {
     vi.stubGlobal("GM_setValue", () => {
       throw new Error("disabled write blocked");
     });
@@ -75,33 +76,61 @@ describe("battle pause automation", () => {
         reason: "criticalBuff",
         detail: { name: "Spark of Life" },
       })
-    ).toBe(false);
+    ).toBe(true);
 
-    expect(document.querySelector(".pauseChange").innerHTML).toBe("");
+    expect(document.querySelector(".pauseChange").innerHTML).toContain("Continue");
+    expect(sessionStorage.getItem("HVAA:emergencyBattlePause")).not.toBeNull();
     expect(JSON.parse(sessionStorage.getItem("HVAA:lastBattlePause"))).toMatchObject({
-      state: "failed",
-      reason: "pausePersistenceFailed",
+      state: "paused",
+      reason: "criticalBuff",
       detail: {
-        requestedReason: "criticalBuff",
-        ok: false,
-        error: "disabled write blocked",
+        name: "Spark of Life",
+        persistence: {
+          degraded: true,
+          primaryError: "disabled write blocked",
+          emergency: { scope: "tabSession" },
+        },
       },
     });
+    expect(runBattlePauseAutomation({ type: BattlePauseEvent.RENDER_IF_PAUSED })).toBe(true);
   });
 
-  it("does not report toggle pause success when disabled persistence fails", () => {
+  it("toggles an emergency tab pause and resumes it through the same entry", () => {
     vi.stubGlobal("GM_setValue", () => {
       throw new Error("disabled write blocked");
     });
 
-    expect(runBattlePauseAutomation({ type: BattlePauseEvent.TOGGLE })).toBe(false);
+    expect(runBattlePauseAutomation({ type: BattlePauseEvent.TOGGLE })).toBe(true);
 
-    expect(document.querySelector(".pauseChange").innerHTML).toBe("");
+    expect(document.querySelector(".pauseChange").innerHTML).toContain("Continue");
     expect(JSON.parse(sessionStorage.getItem("HVAA:lastBattlePause"))).toMatchObject({
-      state: "failed",
-      reason: "pausePersistenceFailed",
-      detail: { ok: false, error: "disabled write blocked" },
+      state: "paused",
+      reason: "toggle",
+      detail: { persistence: { degraded: true, primaryError: "disabled write blocked" } },
     });
+
+    expect(runBattlePauseAutomation({ type: BattlePauseEvent.TOGGLE })).toBe(true);
+    expect(sessionStorage.getItem("HVAA:emergencyBattlePause")).toBeNull();
+    expect(document.querySelector(".pauseChange").innerHTML).toContain("Pause");
+  });
+
+  it("keeps the runtime emergency pause active when session storage is unavailable", () => {
+    const originalSetItem = sessionStorage.setItem.bind(sessionStorage);
+    vi.spyOn(sessionStorage, "setItem").mockImplementation((key, value) => {
+      if (key === "HVAA:emergencyBattlePause") {
+        throw new Error("session blocked");
+      }
+      return originalSetItem(key, value);
+    });
+    vi.stubGlobal("GM_setValue", () => {
+      throw new Error("disabled write blocked");
+    });
+
+    expect(runBattlePauseAutomation({ type: BattlePauseEvent.PAUSE })).toBe(true);
+    expect(sessionStorage.getItem("HVAA:emergencyBattlePause")).toBeNull();
+    expect(runBattlePauseAutomation({ type: BattlePauseEvent.RENDER_IF_PAUSED })).toBe(true);
+    expect(document.querySelector(".pauseChange").innerHTML).toContain("Continue");
+    expect(runBattlePauseAutomation({ type: BattlePauseEvent.TOGGLE })).toBe(true);
   });
 
   it("records toggle resume evidence", () => {
