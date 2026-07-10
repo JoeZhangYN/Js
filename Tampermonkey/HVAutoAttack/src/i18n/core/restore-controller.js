@@ -9,16 +9,20 @@
 // （交换各自 translatedList 的原文↔译文 + 翻转其私有 translated）。按钮 click / Alt+A 一次
 // 调度全部回调 → 切换一次同时回退所有引擎。lang 显示态执行器（setLang）见 Phase 2。
 
-import { reverseLookup } from "../../data/i18n/reverse-dict.js";
-import { EQUIP_ITEMS, EQUIP_INFO, EQUIP_EXTRA } from "../../data/i18n/equip-dict.js";
-import { SPELL_TYPE, EQ_CATEGORY, AB_CATEGORY } from "../../data/i18n/hvut-terms.js";
-import { INTERFACE_WORDS } from "../../data/i18n/interface-dict.js";
-import { langPostProcess } from "./lang-post.js";
-import { g } from "../../state/store.js";
 import { I18N_RESTORE_FAILURE_KEY, recordI18nRestoreFailure } from "./restore-failure.js";
 import { recordI18nInitFailure } from "./init-failure.js";
+import { TOP_MENU_DEFAULT_LINKS } from "../../data/i18n/navigation-terms.js";
+import {
+  isSkipped,
+  registerTranslation,
+  resolveEn,
+  SKIP_ATTR,
+  t,
+  translateText,
+} from "./translation-resolver.js";
 
 export { I18N_RESTORE_FAILURE_KEY };
+export { isSkipped, registerTranslation, resolveEn, SKIP_ATTR, t, translateText };
 
 /** @type {Array<() => void>} 各翻译引擎注册的原文/译文交换回调 */
 const restoreCallbacks = [];
@@ -177,96 +181,18 @@ export function showButton() {
   if (changer) changer.style.display = "";
 }
 
-// ============================================================================
-// 横切 DOM SSOT 协调器（Stage B）：英文逻辑态 ↔ 中文显示态的单一读写出口。
-// 写方（i18n 翻译）登记英文原文 + 跳过 data-i18n-skip 子树；读方（hv-utils/百分位）经 resolveEn 拿回英文。
-// 不变量「逻辑键必须基于英文」从散落注释归位到这两个出口（配合 Stage F node probe 机械锁）。
-// caller 契约：resolveEn 的 caller 必须是"读 DOM 文本当英文逻辑 key"的点；registerTranslation 的
-// caller 必须是翻译写方（写 DOM 显示文本前登记英文原文）。
-// ============================================================================
-
-/** 节点 → 英文原文（写方登记，resolveEn 优先查；WeakMap 随节点销毁自动回收） */
-const enByNode = new WeakMap();
-
-/** 增强读方注入的子树打此属性，翻译写方遇到整段跳过（消"翻译覆盖注入节点 / 双翻自渲染中文"轴 B） */
-export const SKIP_ATTR = "data-i18n-skip";
-
-/**
- * 登记节点的英文原文（翻译写方改写前调用，去重；原文一旦登记不被后续翻译覆盖）。
- * @param {Node} node 文本节点或元素
- * @param {string} enText 英文原文
- */
-export function registerTranslation(node, enText) {
-  if (node && typeof enText === "string" && !enByNode.has(node)) {
-    enByNode.set(node, enText);
-  }
-}
-
-/**
- * 读出口：拿回节点的英文逻辑 key。① 节点登记原文（textNode 级精确）→ ② 逆表反查中文文本
- * （group 缩小歧义）→ ③ 未命中返 undefined（调用方 `?? 原值` 回退）。
- * 退化安全：英文态/未翻时 textContent 本就是英文，逆表 miss 返 undefined，调用方回退即原英文。
- * @param {Node|string} nodeOrText 节点（读其 textContent）或直接中文串
- * @param {string=} group 逆表词典组（'characterStatus'/'trains'/'character'/'quality'）
- * @returns {string|undefined}
- */
-export function resolveEn(nodeOrText, group) {
-  if (nodeOrText && typeof nodeOrText === "object" && "nodeType" in nodeOrText) {
-    if (enByNode.has(nodeOrText)) return enByNode.get(nodeOrText);
-    return reverseLookup(nodeOrText.textContent || "", group);
-  }
-  return reverseLookup(String(nodeOrText == null ? "" : nodeOrText), group);
-}
-
-/**
- * 节点自身或任一祖先是否带 data-i18n-skip（翻译写方据此跳过子树）。
- * @param {Node} node
- * @returns {boolean}
- */
-export function isSkipped(node) {
-  let el = node && node.nodeType === 3 ? node.parentElement : node;
-  while (el && el.hasAttribute) {
-    if (el.hasAttribute(SKIP_ATTR)) return true;
-    el = el.parentElement;
-  }
-  return false;
-}
-
-// ============================================================================
-// 正向翻译出口 t()（Stage G）：英文逻辑值 → 当前 lang 显示中文，单一 canonical SSOT。
-// hv-utils 自渲染（物品/材料/分类/装备名）经全局桥调此出口，替代其私有 HVAA_ITEM_CN/HVUT_CN
-// 漂移表（同一术语两套译名 → 内部 panel 中文 ≠ 外部游戏 DOM 中文的根因）。仅翻显示，逻辑值保英文。
-// ============================================================================
-
-/** group → 正向 canonical 词典（英→简）。其余界面组走 INTERFACE_WORDS[group] 兜底。 */
-const FORWARD_DICTS = {
-  item: EQUIP_ITEMS,
-  material: EQUIP_ITEMS,
-  eqCategory: EQ_CATEGORY,
-  abCategory: AB_CATEGORY,
-  spell: SPELL_TYPE,
-};
-
-/**
- * 正向翻译：英文逻辑值 → 当前 lang 显示文本。
- * ① lang=2(英) 返原值（自渲染同步出英文）② group 词典命中 → langPostProcess(简→当前 lang)
- * ③ 未命中 → 跨 EQUIP_* 兜底 ④ 全 miss 返英文原值（退化安全，不崩、不静默错值）。
- * @param {string} value 英文逻辑值
- * @param {string=} group 词典组（'item'|'material'|'eqCategory'|'abCategory'|'spell'|…）
- * @returns {string}
- */
-export function t(value, group) {
-  if (typeof value !== "string" || !value) return value;
-  if (String(g("lang")) === "2") return value;
-  let zh;
-  const dict = FORWARD_DICTS[group] || (group ? INTERFACE_WORDS[group] : undefined);
-  if (dict) zh = dict[value];
-  if (zh == null) zh = EQUIP_ITEMS[value] ?? EQUIP_INFO[value] ?? EQUIP_EXTRA[value];
-  return zh != null ? langPostProcess(zh) : value;
-}
-
 // hv-utils.js 是非 ESM sloppy-mode 第三方脚本（加 import 会触发 strict mode 撞 `protected` 等保留字标识符，
 // 无法 import 本模块），经全局桥暴露协调器读出口供其 IIFE 消费（Stage C/D/G 读源归一）。
 if (typeof window !== "undefined") {
-  window.HVAA_i18n = { resolveEn, t, registerTranslation, isSkipped, SKIP_ATTR, registerI18nRender, recordI18nInitFailure };
+  window.HVAA_i18n = {
+    resolveEn,
+    t,
+    translateText,
+    navigationLinks: () => [...TOP_MENU_DEFAULT_LINKS],
+    registerTranslation,
+    isSkipped,
+    SKIP_ATTR,
+    registerI18nRender,
+    recordI18nInitFailure,
+  };
 }

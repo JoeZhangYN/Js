@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 import { FORGE_COSTS } from "../data/forge-costs.js";
-import { createForgeCostCapability, readShowEquipName } from "./showequip-forge-cost.js";
+import { registerTranslation } from "../i18n/core/restore-controller.js";
+import {
+  createForgeCostCapability,
+  readShowEquipLogicalName,
+  readShowEquipName,
+} from "./showequip-forge-cost.js";
 
 function showequipBody(innerHtml) {
   document.body.innerHTML = `<div id="navbar"></div><div id="showequip">${innerHtml}</div><div id="eu"><span>Damage Lv.1</span></div>`;
@@ -24,6 +29,14 @@ describe("readShowEquipName", () => {
     );
 
     expect(readShowEquipName(body)).toBe("Peerless Katalox Staff of Destruction");
+  });
+
+  it("resolves translated name nodes back to English business identity", () => {
+    const body = showequipBody("<div><div><span>传奇橡木法杖</span></div></div>");
+    const textNode = body.querySelector("#showequip span").firstChild;
+    registerTranslation(textNode, "Legendary Oak Staff");
+
+    expect(readShowEquipLogicalName(body)).toBe("Legendary Oak Staff");
   });
 
   it("fails closed for missing showequip name nodes", () => {

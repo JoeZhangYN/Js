@@ -2,7 +2,6 @@ import { describe, expect, it } from "vitest";
 import {
   buildLegacyHvutEquipData,
   getHvutConfigCarryKeys,
-  getHvutConfigNamespace,
   migrateLegacyHvutMonsterLabLog,
   normalizeLegacyHvutEquipCode,
   normalizeLegacyHvutPrices,
@@ -10,11 +9,6 @@ import {
 } from "./hvut-config-migration.js";
 
 describe("HVUT config migration", () => {
-  it("selects the storage namespace from segment identity", () => {
-    expect(getHvutConfigNamespace({ isIsekai: false })).toBe("hvut");
-    expect(getHvutConfigNamespace({ isIsekai: true })).toBe("hvuti");
-  });
-
   it("keeps persistent-only legacy equipment names in persistent migration", () => {
     expect(getHvutConfigCarryKeys({ isIsekai: false })).toEqual([
       "equipnames",

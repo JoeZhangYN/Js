@@ -2,56 +2,45 @@ import fs from "node:fs";
 import path from "node:path";
 
 const root = process.cwd();
-const target = path.normalize("src/i18n/hv-utils.js");
-const text = fs.readFileSync(path.join(root, target), "utf8");
+const hvut = fs.readFileSync(path.join(root, "src/i18n/hv-utils.js"), "utf8");
+const bridge = fs.readFileSync(path.join(root, "src/i18n/hvut-world-policy-bridge.js"), "utf8");
+const main = fs.readFileSync(path.join(root, "src/main.js"), "utf8");
 const violations = [];
 
 for (const required of [
-  "var create_hvut_world_identity = function (context) {",
-  "var create_hvut_config_segment_context = function (context) {",
-  "var get_hvut_config_carry_keys = function (segment) {",
-  "var get_hvut_config_namespace = function (segment) {",
-  "var serverName = context?.serverName || (isIsekai ? 'isekai' : 'persistent');",
-  "season: context?.season || parse_hvut_world_season(isIsekai, context?.seasonStage || 'worldSeason'),",
-  "const namespace = get_hvut_config_namespace(segment);",
-  "var segment = create_hvut_config_segment_context(context);",
-  "const ls_list = get_hvut_config_carry_keys(segment);",
-  "const HVUT_WORLD = create_hvut_world_identity({ isIsekai: IS_ISEKAI, seasonStage: 'serverSeason' });",
-  "const _servername = HVUT_WORLD.serverName;",
-  "name: HVUT_WORLD.serverName,",
-  "season: HVUT_WORLD.season || '1',",
-  "init: create_hvut_config_init_entry(settings, HVUT_WORLD),",
-  "init: create_hvut_config_init_entry(settings, { ...HVUT_WORLD, assignSeason: true }),",
-  "run_hvut_config_settings_migration($config, $price, HVUT_WORLD",
-  "return migration.kind === 'accepted';",
-  "inject_hvut_config_panel_style(HVUT_WORLD);",
-  "render_hvut_config_panel($config, HVUT_WORLD);",
-  "skipField: (o) => is_hvut_config_field_disabled(o, HVUT_WORLD)",
+  "createHvutWorldPolicyBridge",
+  "worldPolicy.world",
+  "worldPolicy.hvut.namespace",
+  "worldPolicy.features.randomEncounter",
+  "createHvutWorldPolicyBridge(CURRENT_WORLD_POLICY)",
+  'Object.defineProperty(window, "HVAA_hvutWorldPolicy"',
+  "writable: false",
+  "value: policy",
 ]) {
-  if (!text.includes(required)) {
-    violations.push(`${target} must keep HVUT world identity boundary: ${required}`);
-  }
+  if (!bridge.includes(required)) violations.push(`HVUT world bridge must contain ${required}`);
 }
 
-for (const forbidden of [
-  "const _servername = location.pathname.includes('/isekai/') ? 'isekai' : 'persistent';",
-  "config.season = parse_hvut_world_season(location.pathname.includes('/isekai/'), 'configSeason');",
-  "season: parse_hvut_world_season(_servername === 'isekai', 'serverSeason') || '1',",
-  "run_hvut_config_legacy_migration($config, $price, { isIsekai: IS_ISEKAI })",
-  "if (run_hvut_config_legacy_migration($config, $price, HVUT_WORLD) === false) return false;",
-  "const namespace = get_hvut_config_namespace(isIsekai);",
-  "const ls_list = get_hvut_config_carry_keys(isIsekai);",
-  "window.HVAA_hvutConfigMigration.namespace({ isIsekai: !!isIsekai })",
-  "window.HVAA_hvutConfigMigration.carryKeys({ isIsekai: !!isIsekai })",
-  "inject_hvut_config_panel_style({ isIsekai: IS_ISEKAI })",
-  "render_hvut_config_panel($config, { isIsekai: IS_ISEKAI })",
-  "is_hvut_config_field_disabled(o, { isIsekai: IS_ISEKAI, serverName: _server.name })",
+for (const required of [
+  "var HVUT_WORLD_POLICY = window.HVAA_hvutWorldPolicy;",
+  "throw new Error('[HVAA][HVUT] world policy bridge missing');",
+  "var IS_ISEKAI = HVUT_WORLD_POLICY.world === 'isekai';",
+  "var world = HVUT_WORLD_POLICY.world;",
+  "serverName: HVUT_WORLD_POLICY.serverName,",
+  "storageNamespace: HVUT_WORLD_POLICY.storageNamespace,",
+  "return HVUT_WORLD_POLICY.storageNamespace;",
+  "const HVUT_WORLD = create_hvut_world_identity({ seasonStage: 'serverSeason' });",
 ]) {
-  if (text.includes(forbidden)) {
-    violations.push(
-      `${target} must not rebuild HVUT world/config identity through old path: ${forbidden}`
-    );
-  }
+  if (!hvut.includes(required)) violations.push(`HVUT runtime must contain ${required}`);
+}
+
+if (/var IS_ISEKAI[^\n]*(?:location|pathname)/.test(hvut)) {
+  violations.push("HVUT runtime must not classify World from raw location markers");
+}
+if (!main.includes('import "./i18n/hvut-world-policy-bridge.js"')) {
+  violations.push("main must install the frozen HVUT world bridge");
+}
+if (main.indexOf("hvut-world-policy-bridge.js") > main.indexOf("hv-utils.js")) {
+  violations.push("main must install the HVUT world bridge before the sloppy runtime");
 }
 
 if (violations.length) {
@@ -61,5 +50,5 @@ if (violations.length) {
 }
 
 console.log(
-  "[verify-hvut-world-identity-boundary] OK - HVUT world identity feeds config segment context"
+  "[verify-hvut-world-identity-boundary] OK - HVUT consumes one frozen ingress world policy"
 );

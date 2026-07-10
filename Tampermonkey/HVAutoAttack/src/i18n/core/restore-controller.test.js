@@ -9,6 +9,7 @@ beforeEach(() => {
   document.body.innerHTML = "";
   sessionStorage.clear();
   vi.restoreAllMocks();
+  vi.unstubAllGlobals();
 });
 
 function lastI18nRestoreFailure(key) {
@@ -16,6 +17,17 @@ function lastI18nRestoreFailure(key) {
 }
 
 describe("restore-controller fallback handling", () => {
+  it("gives shared custom entries precedence in forward and reverse translation", async () => {
+    vi.stubGlobal("GM_getValue", () => ({
+      schemaVersion: 1,
+      entries: [{ group: "topMenu", source: "Stamina", zhCN: "体力" }],
+    }));
+    const { resolveEn, t } = await freshController();
+
+    expect(t("Stamina", "topMenu")).toBe("体力");
+    expect(resolveEn("体力", "topMenu")).toBe("Stamina");
+  });
+
   it("continues restore callbacks when one restore handler throws", async () => {
     const { I18N_RESTORE_FAILURE_KEY, ensureRestoreButton, registerRestore } =
       await freshController();

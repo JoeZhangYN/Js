@@ -53,7 +53,7 @@ describe("runEquipmentViewAutomation", () => {
     ).toBe(true);
 
     expect(runForgeCostEnhancement).toHaveBeenCalledWith();
-    expect(runEquipPercentileEnhancement).not.toHaveBeenCalled();
+    expect(runEquipPercentileEnhancement).toHaveBeenCalledWith("off");
   });
 
   it("does not propagate route identity to the forge cost executor", () => {
@@ -69,6 +69,7 @@ describe("runEquipmentViewAutomation", () => {
     ).toBe(true);
 
     expect(runForgeCostEnhancement).toHaveBeenCalledWith();
+    expect(runEquipPercentileEnhancement).toHaveBeenCalledWith("off");
   });
 
   it("runs percentile enhancement when the percentile mode is enabled", () => {
@@ -119,6 +120,6 @@ describe("runEquipmentViewAutomation", () => {
     ).toBe(false);
 
     expect(runForgeCostEnhancement).not.toHaveBeenCalled();
-    expect(runEquipPercentileEnhancement).not.toHaveBeenCalled();
+    expect(runEquipPercentileEnhancement).toHaveBeenCalledWith("off");
   });
 });

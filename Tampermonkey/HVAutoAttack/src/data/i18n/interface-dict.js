@@ -1,5 +1,6 @@
 // file-size-gate: exempt 第三方界面汉化词典
 /* eslint-disable */
+import { NAVIGATION_TERMS, STAMINA_MESSAGES } from "./navigation-terms.js";
 // HentaiVerse 界面汉化 (indefined & etc., #404118, v2025.12.02.1, 简体) 的纯数据。
 // 来源:HentaiVerse/HentaiVerse汉化(界面).user.js
 // 数据/逻辑分离:dictsMap(选择器→字典数组)+ words(分区词典)逐字原样保留;
@@ -435,36 +436,11 @@ export const INTERFACE_WORDS = {
   ///////////////////////////////////////////////////////主菜单导航栏
   //除了菜单项还包括难度等级和精力下方的一些红字提示。
   menu: {
-    Character: "角色",
-    "/^Equipment$/": "装备",
-    Abilities: "技能",
-    Training: "训练",
-    "Item Inventory": "物品仓库",
-    "Equip Inventory": "装备仓库",
-    Settings: "设置",
-    "Equipment Shop": "武器店",
-    "/^Item Shop$/": "道具店",
+    ...NAVIGATION_TERMS,
     "Item Shop Bot": "采购机器人",
     "Item Backorder": "采购机器人",
     "The Armory": "装备",
-    "The Market": "交易市场",
-    "Monster Lab": "怪物实验室",
-    "The Shrine": "雪花祭坛",
-    MoogleMail: "莫古利邮局",
-    "Weapon Lottery": "武器彩票",
-    "Armor Lottery": "防具彩票",
-    "The Arena": "竞技场(The Arena)",
-    "The Tower": "塔楼(The Tower)",
-    "Ring of Blood": "浴血擂台(Ring of Blood)",
-    GrindFest: "压榨界(GrindFest)",
-    "Item World": "道具界(Item World)",
-    "/^Repair$/": "装备修理",
-    "/^Salvage$/": "装备分解",
-    "/^Reforge$/": "装备重铸",
-    "/^Soulfuse$/": "装备魂绑",
-    "/^Upgrade$/": "装备强化",
-    "/^Enchant$/": "装备附魔",
-    "Stamina:": "精力:",
+    "Stamina:": `${NAVIGATION_TERMS.Stamina}:`,
     "Check Attributes": "检查属性点分配！",
     "Check Abilities": "检查技能！",
     "Check attributes": "检查属性点分配！",
@@ -484,62 +460,12 @@ export const INTERFACE_WORDS = {
     "Currently playing on Persistent": "你当前在传统恒定世界模式下",
     "Click to switch to Isekai": "点击切换到异世界模式",
 
-    "You have increased stamina drain due to low riddle accuracy":
-      "因为你的小马图回答正确率太低，你的精力消耗速率被提高了",
-    "Great. You receive a 100% EXP Bonus but stamina drains 50% faster.":
-      "充沛，你将获得+100%经验奖励，但精力消耗速度增加50%。",
-    "Normal. You are not receiving any bonuses or penalties.":
-      "正常，你既不会收到额外的奖励也不会受到惩罚",
-    "Exhausted. You do not receive EXP or drops from monsters, and you cannot gain proficiencies.":
-      "耗竭，你将无法从怪物收到任何经验或者掉落，也无法获得熟练度奖励",
+    ...STAMINA_MESSAGES,
     "You Got Mail": "你有新邮件",
   },
 
-  // _top 自渲染顶部菜单(hvaaT 精确查, key=英文逻辑名; lang=2 出英文可一键中/英切换)。短译统一(异世界基准, 用户定)。
-  // 注: 上方 menu 组(长译 + 正则 key)给 interface-translate 翻 HV 原生 navbar(_top 整合后 hidden);
-  //     topMenu 组给 hv-utils 的 _top 自渲染(精确 key, t() 不支持正则)。二者暂双轨, 后续 Stage G 收口归一。
-  topMenu: {
-    Character: "角色",
-    Equipment: "装备",
-    Abilities: "能力",
-    Training: "训练",
-    "Item Inventory": "物品",
-    "Equip Inventory": "装备仓库",
-    Settings: "设置",
-    "Item Shop": "道具店",
-    "Equipment Shop": "装备商店",
-    "The Shrine": "祭坛",
-    "The Market": "市场",
-    "Monster Lab": "实验室",
-    MoogleMail: "邮箱",
-    "Weapon Lottery": "武器彩票",
-    "Armor Lottery": "防具彩票",
-    Organize: "管理",
-    Modify: "改装",
-    Repair: "修理",
-    Soulbind: "魂绑",
-    Purchase: "购买",
-    Sell: "出售",
-    Salvage: "分解",
-    "The Arena": "竞技",
-    "The Tower": "塔楼",
-    "Ring of Blood": "擂台",
-    GrindFest: "压榨",
-    "Item World": "道具界",
-    Upgrade: "升级",
-    Enchant: "附魔",
-    Reforge: "重铸",
-    Soulfuse: "魂绑",
-    // 分组标题(s/g 字段值)
-    Bazaar: "集市",
-    Battle: "战斗",
-    Forge: "锻造",
-    Armory: "军械",
-    // 顶部状态
-    Stamina: "精力",
-    Persona: "流派",
-    MENU: "菜单",
-  },
+  topMenu: NAVIGATION_TERMS,
+  stamina: STAMINA_MESSAGES,
 
   ///////////////////////////////////////////////////////难度名
   // 包括上方主菜单导航栏等多个地方用到，姑且独立出来做一块方便统一管理……吧

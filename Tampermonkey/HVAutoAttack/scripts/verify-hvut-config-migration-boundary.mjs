@@ -87,7 +87,7 @@ for (const required of [
   "if (config.migration() === false) {",
   "alert(isIsekai ? 'An error has occurred.' : '发生了一个错误.');",
   "var get_hvut_config_carry_keys = function (segment) {",
-  "var get_hvut_config_namespace = function (segment) {",
+  "var get_hvut_config_namespace = function () {",
   "var build_hvut_legacy_equipdata = function (inEquipdata, inJson) {",
   "var normalize_hvut_legacy_equip_code = function (equipCode) {",
   "var normalize_hvut_config_settings = function (settings, defaults) {",
@@ -99,7 +99,7 @@ for (const required of [
   "return bridge[method](...(args || []));",
   "record_hvut_config_parse_failure(stage + 'Failed'",
   "return run_hvut_config_migration_bridge('carryKeys', [segment], 'configCarryKeysBridgeMissing'",
-  "return run_hvut_config_migration_bridge('namespace', [segment], 'configNamespaceBridgeMissing'",
+  "return HVUT_WORLD_POLICY.storageNamespace;",
   "return run_hvut_config_migration_bridge('buildEquipData', [inEquipdata, inJson], 'configEquipDataBridgeMissing'",
   "return run_hvut_config_migration_bridge('normalizeEquipCode', [equipCode], 'configEquipCodeBridgeMissing'",
   "return run_hvut_config_migration_bridge('normalizeSettings', [settings, defaults], 'configSettingsBridgeMissing'",
@@ -107,7 +107,7 @@ for (const required of [
   "return run_hvut_config_migration_bridge('normalizePrices', [prices], 'configPricesBridgeMissing'",
   "if (!isIsekai) return false;",
   "return match ? match[1] : (record_hvut_config_parse_failure(stage, { text: text }), '1');",
-  "const HVUT_WORLD = create_hvut_world_identity({ isIsekai: IS_ISEKAI, seasonStage: 'serverSeason' });",
+  "const HVUT_WORLD = create_hvut_world_identity({ seasonStage: 'serverSeason' });",
   "const _servername = HVUT_WORLD.serverName;",
   "season: HVUT_WORLD.season || '1',",
 ]) {
@@ -240,8 +240,6 @@ for (const required of [
 for (const required of [
   'const COMMON_CARRY_KEYS = Object.freeze(["equipset", "ch_style", "se_settings", "ss_log", "ml_log"]);',
   'const PERSISTENT_CARRY_KEYS = Object.freeze(["equipnames", ...COMMON_CARRY_KEYS]);',
-  "export function getHvutConfigNamespace(segment) {",
-  'return segment?.isIsekai ? "hvuti" : "hvut";',
   "export function getHvutConfigCarryKeys(segment) {",
   "return segment?.isIsekai ? [...COMMON_CARRY_KEYS] : [...PERSISTENT_CARRY_KEYS];",
   "export function buildLegacyHvutEquipData(inEquipdata, inJson) {",
@@ -271,7 +269,6 @@ for (const required of [
 for (const required of [
   "buildLegacyHvutEquipData",
   "getHvutConfigCarryKeys",
-  "getHvutConfigNamespace",
   "migrateLegacyHvutMonsterLabLog",
   "normalizeLegacyHvutEquipCode",
   "normalizeLegacyHvutPrices",
@@ -281,7 +278,6 @@ for (const required of [
   "buildEquipData: buildLegacyHvutEquipData",
   "carryKeys: getHvutConfigCarryKeys",
   "migrateMonsterLabLog: migrateLegacyHvutMonsterLabLog",
-  "namespace: getHvutConfigNamespace",
   "normalizeEquipCode: normalizeLegacyHvutEquipCode",
   "normalizePrices: normalizeLegacyHvutPrices",
   "normalizeSettings: normalizeHvutConfigSettings",
@@ -298,7 +294,6 @@ if (!mainText.includes('import "./i18n/hvut-config-migration-bridge.js";')) {
 }
 
 if (
-  !migrationTestText.includes("selects the storage namespace from segment identity") ||
   !migrationTestText.includes("keeps persistent-only legacy equipment names") ||
   !migrationTestText.includes("does not carry persistent-only legacy equipment names") ||
   !migrationTestText.includes("builds legacy equipment data from split old stores") ||

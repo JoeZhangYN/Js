@@ -17,6 +17,7 @@ vi.mock("./equip-percentile-offline.js", () => ({
 
 beforeEach(() => {
   for (const fn of Object.values(mocks)) fn.mockReset();
+  mocks.runOfflineEquipPercentileEnhancement.mockReturnValue(vi.fn());
 });
 
 describe("runEquipPercentileEnhancement", () => {
@@ -37,5 +38,14 @@ describe("runEquipPercentileEnhancement", () => {
 
     expect(mocks.runDiagnosticConsoleAutomation).not.toHaveBeenCalled();
     expect(mocks.runOfflineEquipPercentileEnhancement).toHaveBeenCalledOnce();
+  });
+
+  it("disposes the active enhancement when mode switches off", () => {
+    const dispose = vi.fn();
+    mocks.runOfflineEquipPercentileEnhancement.mockReturnValue(dispose);
+
+    expect(runEquipPercentileEnhancement("offline")).toBe(true);
+    expect(runEquipPercentileEnhancement("off")).toBe(false);
+    expect(dispose).toHaveBeenCalledOnce();
   });
 });

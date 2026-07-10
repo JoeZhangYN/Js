@@ -131,6 +131,12 @@ try {
   var hvaaT = function (value, group) {
     return run_hvut_i18n_bridge('t', [value, group], 'translateBridgeMissing', { value: value, group: group }, value);
   };
+  var get_hvut_top_menu_links = function () {
+    return run_hvut_i18n_bridge('navigationLinks', [], 'navigationRegistryBridgeMissing', {}, []);
+  };
+  var hvaaTranslateText = function (value, group) {
+    return run_hvut_i18n_bridge('translateText', [value, group], 'translateTextBridgeMissing', { group: group }, value);
+  };
   // Stage G: 整名装备翻译桥读（equip-translate 注册，复用外部同 dictEquips → 内部装备名 == 外部）。
   // 仅用于显示；逻辑值（dataset.eqname/eid-key URL/forum code/parse 键）一律保留英文 eq.info.name。
   var hvaaTEquip = function (name) {
@@ -232,11 +238,13 @@ try {
     return match ? match[1] : (record_hvut_config_parse_failure(stage, { text: text }), '1');
   };
   var create_hvut_world_identity = function (context) {
-    var isIsekai = !!context?.isIsekai;
-    var serverName = context?.serverName || (isIsekai ? 'isekai' : 'persistent');
+    var world = HVUT_WORLD_POLICY.world;
+    var isIsekai = world === 'isekai';
     return {
+      world: world,
       isIsekai: isIsekai,
-      serverName: serverName,
+      serverName: HVUT_WORLD_POLICY.serverName,
+      storageNamespace: HVUT_WORLD_POLICY.storageNamespace,
       season: context?.season || parse_hvut_world_season(isIsekai, context?.seasonStage || 'worldSeason'),
     };
   };
@@ -267,8 +275,8 @@ try {
   var get_hvut_config_carry_keys = function (segment) {
     return run_hvut_config_migration_bridge('carryKeys', [segment], 'configCarryKeysBridgeMissing', segment || {}, null);
   };
-  var get_hvut_config_namespace = function (segment) {
-    return run_hvut_config_migration_bridge('namespace', [segment], 'configNamespaceBridgeMissing', segment || {}, null);
+  var get_hvut_config_namespace = function () {
+    return HVUT_WORLD_POLICY.storageNamespace;
   };
   var build_hvut_legacy_equipdata = function (inEquipdata, inJson) {
     return run_hvut_config_migration_bridge('buildEquipData', [inEquipdata, inJson], 'configEquipDataBridgeMissing', {}, null);
@@ -2465,7 +2473,7 @@ try {
 // HV Utils 主世界版 (v4.0.0) + Isekai 版 (v4.2.0) 统一脚本  [2026-06-02 迁移]
 //
 // 设计要点:
-// 1. IS_ISEKAI = location.pathname.includes("/isekai/")  ——  运行时分发
+// 1. World 由 ESM 入口分类并经冻结 HVAA_hvutWorldPolicy 桥绑定；本文件不再读取 URL 判世界。
 // 2. 两版整体各自包在 IIFE 中  ——  顶层 const/var/let 同名声明互不冲突
 // 3. GM_setValue 命名空间: 两版动态切换 (hvut_ / hvuti_), 老用户配置 100% 保留, 未改
 // 4. 两版 utility 去重策略 [2026-06 dedup epic 证伪"整体可机械去重" → 2026-06-10 修正为分轨]:
@@ -2484,7 +2492,11 @@ try {
 //    已收口 物品/材料/装备名/术语, 删 HVAA_ITEM_CN + HVUT_CN 漂移表(仅 stamina tooltip 暂留)。
 // ============================================================================
 
-var IS_ISEKAI = (typeof location !== 'undefined') && (location.pathname || '').indexOf('/isekai/') !== -1;
+var HVUT_WORLD_POLICY = window.HVAA_hvutWorldPolicy;
+if (!HVUT_WORLD_POLICY || (HVUT_WORLD_POLICY.world !== 'persistent' && HVUT_WORLD_POLICY.world !== 'isekai')) {
+  throw new Error('[HVAA][HVUT] world policy bridge missing');
+}
+var IS_ISEKAI = HVUT_WORLD_POLICY.world === 'isekai';
 
 /* eslint-disable arrow-spacing, block-spacing, comma-spacing, key-spacing, keyword-spacing, object-curly-spacing, space-before-blocks, space-before-function-paren, space-infix-ops, semi-spacing */
 // ===== L1 公共底层工具：两 IIFE 经作用域链共享。去重自双版 byte-identical（机械 diff 证 distinct=1）；scrollIntoView 取带空值守卫版；popup_text width 按 IS_ISEKAI 配置保两版观感。=====
@@ -3912,7 +3924,7 @@ const bindBattlePanel = function (battle, ctx) {
 };
 
 // 服务器标识(L1 收口 2026-06-10): 定义只依赖 location/world_text, 与 IIFE 闭包无关。
-const HVUT_WORLD = create_hvut_world_identity({ isIsekai: IS_ISEKAI, seasonStage: 'serverSeason' });
+const HVUT_WORLD = create_hvut_world_identity({ seasonStage: 'serverSeason' });
 const _servername = HVUT_WORLD.serverName;
 const _server = {
   name: HVUT_WORLD.serverName,
@@ -3976,45 +3988,45 @@ GM_addStyle(/*css*/`
 
 // 顶部快速链接默认清单(单一来源: bindTop 旧存值归一化 + 两 IIFE settings 默认共用)。全项精选含两彩票
 // (2026-06-10 用户验收: 主世界除塔楼外全有+实验室+武器/防具彩票); server 字段运行时自动分服过滤。
-const TOP_MENU_DEFAULT_LINKS = ['Character', 'Equipment', 'Item Inventory', 'Item Shop', 'The Shrine', 'The Market', 'Monster Lab', 'MoogleMail', 'Weapon Lottery', 'Armor Lottery', 'Organize', 'Modify', 'Purchase', 'Sell', 'The Arena', 'The Tower', 'Ring of Blood', 'GrindFest', 'Item World'];
+const TOP_MENU_DEFAULT_LINKS = get_hvut_top_menu_links();
 
 // _top 顶部导航·全量收口(L1 bindTop, 2026-06-10): 能量模型后两服菜单体系同构(Bazaar am 体系:
 // Organize/Modify/Repair/Soulbind/Purchase/Sell/Salvage; 旧 Forge 组/Equip Inventory ss=in/
 // Equipment Shop ss=es 端点全死)——原主世界 4.0.0 旧菜单表随之下线, 「菜单下拉/首行导航两服一致」
 // 由本内核结构性保证(铁律4)。menu 表 server 字段过滤本服不存在项(Training/Monster Lab/彩票 =
-// persistent-only, The Tower = isekai-only)。文案取两版中文较全者。
+// persistent-only, The Tower = isekai-only)。显示文案统一由 navigation registry 提供。
 // ctx: config(IIFE-private $config) / player·re(容器归属各 IIFE 闭包的 getter)。
 const bindTop = function (top, ctx) {
   top.node = {};
   top.menu = {
-    'Character': { s: 'Character', ss: 'ch', label: '角色', default: 'CH', title: 'Character' },
-    'Equipment': { s: 'Character', ss: 'eq', label: '装备', default: 'EQ', title: 'Equipment' },
-    'Abilities': { s: 'Character', ss: 'ab', label: '能力', default: 'AB', title: 'Abilities' },
-    'Training': { s: 'Character', ss: 'tr', label: '训练', default: 'TR', title: 'Training', server: 'persistent' },
-    'Item Inventory': { s: 'Character', ss: 'it', label: '物品', default: 'IT', title: 'Item Inventory' },
-    'Settings': { s: 'Character', ss: 'se', label: '设置', default: 'SE', title: 'Settings' },
+    'Character': { s: 'Character', ss: 'ch', default: 'CH', title: 'Character' },
+    'Equipment': { s: 'Character', ss: 'eq', default: 'EQ', title: 'Equipment' },
+    'Abilities': { s: 'Character', ss: 'ab', default: 'AB', title: 'Abilities' },
+    'Training': { s: 'Character', ss: 'tr', default: 'TR', title: 'Training', server: 'persistent' },
+    'Item Inventory': { s: 'Character', ss: 'it', default: 'IT', title: 'Item Inventory' },
+    'Settings': { s: 'Character', ss: 'se', default: 'SE', title: 'Settings' },
 
-    'Item Shop': { s: 'Bazaar', ss: 'is', label: '道具店', default: 'IS', title: 'Item Shop' },
-    'The Shrine': { s: 'Bazaar', ss: 'ss', label: '祭坛', default: 'SS', title: 'The Shrine' },
-    'The Market': { s: 'Bazaar', ss: 'mk', label: '市场', default: 'MK', title: 'The Market' },
-    'Monster Lab': { s: 'Bazaar', ss: 'ml', label: '实验室', default: 'ML', title: 'Monster Lab', server: 'persistent' },
-    'MoogleMail': { s: 'Bazaar', ss: 'mm', label: '邮箱', default: 'MM', title: 'MoogleMail' },
-    'Weapon Lottery': { s: 'Bazaar', ss: 'lt', label: '武器彩票', default: 'LT', title: 'Weapon Lottery', server: 'persistent' },
-    'Armor Lottery': { s: 'Bazaar', ss: 'la', label: '防具彩票', default: 'LA', title: 'Armor Lottery', server: 'persistent' },
+    'Item Shop': { s: 'Bazaar', ss: 'is', default: 'IS', title: 'Item Shop' },
+    'The Shrine': { s: 'Bazaar', ss: 'ss', default: 'SS', title: 'The Shrine' },
+    'The Market': { s: 'Bazaar', ss: 'mk', default: 'MK', title: 'The Market' },
+    'Monster Lab': { s: 'Bazaar', ss: 'ml', default: 'ML', title: 'Monster Lab', server: 'persistent' },
+    'MoogleMail': { s: 'Bazaar', ss: 'mm', default: 'MM', title: 'MoogleMail' },
+    'Weapon Lottery': { s: 'Bazaar', ss: 'lt', default: 'LT', title: 'Weapon Lottery', server: 'persistent' },
+    'Armor Lottery': { s: 'Bazaar', ss: 'la', default: 'LA', title: 'Armor Lottery', server: 'persistent' },
 
-    'Organize': { g: 'Armory', s: 'Bazaar', ss: 'am', screen: 'organize', label: '管理', default: 'OR', title: 'Organize' },
-    'Modify': { g: 'Armory', s: 'Bazaar', ss: 'am', screen: 'modify', label: '改装', default: 'MO', title: 'Modify' },
-    'Repair': { g: 'Armory', s: 'Bazaar', ss: 'am', screen: 'repair', label: '修理', default: 'RE', title: 'Repair' },
-    'Soulbind': { g: 'Armory', s: 'Bazaar', ss: 'am', screen: 'soulbind', label: '魂绑', default: 'SB', title: 'Soulbind' },
-    'Purchase': { g: 'Armory', s: 'Bazaar', ss: 'am', screen: 'purchase', label: '购买', default: 'PU', title: 'Purchase' },
-    'Sell': { g: 'Armory', s: 'Bazaar', ss: 'am', screen: 'sell', label: '出售', default: 'SL', title: 'Sell' },
-    'Salvage': { g: 'Armory', s: 'Bazaar', ss: 'am', screen: 'salvage', label: '分解', default: 'SA', title: 'Salvage' },
+    'Organize': { g: 'Armory', s: 'Bazaar', ss: 'am', screen: 'organize', default: 'OR', title: 'Organize' },
+    'Modify': { g: 'Armory', s: 'Bazaar', ss: 'am', screen: 'modify', default: 'MO', title: 'Modify' },
+    'Repair': { g: 'Armory', s: 'Bazaar', ss: 'am', screen: 'repair', default: 'RE', title: 'Repair' },
+    'Soulbind': { g: 'Armory', s: 'Bazaar', ss: 'am', screen: 'soulbind', default: 'SB', title: 'Soulbind' },
+    'Purchase': { g: 'Armory', s: 'Bazaar', ss: 'am', screen: 'purchase', default: 'PU', title: 'Purchase' },
+    'Sell': { g: 'Armory', s: 'Bazaar', ss: 'am', screen: 'sell', default: 'SL', title: 'Sell' },
+    'Salvage': { g: 'Armory', s: 'Bazaar', ss: 'am', screen: 'salvage', default: 'SA', title: 'Salvage' },
 
-    'The Arena': { s: 'Battle', ss: 'ar', label: '竞技', default: 'AR', title: 'The Arena' },
-    'The Tower': { s: 'Battle', ss: 'tw', label: '塔楼', default: 'TW', title: 'The Tower', server: 'isekai' },
-    'Ring of Blood': { s: 'Battle', ss: 'rb', label: '擂台', default: 'RB', title: 'Ring of Blood' },
-    'GrindFest': { s: 'Battle', ss: 'gr', label: '压榨', default: 'GR', title: 'GrindFest' },
-    'Item World': { s: 'Battle', ss: 'iw', label: '道具界', default: 'IW', title: 'Item World' },
+    'The Arena': { s: 'Battle', ss: 'ar', default: 'AR', title: 'The Arena' },
+    'The Tower': { s: 'Battle', ss: 'tw', default: 'TW', title: 'The Tower', server: 'isekai' },
+    'Ring of Blood': { s: 'Battle', ss: 'rb', default: 'RB', title: 'Ring of Blood' },
+    'GrindFest': { s: 'Battle', ss: 'gr', default: 'GR', title: 'GrindFest' },
+    'Item World': { s: 'Battle', ss: 'iw', default: 'IW', title: 'Item World' },
   };
   Object.values(top.menu).forEach((m) => {
     if (!m.href) {
@@ -6913,7 +6925,7 @@ const settings = {
   */
 
   topMenuIntegration: true,
-  // 逻辑键必须英文(索引 _top.menu, 显示走 m.label/m.text 中文); 勿翻译键, 见 verify-topmenu-keys probe
+  // 逻辑键必须英文(索引 _top.menu, 显示走 navigation registry); 勿翻译键, 见 verify-topmenu-keys probe
   confirmStaminaRestorative: true,
   disableStaminaRestorative: 79,
   warnLowStamina: 10,
@@ -12399,7 +12411,7 @@ const settings = {
   reBeep: [0.2, 500, 0.5], // [volume, frequency, duration]
 
   topMenuIntegration: true,
-  // 逻辑键必须英文(索引 _top.menu, 显示走 m.text/m.button); 勿翻译键, 见 verify-topmenu-keys probe
+  // 逻辑键必须英文(索引 _top.menu, 显示走 navigation registry); 勿翻译键, 见 verify-topmenu-keys probe
   // [2026-06-10 bindTop 收口] 默认值对齐 isekai am 体系(旧 Equip Inventory/Equipment Shop 死端点删);
   // 老用户存值里的死项由 bindTop init 的 !m.href 守卫安全跳过。
   confirmStaminaRestorative: true,
@@ -12545,21 +12557,6 @@ function $input(o,p,a,f) {if(typeof o==='string'){o=[o];}const [t,v,n,s]=o;if(!a
 function object_sort(o,x=[]) {const index={};const _x=x.length+1;x.forEach((e,i)=>{index[e]=i+1;});Object.keys(o).sort((a,b)=>{const _a=index[a]||_x;const _b=index[b]||_x;return _a-_b||(a<b?-1:1);}).forEach((e)=>{const v=o[e];delete o[e];o[e]=v;});}
 function toggle_button(e,s,h,t,c,d) {function f(){if(t.classList.contains(c)){t.classList.remove(c);e.value=h;}else{t.classList.add(c);e.value=s;}}e.value=h;e.addEventListener('click',f);if(d){f();}}
 /* eslint-enable */
-
-// G3: hv-utils 内嵌术语翻译表（spell/eqCategory/abCategory）已归位 canonical SSOT
-// (src/data/i18n/hvut-terms.js: SPELL_TYPE/EQ_CATEGORY/AB_CATEGORY)，调用点改
-// hvaaT(v,'spell'|'eqCategory'|'abCategory') 经全局桥查；material 已 G1 归位 EQUIP_ITEMS。
-// 仅 stamina_readout tooltip 整句替换保留本地（游戏原生整句, 非术语 exact-SSOT 范畴）。
-// i18n-probe-allow: 整句 tooltip 替换非术语表。Stage G follow-up: 移交外部 interface-translate
-// (其已部分覆盖 interface-dict:448), 届时删本表。
-const HVUT_CN = {
-  stamina: {
-    'Exhausted. You do not receive EXP or drops from monsters, and you cannot gain proficiencies.': '你已经筋疲力尽，你将无法从怪物处获取任何经验、潜经验、掉落、以及熟练度，直到你的精力恢复到2以上',
-    'You have increased stamina drain due to low riddle accuracy': '由于你的小马图回答正确率太低，你的精力消耗速率被提高了',
-    'Great. You receive a 100% EXP Bonus but stamina drains 50% faster.': '你现在精力充沛，额外获得100%经验加成，但精力消耗量增加50%（每场战斗消耗0.03的精力,异世界加倍）',
-    'Normal. You are not receiving any bonuses or penalties.': '正常，你既不会受到额外的奖励也不会受到惩罚（每场战斗消耗0.02的精力,异世界加倍）',
-  },
-};
 
 // $ajax/_query 已提公共区（L2）
 
@@ -12800,18 +12797,11 @@ if (!level_exec) {
   const staminaImg = staminaElement && staminaElement.querySelector('img');
   if (staminaImg) {
     let staminaText = staminaImg.getAttribute('title') || '';
-    for (const key in HVUT_CN.stamina) {
-      if (staminaText.includes(key)) {
-        staminaText = staminaText.replace(key, HVUT_CN.stamina[key]);
-        break;
-      }
-    }
+    staminaText = hvaaTranslateText(staminaText, 'stamina');
     staminaImg.setAttribute('title', staminaText);
     staminaElement.querySelectorAll('div[title]').forEach((child) => {
       const title = child.getAttribute('title');
-      if (title && HVUT_CN.stamina[title]) {
-        child.setAttribute('title', HVUT_CN.stamina[title]);
-      }
+      if (title) child.setAttribute('title', hvaaTranslateText(title, 'stamina'));
     });
   }
 }

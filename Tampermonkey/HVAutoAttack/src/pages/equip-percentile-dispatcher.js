@@ -6,15 +6,21 @@
 // `Condition: X / Y (Z%)` / Tier-PXP 反推字段全消失), 在线数据库的旧 base 体系亦失效。
 // 故 mode='live' 降级走 offline（老用户存值兼容, 不改写存值）; 旧 live 实现已删除。
 //
-// ⚠ Sentinel H3 已知限制：off ↔ offline 切换需 **刷新页面** 才生效（offline 持文件级 setupDone
-// 闭包 + 全局 keydown 监听 + MutationObserver，无 teardown 接口）——schema label 已警告用户。
+// offline 返回 disposer；mode=off 会原位卸载 observer、热键、样式和已注入节点。
 import {
   DiagnosticConsoleEvent,
   runDiagnosticConsoleAutomation,
 } from "../core/diagnostic-console.js";
 import { runOfflineEquipPercentileEnhancement } from "./equip-percentile-offline.js";
 
+let disposeCurrentEnhancement = null;
+
 export function runEquipPercentileEnhancement(mode) {
+  if (mode === "off") {
+    disposeCurrentEnhancement?.();
+    disposeCurrentEnhancement = null;
+    return false;
+  }
   if (mode === "live") {
     runDiagnosticConsoleAutomation({
       type: DiagnosticConsoleEvent.INFO,
@@ -23,5 +29,6 @@ export function runEquipPercentileEnhancement(mode) {
       ],
     });
   }
-  runOfflineEquipPercentileEnhancement();
+  disposeCurrentEnhancement = runOfflineEquipPercentileEnhancement();
+  return true;
 }

@@ -5,6 +5,7 @@
 
 import { gE, cE } from "../dom/query.js";
 import { CURRENT_WORLD_POLICY } from "../core/current-runtime.js";
+import { resolveEn } from "../i18n/core/restore-controller.js";
 
 function credit(credits) {
   if (credits >= 1000000) return (credits / 1000000).toFixed(2).replace(".00", "") + "m";
@@ -56,10 +57,10 @@ function upgradeSummary(input, basicMaterialCost, maxLevel) {
   return summary;
 }
 
-export function readShowEquipName(body) {
+function findShowEquipNameNode(body) {
   const showequip = body?.matches?.("#showequip") ? body : body?.querySelector?.("#showequip");
   const root = showequip || body;
-  const nameNode = [
+  return [
     ":scope > div:first-of-type > div:first-of-type",
     ":scope > div:nth-of-type(2) > div:first-of-type",
     "div:first-of-type > div:first-of-type",
@@ -67,7 +68,25 @@ export function readShowEquipName(body) {
   ]
     .map((selector) => root?.querySelector?.(selector))
     .find((node) => readShowEquipNameText(node));
-  return readShowEquipNameText(nameNode) || "无此物品";
+}
+
+export function readShowEquipName(body) {
+  return readShowEquipNameText(findShowEquipNameNode(body)) || "无此物品";
+}
+
+export function readShowEquipLogicalName(body) {
+  const nameNode = findShowEquipNameNode(body);
+  if (!nameNode) return "无此物品";
+  const parts = Array.from(nameNode.querySelectorAll?.(":scope > span") || []);
+  return (
+    (parts.length ? parts : [nameNode])
+      .map((part) => {
+        const display = part.textContent?.trim() || "";
+        return resolveEn(part.firstChild || part, "equipsName") ?? display;
+      })
+      .filter(Boolean)
+      .join(" ") || "无此物品"
+  );
 }
 
 function readShowEquipNameText(nameNode) {
@@ -80,7 +99,7 @@ function readShowEquipNameText(nameNode) {
 }
 
 function getBasicMaterialCost(materialCost) {
-  const fullName = readShowEquipName(document.body);
+  const fullName = readShowEquipLogicalName(document.body);
   if (fullName.match(/Axe|Club|Rapier|Shortsword|Wakizashi|Estoc|Longsword|Mace|Katana/i))
     return materialCost.metal;
   if (fullName.match(/Katalox|Redwood|Willow|Oak|Buckler|Kite/i)) return materialCost.wood;

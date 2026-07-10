@@ -164,7 +164,7 @@ function parseEquip(container) {
         elc("option", { value: k, selected: k === quality }, [QUALITY_EN_TO_CN[k] || k])
       )
     );
-    container.appendChild(
+    equip._compare = container.appendChild(
       elc("div", { style: "padding: 6px; border-top: 1px solid #A47C78;" }, [
         elc("b", {}, ["与其他稀有度对比: "]),
         select,
@@ -301,13 +301,30 @@ function injectStyle() {
   const styleEl = document.createElement("style");
   styleEl.textContent = css;
   document.head.appendChild(styleEl);
+  return styleEl;
 }
 
-let setupDone = false;
+let activeDisposer = null;
+
+function restoreEquip(container) {
+  const equip = equipMap.get(container);
+  if (!equip) return;
+  if (equip.type === "Soulbound") {
+    equip._eqt.textContent = `Tier ${equip.tier_up} / ${equip.tier_iw} / ${equip.tier_max}`;
+  }
+  for (const stat of equip.stats) {
+    stat._el.classList.remove("hv-txt-red", "hv-txt-green", "hv-txt-mid");
+    stat._el.textContent = `${stat.valStr}${stat.typeText ? ` ${stat.typeText}` : ""}`;
+    if (stat._preNode) stat._preNode.textContent = stat.prefix;
+    if (stat._sufNode && !stat.typeText) stat._sufNode.textContent = stat.suffix;
+  }
+  equip._avg?.remove();
+  equip._compare?.remove();
+  equipMap.delete(container);
+}
 
 export function runOfflineEquipPercentileEnhancement() {
-  if (setupDone) return;
-  setupDone = true;
+  if (activeDisposer) return activeDisposer;
 
   try {
     const stored = window.localStorage.getItem(STORAGE_KEY_SHOW_PERCENT);
@@ -316,7 +333,7 @@ export function runOfflineEquipPercentileEnhancement() {
     recordEquipmentPercentilePreferenceReadFailure(STORAGE_KEY_SHOW_PERCENT, error);
   }
 
-  injectStyle();
+  const style = injectStyle();
 
   const observer = new MutationObserver((mutations) => {
     for (const m of mutations) {
@@ -342,19 +359,28 @@ export function runOfflineEquipPercentileEnhancement() {
 
   document.querySelectorAll(".showequip").forEach(parseEquip);
 
-  document.addEventListener(
-    "keydown",
-    (e) => {
-      if (!isValidKey(e)) return;
-      const key = e.key.toLowerCase();
-      if (key === KEY_TOGGLE) {
-        e.preventDefault();
-        actionTogglePercent();
-      } else if (key === KEY_FORGE) {
-        e.preventDefault();
-        actionToggleForge();
-      }
-    },
-    true
-  );
+  const handleKeydown = (e) => {
+    if (!isValidKey(e)) return;
+    const key = e.key.toLowerCase();
+    if (key === KEY_TOGGLE) {
+      e.preventDefault();
+      actionTogglePercent();
+    } else if (key === KEY_FORGE) {
+      e.preventDefault();
+      actionToggleForge();
+    }
+  };
+  document.addEventListener("keydown", handleKeydown, true);
+
+  activeDisposer = () => {
+    observer.disconnect();
+    document.removeEventListener("keydown", handleKeydown, true);
+    const containers = new Set(document.querySelectorAll(".showequip"));
+    if (popup) containers.add(popup);
+    containers.forEach(restoreEquip);
+    style.remove();
+    popup = null;
+    activeDisposer = null;
+  };
+  return activeDisposer;
 }

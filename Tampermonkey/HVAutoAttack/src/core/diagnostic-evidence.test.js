@@ -117,6 +117,10 @@ describe("readRecentDiagnosticEvidence", () => {
       "HVAA:lastRiddleDatasetFailure": { capability: "riddleDataset", stage: "export-list" },
       "HVAA:lastI18nInitFailure": { capability: "i18nInit", entry: "interface" },
       "HVAA:lastI18nRestoreFailure": { capability: "i18nRestore", stage: "restore" },
+      "HVAA:lastCustomDictionaryFailure": {
+        capability: "customDictionary",
+        stage: "importWrite",
+      },
       "HVAA:lastHvutI18nBridgeFailure": {
         capability: "hvutI18nBridge",
         stage: "retranslateEquiplistBridgeMissing",
@@ -319,6 +323,7 @@ describe("readRecentDiagnosticEvidence", () => {
       riddleDatasetFailure: { capability: "riddleDataset", stage: "export-list" },
       i18nInitFailure: { capability: "i18nInit", entry: "interface" },
       i18nRestoreFailure: { capability: "i18nRestore", stage: "restore" },
+      customDictionaryFailure: { capability: "customDictionary", stage: "importWrite" },
       hvutI18nBridgeFailure: {
         capability: "hvutI18nBridge",
         stage: "retranslateEquiplistBridgeMissing",

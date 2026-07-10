@@ -5,10 +5,6 @@ function cloneConfigValue(value) {
   return JSON.parse(JSON.stringify(value));
 }
 
-export function getHvutConfigNamespace(segment) {
-  return segment?.isIsekai ? "hvuti" : "hvut";
-}
-
 export function getHvutConfigCarryKeys(segment) {
   return segment?.isIsekai ? [...COMMON_CARRY_KEYS] : [...PERSISTENT_CARRY_KEYS];
 }

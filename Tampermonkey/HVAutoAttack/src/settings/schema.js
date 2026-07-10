@@ -1174,7 +1174,7 @@ const OPTION_SCHEMA = [
       l2: "POPUP a window to answer",
     },
   },
-  // === P3P4 装备百分位（off / offline 本地品质点数公式；live 已随能量模型过时, 存值兼容降级走 offline） ===
+  // === P3P4 装备百分位（本地化 tab；off 会调用 disposer 即时卸载） ===
   // [2026-06-10] equipPercentileLiveSendRange 已删（live 专属, 零消费）; enum 保留 'live' 兼容老存值。
   {
     key: "equipPercentileMode",
@@ -1188,9 +1188,9 @@ const OPTION_SCHEMA = [
       live: "live (已并入 offline)",
     },
     label: {
-      l0: "装备浮动百分位（off / offline 本地公式；live 已并入 offline — ⚠ 切模式需刷新页面）",
-      l1: "裝備浮動百分位（off / offline 本地公式；live 已併入 offline — ⚠ 切模式需刷新頁面）",
-      l2: "Equip Percentile (off / offline local; live merged into offline — ⚠ refresh after switching)",
+      l0: "装备浮动百分位（off / offline 本地公式；live 已并入 offline）",
+      l1: "裝備浮動百分位（off / offline 本地公式；live 已併入 offline）",
+      l2: "Equip Percentile (off / offline local; live merged into offline)",
     },
   },
   // === P6 RMA ML 远程答题（rdma.ooguy.com） ===

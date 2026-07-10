@@ -26,6 +26,7 @@ import { fileURLToPath } from "node:url";
 import { hasCJK, stripComments } from "./lib/i18n-probe-lex.mjs";
 
 const TARGET = fileURLToPath(new URL("../src/i18n/hv-utils.js", import.meta.url));
+const REGISTRY = fileURLToPath(new URL("../src/data/i18n/navigation-terms.js", import.meta.url));
 
 let src;
 try {
@@ -65,21 +66,23 @@ if (!src.includes("if (progress !== null) {")) {
 if (/level_details'\)\.textContent\);\n\s*const exp = parseInt\(exec\[1\]/.test(src)) {
   violations.push({ line: 1, what: "顶部等级进度不得保留裸 exec[1] 解析路径" });
 }
-// 单一来源清单：TOP_MENU_DEFAULT_LINKS = [ … ] 单行字面量（topMenuLinks 用户设置 2026-06-10 退化, 清单收敛 L1 常量）。
-const ARR_RE = /TOP_MENU_DEFAULT_LINKS\s*=\s*\[([^\]]*)\]/;
+const registrySource = stripComments(readFileSync(REGISTRY, "utf8"));
+const registryArray = /TOP_MENU_DEFAULT_LINKS\s*=\s*Object\.freeze\(\[([\s\S]*?)\]\)/.exec(
+  registrySource
+)?.[1];
+if (!registryArray) {
+  violations.push({ line: 1, what: "缺少 TOP_MENU_DEFAULT_LINKS 导航注册表" });
+} else if (hasCJK(registryArray)) {
+  violations.push({ line: 1, what: "TOP_MENU_DEFAULT_LINKS 注册表含 CJK 逻辑键" });
+}
+if (!src.includes("const TOP_MENU_DEFAULT_LINKS = get_hvut_top_menu_links();")) {
+  violations.push({ line: 1, what: "HVUT 顶部菜单未消费共享导航注册表" });
+}
 // 渲染兜底 push：links.push('…') 字符串实参（topMenu 渲染唯一的 links 变量，全文件仅两处）。
 const PUSH_RE = /\blinks\.push\(\s*(['"])([^'"]*)\1\s*\)/g;
 
 for (let i = 0; i < codeLines.length; i += 1) {
   const line = codeLines[i];
-
-  const arr = ARR_RE.exec(line);
-  if (arr && hasCJK(arr[1])) {
-    violations.push({
-      line: i + 1,
-      what: "TOP_MENU_DEFAULT_LINKS 清单含 CJK 键",
-    });
-  }
 
   PUSH_RE.lastIndex = 0;
   let m;
@@ -107,5 +110,5 @@ if (violations.length > 0) {
 }
 
 console.log(
-  "[verify-topmenu-keys] OK — TOP_MENU_DEFAULT_LINKS 逻辑键均为英文（显示走 m.label/m.text/m.button）"
+  "[verify-topmenu-keys] OK — TOP_MENU_DEFAULT_LINKS 逻辑键均为英文（显示走 navigation registry）"
 );

@@ -32,6 +32,7 @@ import { INTERFACE_DICTS_MAP, INTERFACE_WORDS } from "../data/i18n/interface-dic
 import { registerRestore, ensureRestoreButton, toggleRestore, isTranslated, isButtonVisible, hideButton, registerRetranslate, registerTranslation, isSkipped } from "./core/restore-controller.js";
 import { recordI18nInitFailure } from "./core/init-failure.js";
 import { langPostProcess } from "./core/lang-post.js";
+import { CustomDictionaryEvent, runCustomDictionaryAutomation } from "./custom-dictionary.js";
 
 //原文切换功能所需变量（changer 按钮归 RestoreController 单例；translated 仍本模块持有供动态 observer / alert hook 读）
 var translatedList = new Map(), translated = true;
@@ -97,6 +98,11 @@ function buildDict(group) {
     var reg;
 
     const regexp = Object.entries(INTERFACE_WORDS[group]).map(([word,value])=>{
+        const customValue = runCustomDictionaryAutomation({
+            type: CustomDictionaryEvent.RESOLVE_FORWARD,
+            group,
+            source: word,
+        });
         if (reg = word.match(rIsRegexp)) {
             reg = new RegExp(reg[1], 'g')
         } else {
@@ -104,7 +110,7 @@ function buildDict(group) {
                 return fullMatch === '\\*' ? '*' : '[^ ]*';
             }), 'g');
         }
-        return {reg, value};
+        return {reg, value: customValue ?? value};
     });
 
     regexps.set(group, regexp);
@@ -246,6 +252,7 @@ function start() {
 // 按当前 lang 重新翻译（lang 切换用）。RestoreController.setLang 调用前已 restoreTranslate 还原英文。
 function retranslateInterface() {
     translatedList.clear();
+    regexps.clear();
     start(); // 重新遍历翻译（start 内 disconnect 旧 observer + 重建）；译文经 langPostProcess 出对应繁简
     translated = true; // 重翻后回到"已翻译"显示态，与全局态同步（防动态 observer if(!translated)return 失效）
 }

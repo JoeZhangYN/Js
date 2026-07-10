@@ -44,6 +44,7 @@ import {
   SettingsHvutConfigCommandEvent,
   runSettingsHvutConfigCommand,
 } from "./hvut-config-command.js";
+import { CustomDictionaryEvent, runCustomDictionaryAutomation } from "../i18n/custom-dictionary.js";
 
 export function readSingleOrderItemName(target) {
   const match = target?.id?.match(/_(.*)/);
@@ -234,8 +235,23 @@ function renderEquipmentSchemaFields() {
     renderRepairThresholdSchemaField(),
     renderCheckboxPlusNumber("repairBuyMaterials", "repairCreditCap"),
     renderSchemaCheckboxField("forgeCostShow"),
-    renderSchemaSelectField("equipPercentileMode"),
   ];
+}
+
+export function renderLocalizationSettingsFields() {
+  return [
+    "<div><b><l0>界面语言</l0><l1>界面語言</l1><l2>Interface language</l2></b>: ",
+    '<select name="lang"><option value="0">简体中文</option><option value="1">繁體中文</option><option value="2">English</option></select></div>',
+    renderSchemaSelectField("equipPercentileMode"),
+    "<div><b><l0>自定义词典</l0><l1>自定義詞典</l1><l2>Custom dictionary</l2></b> ",
+    "<l0>JSON 按 (group, source) 合并；自定义译文优先于内置词典。</l0>",
+    "<l1>JSON 按 (group, source) 合併；自定義譯文優先於內置詞典。</l1>",
+    "<l2>JSON merges by (group, source); custom entries override canonical terms.</l2><br>",
+    '<textarea class="hvAACustomDictionary" style="width:98%;height:180px;"></textarea><br>',
+    '<button type="button" class="hvAACustomDictionaryExport"><l0>读取/导出</l0><l1>讀取/導出</l1><l2>Load / Export</l2></button>',
+    '<button type="button" class="hvAACustomDictionaryImport"><l0>合并导入</l0><l1>合併導入</l1><l2>Merge Import</l2></button>',
+    '<button type="button" class="hvAACustomDictionaryClear"><l01>清空</l01><l2>Clear</l2></button></div>',
+  ].join("");
 }
 
 function renderRiddleSchemaFields() {
@@ -931,7 +947,6 @@ export function optionBox() {
     '  <h1 style="display:inline;">hvAutoAttack</h1>',
     // 旧 dodying 外链已移除（条件用法见条件框内联 "?" 帮助）；保留标签不再导航。
     '  <span style="opacity:.6;"><l0>JoezhangYN 修改版</l0><l1>JoezhangYN 修改版</l1><l2>JoezhangYN fork</l2></span>',
-    '  <select name="lang"><option value="0">简体中文</option><option value="1">繁體中文</option><option value="2">English</option></select>',
     // UI 入口整合（只合入口）：HVAA 面板内开 hv-utils config，经 settings command 统一裁决。
     '  <span class="hvAAOpenHVUT" style="cursor:pointer;text-decoration:underline;margin-left:8px;" title="HV Utils 设置"><l0>HV Utils 设置</l0><l1>HV Utils 設置</l1><l2>HV Utils Settings</l2></span>',
     '  <l2><span style="font-size:small;"><a target="_blank" href="https://greasyfork.org/forum/profile/18194/Koko191" style="color:#E3E0D1;background-color:#E3E0D1;" title="Thanks to Koko191 who give help in the translation">by Koko191</a></span></l2></div>',
@@ -942,6 +957,7 @@ export function optionBox() {
     '  <span name="Tactics"><l0>战术姿态</l0><l1>戰術姿態</l1><l2>Tactics</l2></span>',
     '  <span name="Arena"><l0>竞技体力</l0><l1>競技體力</l1><l2>Arena</l2></span>',
     '  <span name="Equipment"><l0>装备维护</l0><l1>裝備維護</l1><l2>Equipment</l2></span>',
+    '  <span name="Localization"><l0>本地化</l0><l1>本地化</l1><l2>Localization</l2></span>',
     '  <span name="System"><l0>系统页面</l0><l1>系統頁面</l1><l2>System</l2></span>',
     '  <span name="Spell"><l0>法术攻击</l0><l1>法術攻擊</l1><l2>Spell</l2></span>',
     '  <span name="Item"><l01>物品</l01><l2>Item</l2></span>',
@@ -996,6 +1012,9 @@ export function optionBox() {
     // === Equipment 装备维护 tab（修复装备 + 缺料买料 + 强化价格 + 装备百分位，原 Main 拆出）===
     '<div class="hvAATab" id="hvAATab-Equipment">',
     ...renderEquipmentSchemaFields(),
+    "  </div>",
+    '<div class="hvAATab" id="hvAATab-Localization">',
+    renderLocalizationSettingsFields(),
     "  </div>",
     // === System 系统/页面 tab（页面停留 alert/reload + 定时刷新 + 记录每场 + 延迟，原 Main 拆出）===
     '<div class="hvAATab" id="hvAATab-System">',
@@ -1130,6 +1149,38 @@ export function optionBox() {
     // 避免在 option 未装填的页残缺 {lang} 落盘覆盖完整配置（现象①持久化失效根因）。
     // HV 原生汉化(equip/interface) 即时按新 lang 重渲染显示态（0简/1繁/2英），无需重载
     writeSettingsLanguage(this.value, this);
+  };
+  const customDictionaryText = gE(".hvAACustomDictionary", optionBox);
+  const exportCustomDictionary = () => {
+    customDictionaryText.value = runCustomDictionaryAutomation({
+      type: CustomDictionaryEvent.EXPORT_TEXT,
+    });
+  };
+  exportCustomDictionary();
+  gE(".hvAACustomDictionaryExport", optionBox).onclick = exportCustomDictionary;
+  gE(".hvAACustomDictionaryImport", optionBox).onclick = function () {
+    const result = runCustomDictionaryAutomation({
+      type: CustomDictionaryEvent.IMPORT_TEXT,
+      text: customDictionaryText.value,
+    });
+    if (!result.ok) {
+      _alert(0, "自定义词典导入失败", "自定義詞典導入失敗", "Custom dictionary import failed");
+      return;
+    }
+    exportCustomDictionary();
+    setLang(g("lang") ?? "0");
+  };
+  gE(".hvAACustomDictionaryClear", optionBox).onclick = function () {
+    if (!_alert(1, "是否清空自定义词典", "是否清空自定義詞典", "Clear custom dictionary?")) {
+      return;
+    }
+    const result = runCustomDictionaryAutomation({ type: CustomDictionaryEvent.CLEAR });
+    if (result.ok) {
+      exportCustomDictionary();
+      setLang(g("lang") ?? "0");
+    } else {
+      _alert(0, "自定义词典清空失败", "自定義詞典清空失敗", "Failed to clear custom dictionary");
+    }
   };
   // UI 入口整合：HVAA 面板内入口打开 hv-utils config 面板。
   const openHVUT = gE(".hvAAOpenHVUT", optionBox);

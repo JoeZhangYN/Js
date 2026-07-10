@@ -42,9 +42,7 @@ export function runEquipmentViewAutomation(event = { type: EVENT_PAGE_READY }, d
     ran = true;
   }
   const equipPercentileMode = readEquipPercentileMode(runtime);
-  if (equipPercentileMode !== "off") {
-    runtime.runEquipPercentileEnhancement(equipPercentileMode);
-    ran = true;
-  }
+  runtime.runEquipPercentileEnhancement(equipPercentileMode);
+  if (equipPercentileMode !== "off") ran = true;
   return ran;
 }

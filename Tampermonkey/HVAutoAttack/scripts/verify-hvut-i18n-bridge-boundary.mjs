@@ -23,6 +23,8 @@ for (const required of [
   "record_hvut_i18n_bridge_failure(stage + 'Failed'",
   "return run_hvut_i18n_bridge('resolveEn', [node, group], 'resolveEnBridgeMissing'",
   "return run_hvut_i18n_bridge('t', [value, group], 'translateBridgeMissing'",
+  "return run_hvut_i18n_bridge('translateText', [value, group], 'translateTextBridgeMissing'",
+  "return run_hvut_i18n_bridge('navigationLinks', [], 'navigationRegistryBridgeMissing'",
   "return run_hvut_i18n_bridge('translateEquipName', [name], 'translateEquipNameBridgeMissing'",
   "var registered = run_hvut_i18n_bridge('registerI18nRender', [node, bound], 'registerI18nRenderBridgeMissing'",
   "run_hvut_i18n_bridge('retranslateEquiplist', [], 'retranslateEquiplistBridgeMissing', { surface: 'armoryIntegrate' }, false)",

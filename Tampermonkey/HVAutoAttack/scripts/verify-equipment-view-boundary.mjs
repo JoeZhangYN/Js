@@ -144,7 +144,7 @@ function checkForgeCostNameParsing() {
   if (!forgeText.includes("export function readShowEquipName(body)")) {
     violations.push(`${rel(forgeCostFile)} must expose one showequip name parser`);
   }
-  if (!forgeText.includes("const fullName = readShowEquipName(document.body);")) {
+  if (!forgeText.includes("const fullName = readShowEquipLogicalName(document.body);")) {
     violations.push(
       `${rel(forgeCostFile)} must route material selection through readShowEquipName`
     );
@@ -167,6 +167,7 @@ function checkForgeCostNameParsing() {
     "fails closed for missing showequip name nodes",
     "Legendary Rapier of Slaughter",
     "readShowEquipName(null)",
+    "resolves translated name nodes back to English business identity",
   ]) {
     if (!forgeTestText.includes(required)) {
       violations.push(`${rel(forgeCostTest)} must cover ${required}`);
@@ -195,6 +196,7 @@ function checkPercentileModeDecisionPoint() {
     "DiagnosticConsoleEvent.INFO",
     "runDiagnosticConsoleAutomation",
     "runOfflineEquipPercentileEnhancement",
+    "disposeCurrentEnhancement?.()",
   ]) {
     if (!dispatcherText.includes(required)) {
       violations.push(`${rel(percentileDispatcherFile)} must own ${required}`);
@@ -208,6 +210,7 @@ function checkPercentileModeDecisionPoint() {
   for (const required of [
     "reports live mode compatibility downgrade through typed diagnostics",
     "runs offline mode without compatibility diagnostics",
+    "disposes the active enhancement when mode switches off",
   ]) {
     if (!dispatcherTestText.includes(required)) {
       violations.push(`${rel(percentileDispatcherTest)} must cover ${required}`);
