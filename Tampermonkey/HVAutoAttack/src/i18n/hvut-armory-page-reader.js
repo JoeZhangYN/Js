@@ -1,3 +1,5 @@
+import { ArmoryPageFactsKind, readArmoryPageFacts } from "./hvut-armory-page-facts.js";
+
 export const ARMORY_CATEGORY_KEYS = Object.freeze([
   "weapon_1handed",
   "weapon_2handed",
@@ -45,7 +47,7 @@ function parsePage(document, text) {
   return doc;
 }
 
-function classifyResponse(response, text, doc, requestedUrl, category) {
+function classifyResponse(response, text, doc, requestedUrl, screen, category, recordFailure) {
   const detail = { category: category.key, ...safePageDetail(response, doc, text, requestedUrl) };
   if (response.status === 429 || response.status === 503 || text.trim() === "state lock limiter in effect") {
     return { kind: ArmoryPageKind.LIMITED, detail };
@@ -53,7 +55,26 @@ function classifyResponse(response, text, doc, requestedUrl, category) {
   if (!response.ok) return { kind: ArmoryPageKind.REQUEST_FAILED, detail };
   const equiplist = doc.getElementById("equiplist");
   const table = equiplist?.querySelector(":scope > table") || doc.querySelector("#equiplist > table");
-  if (table) return { kind: ArmoryPageKind.TABLE, category, doc, table, detail };
+  if (table) {
+    const pageFacts = readArmoryPageFacts(doc, screen);
+    if (pageFacts.kind === ArmoryPageFactsKind.REJECTED) {
+      for (const failure of pageFacts.failures) {
+        recordFailure?.(failure.stage, {
+          screen,
+          category: category.key,
+          ...failure.detail,
+        });
+      }
+      return {
+        kind: ArmoryPageKind.UNEXPECTED_PAGE,
+        category,
+        doc,
+        table: null,
+        detail: { ...detail, pageFactFailures: pageFacts.failures },
+      };
+    }
+    return { kind: ArmoryPageKind.TABLE, category, doc, table, facts: pageFacts.facts, detail };
+  }
   if (equiplist) return { kind: ArmoryPageKind.EMPTY, category, doc, table: null, detail };
   return { kind: ArmoryPageKind.UNEXPECTED_PAGE, category, doc, table: null, detail };
 }
@@ -72,7 +93,7 @@ export function readArmoryCategories(filterbar, baseUrl) {
   return ARMORY_CATEGORY_KEYS.flatMap((key) => (links.has(key) ? [links.get(key)] : []));
 }
 
-export function createArmoryPageReader({ fetchImpl, document, baseUrl }) {
+export function createArmoryPageReader({ fetchImpl, document, baseUrl, recordFailure }) {
   async function read({ screen, category }) {
     const requestedUrl = armoryUrl(baseUrl, screen, category.key);
     let response;
@@ -80,7 +101,7 @@ export function createArmoryPageReader({ fetchImpl, document, baseUrl }) {
       response = await fetchImpl(requestedUrl, { credentials: "same-origin" });
       const text = await response.text();
       const doc = parsePage(document, text);
-      return classifyResponse(response, text, doc, requestedUrl, category);
+      return classifyResponse(response, text, doc, requestedUrl, screen, category, recordFailure);
     } catch (error) {
       return {
         kind: ArmoryPageKind.REQUEST_FAILED,

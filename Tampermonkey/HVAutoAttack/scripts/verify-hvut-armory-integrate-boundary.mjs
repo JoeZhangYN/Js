@@ -5,6 +5,7 @@ const root = process.cwd();
 const hvutTarget = path.normalize("src/i18n/hv-utils.js");
 const ownerTarget = path.normalize("src/i18n/hvut-armory-integration.js");
 const readerTarget = path.normalize("src/i18n/hvut-armory-page-reader.js");
+const factsTarget = path.normalize("src/i18n/hvut-armory-page-facts.js");
 const bridgeTarget = path.normalize("src/i18n/hvut-armory-integration-bridge.js");
 const mainTarget = path.normalize("src/main.js");
 const diagnosticTarget = path.normalize("src/core/diagnostic-evidence-keys.js");
@@ -13,6 +14,7 @@ const read = (target) => fs.readFileSync(path.join(root, target), "utf8");
 const hvut = read(hvutTarget);
 const owner = read(ownerTarget);
 const reader = read(readerTarget);
+const facts = read(factsTarget);
 const bridge = read(bridgeTarget);
 const main = read(mainTarget);
 const diagnostic = read(diagnosticTarget);
@@ -46,6 +48,11 @@ requireAll(readerTarget, reader, [
   'LIMITED: "limited"',
   'filterbar?.querySelectorAll?.("a[href]")',
 ]);
+requireAll(factsTarget, facts, [
+  "export function readArmoryPageFacts(doc, screen)",
+  "ArmoryPageFactsKind.FACTS",
+  "ArmoryPageFactsKind.REJECTED",
+]);
 requireAll(bridgeTarget, bridge, [
   "createArmoryIntegrationCapability",
   "createArmoryPageReader",
@@ -61,9 +68,16 @@ requireAll(hvutTarget, hvut, [
   "Array.from(table.tBodies).forEach((body) => body.remove());",
   "重试失败分类",
   "show_hvut_runtime_failure_report(render_hvut_armory_integrate_failure_log(evidence));",
+  "$equip.list.table(table, true, page.facts)",
+  "$armory.script.commitBatch(result.stages.map((stage) => stage.facts), $armory.pageContext.screen);",
 ]);
 if (hvut.includes("Promise.all($armory.filters.map((filter) => $armory.integrate.load")) {
   violations.push(`${hvutTarget} must not retain the destructive parallel Armory loader`);
+}
+for (const forbidden of ["$armory.page.init(page.doc", "Object.assign(dynjs_eqstore,"]) {
+  if (hvut.includes(forbidden)) {
+    violations.push(`${hvutTarget} must not stage through a detached page lifetime: ${forbidden}`);
+  }
 }
 
 requireAll(diagnosticTarget, diagnostic, [

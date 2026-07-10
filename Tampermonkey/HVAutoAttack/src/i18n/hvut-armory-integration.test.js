@@ -15,6 +15,7 @@ function setup(overrides = {}) {
       kind: "table",
       category: page.category.key,
       equiplist: [page.category.key],
+      facts: page.facts,
     })),
     commit: vi.fn(),
     preserve: vi.fn(),
@@ -27,7 +28,13 @@ function setup(overrides = {}) {
 }
 
 function table(category) {
-  return { kind: ArmoryPageKind.TABLE, category, table: {}, detail: { category: category.key } };
+  return {
+    kind: ArmoryPageKind.TABLE,
+    category,
+    table: {},
+    facts: { dynjs_eqstore: { [category.key]: {} }, eqitems: {}, itemdata: {} },
+    detail: { category: category.key },
+  };
 }
 
 describe("HVUT Armory integration capability", () => {
@@ -47,6 +54,11 @@ describe("HVUT Armory integration capability", () => {
     ]);
     expect(deps.wait).toHaveBeenCalledWith(300);
     expect(deps.commit).toHaveBeenCalledOnce();
+    expect(deps.commit.mock.calls[0][0].stages).toHaveLength(2);
+    expect(deps.commit.mock.calls[0][0].stages.map((stage) => stage.facts)).toEqual([
+      table(categories[0]).facts,
+      table(categories[1]).facts,
+    ]);
     expect(deps.preserve).not.toHaveBeenCalled();
     expect(deps.retranslate).toHaveBeenCalledOnce();
   });

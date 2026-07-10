@@ -5174,8 +5174,8 @@ const bindEquip = function (equip, ctx) {
       };
       return info;
     },
-    dynjs: function (eid, elem) {
-      const dynjs = $equip.dynjs_equip[eid] || $equip.dynjs_eqstore[eid] || {};
+    dynjs: function (eid, elem, scriptFacts) {
+      const dynjs = scriptFacts?.dynjs_equip?.[eid] || scriptFacts?.dynjs_eqstore?.[eid] || $equip.dynjs_equip[eid] || $equip.dynjs_eqstore[eid] || {};
       const info = $equip.parse.html(dynjs.d);
       let error;
       if (!dynjs.d) {
@@ -5210,12 +5210,12 @@ const bindEquip = function (equip, ctx) {
       $equip.parse.name(eq.info.name, eq);
       return eq;
     },
-    elem: function (elem) {
+    elem: function (elem, scriptFacts) {
       const eid = /(?:hover_equip|equips\.set)\((\d+)/.exec(elem.getAttribute('onmouseover'))?.[1];
       if (!eid) {
         return { error: 'invalid element' };
       }
-      const eq = $equip.parse.dynjs(eid, elem);
+      const eq = $equip.parse.dynjs(eid, elem, scriptFacts);
       if (eq.data.error) {
         //return eq;
       }
@@ -5236,12 +5236,12 @@ const bindEquip = function (equip, ctx) {
   },
 
   list: {
-    table: function (table, sort = true) {
+    table: function (table, sort = true, scriptFacts) {
       if (!table) {
         return;
       }
       const equiplist = Array.from($qsa('tr[onmouseover*="hover_equip"]', table)).map((tr) => {
-        const eq = $equip.parse.elem(tr);
+        const eq = $equip.parse.elem(tr, scriptFacts);
         eq.node.wrapper = tr;
         eq.node.check = $qs('input[name="eqids[]"]', tr);
         if (eq.info.customname) {
@@ -5788,25 +5788,31 @@ const bindArmory = function (armory, ctx) {
     },
 
     page: {
-      init: function (doc, screen, assign) {
+      init: function (doc, screen) {
         const form = $id('equipform', doc);
         if (!form) {
-          record_hvut_armory_page_failure('equipformMissing', { screen: screen, assign: !!assign });
+          record_hvut_armory_page_failure('equipformMissing', { screen: screen });
+          return false;
         }
+        const pageFacts = $armory.script.read(doc, screen);
+        if (pageFacts.kind !== 'facts') return false;
         $armory.postoken = form?.elements?.postoken?.value;
         $armory.node.submit[screen] = $id('equipsubmit', doc);
-        return $armory.script.parse(doc, screen, assign);
+        $armory.script.commit(pageFacts.facts, screen);
+        return true;
       },
-      load: async function (screen, filter, assign) {
+      load: async function (screen, filter) {
         const href = create_hvut_armory_screen_url(screen, { filter: filter || '' });
         const html = await $ajax.fetch(href);
         const doc = $doc(html);
-        $armory.page.init(doc, screen, assign);
+        if (!$armory.page.init(doc, screen)) {
+          return { kind: 'rejected', table: null };
+        }
         const equiplist = $id('equiplist', doc);
         const table = $qs('#equiplist > table', doc);
         if (table) return { kind: 'table', table: table };
         if (equiplist) return { kind: 'empty', table: null };
-        record_hvut_armory_page_failure('equiplistMissing', { screen: screen, filter: filter || '', assign: !!assign });
+        record_hvut_armory_page_failure('equiplistMissing', { screen: screen, filter: filter || '' });
         return { kind: 'missing', table: null };
       },
     },
@@ -5864,98 +5870,57 @@ const bindArmory = function (armory, ctx) {
     },
 
     script: {
-      parse: function (doc, screen, assign) {
-        let json;
-        let accepted = true;
-        const parseSellEqitemsFromTable = function () {
-          const rows = $qsa('#equiplist > table tr[onmouseover*="hover_equip"]', doc);
-          const eqitems = {};
-          for (const tr of rows) {
-            const eid = /hover_equip\((\d+)/.exec(tr.getAttribute('onmouseover'))?.[1];
-            const price = parseInt((tr.lastElementChild?.textContent || '').replace(/\D/g, ''));
-            if (!eid || !price) {
-              accepted = false;
-              record_hvut_armory_page_failure('sellPriceMissing', { screen: screen, eid: eid || null, text: tr.lastElementChild?.textContent || '' });
-              continue;
-            }
-            eqitems[eid] = { c: price };
-          }
-          return eqitems;
-        };
-        const requirements = {
-          dynjs_eqstore: screen === 'purchase',
-          eqitems: screen !== 'sell',
-          itemdata: false,
-        };
-        const readScriptObject = function (html, name, required) {
-          let value;
-          try {
-            value = parse_script_json(html, name);
-          } catch (error) {
-            if (required) {
-              accepted = false;
-              record_hvut_armory_page_failure('scriptObjectParseFailed', { screen: screen, name: name, assign: !!assign, error: error?.message || String(error) });
-            }
-            return {};
-          }
-          if (!value || typeof value !== 'object') {
-            if (required) {
-              accepted = false;
-              record_hvut_armory_page_failure('scriptObjectMissing', { screen: screen, name: name, assign: !!assign });
-            }
-            return {};
-          }
-          return value;
-        };
+      read: function (doc, screen) {
         if (!doc) {
-          json = {
-            dynjs_eqstore: typeof dynjs_eqstore !== 'undefined' && dynjs_eqstore ? dynjs_eqstore : {},
-            eqitems: typeof eqitems !== 'undefined' && eqitems ? eqitems : {},
-            itemdata: typeof itemdata !== 'undefined' && itemdata ? itemdata : {},
+          return {
+            kind: 'facts',
+            facts: {
+              dynjs_eqstore: typeof dynjs_eqstore !== 'undefined' && dynjs_eqstore ? dynjs_eqstore : {},
+              eqitems: typeof eqitems !== 'undefined' && eqitems ? eqitems : {},
+              itemdata: typeof itemdata !== 'undefined' && itemdata ? itemdata : {},
+            },
           };
-        } else {
-          const script = $qs('#equipform ~ script:last-child', doc);
-          if (!script) {
-            accepted = false;
-            record_hvut_armory_page_failure('scriptMissing', { screen: screen, assign: !!assign });
-            json = { dynjs_eqstore: {}, eqitems: {}, itemdata: {} };
-          } else {
-            const html = script.innerHTML;
-            json = {
-              dynjs_eqstore: readScriptObject(html, 'dynjs_eqstore', requirements.dynjs_eqstore),
-              eqitems: readScriptObject(html, 'eqitems', requirements.eqitems),
-              itemdata: readScriptObject(html, 'itemdata', requirements.itemdata),
-            };
-            if (screen === 'sell' && !Object.keys(json.eqitems).length) {
-              json.eqitems = parseSellEqitemsFromTable();
-            }
-          }
         }
+        const bridge = typeof window !== 'undefined' ? window.HVAA_armoryIntegration : null;
+        if (!bridge || typeof bridge.readPageFacts !== 'function') {
+          record_hvut_armory_page_failure('pageFactsBridgeMissing', { screen: screen });
+          return { kind: 'rejected' };
+        }
+        const result = bridge.readPageFacts(doc, screen);
+        if (result.kind === 'rejected') {
+          result.failures.forEach((failure) => {
+            record_hvut_armory_page_failure(failure.stage, { screen: screen, ...failure.detail });
+          });
+        }
+        return result;
+      },
+      commit: function (json, screen) {
         if (!$armory.eqitems[screen]) {
           $armory.eqitems[screen] = {};
         }
         Object.assign($equip.dynjs_eqstore, json.dynjs_eqstore); // purchase
         Object.assign($armory.eqitems[screen], json.eqitems); // c:purchase price, c:sell price, m:salvage materials, c:remains price
         Object.assign($armory.itemdata, json.itemdata); // salvage (item inventory)
-
-        if (assign) {
-          $armory.script.assign(json);
-        }
-        return accepted;
       },
-      assign: function (json) { // cannot access const/let using unsafeWindow[]
-        if (json.dynjs_eqstore) {
-          if (typeof dynjs_eqstore === 'undefined') { dynjs_eqstore = {}; }
-          Object.assign(dynjs_eqstore, json.dynjs_eqstore);
+      publish: function (json) {
+        for (const name of ['dynjs_eqstore', 'eqitems', 'itemdata']) {
+          const source = json[name];
+          if (!source || !Object.keys(source).length) continue;
+          if (!_window[name] || typeof _window[name] !== 'object') {
+            _window[name] = {};
+          }
+          Object.assign(_window[name], source);
         }
-        if (json.eqitems) {
-          if (typeof eqitems === 'undefined') { eqitems = {}; }
-          Object.assign(eqitems, json.eqitems);
-        }
-        if (json.itemdata) {
-          if (typeof itemdata === 'undefined') { itemdata = {}; }
-          Object.assign(itemdata, json.itemdata);
-        }
+      },
+      commitBatch: function (pages, screen) {
+        const facts = { dynjs_eqstore: {}, eqitems: {}, itemdata: {} };
+        pages.forEach((page) => {
+          Object.assign(facts.dynjs_eqstore, page.dynjs_eqstore);
+          Object.assign(facts.eqitems, page.eqitems);
+          Object.assign(facts.itemdata, page.itemdata);
+        });
+        $armory.script.publish(facts);
+        $armory.script.commit(facts, screen);
       },
     },
 
@@ -6063,6 +6028,7 @@ const bindArmory = function (armory, ctx) {
           preserve: $armory.integrate.preserve,
           retranslate: () => run_hvut_i18n_bridge('retranslateEquiplist', [], 'retranslateEquiplistBridgeMissing', { surface: 'armoryIntegrate' }, false),
           recordFailure: record_hvut_armory_integrate_failure,
+          recordPageFailure: record_hvut_armory_page_failure,
         });
         return $armory.integrate.capability;
       },
@@ -6085,18 +6051,19 @@ const bindArmory = function (armory, ctx) {
       },
       stage: async function (page, screen) {
         const table = page.table;
-        if ($armory.page.init(page.doc, screen, true) === false) {
+        if (!page.facts) {
           return { kind: 'rejected', reason: 'pageFactsRejected' };
         }
-        const equiplist = $equip.list.table(table);
+        const equiplist = $equip.list.table(table, true, page.facts);
         if (!equiplist.length) return { kind: 'empty', category: page.category.key };
         const body = table.tBodies[0];
         if (!body) return { kind: 'rejected', reason: 'tableBodyMissing' };
         body.dataset.hvutArmoryCategory = page.category.key;
-        return { kind: 'table', category: page.category.key, table: table, body: body, equiplist: equiplist };
+        return { kind: 'table', category: page.category.key, table: table, body: body, equiplist: equiplist, facts: page.facts };
       },
       commit: async function (result) {
         const table = $armory.node.table;
+        $armory.script.commitBatch(result.stages.map((stage) => stage.facts), $armory.pageContext.screen);
         const attempted = new Set([
           ...result.stages.map((stage) => stage.category),
           ...result.empty,

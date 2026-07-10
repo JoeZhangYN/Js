@@ -2,103 +2,94 @@ import fs from "node:fs";
 import path from "node:path";
 
 const root = process.cwd();
-const target = path.normalize("src/i18n/hv-utils.js");
+const hvutTarget = path.normalize("src/i18n/hv-utils.js");
+const factsTarget = path.normalize("src/i18n/hvut-armory-page-facts.js");
+const factsTestTarget = path.normalize("src/i18n/hvut-armory-page-facts.test.js");
+const readerTarget = path.normalize("src/i18n/hvut-armory-page-reader.js");
 const diagnosticTarget = path.normalize("src/core/diagnostic-evidence-keys.js");
 const diagnosticTestTarget = path.normalize("src/core/diagnostic-evidence.test.js");
-const readerTarget = path.normalize("src/i18n/hvut-armory-page-reader.js");
-const text = fs.readFileSync(path.join(root, target), "utf8");
-const diagnosticText = fs.readFileSync(path.join(root, diagnosticTarget), "utf8");
-const diagnosticTestText = fs.readFileSync(path.join(root, diagnosticTestTarget), "utf8");
-const readerText = fs.readFileSync(path.join(root, readerTarget), "utf8");
+const read = (target) => fs.readFileSync(path.join(root, target), "utf8");
+const hvut = read(hvutTarget);
+const facts = read(factsTarget);
+const factsTest = read(factsTestTarget);
+const reader = read(readerTarget);
+const diagnostic = read(diagnosticTarget);
+const diagnosticTest = read(diagnosticTestTarget);
 const violations = [];
-const armoryScriptParse =
-  /script: \{\n      parse: function \(doc, screen, assign\) \{[\s\S]*?\n      \},\n      assign: function/.exec(
-    text
-  )?.[0] || "";
 
-if (!armoryScriptParse) {
-  violations.push(`${target} must keep Armory script.parse visible`);
-}
-
-for (const required of [
-  "var record_hvut_armory_page_failure = function (stage, detail) {",
-  "capability: 'hvutArmoryPage'",
-  "sessionStorage.setItem('HVAA:lastHvutArmoryPageFailure'",
-  "console.warn('[HVUT] Armory page failed', evidence)",
-  "record_hvut_armory_page_failure('equipformMissing'",
-  "record_hvut_armory_page_failure('equiplistMissing'",
-  "return $armory.script.parse(doc, screen, assign);",
-  "if (table) return { kind: 'table', table: table };",
-  "if (equiplist) return { kind: 'empty', table: null };",
-  "return { kind: 'missing', table: null };",
-  "const readScriptObject = function (html, name, required) {",
-  "record_hvut_armory_page_failure('scriptObjectParseFailed'",
-  "record_hvut_armory_page_failure('scriptObjectMissing'",
-  "record_hvut_armory_page_failure('scriptMissing'",
-  "const parseSellEqitemsFromTable = function () {",
-  "record_hvut_armory_page_failure('sellPriceMissing'",
-  "const requirements = {",
-  "dynjs_eqstore: screen === 'purchase'",
-  "eqitems: screen !== 'sell'",
-  "itemdata: false",
-  "dynjs_eqstore: readScriptObject(html, 'dynjs_eqstore', requirements.dynjs_eqstore)",
-  "eqitems: readScriptObject(html, 'eqitems', requirements.eqitems)",
-  "itemdata: readScriptObject(html, 'itemdata', requirements.itemdata)",
-  "if (screen === 'sell' && !Object.keys(json.eqitems).length) {",
-  "json.eqitems = parseSellEqitemsFromTable();",
-  "return accepted;",
-]) {
-  if (!text.includes(required)) {
-    violations.push(`${target} must keep Armory page parse boundary: ${required}`);
+function requireAll(target, text, needles) {
+  for (const needle of needles) {
+    if (!text.includes(needle)) violations.push(`${target} must include ${needle}`);
   }
 }
 
-for (const required of [
-  'url.search = new URLSearchParams({ s: "Bazaar", ss: "am", screen, filter }).toString();',
-  "requestedUrl,",
-  "finalUrl: response?.url || requestedUrl",
-]) {
-  if (!readerText.includes(required)) {
-    violations.push(`${readerTarget} must keep typed Armory page identity evidence: ${required}`);
+requireAll(factsTarget, facts, [
+  "export function readArmoryPageFacts(doc, screen)",
+  "const hasEquipment = rows.length > 0;",
+  "if (!hasEquipment) return { kind: ArmoryPageFactsKind.FACTS, facts: emptyFacts() };",
+  'stage: "scriptObjectMissing"',
+  'hasEquipment && screen !== "sell"',
+  'screen === "sell" && !Object.keys(facts.eqitems).length',
+]);
+for (const forbidden of ["eval(", "new Function("]) {
+  if (facts.includes(forbidden)) {
+    violations.push(
+      `${factsTarget} must parse detached page facts without executing scripts: ${forbidden}`
+    );
   }
 }
 
-for (const forbidden of ["$id('equipform', doc).elements.postoken?.value"]) {
-  if (text.includes(forbidden)) {
-    violations.push(`${target} must not keep raw Armory page parse path: ${forbidden}`);
-  }
+requireAll(readerTarget, reader, [
+  'import { ArmoryPageFactsKind, readArmoryPageFacts } from "./hvut-armory-page-facts.js";',
+  "facts: pageFacts.facts",
+  "pageFactFailures: pageFacts.failures",
+  "recordFailure?.(failure.stage",
+  "readArmoryPageFacts(doc, screen)",
+]);
+if (reader.includes('searchParams.get("screen")')) {
+  violations.push(
+    `${readerTarget} must consume the typed screen identity instead of rediscovering it`
+  );
 }
 
+requireAll(hvutTarget, hvut, [
+  "const pageFacts = $armory.script.read(doc, screen);",
+  "window.HVAA_armoryIntegration",
+  "bridge.readPageFacts(doc, screen)",
+  "record_hvut_armory_page_failure(failure.stage",
+  "commitBatch: function (pages, screen)",
+  "$armory.script.publish(facts);",
+  "$armory.script.commit(facts, screen);",
+  "$equip.list.table(table, true, page.facts)",
+  "result.stages.map((stage) => stage.facts)",
+]);
 for (const forbidden of [
-  "dynjs_eqstore: parse_script_json(html, 'dynjs_eqstore')",
-  "eqitems: parse_script_json(html, 'eqitems')",
-  "itemdata: parse_script_json(html, 'itemdata')",
-  "eqitems: readScriptObject(html, 'eqitems', true)",
-  "itemdata: readScriptObject(html, 'itemdata', true)",
+  "if (typeof dynjs_eqstore === 'undefined') { dynjs_eqstore = {}; }",
+  "Object.assign(dynjs_eqstore,",
+  "$armory.script.assign(",
+  "$armory.page.init(page.doc",
 ]) {
-  if (armoryScriptParse.includes(forbidden)) {
-    violations.push(`${target} Armory script.parse must not keep raw parse path: ${forbidden}`);
+  if (hvut.includes(forbidden)) {
+    violations.push(`${hvutTarget} must not borrow or recreate detached page scope: ${forbidden}`);
   }
 }
 
-for (const required of [
+requireAll(factsTestTarget, factsTest, [
+  "without executing or borrowing the detached page scope",
+  "expect(globalThis.__armoryScriptExecuted).toBeUndefined()",
+  "treats an empty salvage category as a valid empty fact lifetime",
+  "rejects missing salvage facts only when equipment needs them",
+]);
+
+requireAll(diagnosticTarget, diagnostic, [
   'HVUT_ARMORY_PAGE_FAILURE: "HVAA:lastHvutArmoryPageFailure"',
   'source("hvutArmoryPageFailure", DiagnosticEvidenceKey.HVUT_ARMORY_PAGE_FAILURE)',
-]) {
-  if (!diagnosticText.includes(required)) {
-    violations.push(`${diagnosticTarget} must expose ${required}`);
-  }
-}
-
-for (const required of [
+]);
+requireAll(diagnosticTestTarget, diagnosticTest, [
   "HVAA:lastHvutArmoryPageFailure",
   "hvutArmoryPageFailure",
   'capability: "hvutArmoryPage"',
-]) {
-  if (!diagnosticTestText.includes(required)) {
-    violations.push(`${diagnosticTestTarget} must cover ${required}`);
-  }
-}
+]);
 
 if (violations.length) {
   console.error("[verify-hvut-armory-page-parse-boundary] FAIL");
@@ -107,5 +98,5 @@ if (violations.length) {
 }
 
 console.log(
-  "[verify-hvut-armory-page-parse-boundary] OK - Armory page parse failures are diagnosable"
+  "[verify-hvut-armory-page-parse-boundary] OK - detached Armory facts keep an owned lifetime through commit"
 );
