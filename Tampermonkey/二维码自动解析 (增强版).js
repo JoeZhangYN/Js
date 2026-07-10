@@ -2,101 +2,45 @@
 // @name         二维码自动解析 (增强版)
 // @description  悬停自动识别二维码，支持快捷键触发深度扫描和框选
 // @namespace    http://tampermonkey.net/
-// @require      https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js
-// @require      https://unpkg.com/@zxing/library@latest/umd/index.min.js
+// @resource     jsqrWorker https://unpkg.com/jsqr@1.4.0/dist/jsQR.js#sha256=bc40c8a15196236b2314db0856f72ca0b49980cd5413b8c852a7349f5fee0859
+// @resource     zxingWorker https://unpkg.com/@zxing/library@0.23.0/umd/index.min.js#sha256=3ede94153fb0c5b67a12d7adff6decd827c2b22714fdc6faecf27a8f20937ea6
 // @match        *://*/*
 // @grant        GM_setClipboard
 // @grant        GM_openInTab
 // @grant        GM_addStyle
+// @grant        GM_getResourceText
 // @grant        GM_xmlhttpRequest
 // @connect      *
+// @sandbox      DOM
 // @run-at       document-start
-// @version      3.8
+// @version      4.0
 // @author       JoeZhangYN
 // @license      GPLv3
 // ==/UserScript==
 
-/**
- * ╔══════════════════════════════════════════════════════════════════════════════╗
- * ║                         📱 二维码自动解析 - 使用说明                           ║
- * ╠══════════════════════════════════════════════════════════════════════════════╣
- * ║                                                                              ║
- * ║  【自动扫描】                                                                 ║
- * ║  • 鼠标悬停在图片上时自动进行快速扫描（仅扫描全图，不影响浏览）                 ║
- * ║  • 识别成功后显示结果，失败则静默结束                                          ║
- * ║                                                                              ║
- * ║  【识别成功后的操作】                                                          ║
- * ║  ┌─────────────────┬────────────────────────────────────────────────────┐   ║
- * ║  │ 左键单击        │ 如果是链接则打开，否则复制内容到剪贴板               │   ║
- * ║  │ 左键长按(0.5秒) │ 复制链接到剪贴板（不打开）                           │   ║
- * ║  └─────────────────┴────────────────────────────────────────────────────┘   ║
- * ║                                                                              ║
- * ║  【手动扫描快捷键】(鼠标悬停在图片上时按下)                                    ║
- * ║  ┌─────────────────┬────────────────────────────────────────────────────┐   ║
- * ║  │ Q 键            │ 区域扫描 - 将图片分成15个区域逐一扫描                │   ║
- * ║  │ W 键            │ 深度扫描 - 区域扫描 + 反色 + 二值化，最强识别力      │   ║
- * ║  │ E 键            │ 框选模式 - 手动框选二维码所在区域                    │   ║
- * ║  │ Esc 键          │ 取消框选                                             │   ║
- * ║  └─────────────────┴────────────────────────────────────────────────────┘   ║
- * ║                                                                              ║
- * ║  【组合键操作】(适合不方便用键盘的场景)                                        ║
- * ║  ┌─────────────────┬────────────────────────────────────────────────────┐   ║
- * ║  │ 右键 + 1次左键  │ 深度扫描（等同于 W 键）                              │   ║
- * ║  │ 右键 + 2次左键  │ 框选模式（等同于 E 键）                              │   ║
- * ║  │ 右键 + 3次左键  │ 原图框选（不缩放，适合高清大图）                      │   ║
- * ║  └─────────────────┴────────────────────────────────────────────────────┘   ║
- * ║  操作方法：按住右键不放 → 点击左键1/2/3次 → 松开右键                         ║
- * ║                                                                              ║
- * ║  【什么时候需要手动扫描？】                                                    ║
- * ║  • 二维码只占图片的一小部分（如海报角落的二维码）                              ║
- * ║  • 二维码颜色特殊（如白底黑码以外的配色）                                      ║
- * ║  • 二维码有复杂背景干扰                                                       ║
- * ║                                                                              ║
- * ║  【区域扫描原理】                                                             ║
- * ║  ┌───┬───┬───┐                                                              ║
- * ║  │ 1 │ 2 │ 3 │  将图片分成 9宫格 + 4个角落 + 中心区域                        ║
- * ║  ├───┼───┼───┤  共15个区域，逐一放大扫描                                     ║
- * ║  │ 4 │ 5 │ 6 │  找到二维码即停止                                             ║
- * ║  ├───┼───┼───┤                                                              ║
- * ║  │ 7 │ 8 │ 9 │                                                              ║
- * ║  └───┴───┴───┘                                                              ║
- * ║                                                                              ║
- * ╚══════════════════════════════════════════════════════════════════════════════╝
- */
-
 (function() {
     'use strict';
 
-    // ╔════════════════════════════════════════════════════════════════════════╗
-    // ║                            ⚙️ 用户配置区                                ║
-    // ╚════════════════════════════════════════════════════════════════════════╝
-
     const CONFIG = {
-        // ═══════════════ 快捷键设置 ═══════════════
-        HOTKEY_REGION: 'q',         // 区域扫描 - 分区逐一扫描
-        HOTKEY_DEEP: 'w',           // 深度扫描 - 最强识别模式
-        HOTKEY_CROP: 'e',           // 框选模式 - 手动选择区域
-
-        // ═══════════════ 扫描参数 ═══════════════
-        HOVER_DELAY: 400,           // 悬停多久后开始扫描（毫秒）
-        SCAN_SIZE: 500,             // 扫描时图像缩放到的目标尺寸（像素）
-        AUTO_SCAN_MAX_SIZE: 2000,   // 图片超过此尺寸不自动扫描
-        MIN_QR_SIZE: 30,            // 图片最小边小于此值不扫描
-
-        // ═══════════════ 图片过滤 ═══════════════
-        ASPECT_RATIO_LIMIT: 3,      // 宽高比超过此值不自动扫描（如3:1横幅）
-
-        // ═══════════════ 交互设置 ═══════════════
-        LONG_PRESS_TIME: 500,       // 长按多久触发复制（毫秒）
-        CACHE_SIZE: 200,            // 缓存数量上限
+        HOTKEY_REGION: 'q',
+        HOTKEY_DEEP: 'w',
+        HOTKEY_CROP: 'e',
+        HOVER_DELAY: 400,
+        QUICK_SCAN_SIZE: 600,
+        DEEP_SCAN_SIZE: 1200,
+        CROP_SCAN_SIZE: 1600,
+        AUTO_SCAN_MAX_SIZE: 2000,
+        MIN_QR_SIZE: 30,
+        ASPECT_RATIO_LIMIT: 3,
+        LONG_PRESS_TIME: 500,
+        CACHE_SIZE: 200,
+        IMAGE_REQUEST_TIMEOUT: 10000,
+        DECODE_TIMEOUT: 10000,
+        WORKER_IDLE_TIMEOUT: 60000,
+        AUTO_USE_GM_CROSS_ORIGIN: false,
     };
 
-    // ╔════════════════════════════════════════════════════════════════════════╗
-    // ║                              核心代码                                   ║
-    // ╚════════════════════════════════════════════════════════════════════════╝
-
-    // === 资源池 ===
-    const ResourcePool = {
+    const CanvasPool = {
         canvas: null,
         ctx: null,
         get() {
@@ -105,63 +49,357 @@
                 this.ctx = this.canvas.getContext('2d', { willReadFrequently: true });
             }
             return { canvas: this.canvas, ctx: this.ctx };
-        }
-    };
-
-    // === ZXing 管理 ===
-    const ZXingManager = {
-        reader: null,
-        init() {
-            if (this.reader || !window.ZXing) return;
-            const init = () => this.getReader();
-            requestIdleCallback?.(init) || setTimeout(init, 1000);
         },
-        getReader() {
-            if (!window.ZXing) return null;
-            if (!this.reader) {
-                const hints = new Map();
-                hints.set(ZXing.DecodeHintType.TRY_HARDER, true);
-                hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS, [
-                    ZXing.BarcodeFormat.QR_CODE,
-                    ZXing.BarcodeFormat.DATA_MATRIX
-                ]);
-                this.reader = new ZXing.BrowserMultiFormatReader(hints);
-            }
-            return this.reader;
-        }
     };
 
-    // === 状态 ===
+    const PixelAccessProbe = {
+        canvas: null,
+        ctx: null,
+        canRead(image) {
+            if (!this.canvas) {
+                this.canvas = document.createElement('canvas');
+                this.ctx = this.canvas.getContext('2d', { willReadFrequently: true });
+            }
+            this.canvas.width = 1;
+            this.canvas.height = 1;
+            try {
+                this.ctx.drawImage(image, 0, 0, 1, 1);
+                this.ctx.getImageData(0, 0, 1, 1);
+                return true;
+            } catch {
+                return false;
+            }
+        },
+    };
+
+    const DecodeWorker = {
+        worker: null,
+        pending: new Map(),
+        nextId: 1,
+        unavailableReason: null,
+        idleTimer: null,
+        get() {
+            if (this.unavailableReason) return null;
+            clearTimeout(this.idleTimer);
+            this.idleTimer = null;
+            if (this.worker) return this.worker;
+            try {
+                const jsQrSource = GM_getResourceText('jsqrWorker');
+                const zxingSource = GM_getResourceText('zxingWorker');
+                if (!jsQrSource || !zxingSource) throw new Error('decoder-resource-missing');
+                const handler = `
+                    const FORMATS = [ZXing.BarcodeFormat.QR_CODE, ZXing.BarcodeFormat.DATA_MATRIX];
+                    const zxingHints = new Map([
+                        [ZXing.DecodeHintType.TRY_HARDER, true],
+                        [ZXing.DecodeHintType.POSSIBLE_FORMATS, FORMATS],
+                    ]);
+                    let nativeDetectorPromise;
+
+                    function getNativeDetector() {
+                        if (typeof self.BarcodeDetector !== 'function'
+                            || typeof self.BarcodeDetector.getSupportedFormats !== 'function') {
+                            return Promise.resolve(null);
+                        }
+                        if (!nativeDetectorPromise) {
+                            nativeDetectorPromise = self.BarcodeDetector.getSupportedFormats()
+                                .then(formats => {
+                                    const supported = ['qr_code', 'data_matrix']
+                                        .filter(format => formats.includes(format));
+                                    return supported.length
+                                        ? new self.BarcodeDetector({ formats: supported })
+                                        : null;
+                                })
+                                .catch(() => null);
+                        }
+                        return nativeDetectorPromise;
+                    }
+
+                    async function decodeNative(candidate) {
+                        const detector = await getNativeDetector();
+                        if (!detector || typeof self.ImageData !== 'function') return null;
+                        try {
+                            const results = await detector.detect(new self.ImageData(
+                                candidate.pixels,
+                                candidate.width,
+                                candidate.height
+                            ));
+                            const result = results.find(item => item.rawValue);
+                            if (!result) return null;
+                            return {
+                                text: result.rawValue,
+                                format: String(result.format || 'barcode').toUpperCase(),
+                                method: 'BarcodeDetector ' + candidate.name,
+                            };
+                        } catch {
+                            return null;
+                        }
+                    }
+
+                    function decodeJsQr(candidate) {
+                        try {
+                            const result = self.jsQR(candidate.pixels, candidate.width, candidate.height);
+                            return result?.data || null;
+                        } catch {
+                            return null;
+                        }
+                    }
+
+                    function decodeZXing(candidate) {
+                        try {
+                            const luma = new Uint8ClampedArray(candidate.width * candidate.height);
+                            for (let source = 0, target = 0; source < candidate.pixels.length; source += 4, target++) {
+                                luma[target] = Math.round(
+                                    candidate.pixels[source] * 0.299
+                                    + candidate.pixels[source + 1] * 0.587
+                                    + candidate.pixels[source + 2] * 0.114
+                                );
+                            }
+                            const source = new ZXing.RGBLuminanceSource(luma, candidate.width, candidate.height);
+                            const bitmap = new ZXing.BinaryBitmap(new ZXing.HybridBinarizer(source));
+                            const reader = new ZXing.MultiFormatReader();
+                            reader.setHints(zxingHints);
+                            const result = reader.decodeWithState(bitmap);
+                            return {
+                                text: result.getText(),
+                                format: ZXing.BarcodeFormat[result.getBarcodeFormat()] || 'BARCODE',
+                            };
+                        } catch {
+                            return null;
+                        }
+                    }
+
+                    function crop(source, x, y, width, height, name) {
+                        const pixels = new Uint8ClampedArray(width * height * 4);
+                        for (let row = 0; row < height; row++) {
+                            const start = ((y + row) * source.width + x) * 4;
+                            pixels.set(source.pixels.subarray(start, start + width * 4), row * width * 4);
+                        }
+                        return { pixels, width, height, name };
+                    }
+
+                    function regions(source) {
+                        if (source.width < 90 || source.height < 90) return [];
+                        const result = [];
+                        const thirdWidth = Math.floor(source.width / 3);
+                        const thirdHeight = Math.floor(source.height / 3);
+                        for (let row = 0; row < 3; row++) {
+                            for (let column = 0; column < 3; column++) {
+                                const x = column * thirdWidth;
+                                const y = row * thirdHeight;
+                                const width = column === 2 ? source.width - x : thirdWidth;
+                                const height = row === 2 ? source.height - y : thirdHeight;
+                                result.push(crop(source, x, y, width, height, '区域' + (row * 3 + column + 1)));
+                            }
+                        }
+                        const halfWidth = Math.floor(source.width / 2);
+                        const halfHeight = Math.floor(source.height / 2);
+                        result.push(crop(source, 0, 0, halfWidth, halfHeight, '左上'));
+                        result.push(crop(source, source.width - halfWidth, 0, halfWidth, halfHeight, '右上'));
+                        result.push(crop(source, 0, source.height - halfHeight, halfWidth, halfHeight, '左下'));
+                        result.push(crop(source, source.width - halfWidth, source.height - halfHeight, halfWidth, halfHeight, '右下'));
+                        result.push(crop(source, Math.floor(source.width / 4), Math.floor(source.height / 4), halfWidth, halfHeight, '中心'));
+                        return result;
+                    }
+
+                    function invert(source) {
+                        const pixels = source.pixels.slice();
+                        for (let index = 0; index < pixels.length; index += 4) {
+                            pixels[index] = 255 - pixels[index];
+                            pixels[index + 1] = 255 - pixels[index + 1];
+                            pixels[index + 2] = 255 - pixels[index + 2];
+                        }
+                        return { ...source, pixels, name: '反色' };
+                    }
+
+                    function otsu(source) {
+                        const histogram = new Uint32Array(256);
+                        const gray = new Uint8ClampedArray(source.width * source.height);
+                        for (let input = 0, output = 0; input < source.pixels.length; input += 4, output++) {
+                            const value = Math.round(
+                                source.pixels[input] * 0.299
+                                + source.pixels[input + 1] * 0.587
+                                + source.pixels[input + 2] * 0.114
+                            );
+                            gray[output] = value;
+                            histogram[value]++;
+                        }
+                        const total = gray.length;
+                        let sum = 0;
+                        for (let value = 0; value < 256; value++) sum += value * histogram[value];
+                        let backgroundSum = 0;
+                        let backgroundWeight = 0;
+                        let bestVariance = 0;
+                        let threshold = 128;
+                        for (let value = 0; value < 256; value++) {
+                            backgroundWeight += histogram[value];
+                            if (!backgroundWeight) continue;
+                            const foregroundWeight = total - backgroundWeight;
+                            if (!foregroundWeight) break;
+                            backgroundSum += value * histogram[value];
+                            const difference = backgroundSum / backgroundWeight
+                                - (sum - backgroundSum) / foregroundWeight;
+                            const variance = backgroundWeight * foregroundWeight * difference * difference;
+                            if (variance > bestVariance) {
+                                bestVariance = variance;
+                                threshold = value;
+                            }
+                        }
+                        const pixels = new Uint8ClampedArray(source.pixels.length);
+                        for (let input = 0, output = 0; input < gray.length; input++, output += 4) {
+                            const value = gray[input] > threshold ? 255 : 0;
+                            pixels[output] = pixels[output + 1] = pixels[output + 2] = value;
+                            pixels[output + 3] = 255;
+                        }
+                        return { ...source, pixels, name: '二值化' };
+                    }
+
+                    function decodeCandidate(candidate) {
+                        const jsQr = decodeJsQr(candidate);
+                        if (jsQr) return { text: jsQr, format: 'QR_CODE', method: 'jsQR ' + candidate.name };
+                        const zxing = decodeZXing(candidate);
+                        if (zxing) return { ...zxing, method: 'ZXing ' + candidate.name };
+                        return null;
+                    }
+
+                    self.onmessage = async event => {
+                        const { id, pixels, width, height, mode } = event.data;
+                        try {
+                            const full = {
+                                pixels: new Uint8ClampedArray(pixels),
+                                width,
+                                height,
+                                name: mode === 'crop' ? '框选' : '全图',
+                            };
+                            // Native detection is attempted once for the full image. Region and
+                            // preprocessing fallbacks stay in the local JS decoders below.
+                            let result = await decodeNative(full) || decodeCandidate(full);
+                            if (!result && mode !== 'quick') {
+                                for (const candidate of regions(full)) {
+                                    result = decodeCandidate(candidate);
+                                    if (result) break;
+                                }
+                            }
+                            if (!result && mode === 'deep') result = decodeCandidate(invert(full));
+                            if (!result && mode === 'deep') result = decodeCandidate(otsu(full));
+                            self.postMessage(result
+                                ? { id, status: 'decoded', ...result }
+                                : { id, status: 'not-found' });
+                        } catch (error) {
+                            self.postMessage({ id, status: 'failed', reason: error?.message || 'decode-failed' });
+                        }
+                    };
+                `;
+                const workerUrl = URL.createObjectURL(new Blob([
+                    jsQrSource,
+                    '\n',
+                    zxingSource,
+                    '\n',
+                    handler,
+                ], { type: 'text/javascript' }));
+                this.worker = new Worker(workerUrl);
+                URL.revokeObjectURL(workerUrl);
+                this.worker.onmessage = event => {
+                    const pending = this.pending.get(event.data?.id);
+                    if (!pending) return;
+                    clearTimeout(pending.timeout);
+                    this.pending.delete(event.data.id);
+                    pending.resolve(event.data);
+                    this.scheduleIdleTermination();
+                };
+                this.worker.onerror = () => this.disable('worker-runtime-failed');
+                return this.worker;
+            } catch (error) {
+                this.unavailableReason = error?.message || 'worker-create-failed';
+                return null;
+            }
+        },
+        decode(imageData, mode) {
+            const worker = this.get();
+            if (!worker) {
+                return Promise.resolve({
+                    status: 'failed',
+                    reason: this.unavailableReason || 'worker-unavailable',
+                });
+            }
+            const id = this.nextId++;
+            const pixels = imageData.data.slice().buffer;
+            return new Promise(resolve => {
+                const timeout = setTimeout(() => {
+                    if (!this.pending.has(id)) return;
+                    this.stopWorker({ status: 'failed', reason: 'decode-timeout' });
+                }, CONFIG.DECODE_TIMEOUT);
+                this.pending.set(id, { resolve, timeout });
+                worker.postMessage({
+                    id,
+                    pixels,
+                    width: imageData.width,
+                    height: imageData.height,
+                    mode,
+                }, [pixels]);
+            });
+        },
+        scheduleIdleTermination() {
+            clearTimeout(this.idleTimer);
+            if (!this.worker || this.pending.size) return;
+            this.idleTimer = setTimeout(() => {
+                if (this.pending.size) return;
+                this.worker?.terminate();
+                this.worker = null;
+                this.idleTimer = null;
+            }, CONFIG.WORKER_IDLE_TIMEOUT);
+        },
+        stopWorker(decision) {
+            clearTimeout(this.idleTimer);
+            this.idleTimer = null;
+            for (const pending of this.pending.values()) {
+                clearTimeout(pending.timeout);
+                pending.resolve(decision);
+            }
+            this.pending.clear();
+            this.worker?.terminate();
+            this.worker = null;
+        },
+        cancelAll() {
+            const hadPendingWork = this.pending.size > 0;
+            if (hadPendingWork) {
+                this.stopWorker({ status: 'cancelled' });
+            } else {
+                this.scheduleIdleTermination();
+            }
+        },
+        disable(reason) {
+            this.stopWorker({ status: 'failed', reason });
+            this.unavailableReason = reason;
+        },
+    };
+
     let hoverTimer = null;
     let tooltip = null;
     let currentTarget = null;
     let hoveredElement = null;
-    let lastMouseScreenX = 0, lastMouseScreenY = 0;
-    let lastMouseClientX = 0, lastMouseClientY = 0;
+    let lastMouseScreenX = 0;
+    let lastMouseScreenY = 0;
+    let lastMouseClientX = 0;
+    let lastMouseClientY = 0;
     let topWinOffset = null;
-
     let isRightClickHolding = false;
     let leftClickCount = 0;
     let interactionTarget = null;
     let suppressContextMenu = false;
     let suppressClick = false;
     let longPressTimer = null;
-
     let isCropping = false;
     let isNoScaleCrop = false;
     let cropOverlay = null;
     let cropBox = null;
     let cropStart = { x: 0, y: 0 };
     let cropTarget = null;
+    let activeScanToken = 0;
 
     const qrCache = new Map();
     const canvasCache = new WeakMap();
     const isTop = window.self === window.top;
 
-    // 扫描代次：每次新扫描 ++，mouseout 时也 ++ 以中断进行中扫描
-    let activeScanToken = 0;
-
-    // === 样式 ===
     GM_addStyle(`
         #qr-tooltip {
             position: fixed; z-index: 2147483647;
@@ -184,30 +422,32 @@
         }
     `);
 
-    // === 工具函数 ===
-    const isUrl = t => t && /^\s*https?:\/\/\S+\s*$/i.test(t);
-    const escapeHtml = t => t?.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c])) || '';
+    const isUrl = text => text && /^\s*https?:\/\/\S+\s*$/i.test(text);
+    const escapeHtml = text => text?.replace(/[&<>"']/g, char => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;',
+    }[char])) || '';
+    const getTargetCacheKey = target => target.currentSrc || target.src;
 
-    // === 通信 ===
     function sendToTop(type, payload = {}) {
         if (isTop) handleMessage({ data: { type, payload } });
         else window.top.postMessage({ type: 'QR_MSG', action: type, payload }, '*');
     }
 
     if (isTop) {
-        window.addEventListener('message', e => {
-            if (e.data?.type === 'QR_MSG') handleMessage({ data: { type: e.data.action, payload: e.data.payload } });
+        window.addEventListener('message', event => {
+            if (event.data?.type === 'QR_MSG') {
+                handleMessage({ data: { type: event.data.action, payload: event.data.payload } });
+            }
         });
     }
 
-    function handleMessage(e) {
-        const { type, payload } = e.data;
+    function handleMessage(event) {
+        const { type, payload } = event.data;
         if (type === 'SHOW') renderTooltip(payload.text, payload.coords, payload.isLink, payload.method);
         else if (type === 'HIDE') hideTooltip();
         else if (type === 'FEEDBACK') showFeedback();
     }
 
-    // === UI ===
     function getTooltip() {
         if (!tooltip) {
             tooltip = document.createElement('div');
@@ -219,425 +459,329 @@
 
     function renderTooltip(text, coords, isLink, method) {
         const tip = getTooltip();
-        const isLoading = text.startsWith('⌛');
-        const isError = text.startsWith('❌');
-
-        let html;
-        if (isLoading) {
-            html = `<div style="color:#FFD700;font-weight:bold">${escapeHtml(text)}</div>`;
-        } else if (isError) {
-            html = `<div style="color:#FF5252;font-weight:bold">${escapeHtml(text)}</div>`;
+        const isLoading = text.startsWith('处理中');
+        const isError = text.startsWith('失败');
+        if (isLoading || isError) {
+            tip.innerHTML = `<div style="color:${isError ? '#FF5252' : '#FFD700'};font-weight:bold">${escapeHtml(text)}</div>`;
         } else {
-            html = `
+            tip.innerHTML = `
                 <div style="margin-bottom:4px">
                     <span style="color:#F6B64E;font-weight:bold">[识别成功]</span>
                     <span style="color:#B28BF7"> (${escapeHtml(method || '')})</span>
                 </div>
                 <div style="color:${isLink ? '#4dabf7' : '#fff'};margin-bottom:6px">${escapeHtml(text)}</div>
                 <div style="color:#4CAF50;font-size:11px;border-top:1px solid #444;padding-top:4px">
-                    ${isLink ? '🔗 点击打开 | 📋 长按复制' : '📋 点击复制'}
+                    ${isLink ? '点击打开 | 长按复制' : '点击复制'}
                 </div>`;
         }
-
-        tip.innerHTML = html;
         tip.style.display = 'block';
 
         const offX = topWinOffset?.x ?? (window.screenX + window.outerWidth - window.innerWidth);
         const offY = topWinOffset?.y ?? (window.screenY + window.outerHeight - window.innerHeight);
-
         let left = coords.absLeft - offX;
         let top = coords.absBottom - offY + 10;
-
         const rect = tip.getBoundingClientRect();
         if (top + rect.height > window.innerHeight) top = coords.absTop - offY - rect.height - 10;
         if (left + rect.width > window.innerWidth) left = window.innerWidth - rect.width - 10;
         if (left < 0) left = 10;
-
-        tip.style.left = left + 'px';
-        tip.style.top = top + 'px';
+        tip.style.left = `${left}px`;
+        tip.style.top = `${top}px`;
     }
 
-    function hideTooltip() { if (tooltip) tooltip.style.display = 'none'; }
+    function hideTooltip() {
+        if (tooltip) tooltip.style.display = 'none';
+    }
 
     function showFeedback() {
         const tip = getTooltip();
         if (tip.style.display === 'none') return;
-        const orig = tip.innerHTML;
-        tip.innerHTML = `<div style="font-size:14px;text-align:center;color:#4dabf7;font-weight:bold">✅ 已复制</div>`;
-        setTimeout(() => { if (tip.style.display !== 'none') tip.innerHTML = orig; }, 800);
+        const original = tip.innerHTML;
+        tip.innerHTML = '<div style="font-size:14px;text-align:center;color:#4dabf7;font-weight:bold">已复制</div>';
+        setTimeout(() => {
+            if (tip.style.display !== 'none') tip.innerHTML = original;
+        }, 800);
     }
 
-    function showTooltip(text, el, method = '') {
-        if (currentTarget !== el) currentTarget = el;
-        const rect = el.getBoundingClientRect();
-        const fx = lastMouseScreenX - lastMouseClientX || 0;
-        const fy = lastMouseScreenY - lastMouseClientY || 0;
+    function showTooltip(text, element, method = '') {
+        currentTarget = element;
+        const rect = element.getBoundingClientRect();
+        const frameX = lastMouseScreenX - lastMouseClientX || 0;
+        const frameY = lastMouseScreenY - lastMouseClientY || 0;
         sendToTop('SHOW', {
-            text, method,
-            coords: { absLeft: rect.left + fx, absTop: rect.top + fy, absBottom: rect.bottom + fy },
-            isLink: isUrl(text)
+            text,
+            method,
+            coords: {
+                absLeft: rect.left + frameX,
+                absTop: rect.top + frameY,
+                absBottom: rect.bottom + frameY,
+            },
+            isLink: isUrl(text),
         });
     }
 
-    function reqHideTooltip() { currentTarget = null; sendToTop('HIDE'); }
-    function reqFeedback() { sendToTop('FEEDBACK'); }
+    function reqHideTooltip() {
+        currentTarget = null;
+        sendToTop('HIDE');
+    }
 
-    // === 缓存 ===
-    function setCache(key, val, isCanvas) {
+    function reqFeedback() {
+        sendToTop('FEEDBACK');
+    }
+
+    function setCache(key, value, isCanvas) {
         if (isCanvas) {
-            canvasCache.set(key, val);
-        } else {
-            if (qrCache.size >= CONFIG.CACHE_SIZE) qrCache.delete(qrCache.keys().next().value);
-            qrCache.set(key, val);
+            canvasCache.set(key, value);
+            return;
         }
+        if (qrCache.size >= CONFIG.CACHE_SIZE) qrCache.delete(qrCache.keys().next().value);
+        qrCache.set(key, value);
     }
 
-    function getCache(t) {
-        return t.tagName === 'IMG' ? qrCache.get(t.src) : canvasCache.get(t);
+    function getCache(target) {
+        return target.tagName === 'IMG'
+            ? qrCache.get(getTargetCacheKey(target))
+            : canvasCache.get(target);
     }
 
-    // === 扫描核心 ===
-    function scanJSQR(data) {
-        try {
-            const r = jsQR(data.data, data.width, data.height);
-            return r?.data || null;
-        } catch { return null; }
-    }
-
-    // 同步直读 canvas，省掉 toDataURL → new Image.onload → decodeFromImageElement 的 30-80ms 序列化往返
-    function scanZXing(data) {
-        const reader = ZXingManager.getReader();
-        if (!reader) return null;
-
-        const { canvas, ctx } = ResourcePool.get();
-        canvas.width = data.width;
-        canvas.height = data.height;
-        ctx.putImageData(data, 0, 0);
-
-        try {
-            return reader.decodeFromCanvas(canvas)?.text || null;
-        } catch {
-            return null; // ZXing 找不到时抛 NotFoundException，吞掉转 null
+    function classifyScanRequest(mode, cropRect) {
+        if (cropRect) {
+            return {
+                status: 'accepted',
+                mode: 'crop',
+                cropRect,
+                userInitiated: true,
+                allowPrivilegedFetch: true,
+                targetSize: cropRect.noScale ? null : CONFIG.CROP_SCAN_SIZE,
+            };
         }
+        if (!['quick', 'region', 'deep'].includes(mode)) {
+            return { status: 'rejected', reason: 'unknown-scan-mode' };
+        }
+        const userInitiated = mode !== 'quick';
+        return {
+            status: 'accepted',
+            mode,
+            cropRect: null,
+            userInitiated,
+            allowPrivilegedFetch: userInitiated || CONFIG.AUTO_USE_GM_CROSS_ORIGIN,
+            targetSize: userInitiated ? CONFIG.DEEP_SCAN_SIZE : CONFIG.QUICK_SCAN_SIZE,
+        };
     }
 
-    function extractRegion(img, region, targetSize) {
-        const { canvas, ctx } = ResourcePool.get();
-        let dstW = region.w, dstH = region.h;
-        const maxDim = Math.max(dstW, dstH);
-        if (targetSize && maxDim > targetSize) {
-            const scale = targetSize / maxDim;
-            dstW = Math.round(dstW * scale);
-            dstH = Math.round(dstH * scale);
+    function extractPixels(image, target, request) {
+        const sourceWidth = image.naturalWidth || image.width;
+        const sourceHeight = image.naturalHeight || image.height;
+        let region = { x: 0, y: 0, width: sourceWidth, height: sourceHeight };
+        if (request.cropRect) {
+            const scaleX = sourceWidth / (target.clientWidth || target.width);
+            const scaleY = sourceHeight / (target.clientHeight || target.height);
+            region = {
+                x: Math.max(0, Math.round(request.cropRect.x * scaleX)),
+                y: Math.max(0, Math.round(request.cropRect.y * scaleY)),
+                width: Math.max(1, Math.round(request.cropRect.w * scaleX)),
+                height: Math.max(1, Math.round(request.cropRect.h * scaleY)),
+            };
+            region.width = Math.min(region.width, sourceWidth - region.x);
+            region.height = Math.min(region.height, sourceHeight - region.y);
         }
-        const pad = 20;
-        canvas.width = dstW + pad * 2;
-        canvas.height = dstH + pad * 2;
-        ctx.fillStyle = '#FFF';
+
+        let outputWidth = region.width;
+        let outputHeight = region.height;
+        const maximum = Math.max(outputWidth, outputHeight);
+        if (request.targetSize && maximum > request.targetSize) {
+            const scale = request.targetSize / maximum;
+            outputWidth = Math.max(1, Math.round(outputWidth * scale));
+            outputHeight = Math.max(1, Math.round(outputHeight * scale));
+        }
+
+        const padding = 20;
+        const { canvas, ctx } = CanvasPool.get();
+        canvas.width = outputWidth + padding * 2;
+        canvas.height = outputHeight + padding * 2;
+        ctx.fillStyle = '#fff';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
         ctx.imageSmoothingEnabled = true;
         ctx.imageSmoothingQuality = 'high';
-        ctx.drawImage(img, region.x, region.y, region.w, region.h, pad, pad, dstW, dstH);
+        ctx.drawImage(
+            image,
+            region.x,
+            region.y,
+            region.width,
+            region.height,
+            padding,
+            padding,
+            outputWidth,
+            outputHeight
+        );
         return ctx.getImageData(0, 0, canvas.width, canvas.height);
     }
 
-    function getRegions(w, h) {
-        const regions = [{ x: 0, y: 0, w, h, name: '全图' }];
-        if (w < 100 || h < 100) return regions;
-
-        const gw = w / 3, gh = h / 3;
-        for (let r = 0; r < 3; r++) {
-            for (let c = 0; c < 3; c++) {
-                regions.push({ x: Math.round(c * gw), y: Math.round(r * gh), w: Math.round(gw), h: Math.round(gh), name: `区域${r * 3 + c + 1}` });
-            }
-        }
-
-        const hw = w / 2, hh = h / 2;
-        regions.push({ x: 0, y: 0, w: hw, h: hh, name: '左上' });
-        regions.push({ x: hw, y: 0, w: hw, h: hh, name: '右上' });
-        regions.push({ x: 0, y: hh, w: hw, h: hh, name: '左下' });
-        regions.push({ x: hw, y: hh, w: hw, h: hh, name: '右下' });
-        regions.push({ x: w / 4, y: h / 4, w: hw, h: hh, name: '中心' });
-
-        return regions;
-    }
-
-    function makeVariant(data, type) {
-        const { data: d, width: w, height: h } = data;
-        const out = new Uint8ClampedArray(d.length);
-
-        if (type === 'invert') {
-            for (let i = 0; i < d.length; i += 4) {
-                out[i] = 255 - d[i];
-                out[i + 1] = 255 - d[i + 1];
-                out[i + 2] = 255 - d[i + 2];
-                out[i + 3] = 255;
-            }
-        } else {
-            // Otsu
-            const hist = new Array(256).fill(0);
-            const total = w * h;
-            for (let i = 0; i < d.length; i += 4) hist[Math.round(0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2])]++;
-            let sum = 0; for (let i = 0; i < 256; i++) sum += i * hist[i];
-            let sumB = 0, wB = 0, maxV = 0, thresh = 128;
-            for (let t = 0; t < 256; t++) {
-                wB += hist[t]; if (!wB) continue;
-                const wF = total - wB; if (!wF) break;
-                sumB += t * hist[t];
-                const v = wB * wF * Math.pow(sumB / wB - (sum - sumB) / wF, 2);
-                if (v > maxV) { maxV = v; thresh = t; }
-            }
-            for (let i = 0; i < d.length; i += 4) {
-                const g = 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2];
-                out[i] = out[i + 1] = out[i + 2] = g > thresh ? 255 : 0;
-                out[i + 3] = 255;
-            }
-        }
-        return new ImageData(out, w, h);
-    }
-
-    // === 扫描流程 ===
-
-    // 把 await 让出微任务，方便 alive() 检查最新 token
-    const yieldNow = () => new Promise(r => setTimeout(r, 0));
-
-    // 快速扫描：仅全图。async + yield 让 ZXing 前先释放主线程，
-    // 否则 jsQR + ZXing 一气呵成会独占 50-150ms，wheel/scroll 排队卡顿。
-    async function quickScan(img, alive) {
-        const w = img.naturalWidth || img.width;
-        const h = img.naturalHeight || img.height;
-        const data = extractRegion(img, { x: 0, y: 0, w, h }, CONFIG.SCAN_SIZE);
-
-        let r = scanJSQR(data);
-        if (r) return { text: r, method: 'JSQR' };
-
-        if (alive && !alive()) return null;
-        await yieldNow(); // 让 wheel / mouseout / 其他事件先处理
-        if (alive && !alive()) return null;
-
-        r = scanZXing(data);
-        if (r) return { text: r, method: 'ZXing' };
-
-        return null;
-    }
-
-    // 区域扫描：15个区域
-    async function regionScan(img, el, alive) {
-        const w = img.naturalWidth || img.width;
-        const h = img.naturalHeight || img.height;
-        const regions = getRegions(w, h);
-
-        for (let i = 0; i < regions.length; i++) {
-            if (!alive()) return null;
-            const reg = regions[i];
-            if (i > 0) showTooltip(`⌛ 扫描 ${reg.name} (${i + 1}/${regions.length})`, el);
-
-            const data = extractRegion(img, reg, CONFIG.SCAN_SIZE);
-            let r = scanJSQR(data);
-            if (r) return { text: r, method: `JSQR ${reg.name}` };
-
-            if (!alive()) return null;
-            r = scanZXing(data);
-            if (r) return { text: r, method: `ZXing ${reg.name}` };
-
-            // 让出主线程，让 mouseout 等事件能 ++token 中断我们
-            await yieldNow();
-        }
-        return null;
-    }
-
-    // 深度扫描：区域 + 变体
-    async function deepScan(img, el, alive) {
-        let r = await regionScan(img, el, alive);
-        if (r) return r;
-        if (!alive()) return null;
-
-        const w = img.naturalWidth || img.width;
-        const h = img.naturalHeight || img.height;
-        const full = extractRegion(img, { x: 0, y: 0, w, h }, CONFIG.SCAN_SIZE);
-
-        showTooltip('⌛ 尝试反色...', el);
-        const inv = makeVariant(full, 'invert');
-        r = scanJSQR(inv);
-        if (r) return { text: r, method: 'JSQR 反色' };
-        if (!alive()) return null;
-        r = scanZXing(inv);
-        if (r) return { text: r, method: 'ZXing 反色' };
-
-        await yieldNow();
-        if (!alive()) return null;
-        showTooltip('⌛ 尝试二值化...', el);
-        const bin = makeVariant(full, 'binary');
-        r = scanJSQR(bin);
-        if (r) return { text: r, method: 'JSQR 二值化' };
-        if (!alive()) return null;
-        r = scanZXing(bin);
-        if (r) return { text: r, method: 'ZXing 二值化' };
-
-        return null;
-    }
-
-    // === 主入口 ===
-    async function scan(target, mode = 'quick', cropRect = null) {
-        const myToken = ++activeScanToken;
-        const alive = () => myToken === activeScanToken;
-        // 框选是用户显式提交的动作，即使鼠标移开也要看到结果
-        const force = !!cropRect;
-        const liveOrForce = () => force || alive();
-
-        const isImg = target.tagName === 'IMG';
-        const key = isImg ? target.src : target;
-
-        const img = await loadImage(target);
-        if (!img) {
-            setCache(key, { status: 'failed' }, !isImg);
-            return;
-        }
-
-        let result = null;
-        const type = isImg ? 'IMG' : 'CANVAS';
-
-        // 框选
-        if (cropRect) {
-            showTooltip('⌛ 框选解析...', target);
-            const sx = (img.naturalWidth || img.width) / (target.clientWidth || target.width);
-            const sy = (img.naturalHeight || img.height) / (target.clientHeight || target.height);
-            const reg = { x: cropRect.x * sx, y: cropRect.y * sy, w: cropRect.w * sx, h: cropRect.h * sy };
-            const data = extractRegion(img, reg, cropRect.noScale ? null : CONFIG.SCAN_SIZE);
-
-            result = scanJSQR(data) || scanZXing(data);
-            if (result) return success(result, '框选', type, key, target, liveOrForce);
-            return fail(target, true);
-        }
-
-        // 快速扫描
-        if (mode === 'quick') {
-            result = await quickScan(img, alive);
-            if (!alive()) return; // 用户已移开 → 静默放弃，不污染缓存（避免误标 failed）
-            if (result) return success(result.text, result.method, type, key, target, alive);
-            setCache(key, { status: 'failed' }, !isImg);
-            return; // 静默失败，不显示任何提示
-        }
-
-        // 区域扫描
-        if (mode === 'region') {
-            showTooltip('⌛ 区域扫描...', target);
-            result = await regionScan(img, target, alive);
-            if (!alive()) return;
-            if (result) return success(result.text, result.method, type, key, target, alive);
-            return fail(target, true);
-        }
-
-        // 深度扫描
-        if (mode === 'deep') {
-            showTooltip('⌛ 深度扫描...', target);
-            result = await deepScan(img, target, alive);
-            if (!alive()) return;
-            if (result) return success(result.text, result.method, type, key, target, alive);
-            return fail(target, true);
-        }
-    }
-
     const isCrossOrigin = url => {
-        try { return new URL(url, location.href).origin !== location.origin; }
-        catch { return false; }
+        try {
+            return new URL(url, location.href).origin !== location.origin;
+        } catch {
+            return false;
+        }
     };
 
-    // 浏览器 CORS 重取：服务端配 ACAO 头时无需 GM、无 Tampermonkey 跨源弹窗
-    function loadAsCorsImage(src) {
+    function loadNativeImage(source, cors = false) {
         return new Promise(resolve => {
-            const img = new Image();
-            img.crossOrigin = 'anonymous';
-            img.referrerPolicy = 'no-referrer';
-            img.onload = () => resolve(img);
-            img.onerror = () => resolve(null);
-            img.src = src;
+            const image = new Image();
+            let settled = false;
+            const finish = result => {
+                if (settled) return;
+                settled = true;
+                clearTimeout(timeout);
+                image.onload = null;
+                image.onerror = null;
+                resolve(result);
+            };
+            const timeout = setTimeout(() => {
+                finish(null);
+                image.src = '';
+            }, CONFIG.IMAGE_REQUEST_TIMEOUT);
+            if (cors) {
+                image.crossOrigin = 'anonymous';
+                image.referrerPolicy = 'no-referrer';
+            }
+            image.onload = () => finish(image);
+            image.onerror = () => finish(null);
+            image.src = source;
         });
     }
 
-    // GM 通道：能读任何域，但首次访问新域会触发 Tampermonkey "跨源访问" 弹窗
     function loadViaGM(url) {
         return new Promise(resolve => {
             if (typeof GM_xmlhttpRequest === 'undefined') return resolve(null);
             GM_xmlhttpRequest({
-                method: 'GET', url, responseType: 'blob',
-                onload: r => {
-                    if (r.status !== 200 || !r.response) return resolve(null);
-                    const objUrl = URL.createObjectURL(r.response);
-                    const img = new Image();
-                    img.onload = () => { resolve(img); URL.revokeObjectURL(objUrl); };
-                    img.onerror = () => { resolve(null); URL.revokeObjectURL(objUrl); };
-                    img.src = objUrl;
+                method: 'GET',
+                url,
+                responseType: 'blob',
+                timeout: CONFIG.IMAGE_REQUEST_TIMEOUT,
+                onload: response => {
+                    if (response.status < 200 || response.status >= 300 || !response.response) {
+                        resolve(null);
+                        return;
+                    }
+                    const objectUrl = URL.createObjectURL(response.response);
+                    const image = new Image();
+                    image.onload = () => {
+                        URL.revokeObjectURL(objectUrl);
+                        resolve(image);
+                    };
+                    image.onerror = () => {
+                        URL.revokeObjectURL(objectUrl);
+                        resolve(null);
+                    };
+                    image.src = objectUrl;
                 },
                 onerror: () => resolve(null),
-                ontimeout: () => resolve(null)
+                ontimeout: () => resolve(null),
             });
         });
     }
 
-    function loadImage(target) {
-        return new Promise(async resolve => {
-            if (target.tagName === 'CANVAS') {
-                try {
-                    const dataUrl = target.toDataURL();
-                    const img = new Image();
-                    img.onload = () => resolve(img);
-                    img.onerror = () => resolve(null);
-                    img.src = dataUrl;
-                } catch {
-                    // 跨域污染的 canvas 无法 toDataURL，无法绕过
-                    resolve(null);
-                }
-                return;
+    async function acquireImage(target, request) {
+        if (target.tagName === 'CANVAS') {
+            return PixelAccessProbe.canRead(target)
+                ? { status: 'ready', image: target, source: 'rendered-canvas' }
+                : { status: 'blocked', reason: 'tainted-canvas' };
+        }
+
+        const source = getTargetCacheKey(target);
+        if (!source) return { status: 'failed', reason: 'missing-image-source' };
+        if (target.complete && target.naturalWidth && PixelAccessProbe.canRead(target)) {
+            return { status: 'ready', image: target, source: 'rendered-image' };
+        }
+        if (/^(data|blob):/i.test(source)) {
+            const image = await loadNativeImage(source);
+            return image
+                ? { status: 'ready', image, source: 'embedded-image' }
+                : { status: 'failed', reason: 'embedded-load-failed' };
+        }
+        if (isCrossOrigin(source)) {
+            if (!request.allowPrivilegedFetch) {
+                return { status: 'blocked', reason: 'cross-origin-permission-required' };
             }
+            const corsImage = await loadNativeImage(source, true);
+            if (corsImage) return { status: 'ready', image: corsImage, source: 'cors-image' };
+            const image = await loadViaGM(source);
+            return image
+                ? { status: 'ready', image, source: 'gm-image' }
+                : { status: 'failed', reason: 'privileged-load-failed' };
+        }
 
-            const src = target.currentSrc || target.src;
-            if (!src) return resolve(null);
-
-            // data:/blob: 直接加载
-            if (/^(data|blob):/i.test(src)) {
-                const img = new Image();
-                img.onload = () => resolve(img);
-                img.onerror = () => resolve(null);
-                img.src = src;
-                return;
-            }
-
-            // 跨域：先试浏览器 CORS（CDN 给 ACAO 头时直接成功，零 GM 弹窗）；失败再退 GM
-            if (isCrossOrigin(src)) {
-                const corsImg = await loadAsCorsImage(src);
-                if (corsImg) return resolve(corsImg);
-                resolve(await loadViaGM(src));
-                return;
-            }
-
-            // 同源 → 原生加载，失败再退回 GM
-            const img = new Image();
-            img.onload = () => resolve(img);
-            img.onerror = async () => resolve(await loadViaGM(src));
-            img.src = src;
-        });
+        const image = await loadNativeImage(source);
+        return image
+            ? { status: 'ready', image, source: 'same-origin-image' }
+            : { status: 'failed', reason: 'same-origin-load-failed' };
     }
 
-    function success(text, method, type, key, el, alive) {
-        setCache(key, { status: 'success', text, method }, type === 'CANVAS');
-        el.dataset.hasQr = 'true';
-        el.classList.add('qr-detected');
-        // 用户已离开 → 仅更新缓存，不弹陈旧 tooltip 干扰
-        if (!alive || alive()) showTooltip(text, el, method);
+    async function scan(target, mode = 'quick', cropRect = null) {
+        const request = classifyScanRequest(mode, cropRect);
+        if (request.status !== 'accepted') return;
+        const token = ++activeScanToken;
+        const alive = () => token === activeScanToken;
+        const force = request.mode === 'crop';
+        const isImage = target.tagName === 'IMG';
+        const cacheKey = isImage ? getTargetCacheKey(target) : target;
+
+        if (request.userInitiated) showTooltip('处理中...', target);
+        const acquisition = await acquireImage(target, request);
+        if (!alive() && !force) return;
+        if (acquisition.status !== 'ready') {
+            setCache(cacheKey, acquisition, !isImage);
+            if (request.userInitiated) {
+                showTooltip(
+                    acquisition.status === 'blocked'
+                        ? '失败：浏览器禁止读取该图片像素'
+                        : '失败：无法读取图片',
+                    target
+                );
+            }
+            return;
+        }
+
+        let imageData;
+        try {
+            imageData = extractPixels(acquisition.image, target, request);
+        } catch {
+            const decision = { status: 'blocked', reason: 'pixel-read-failed' };
+            setCache(cacheKey, decision, !isImage);
+            if (request.userInitiated) showTooltip('失败：无法读取图片像素', target);
+            return;
+        }
+
+        const result = await DecodeWorker.decode(imageData, request.mode);
+        if (!alive() && !force) return;
+        if (result.status === 'decoded') {
+            setCache(cacheKey, {
+                status: 'success',
+                text: result.text,
+                method: result.method,
+            }, !isImage);
+            target.dataset.hasQr = 'true';
+            target.classList.add('qr-detected');
+            showTooltip(result.text, target, result.method);
+            return;
+        }
+        if (result.status === 'cancelled') return;
+        setCache(cacheKey, result, !isImage);
+        if (request.userInitiated) {
+            showTooltip(
+                result.status === 'not-found'
+                    ? '失败：未识别到二维码，可尝试框选(E)'
+                    : '失败：本机解码 Worker 不可用',
+                target
+            );
+        }
     }
 
-    function fail(el, showMsg) {
-        if (showMsg) showTooltip('❌ 未识别到二维码，可尝试框选(E)', el);
-    }
-
-    // === 框选 ===
     function startCrop(target, noScale = false) {
         if (isCropping) return;
         isCropping = true;
         isNoScaleCrop = noScale;
         cropTarget = target;
-
         if (!cropOverlay) {
             cropOverlay = document.createElement('div');
             cropOverlay.id = 'qr-crop-overlay';
@@ -645,53 +789,54 @@
             cropBox.id = 'qr-crop-box';
             cropOverlay.appendChild(cropBox);
             document.body.appendChild(cropOverlay);
+            const clamp = (value, minimum, maximum) => Math.min(Math.max(value, minimum), maximum);
 
-            const clamp = (v, min, max) => Math.min(Math.max(v, min), max);
-
-            cropOverlay.addEventListener('contextmenu', e => {
-                e.preventDefault(); e.stopPropagation();
+            cropOverlay.addEventListener('contextmenu', event => {
+                event.preventDefault();
+                event.stopPropagation();
                 endCrop();
-                if (cropTarget) showTooltip('❌ 已取消', cropTarget);
             });
-
-            cropOverlay.addEventListener('mousedown', e => {
-                if (e.button === 2 || !cropTarget) return;
+            cropOverlay.addEventListener('mousedown', event => {
+                if (event.button === 2 || !cropTarget) return;
                 const rect = cropTarget.getBoundingClientRect();
-                cropStart = { x: clamp(e.clientX, rect.left, rect.right), y: clamp(e.clientY, rect.top, rect.bottom) };
+                cropStart = {
+                    x: clamp(event.clientX, rect.left, rect.right),
+                    y: clamp(event.clientY, rect.top, rect.bottom),
+                };
                 cropBox.style.cssText = `left:${cropStart.x}px;top:${cropStart.y}px;width:0;height:0;display:block`;
 
-                const move = ev => {
-                    const x = clamp(ev.clientX, rect.left, rect.right);
-                    const y = clamp(ev.clientY, rect.top, rect.bottom);
-                    cropBox.style.width = Math.abs(x - cropStart.x) + 'px';
-                    cropBox.style.height = Math.abs(y - cropStart.y) + 'px';
-                    cropBox.style.left = Math.min(x, cropStart.x) + 'px';
-                    cropBox.style.top = Math.min(y, cropStart.y) + 'px';
+                const move = moveEvent => {
+                    const x = clamp(moveEvent.clientX, rect.left, rect.right);
+                    const y = clamp(moveEvent.clientY, rect.top, rect.bottom);
+                    cropBox.style.width = `${Math.abs(x - cropStart.x)}px`;
+                    cropBox.style.height = `${Math.abs(y - cropStart.y)}px`;
+                    cropBox.style.left = `${Math.min(x, cropStart.x)}px`;
+                    cropBox.style.top = `${Math.min(y, cropStart.y)}px`;
                 };
-
-                const up = ev => {
+                const up = upEvent => {
                     window.removeEventListener('mousemove', move);
                     window.removeEventListener('mouseup', up);
-                    if (ev.button !== 0 || !isCropping) return;
-
+                    if (upEvent.button !== 0 || !isCropping) return;
                     const box = cropBox.getBoundingClientRect();
-                    const imgRect = cropTarget.getBoundingClientRect();
+                    const imageRect = cropTarget.getBoundingClientRect();
+                    const targetToScan = cropTarget;
+                    const noScaleSelection = isNoScaleCrop;
                     endCrop();
-
                     if (box.width < 5 || box.height < 5) return;
-                    scan(cropTarget, 'crop', {
-                        x: box.left - imgRect.left, y: box.top - imgRect.top,
-                        w: box.width, h: box.height, noScale: isNoScaleCrop
+                    scan(targetToScan, 'crop', {
+                        x: box.left - imageRect.left,
+                        y: box.top - imageRect.top,
+                        w: box.width,
+                        h: box.height,
+                        noScale: noScaleSelection,
                     });
                 };
-
                 window.addEventListener('mousemove', move);
                 window.addEventListener('mouseup', up);
             });
         }
-
         cropOverlay.style.display = 'block';
-        showTooltip(noScale ? '⌛ 原图框选 - 拖拽选择' : '⌛ 框选模式 - 拖拽选择', target);
+        showTooltip('处理中：拖拽选择二维码区域', target);
     }
 
     function endCrop() {
@@ -700,155 +845,154 @@
         if (cropBox) cropBox.style.display = 'none';
     }
 
-    // === 事件 ===
-    document.addEventListener('mousemove', e => {
-        lastMouseScreenX = e.screenX; lastMouseScreenY = e.screenY;
-        lastMouseClientX = e.clientX; lastMouseClientY = e.clientY;
-        if (isTop) topWinOffset = { x: e.screenX - e.clientX, y: e.screenY - e.clientY };
+    document.addEventListener('mousemove', event => {
+        lastMouseScreenX = event.screenX;
+        lastMouseScreenY = event.screenY;
+        lastMouseClientX = event.clientX;
+        lastMouseClientY = event.clientY;
+        if (isTop) topWinOffset = { x: event.screenX - event.clientX, y: event.screenY - event.clientY };
     }, true);
 
-    document.addEventListener('mouseover', e => {
+    document.addEventListener('mouseover', event => {
         if (isCropping) return;
-        const t = e.target;
-        if (t.tagName !== 'IMG' && t.tagName !== 'CANVAS') return;
-        if (t.tagName === 'IMG' && (!t.complete || !t.naturalWidth)) return;
-
-        hoveredElement = t;
-
-        const w = t.tagName === 'IMG' ? t.naturalWidth : (t.width || t.clientWidth);
-        const h = t.tagName === 'IMG' ? t.naturalHeight : (t.height || t.clientHeight);
-
-        const cache = getCache(t);
-        if (cache) {
-            if (cache.status === 'success') {
-                if (!t.dataset.hasQr) { t.dataset.hasQr = 'true'; t.classList.add('qr-detected'); }
-                showTooltip(cache.text, t, cache.method);
+        const target = event.target;
+        if (!target.tagName?.match(/^(IMG|CANVAS)$/)) return;
+        if (target.tagName === 'IMG' && (!target.complete || !target.naturalWidth)) return;
+        hoveredElement = target;
+        const width = target.tagName === 'IMG' ? target.naturalWidth : (target.width || target.clientWidth);
+        const height = target.tagName === 'IMG' ? target.naturalHeight : (target.height || target.clientHeight);
+        const cached = getCache(target);
+        if (cached) {
+            if (cached.status === 'success') {
+                target.dataset.hasQr = 'true';
+                target.classList.add('qr-detected');
+                showTooltip(cached.text, target, cached.method);
             }
             return;
         }
-
-        // 尺寸过滤
-        if (w > CONFIG.AUTO_SCAN_MAX_SIZE || h > CONFIG.AUTO_SCAN_MAX_SIZE) {
-            setCache(t.tagName === 'IMG' ? t.src : t, { status: 'skipped' }, t.tagName === 'CANVAS');
+        const cacheKey = target.tagName === 'IMG' ? getTargetCacheKey(target) : target;
+        if (width > CONFIG.AUTO_SCAN_MAX_SIZE || height > CONFIG.AUTO_SCAN_MAX_SIZE) {
+            setCache(cacheKey, { status: 'skipped' }, target.tagName === 'CANVAS');
             return;
         }
-        const ratio = Math.max(w, h) / Math.min(w, h);
-        if (ratio > CONFIG.ASPECT_RATIO_LIMIT || Math.min(w, h) < CONFIG.MIN_QR_SIZE) {
-            setCache(t.tagName === 'IMG' ? t.src : t, { status: 'skipped' }, t.tagName === 'CANVAS');
+        const ratio = Math.max(width, height) / Math.min(width, height);
+        if (ratio > CONFIG.ASPECT_RATIO_LIMIT || Math.min(width, height) < CONFIG.MIN_QR_SIZE) {
+            setCache(cacheKey, { status: 'skipped' }, target.tagName === 'CANVAS');
             return;
         }
-
         hoverTimer = setTimeout(() => {
-            if (isCropping || getCache(t)) return;
-            scan(t, 'quick'); // 默认只做快速扫描
+            if (!isCropping && !getCache(target)) scan(target, 'quick');
         }, CONFIG.HOVER_DELAY);
     });
 
-    document.addEventListener('mouseout', e => {
-        if (longPressTimer) { clearTimeout(longPressTimer); longPressTimer = null; }
-        const t = e.target;
-        if (t.tagName === 'IMG' || t.tagName === 'CANVAS') {
+    document.addEventListener('mouseout', event => {
+        if (longPressTimer) {
+            clearTimeout(longPressTimer);
+            longPressTimer = null;
+        }
+        const target = event.target;
+        if (target.tagName?.match(/^(IMG|CANVAS)$/)) {
             clearTimeout(hoverTimer);
             hoveredElement = null;
             if (!isCropping) {
-                activeScanToken++; // 中断进行中扫描，框选模式自身有 force 不受影响
-                if (currentTarget === t) reqHideTooltip();
+                activeScanToken++;
+                DecodeWorker.cancelAll();
+                if (currentTarget === target) reqHideTooltip();
             }
         }
     });
 
-    // 快捷键
-    document.addEventListener('keydown', e => {
-        if (e.key === 'Escape' && isCropping) {
+    document.addEventListener('keydown', event => {
+        if (event.key === 'Escape' && isCropping) {
             endCrop();
-            showTooltip('❌ 已取消', currentTarget || document.body);
             return;
         }
-
         if (!hoveredElement) return;
-        const key = e.key.toLowerCase();
-
+        const key = event.key.toLowerCase();
         if (key === CONFIG.HOTKEY_REGION) {
-            e.preventDefault(); scan(hoveredElement, 'region');
+            event.preventDefault();
+            scan(hoveredElement, 'region');
         } else if (key === CONFIG.HOTKEY_DEEP) {
-            e.preventDefault(); scan(hoveredElement, 'deep');
+            event.preventDefault();
+            scan(hoveredElement, 'deep');
         } else if (key === CONFIG.HOTKEY_CROP) {
-            e.preventDefault(); startCrop(hoveredElement, false);
+            event.preventDefault();
+            startCrop(hoveredElement);
         }
     });
 
-    document.addEventListener('mousedown', e => {
+    document.addEventListener('mousedown', event => {
         if (isCropping) return;
-
-        if (e.button === 2) {
+        if (event.button === 2) {
             isRightClickHolding = true;
             leftClickCount = 0;
-            interactionTarget = e.target;
+            interactionTarget = event.target;
             suppressContextMenu = false;
-        } else if (e.button === 0) {
-            if (isRightClickHolding && interactionTarget?.tagName?.match(/^(IMG|CANVAS)$/)) {
-                e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation();
-                leftClickCount++;
-                suppressContextMenu = suppressClick = true;
-                return;
-            }
-
-            const t = e.target;
-            if (t.tagName?.match(/^(IMG|CANVAS)$/) && t.dataset.hasQr === 'true') {
-                const cache = getCache(t);
-                const data = cache?.status === 'success' ? cache.text : null;
-                if (data && isUrl(data)) {
-                    longPressTimer = setTimeout(() => {
-                        GM_setClipboard(data);
-                        reqFeedback();
-                        suppressClick = true;
-                        longPressTimer = null;
-                    }, CONFIG.LONG_PRESS_TIME);
-                }
+            return;
+        }
+        if (event.button !== 0) return;
+        if (isRightClickHolding && interactionTarget?.tagName?.match(/^(IMG|CANVAS)$/)) {
+            event.preventDefault();
+            event.stopPropagation();
+            event.stopImmediatePropagation();
+            leftClickCount++;
+            suppressContextMenu = suppressClick = true;
+            return;
+        }
+        const target = event.target;
+        if (target.tagName?.match(/^(IMG|CANVAS)$/) && target.dataset.hasQr === 'true') {
+            const cached = getCache(target);
+            if (cached?.status === 'success' && isUrl(cached.text)) {
+                longPressTimer = setTimeout(() => {
+                    GM_setClipboard(cached.text);
+                    reqFeedback();
+                    suppressClick = true;
+                    longPressTimer = null;
+                }, CONFIG.LONG_PRESS_TIME);
             }
         }
     }, true);
 
-    document.addEventListener('mouseup', e => {
-        if (longPressTimer) { clearTimeout(longPressTimer); longPressTimer = null; }
-        if (isCropping) return;
-
-        if (e.button === 2) {
-            isRightClickHolding = false;
-            if (leftClickCount > 0 && interactionTarget) {
-                if (leftClickCount === 1) scan(interactionTarget, 'deep');
-                else if (leftClickCount === 2) startCrop(interactionTarget, false);
-                else if (leftClickCount === 3) startCrop(interactionTarget, true);
-            }
-            interactionTarget = null;
-            leftClickCount = 0;
+    document.addEventListener('mouseup', event => {
+        if (longPressTimer) {
+            clearTimeout(longPressTimer);
+            longPressTimer = null;
         }
+        if (isCropping || event.button !== 2) return;
+        isRightClickHolding = false;
+        if (leftClickCount === 1) scan(interactionTarget, 'deep');
+        else if (leftClickCount === 2) startCrop(interactionTarget, false);
+        else if (leftClickCount === 3) startCrop(interactionTarget, true);
+        interactionTarget = null;
+        leftClickCount = 0;
     }, true);
 
-    document.addEventListener('contextmenu', e => {
-        if (suppressContextMenu) { e.preventDefault(); e.stopPropagation(); suppressContextMenu = false; }
+    document.addEventListener('contextmenu', event => {
+        if (!suppressContextMenu) return;
+        event.preventDefault();
+        event.stopPropagation();
+        suppressContextMenu = false;
     }, true);
 
-    document.addEventListener('click', e => {
+    document.addEventListener('click', event => {
         if (suppressClick) {
-            e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation();
+            event.preventDefault();
+            event.stopPropagation();
+            event.stopImmediatePropagation();
             suppressClick = false;
             return;
         }
-
-        const t = e.target;
-        if (t.tagName?.match(/^(IMG|CANVAS)$/) && t.dataset.hasQr === 'true') {
-            const cache = getCache(t);
-            const data = cache?.status === 'success' ? cache.text : null;
-            if (data) {
-                e.preventDefault(); e.stopPropagation();
-                if (isUrl(data)) GM_openInTab(data, { active: true, insert: true });
-                else { GM_setClipboard(data); reqFeedback(); }
-            }
+        const target = event.target;
+        if (!target.tagName?.match(/^(IMG|CANVAS)$/) || target.dataset.hasQr !== 'true') return;
+        const cached = getCache(target);
+        if (cached?.status !== 'success') return;
+        event.preventDefault();
+        event.stopPropagation();
+        if (isUrl(cached.text)) GM_openInTab(cached.text, { active: true, insert: true });
+        else {
+            GM_setClipboard(cached.text);
+            reqFeedback();
         }
     }, true);
-
-    // === 初始化 ===
-    ZXingManager.init();
 
 })();
