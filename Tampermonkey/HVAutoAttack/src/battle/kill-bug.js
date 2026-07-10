@@ -6,6 +6,7 @@ import {
   runNavigationAutomation,
 } from "../core/navigate.js";
 import { BattleKillBugEvidenceEvent, runBattleKillBugEvidence } from "./kill-bug-evidence.js";
+import { recordBattleUtilityAdverse } from "./battle-utility-adverse.js";
 
 const EVENT_RECOVER = "recover";
 const EVENT_UNKNOWN_KILL_BUG = "unknownKillBugRecoveryEvent";
@@ -49,6 +50,7 @@ function recoverKillBug() {
 function reloadForKillBug(matchedText) {
   const detail = { source: "battleKillBugRecovery", matchedText };
   try {
+    recordBattleUtilityAdverse("recovery");
     recordKillBugRecovery("reloadAttempted", {
       ...detail,
       navigationResult: runNavigationAutomation({

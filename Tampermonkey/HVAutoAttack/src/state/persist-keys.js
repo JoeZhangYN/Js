@@ -30,4 +30,5 @@ export const STORAGE_KEYS = Object.freeze({
   LEARNED_INCOMING_BURST: "learnedIncomingBurst", // F5 进场爆发伤害 + 类型（按 MID 键，名 fallback）
   AUTO_TUNE_PAD: "autoTunePad", // F safetyPad 自学习当前探索点
   AUTO_TUNE_HISTORY: "autoTuneHistory", // F safetyPad 自学习观测历史
+  UTILITY_WEIGHT_LEARNING: "utilityWeightLearning", // 物理技能资源效用（World 存储工厂 × fighting style）
 });

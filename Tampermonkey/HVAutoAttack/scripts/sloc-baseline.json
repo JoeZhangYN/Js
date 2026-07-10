@@ -11,10 +11,6 @@
     "maxSloc": 154,
     "reason": "formatted baseline evidence test verbosity"
   },
-  "battle/battle-action-lifecycle.js": {
-    "maxSloc": 175,
-    "reason": "formatted baseline capability split debt"
-  },
   "battle/battle-api-bridge.test.js": {
     "maxSloc": 164,
     "reason": "formatted baseline adapter contract test verbosity"
@@ -35,10 +31,6 @@
     "maxSloc": 165,
     "reason": "formatted baseline item decision split debt"
   },
-  "battle/item/execute-item.js": {
-    "maxSloc": 152,
-    "reason": "formatted baseline item execution split debt"
-  },
   "battle/monster-status-automation.js": {
     "maxSloc": 194,
     "reason": "formatted baseline monster-status orchestration split debt"
@@ -56,11 +48,11 @@
     "reason": "formatted baseline snapshot test verbosity"
   },
   "core/diagnostic-evidence-keys.js": {
-    "maxSloc": 199,
+    "maxSloc": 203,
     "reason": "diagnostic evidence registry data surface"
   },
   "core/diagnostic-evidence.test.js": {
-    "maxSloc": 430,
+    "maxSloc": 443,
     "reason": "diagnostic evidence registry fixture"
   },
   "core/navigate.js": {

@@ -3,6 +3,7 @@ import path from "node:path";
 
 const root = process.cwd();
 const owner = path.normalize("src/battle/item/execute-item.js");
+const consumptionLearning = path.normalize("src/battle/item/item-consumption-learning.js");
 const ownerTest = path.normalize("src/battle/item/execute-item.test.js");
 const autoTuneFailureTest = path.normalize("src/battle/item/execute-item-autotune-failure.test.js");
 const commandFailureTest = path.normalize("src/battle/item/execute-item-command-failure.test.js");
@@ -21,6 +22,7 @@ function rel(relative) {
 }
 
 const ownerText = read(owner);
+const consumptionLearningText = read(consumptionLearning);
 const actionEffectText = read(actionEffect);
 const actionEffectExecutionText = read(actionEffectExecution);
 
@@ -35,8 +37,7 @@ for (const required of [
   "executePotionPlan",
   "executeStallPlan",
   "executeScrollPlan",
-  "AutoTuneEvent.RECORD_POTION_USE",
-  "recordAutoTunePotionUse",
+  "recordConsumedRecoveryItem",
   "BattleItemCommandEvent.CLICK_GEM",
   "BattleItemCommandEvent.CLICK_ITEM",
   "RecoveryLearningEvent.RECORD_PRE_DRINK",
@@ -53,16 +54,16 @@ for (const required of [
 ]) {
   if (!ownerText.includes(required)) violations.push(`${rel(owner)} must own ${required}`);
 }
-const recordAutoTuneBody =
-  ownerText.match(/function recordAutoTunePotionUse\(\) \{[\s\S]*?\n\}/)?.[0] || "";
 for (const required of [
-  "try {",
-  "return { ok: true }",
-  "return { ok: false, error: error?.message || String(error) }",
+  "AutoTuneEvent.RECORD_POTION_USE",
+  "UtilityWeightLearningEvent.RECORD_POTION_USE",
+  "recordConsumedRecoveryItem",
+  "result.autoTune = false",
+  "result.utilityWeight = false",
 ]) {
-  if (!recordAutoTuneBody.includes(required)) {
+  if (!consumptionLearningText.includes(required)) {
     violations.push(
-      `${rel(owner)} must keep auto-tune record failures from changing acted semantics`
+      `${rel(consumptionLearning)} must isolate item-consumption learning failures from acted semantics`
     );
   }
 }
@@ -155,6 +156,7 @@ if (!fs.existsSync(path.join(root, autoTuneFailureTest))) {
   for (const required of [
     "keeps clicked gems acted when auto-tune recording fails",
     "keeps clicked potions acted when auto-tune recording fails",
+    "keeps clicked gems acted when utility recording fails",
     "auto tune failed",
   ]) {
     if (!autoTuneFailureTestText.includes(required)) {

@@ -9,6 +9,7 @@ const mocks = vi.hoisted(() => ({
   runBigSkillKillLearningAutomation: vi.fn(),
   runCdLearningAutomation: vi.fn(),
   runCdRuntimeAutomation: vi.fn(),
+  runUtilityWeightLearning: vi.fn(),
 }));
 
 vi.mock("../../state/cd-tracker.js", () => ({
@@ -27,6 +28,10 @@ vi.mock("../battle-skill-usage.js", () => ({
   BattleSkillUsageEvent: Object.freeze({ RECORD_USE: "recordUse" }),
   runBattleSkillUsageAutomation: mocks.runBattleSkillUsageAutomation,
 }));
+vi.mock("../../state/utility-weight-learner.js", () => ({
+  UtilityWeightLearningEvent: Object.freeze({ RECORD_PHYSICAL_CAST: "recordPhysicalCast" }),
+  runUtilityWeightLearning: mocks.runUtilityWeightLearning,
+}));
 
 beforeEach(() => {
   for (const fn of Object.values(mocks)) fn.mockReset();
@@ -39,6 +44,8 @@ describe("runPhysicalSkillBookkeeping", () => {
       code: "OFC",
       skillId: "1111",
       globalTurn: 10,
+      ocCost: 205,
+      view: [{ id: 1, hpAbsNow: 5000, hpMax: 5000, isDead: false }],
       observedBosses: [{ mid: 100, hpMax: 5000, imperilActive: true }],
     });
 
@@ -62,6 +69,13 @@ describe("runPhysicalSkillBookkeeping", () => {
       code: "OFC",
       globalTurn: 10,
       observedBosses: [{ mid: 100, hpMax: 5000, imperilActive: true }],
+    });
+    expect(mocks.runUtilityWeightLearning).toHaveBeenCalledWith({
+      type: "recordPhysicalCast",
+      code: "OFC",
+      ocCost: 205,
+      globalTurn: 10,
+      view: [{ id: 1, hpAbsNow: 5000, hpMax: 5000, isDead: false }],
     });
   });
 

@@ -14,6 +14,10 @@ import {
   BattleLifecycleEvidenceEvent,
   runBattleLifecycleEvidence,
 } from "./battle-lifecycle-evidence.js";
+import {
+  UtilityWeightLearningEvent,
+  runUtilityWeightLearning,
+} from "../state/utility-weight-learner.js";
 
 const EVENT_BATTLE_STARTED = "battleStarted";
 const EVENT_UNKNOWN_BATTLE_LIFECYCLE = "unknownBattleLifecycleEvent";
@@ -40,6 +44,7 @@ function normalizeStepResult(rawResult) {
 function startBattle(deps) {
   const steps = [];
   recordStep(steps, "startRuntime", deps.startRuntime);
+  recordStep(steps, "startUtilityLearning", deps.startUtilityLearning);
   recordStep(steps, "startKnowledge", deps.startKnowledge);
   recordStep(steps, "startMonitor", deps.startMonitor);
   const started = steps.every((step) => step.result);
@@ -68,6 +73,8 @@ export function runBattleLifecycleAutomation(
   deps = {
     startRuntime: () =>
       runBattleStartRuntimeAutomation({ type: BattleStartRuntimeEvent.BATTLE_STARTED }),
+    startUtilityLearning: () =>
+      runUtilityWeightLearning({ type: UtilityWeightLearningEvent.BATTLE_STARTED }),
     startKnowledge: () =>
       runMonsterKnowledgeAutomation({ type: MonsterKnowledgeEvent.BATTLE_STARTED }),
     startMonitor: () => runBattleMonitorAutomation({ type: BattleMonitorEvent.BATTLE_STARTED }),

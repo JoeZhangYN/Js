@@ -193,6 +193,7 @@ describe("runAttackDecision 6 分支", () => {
       type: "physical",
       skillId: "2201",
       code: "T1",
+      ocCost: 30,
       defaultTargetId: 1,
       mercifulTargetId: null,
     });
@@ -353,6 +354,7 @@ describe("runAttackDecision 物理技能评分入口契约", () => {
       type: "physical",
       skillId: "2201",
       code: "T1",
+      ocCost: 30,
       defaultTargetId: 1,
       mercifulTargetId: null,
     });
@@ -370,6 +372,7 @@ describe("runAttackDecision 物理技能评分入口契约", () => {
       type: "physical",
       skillId: "2202",
       code: "T2",
+      ocCost: 55,
       defaultTargetId: 1,
       mercifulTargetId: null,
     });

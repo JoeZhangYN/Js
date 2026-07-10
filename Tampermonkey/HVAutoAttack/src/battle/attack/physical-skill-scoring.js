@@ -53,11 +53,16 @@ function scoreSkillContextual(skill, opt, event, firstMonster) {
   return PHYSICAL_SKILL_SCORERS[skill]?.(opt, event, firstMonster) ?? 0;
 }
 
+function ordinaryMultiplier(opt, code) {
+  const multiplier = Number(opt.skillUtilityMultipliers?.[code]);
+  return Number.isFinite(multiplier) ? Math.min(1.2, Math.max(0.8, multiplier)) : 1;
+}
+
 function scoreOfcSkill(opt, event) {
   const overrides = opt.skillBaseScore || {};
   return runPhysicalSkillRanking({
     type: PhysicalSkillRankingEvent.AOE_SCORE,
-    baseScore: overrides.OFC ?? 100,
+    baseScore: (overrides.OFC ?? 100) * ordinaryMultiplier(opt, "OFC"),
     aliveCount: event.aliveCount,
   });
 }
@@ -66,7 +71,7 @@ function scoreFrdSkill(opt, event) {
   const overrides = opt.skillBaseScore || {};
   return runPhysicalSkillRanking({
     type: PhysicalSkillRankingEvent.AOE_SCORE,
-    baseScore: overrides.FRD ?? 60,
+    baseScore: (overrides.FRD ?? 60) * ordinaryMultiplier(opt, "FRD"),
     aliveCount: event.aliveCount,
   });
 }
@@ -76,21 +81,21 @@ function scoreT3Skill(opt, _event, firstMonster) {
   const firstLowHp = (firstMonster?.hpPercent ?? 1) < 0.25;
   const overrides = opt.skillBaseScore || {};
   if (firstLowHp && firstBleeding) return overrides.T3_execute ?? 1000;
-  return overrides.T3 ?? 80;
+  return (overrides.T3 ?? 80) * ordinaryMultiplier(opt, "T3");
 }
 
 function scoreT2Skill(opt, _event, firstMonster) {
   const firstStunned = !!firstMonster?.buffs?.includes("wpn_stun");
   const overrides = opt.skillBaseScore || {};
   if (firstStunned) return overrides.T2_combo ?? 200;
-  return overrides.T2 ?? 60;
+  return (overrides.T2 ?? 60) * ordinaryMultiplier(opt, "T2");
 }
 
 function scoreT1Skill(opt, _event, firstMonster) {
   const firstStunned = !!firstMonster?.buffs?.includes("wpn_stun");
   const overrides = opt.skillBaseScore || {};
   if (firstStunned) return 0;
-  return overrides.T1 ?? 40;
+  return (overrides.T1 ?? 40) * ordinaryMultiplier(opt, "T1");
 }
 
 function physicalSkillBlockReason(skill, context) {

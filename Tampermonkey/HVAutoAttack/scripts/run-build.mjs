@@ -159,6 +159,7 @@ const commands = [
   "node scripts/verify-battle-decision-runtime-boundary.mjs",
   "node scripts/verify-battle-pause-boundary.mjs",
   "node scripts/verify-auto-tune-boundary.mjs",
+  "node scripts/verify-utility-weight-learning-boundary.mjs",
   "node scripts/verify-alarm-boundary.mjs",
   "node scripts/verify-learning-storage-keys.mjs",
   "node scripts/verify-recovery-learner-boundary.mjs",

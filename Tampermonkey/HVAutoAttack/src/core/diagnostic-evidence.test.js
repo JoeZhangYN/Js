@@ -121,6 +121,14 @@ describe("readRecentDiagnosticEvidence", () => {
         capability: "customDictionary",
         stage: "importWrite",
       },
+      "HVAA:lastUtilityWeightLearningFailure": {
+        capability: "utilityWeightLearning",
+        stage: "write",
+      },
+      "HVAA:lastUtilityWeightLearningDecision": {
+        capability: "utilityWeightLearning",
+        decision: { kind: "rolledBack" },
+      },
       "HVAA:lastHvutI18nBridgeFailure": {
         capability: "hvutI18nBridge",
         stage: "retranslateEquiplistBridgeMissing",
@@ -324,6 +332,11 @@ describe("readRecentDiagnosticEvidence", () => {
       i18nInitFailure: { capability: "i18nInit", entry: "interface" },
       i18nRestoreFailure: { capability: "i18nRestore", stage: "restore" },
       customDictionaryFailure: { capability: "customDictionary", stage: "importWrite" },
+      utilityWeightLearningFailure: { capability: "utilityWeightLearning", stage: "write" },
+      utilityWeightLearningDecision: {
+        capability: "utilityWeightLearning",
+        decision: { kind: "rolledBack" },
+      },
       hvutI18nBridgeFailure: {
         capability: "hvutI18nBridge",
         stage: "retranslateEquiplistBridgeMissing",

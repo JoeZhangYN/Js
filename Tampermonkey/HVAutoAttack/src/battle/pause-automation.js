@@ -4,6 +4,7 @@ import { setValue, getValue, delValue } from "../state/storage.js";
 import { STORAGE_KEYS } from "../state/persist-keys.js";
 import { _alert } from "../core/lang.js";
 import { BattlePauseEvidenceEvent, runBattlePauseEvidence } from "./battle-pause-evidence.js";
+import { recordBattleUtilityAdverse } from "./battle-utility-adverse.js";
 
 const EVENT_RENDER_PAUSED = "renderPaused";
 const EVENT_RENDER_IF_PAUSED = "renderIfPaused";
@@ -22,7 +23,7 @@ export const BattlePauseEvent = Object.freeze({
 });
 
 const battlePauseEventHandlers = Object.freeze({
-  [EVENT_RENDER_PAUSED]: () => handleRenderPaused(),
+  [EVENT_RENDER_PAUSED]: () => renderPaused(),
   [EVENT_RENDER_IF_PAUSED]: () => handleRenderIfPaused(),
   [EVENT_TOGGLE]: (_event, deps) => handleToggle(deps),
   [EVENT_PAUSE]: (event) => handlePause(event),
@@ -35,6 +36,7 @@ function setPauseButtonText(text) {
 function renderPaused() {
   document.title = _alert(-1, "hvAutoAttack暂停中", "hvAutoAttack暫停中", "hvAutoAttack Paused");
   setPauseButtonText("<l0>继续</l0><l1>繼續</l1><l2>Continue</l2>");
+  return true;
 }
 
 const errorText = (error) => error?.message || String(error);
@@ -129,11 +131,6 @@ function resumeBattle(resume, pauseState) {
   return true;
 }
 
-function handleRenderPaused() {
-  renderPaused();
-  return true;
-}
-
 function handleRenderIfPaused() {
   const pauseState = readPauseState();
   if (!pauseState.persistent && !pauseState.emergency) return false;
@@ -145,15 +142,16 @@ function handleToggle(deps) {
   const pauseState = readPauseState();
   if (pauseState.persistent || pauseState.emergency) {
     return resumeBattle(deps.resume, pauseState);
-  } else {
-    const pause = pauseBattle({ reason: "toggle" });
-    recordPauseState("paused", "toggle", pause.degraded ? { persistence: pause } : undefined);
   }
+  const pause = pauseBattle({ reason: "toggle" });
+  recordBattleUtilityAdverse("pause");
+  recordPauseState("paused", "toggle", pause.degraded ? { persistence: pause } : undefined);
   return true;
 }
 
 function handlePause(event) {
   const pause = pauseBattle(event);
+  recordBattleUtilityAdverse("pause");
   recordPauseState("paused", event.reason || EVENT_PAUSE, {
     ...event.detail,
     ...(pause.degraded ? { persistence: pause } : {}),

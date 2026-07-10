@@ -10,6 +10,7 @@ function makeDeps({ hasCompletion = false, outcome = "ongoing" } = {}) {
     recordSpeed: vi.fn(() => true),
     endDelay: vi.fn(() => true),
     refreshCombatants: vi.fn(() => true),
+    finalizeUtilityObservation: vi.fn(() => true),
     monitorActionStarted: vi.fn(() => true),
     monitorActionEnded: vi.fn(() => true),
     isCompletionReached: vi.fn(() => hasCompletion),
@@ -65,6 +66,7 @@ describe("runBattleActionLifecycleAutomation", () => {
       deps.endDelay.mock.invocationCallOrder[0]
     );
     expect(deps.refreshCombatants).toHaveBeenCalledTimes(1);
+    expect(deps.finalizeUtilityObservation).toHaveBeenCalledTimes(1);
     expect(deps.monitorActionEnded).toHaveBeenCalledTimes(1);
     expect(deps.isCompletionReached).toHaveBeenCalledTimes(1);
     expect(deps.runTurn).toHaveBeenCalledTimes(1);
@@ -80,6 +82,7 @@ describe("runBattleActionLifecycleAutomation", () => {
         { step: "recordSpeed", result: true },
         { step: "endDelay", result: true },
         { step: "refreshCombatants", result: true },
+        { step: "finalizeUtilityObservation", result: true },
         { step: "monitorActionEnded", result: true },
         { step: "isCompletionReached", result: false },
         { step: "runTurn", result: true },

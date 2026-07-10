@@ -32,6 +32,14 @@ describe("runOptionSchema physical skill strategy fields", () => {
 
   it("exposes physical skill downgrade options through the schema entry", () => {
     expect(
+      runOptionSchema({ type: OptionSchemaEvent.READ_FIELD, key: "utilityWeightLearning" })
+    ).toMatchObject({
+      key: "utilityWeightLearning",
+      kind: "checkbox",
+      default: false,
+      group: "Skill",
+    });
+    expect(
       runOptionSchema({ type: OptionSchemaEvent.READ_FIELD, key: "physicalSkillDowngrade" })
     ).toMatchObject({
       key: "physicalSkillDowngrade",
@@ -58,6 +66,7 @@ describe("runOptionSchema physical skill strategy fields", () => {
     expect(keys).toEqual(
       expect.arrayContaining([
         "fightingStyle",
+        "utilityWeightLearning",
         "mercifulBlow",
         "physicalSkillDowngrade",
         "physicalDowngradeThreshold",

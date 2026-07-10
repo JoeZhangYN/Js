@@ -629,6 +629,7 @@ function renderSpellTierStrategySchemaFields() {
 function renderPhysicalSkillStrategySchemaFields() {
   return [
     renderSchemaSelectField("fightingStyle"),
+    renderSchemaCheckboxField("utilityWeightLearning", "<br>"),
     renderSchemaCheckboxField(
       "physicalSkillDowngrade",
       `: <l0>存活怪物</l0><l1>存活怪物</l1><l2>Alive monsters</l2> ≤ ${renderSchemaNumberInput(

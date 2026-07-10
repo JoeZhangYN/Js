@@ -9,6 +9,7 @@ function makeDeps() {
     recordSpeed: vi.fn(),
     endDelay: vi.fn(),
     refreshCombatants: vi.fn(() => false),
+    finalizeUtilityObservation: vi.fn(),
     monitorActionEnded: vi.fn(),
     isCompletionReached: vi.fn(() => false),
     completeBattle: vi.fn(),

@@ -4,6 +4,10 @@ import { CdRuntimeEvent, runCdRuntimeAutomation } from "../state/cd-tracker.js";
 import { BattleSnapshotEvent, runBattleSnapshot } from "./snapshot.js";
 import { BattleDecisionRuntimeEvent, runBattleDecisionRuntime } from "./battle-decision-runtime.js";
 import { BattlePlayerVitalsEvent, runBattlePlayerVitals } from "./battle-player-vitals.js";
+import {
+  UtilityWeightLearningEvent,
+  runUtilityWeightLearning,
+} from "../state/utility-weight-learner.js";
 
 const EVENT_PREPARE = "prepare";
 
@@ -34,7 +38,12 @@ function assertNoDomRefs(snap) {
 function prepareBattleTurnContext(event = {}) {
   runCdRuntimeAutomation({ type: CdRuntimeEvent.INCREMENT_TURN });
   runCdRuntimeAutomation({ type: CdRuntimeEvent.PERSIST });
-  const actionOptions = runOptionAutomation({ type: OptionEvent.READ_BATTLE_ACTION_OPTIONS });
+  const actionOptions = {
+    ...runOptionAutomation({ type: OptionEvent.READ_BATTLE_ACTION_OPTIONS }),
+    skillUtilityMultipliers: runUtilityWeightLearning({
+      type: UtilityWeightLearningEvent.READ_MULTIPLIERS,
+    }),
+  };
   const snap = runBattleSnapshot({
     type: BattleSnapshotEvent.READ_CURRENT,
     learnIncomingBurst: !!actionOptions?.burstControlSwitch,

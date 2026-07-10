@@ -17,6 +17,7 @@ import {
   warnRecoveryStateSafely,
   writeRecoveryState,
 } from "./battle-api-response-recovery-state.js";
+import { recordBattleUtilityAdverse } from "./battle-utility-adverse.js";
 
 const EVENT_INSTALL_BRIDGE = "installBridge";
 const EVENT_REJECTED_RESPONSE = "rejectedResponse";
@@ -45,6 +46,7 @@ const battleApiResponseRecoveryEventHandlers = Object.freeze({
 
 function handleRejectedApiResponse(detail, deps) {
   const state = buildRecoveryState(detail, deps);
+  recordBattleUtilityAdverse("recovery");
   if (state.repeatCount >= REPEAT_PAUSE_THRESHOLD) {
     state.recoveryAction = RECOVERY_ACTION_PAUSE;
     writeRecoveryState(deps, state);

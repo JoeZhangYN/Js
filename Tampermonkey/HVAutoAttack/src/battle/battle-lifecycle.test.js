@@ -5,6 +5,7 @@ const mocks = vi.hoisted(() => ({
   runBattleMonitorAutomation: vi.fn(),
   runBattleStartRuntimeAutomation: vi.fn(),
   runMonsterKnowledgeAutomation: vi.fn(),
+  runUtilityWeightLearning: vi.fn(),
 }));
 
 vi.mock("../monitor/battle-monitor-automation.js", () => ({
@@ -20,6 +21,10 @@ vi.mock("./battle-start-runtime.js", () => ({
 vi.mock("./monster-knowledge-automation.js", () => ({
   MonsterKnowledgeEvent: Object.freeze({ BATTLE_STARTED: "battleStarted" }),
   runMonsterKnowledgeAutomation: mocks.runMonsterKnowledgeAutomation,
+}));
+vi.mock("../state/utility-weight-learner.js", () => ({
+  UtilityWeightLearningEvent: Object.freeze({ BATTLE_STARTED: "battleStarted" }),
+  runUtilityWeightLearning: mocks.runUtilityWeightLearning,
 }));
 
 beforeEach(() => {
@@ -37,10 +42,14 @@ describe("runBattleLifecycleAutomation", () => {
     expect(mocks.runMonsterKnowledgeAutomation).toHaveBeenCalledWith({
       type: "battleStarted",
     });
+    expect(mocks.runUtilityWeightLearning).toHaveBeenCalledWith({ type: "battleStarted" });
     expect(mocks.runBattleMonitorAutomation).toHaveBeenCalledWith({
       type: "battleStarted",
     });
     expect(mocks.runBattleStartRuntimeAutomation.mock.invocationCallOrder[0]).toBeLessThan(
+      mocks.runUtilityWeightLearning.mock.invocationCallOrder[0]
+    );
+    expect(mocks.runUtilityWeightLearning.mock.invocationCallOrder[0]).toBeLessThan(
       mocks.runMonsterKnowledgeAutomation.mock.invocationCallOrder[0]
     );
     expect(mocks.runMonsterKnowledgeAutomation.mock.invocationCallOrder[0]).toBeLessThan(
@@ -51,6 +60,7 @@ describe("runBattleLifecycleAutomation", () => {
       result: true,
       steps: [
         { step: "startRuntime", result: true },
+        { step: "startUtilityLearning", result: true },
         { step: "startKnowledge", result: true },
         { step: "startMonitor", result: true },
       ],
@@ -87,6 +97,7 @@ describe("runBattleLifecycleAutomation", () => {
 
     expect(mocks.runBattleStartRuntimeAutomation).not.toHaveBeenCalled();
     expect(mocks.runMonsterKnowledgeAutomation).not.toHaveBeenCalled();
+    expect(mocks.runUtilityWeightLearning).not.toHaveBeenCalled();
     expect(mocks.runBattleMonitorAutomation).not.toHaveBeenCalled();
     expect(JSON.parse(sessionStorage.getItem("HVAA:lastBattleLifecycle"))).toMatchObject({
       phase: "unknownBattleLifecycleEvent",
@@ -107,6 +118,7 @@ describe("runBattleLifecycleAutomation", () => {
 
     expect(mocks.runBattleStartRuntimeAutomation).not.toHaveBeenCalled();
     expect(mocks.runMonsterKnowledgeAutomation).not.toHaveBeenCalled();
+    expect(mocks.runUtilityWeightLearning).not.toHaveBeenCalled();
     expect(mocks.runBattleMonitorAutomation).not.toHaveBeenCalled();
     expect(JSON.parse(sessionStorage.getItem("HVAA:lastBattleLifecycle"))).toMatchObject({
       phase: "unknownBattleLifecycleEvent",

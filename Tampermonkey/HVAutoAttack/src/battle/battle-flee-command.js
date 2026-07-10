@@ -7,6 +7,7 @@ import {
 import { gE } from "../dom/query.js";
 import { clickBattleCommandElement } from "./battle-command-click.js";
 import { recordBattleCommandResult } from "./battle-command-recording.js";
+import { recordBattleUtilityAdverse } from "./battle-utility-adverse.js";
 
 const EVENT_CLICK_AND_RELOAD = "clickAndReload";
 const FLEE_BUTTON_ID = "1001";
@@ -32,6 +33,7 @@ function clickFleeAndScheduleReload() {
     recordCommandResult("rejected", clickResult.reason, { error: clickResult.error });
     return false;
   }
+  recordBattleUtilityAdverse("flee");
   const navigation = scheduleFleeReload();
   recordCommandResult("accepted", "clicked", {
     seconds: FLEE_RELOAD_DELAY_SEC,

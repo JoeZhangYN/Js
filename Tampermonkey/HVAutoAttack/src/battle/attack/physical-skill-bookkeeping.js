@@ -5,6 +5,10 @@ import {
   runBigSkillKillLearningAutomation,
 } from "../../state/big-skill-kill-learner.js";
 import { BattleSkillUsageEvent, runBattleSkillUsageAutomation } from "../battle-skill-usage.js";
+import {
+  UtilityWeightLearningEvent,
+  runUtilityWeightLearning,
+} from "../../state/utility-weight-learner.js";
 
 const EVENT_RECORD_FIRE = "recordFire";
 
@@ -33,6 +37,13 @@ function recordPhysicalSkillFire(event) {
     code: event.code,
     globalTurn: event.globalTurn,
     observedBosses: event.observedBosses,
+  });
+  runUtilityWeightLearning({
+    type: UtilityWeightLearningEvent.RECORD_PHYSICAL_CAST,
+    code: event.code,
+    ocCost: event.ocCost,
+    globalTurn: event.globalTurn,
+    view: event.view,
   });
   return true;
 }

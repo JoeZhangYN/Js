@@ -15,6 +15,7 @@ const apiBridgeTest = path.join(root, "src/battle/battle-api-bridge.test.js");
 const actionSpeedFile = path.join(root, "src/battle/battle-action-speed.js");
 const actionSpeedTest = path.join(root, "src/battle/battle-action-speed.test.js");
 const actionLifecycleFile = path.join(root, "src/battle/battle-action-lifecycle.js");
+const actionLifecycleDepsFile = path.join(root, "src/battle/battle-action-lifecycle-deps.js");
 const actionLifecycleTest = path.join(root, "src/battle/battle-action-lifecycle.test.js");
 const actionLifecycleRecordingFile = path.join(
   root,
@@ -74,6 +75,7 @@ const scrollCoverageFile = path.join(root, "src/battle/item/scroll-coverage.js")
 const scrollCoverageTestFile = path.join(root, "src/battle/item/scroll-coverage.test.js");
 const itemFactsFile = path.join(root, "src/battle/item/item-facts.js");
 const executeItemFile = path.join(root, "src/battle/item/execute-item.js");
+const itemConsumptionLearningFile = path.join(root, "src/battle/item/item-consumption-learning.js");
 const potionEconomyFile = path.join(root, "src/battle/potion-economy.js");
 const dynamicThresholdFile = path.join(root, "src/battle/dynamic-threshold.js");
 const stallModeFile = path.join(root, "src/battle/battle-stall-mode.js");
@@ -1441,6 +1443,7 @@ function checkActionLifecycleEntry() {
     }
   }
   const text = fs.readFileSync(actionLifecycleFile, "utf8");
+  const wiringText = `${text}\n${fs.readFileSync(actionLifecycleDepsFile, "utf8")}`;
   if (!/export const BattleActionLifecycleEvent\s*=\s*Object\.freeze\(/.test(text)) {
     violations.push(`${rel(actionLifecycleFile)} must expose BattleActionLifecycleEvent`);
   }
@@ -1502,9 +1505,9 @@ function checkActionLifecycleEntry() {
     "recordLifecycleSafely(deps, EVENT_ACTION_STARTED, started, steps)",
     "recordLifecycleSafely(deps, EVENT_ACTION_ENDED, result, steps)",
   ]) {
-    if (!text.includes(required)) {
+    if (!wiringText.includes(required)) {
       violations.push(
-        `${rel(actionLifecycleFile)} must make ${required} visible in action lifecycle entry`
+        `${rel(actionLifecycleFile)} must make ${required} visible in action lifecycle capability`
       );
     }
   }
@@ -2037,6 +2040,7 @@ function checkActivateSpirit() {
 
 function checkExecuteItem() {
   const text = fs.readFileSync(executeItemFile, "utf8");
+  const consumptionLearningText = fs.readFileSync(itemConsumptionLearningFile, "utf8");
   for (const required of [
     "ITEM_PLAN_EXECUTORS",
     "STALL_ATTEMPT_EXECUTORS",
@@ -2057,9 +2061,9 @@ function checkExecuteItem() {
   if (/switch\s*\(\s*plan\.type\s*\)/.test(applyPlanBody)) {
     violations.push(`${rel(executeItemFile)} must dispatch item plans by ITEM_PLAN_EXECUTORS`);
   }
-  if (!text.includes("AutoTuneEvent.RECORD_POTION_USE")) {
+  if (!consumptionLearningText.includes("AutoTuneEvent.RECORD_POTION_USE")) {
     violations.push(
-      `${rel(executeItemFile)} must report potion-use bookkeeping through auto-tune entry`
+      `${rel(itemConsumptionLearningFile)} must report potion-use bookkeeping through auto-tune entry`
     );
   }
   if (/\bg\(\s*["']option["']\s*\)/.test(text)) {

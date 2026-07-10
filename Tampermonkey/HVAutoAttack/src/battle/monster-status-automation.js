@@ -3,11 +3,6 @@ import { getValue } from "../state/storage.js";
 import { STORAGE_KEYS } from "../state/persist-keys.js";
 import { g } from "../state/store.js";
 import { _alert } from "../core/lang.js";
-import {
-  NavigationEvent,
-  NavigationReloadReason,
-  runNavigationAutomation,
-} from "../core/navigate.js";
 import { BattleLogParserEvent, runBattleLogParser } from "./battle-log-parser.js";
 import { MonsterStatusHpRuntimeEvent, runMonsterStatusHpRuntime } from "./monster-status-hp.js";
 import { MonsterStatusViewEvent, runMonsterStatusView } from "./monster-status-view.js";
@@ -17,6 +12,7 @@ import {
   runMonsterStatusRepairEvidence,
 } from "./monster-status-repair-evidence.js";
 import { persistMonsterStatus } from "./monster-status-failure.js";
+import { MonsterStatusRecoveryEvent, runMonsterStatusRecovery } from "./monster-status-recovery.js";
 
 const EVENT_ENSURE_READY = "ensureReady";
 const EVENT_REPAIR = "repair";
@@ -55,9 +51,8 @@ const monsterStatusEventHandlers = Object.freeze({
 });
 
 function reloadCurrentPage(detail) {
-  return runNavigationAutomation({
-    type: NavigationEvent.RELOAD_NOW,
-    reason: NavigationReloadReason.MONSTER_STATUS_REPAIR,
+  return runMonsterStatusRecovery({
+    type: MonsterStatusRecoveryEvent.RELOAD,
     detail,
   });
 }

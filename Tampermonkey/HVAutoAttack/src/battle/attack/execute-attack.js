@@ -114,7 +114,9 @@ function recordPhysicalSkillFire(plan, snap) {
     type: PhysicalSkillBookkeepingEvent.RECORD_FIRE,
     code: plan.code,
     skillId: plan.skillId,
+    ocCost: plan.ocCost,
     globalTurn: snap?.globalTurn,
+    view: snap?.view,
     observedBosses: observedBigSkillBosses(snap),
   });
 }

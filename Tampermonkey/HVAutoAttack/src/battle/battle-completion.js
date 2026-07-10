@@ -16,6 +16,10 @@ import {
   BattleCompletionEvidenceEvent,
   runBattleCompletionEvidence,
 } from "./battle-completion-evidence.js";
+import {
+  UtilityWeightLearningEvent,
+  runUtilityWeightLearning,
+} from "../state/utility-weight-learner.js";
 
 const EVENT_COMPLETION_REACHED = "completionReached";
 const EVENT_READ_REACHED = "readReached";
@@ -67,6 +71,7 @@ function effectOk(result) {
 function handleTerminalCompletion(outcome, context, deps) {
   const alarmKind = outcome === BattleCompletionOutcome.DEFEAT ? "Defeat" : "Victory";
   const effects = {
+    utilityLearning: effectOk(deps.completeUtilityLearning(outcome)),
     alarm: effectOk(deps.triggerAlarm(alarmKind)),
     clearSession: effectOk(deps.clearSession()),
   };
@@ -110,6 +115,11 @@ export function runBattleCompletionAutomation(
     recordCompletion: () =>
       runBattleMonitorAutomation({ type: BattleMonitorEvent.COMPLETION_REACHED }),
     triggerAlarm: (kind) => runAlarmAutomation({ type: AlarmEvent.TRIGGER, kind }),
+    completeUtilityLearning: (outcome) =>
+      runUtilityWeightLearning({
+        type: UtilityWeightLearningEvent.BATTLE_COMPLETED,
+        outcome,
+      }),
     clearSession: () => runBattleRuntimeAutomation({ type: BattleRuntimeEvent.CLEAR_SESSION }),
     isCompletionReached: () => !!gE("#btcp"),
     recordCompletionEvidence: (detail) =>

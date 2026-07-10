@@ -5,6 +5,7 @@ function deps(context = { monsterAlive: 0, roundNow: 1, roundAll: 1 }) {
   return {
     readCompletionContext: vi.fn(() => context),
     recordCompletion: vi.fn(),
+    completeUtilityLearning: vi.fn(),
     triggerAlarm: vi.fn(),
     clearSession: vi.fn(),
     isCompletionReached: vi.fn(() => true),
@@ -31,6 +32,7 @@ describe("runBattleCompletionAutomation", () => {
       effects: {
         recordCompletion: true,
         recordCompletionResult: { kind: "recorded" },
+        utilityLearning: true,
         alarm: true,
         clearSession: true,
       },
@@ -77,6 +79,7 @@ describe("runBattleCompletionAutomation", () => {
       effects: {
         recordCompletion: true,
         recordCompletionResult: { kind: "recorded" },
+        utilityLearning: true,
         alarm: true,
         clearSession: true,
         scheduleReload: true,

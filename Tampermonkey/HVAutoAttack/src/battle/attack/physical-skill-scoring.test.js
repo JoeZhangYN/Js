@@ -87,6 +87,32 @@ describe("scorePhysicalSkillCandidates", () => {
     });
   });
 
+  it("applies learned multipliers only to ordinary base scores", () => {
+    expect(
+      scoreOne("T1", { skillUtilityMultipliers: { T1: 1.2 } }, { skillReady: { 2201: true } })
+    ).toMatchObject({ score: 48 });
+    expect(
+      scoreOne(
+        "T2",
+        { skillUtilityMultipliers: { T2: 0.8 } },
+        {
+          skillReady: { 2202: true },
+          monsterFacts: [monster({ buffs: ["wpn_stun"] })],
+        }
+      )
+    ).toMatchObject({ score: 200, explain: "score=200 (T1+T2 combo)" });
+    expect(
+      scoreOne(
+        "T3",
+        { skillUtilityMultipliers: { T3: 0.8 } },
+        {
+          skillReady: { 2203: true },
+          monsterFacts: [monster({ hpPercent: 0.1, buffs: ["wpn_bleed"] })],
+        }
+      )
+    ).toMatchObject({ score: 1000, explain: "score=1000 (execute)" });
+  });
+
   it("rejects unknown physical skill scoring events", () => {
     expect(runPhysicalSkillScoring({ type: "unknown" })).toEqual([]);
     expect(runPhysicalSkillScoring(null)).toEqual([]);

@@ -7,6 +7,7 @@ const mocks = vi.hoisted(() => ({
   runBattleItemCommand: vi.fn(),
   runBattleSpiritToggleAutomation: vi.fn(),
   runRecoveryLearningAutomation: vi.fn(),
+  runUtilityWeightLearning: vi.fn(),
 }));
 
 vi.mock("../../state/auto-tune.js", () => ({
@@ -28,6 +29,10 @@ vi.mock("../battle-spirit-toggle.js", () => ({
 vi.mock("../../state/recovery-learner.js", () => ({
   RecoveryLearningEvent: Object.freeze({ RECORD_PRE_DRINK: "recordPreDrink" }),
   runRecoveryLearningAutomation: mocks.runRecoveryLearningAutomation,
+}));
+vi.mock("../../state/utility-weight-learner.js", () => ({
+  UtilityWeightLearningEvent: Object.freeze({ RECORD_POTION_USE: "recordPotionUse" }),
+  runUtilityWeightLearning: mocks.runUtilityWeightLearning,
 }));
 
 beforeEach(() => {
@@ -55,5 +60,15 @@ describe("runBattleItemExecution auto-tune record failure", () => {
 
     expect(mocks.runBattleItemCommand).toHaveBeenCalledWith({ type: "clickItem", itemId: 111 });
     expect(mocks.runAutoTuneAutomation).toHaveBeenCalledWith({ type: "recordPotionUse" });
+  });
+
+  it("keeps clicked gems acted when utility recording fails", () => {
+    mocks.runAutoTuneAutomation.mockReturnValue(undefined);
+    mocks.runUtilityWeightLearning.mockImplementation(() => {
+      throw new Error("utility learning failed");
+    });
+
+    expect(applyPlan({ type: "gem" })).toBe(true);
+    expect(mocks.runUtilityWeightLearning).toHaveBeenCalledWith({ type: "recordPotionUse" });
   });
 });

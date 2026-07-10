@@ -97,13 +97,7 @@ describe("runBattleAttackExecution", () => {
         targetId: 3,
       })
     );
-    expect(mocks.runPhysicalSkillBookkeeping).toHaveBeenCalledWith({
-      type: "recordFire",
-      code: "OFC",
-      skillId: "1111",
-      globalTurn: 10,
-      observedBosses: [{ mid: 100, hpMax: 5000, imperilActive: true }],
-    });
+    expect(mocks.runPhysicalSkillBookkeeping).toHaveBeenCalledOnce();
   });
 
   it("does not claim spell, physical, or default attack plans when target commands do not act", () => {

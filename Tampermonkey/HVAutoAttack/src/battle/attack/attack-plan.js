@@ -138,6 +138,7 @@ function decidePhysicalUtilityPlan(opt, event, context) {
     type: "physical",
     skillId: winner.id,
     code: winner.code,
+    ocCost: winner.oc,
     defaultTargetId: firstMonster.id,
     mercifulTargetId,
   };

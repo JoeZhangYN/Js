@@ -11,6 +11,7 @@ const evidenceFailureTest = path.normalize(
 const recording = path.normalize("src/battle/battle-next-round-continuation-recording.js");
 const resultRecording = path.normalize("src/battle/battle-next-round-continuation-result.js");
 const actionLifecycle = path.normalize("src/battle/battle-action-lifecycle.js");
+const actionLifecycleDeps = path.normalize("src/battle/battle-action-lifecycle-deps.js");
 const httpFile = path.normalize("src/dom/http.js");
 const httpTest = path.normalize("src/dom/http.test.js");
 const violations = [];
@@ -27,6 +28,7 @@ const ownerText = read(owner);
 const recordingText = read(recording);
 const resultRecordingText = read(resultRecording);
 const actionLifecycleText = read(actionLifecycle);
+const actionLifecycleWiringText = `${actionLifecycleText}\n${read(actionLifecycleDeps)}`;
 const httpText = read(httpFile);
 
 for (const required of [
@@ -170,14 +172,14 @@ if (!ownerText.includes("battleNextRoundContinuationEventHandlers[event?.type]")
   violations.push(`${rel(owner)} must reject null events without next-round side effects`);
 }
 if (
-  !actionLifecycleText.includes("BattleNextRoundContinuationEvent.CONTINUE") ||
-  !actionLifecycleText.includes("runBattleNextRoundContinuation")
+  !actionLifecycleWiringText.includes("BattleNextRoundContinuationEvent.CONTINUE") ||
+  !actionLifecycleWiringText.includes("runBattleNextRoundContinuation")
 ) {
   violations.push(`${rel(actionLifecycle)} must continue next rounds through one entry`);
 }
 if (
   /RiddleEvent\.BATTLE_POST_RESULT|BattleRoundStartEvent\.ROUND_STARTED|runBattleRoundStartAutomation|unsafeWindow\.battle|#pane_completion|#battle_right|#battle_left|post\(/.test(
-    actionLifecycleText
+    actionLifecycleWiringText
   )
 ) {
   violations.push(`${rel(actionLifecycle)} must not own next-round continuation IO`);

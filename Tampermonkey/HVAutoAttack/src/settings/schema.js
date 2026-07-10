@@ -399,6 +399,17 @@ const OPTION_SCHEMA = [
     },
   },
   {
+    key: "utilityWeightLearning",
+    kind: "checkbox",
+    group: "Skill",
+    default: false,
+    label: {
+      l0: "物理技能资源效用学习（影子观测后应用，恶化自动回滚）",
+      l1: "物理技能資源效用學習（影子觀測後應用，惡化自動回滾）",
+      l2: "Physical skill resource-utility learning (shadow, apply, auto-rollback)",
+    },
+  },
+  {
     key: "mercifulBlow",
     kind: "checkbox",
     group: "Skill",

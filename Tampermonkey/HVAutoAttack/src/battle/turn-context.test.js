@@ -7,6 +7,7 @@ const mocks = vi.hoisted(() => ({
   runBattlePlayerVitals: vi.fn(),
   runCdRuntimeAutomation: vi.fn(),
   runOptionAutomation: vi.fn(),
+  runUtilityWeightLearning: vi.fn(),
 }));
 
 vi.mock("./battle-decision-runtime.js", () => ({
@@ -32,6 +33,10 @@ vi.mock("./snapshot.js", () => ({
   BattleSnapshotEvent: Object.freeze({ READ_CURRENT: "readCurrent" }),
   runBattleSnapshot: mocks.runBattleSnapshot,
 }));
+vi.mock("../state/utility-weight-learner.js", () => ({
+  UtilityWeightLearningEvent: Object.freeze({ READ_MULTIPLIERS: "readMultipliers" }),
+  runUtilityWeightLearning: mocks.runUtilityWeightLearning,
+}));
 
 const snap = { hp: 90, mp: 80, sp: 70, oc: 60 };
 const logTelemetry = { battleLog: [{ kind: "player-incoming", dmg: 10 }] };
@@ -47,6 +52,7 @@ beforeEach(() => {
     attackStatus: 2,
     lastSpiritToggleGlobalTurn: 97,
   });
+  mocks.runUtilityWeightLearning.mockReturnValue({ OFC: 1, FRD: 1, T3: 1, T2: 1, T1: 1 });
   mocks.runOptionAutomation.mockImplementation((event) => {
     if (event.type === "readBattleActionOptions") return { burstControlSwitch: false };
     if (event.type === "readField") return false;
@@ -58,7 +64,10 @@ describe("runBattleTurnContext", () => {
   it("prepares one turn context through the entry", () => {
     expect(runBattleTurnContext({ type: BattleTurnContextEvent.PREPARE })).toEqual({
       snap,
-      actionOptions: { burstControlSwitch: false },
+      actionOptions: {
+        burstControlSwitch: false,
+        skillUtilityMultipliers: { OFC: 1, FRD: 1, T3: 1, T2: 1, T1: 1 },
+      },
     });
 
     expect(mocks.runBattleSnapshot).toHaveBeenCalledWith({
@@ -67,6 +76,7 @@ describe("runBattleTurnContext", () => {
       logTelemetry: undefined,
     });
     expect(mocks.runOptionAutomation).toHaveBeenCalledWith({ type: "readBattleActionOptions" });
+    expect(mocks.runUtilityWeightLearning).toHaveBeenCalledWith({ type: "readMultipliers" });
     expect(mocks.runCdRuntimeAutomation).toHaveBeenNthCalledWith(1, { type: "incrementTurn" });
     expect(mocks.runCdRuntimeAutomation).toHaveBeenNthCalledWith(2, { type: "persist" });
     expect(mocks.runBattlePlayerVitals).toHaveBeenCalledWith({

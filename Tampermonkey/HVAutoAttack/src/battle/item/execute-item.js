@@ -1,7 +1,6 @@
 // SHELL: 把 decide-item 的 ItemPlan 翻译为 DOM 副作用 + 状态记账。
 // 只写不判断（判断全在 decide-item.js）；isOn/gE 探活属写路径安全读（与原 item.js 一致）。
 // 记账：autoTune 用药事件 / Spirit toggle cooldown / Focus command / recordPreDrink。
-import { AutoTuneEvent, runAutoTuneAutomation } from "../../state/auto-tune.js";
 import { BattleFocusCommandEvent, runBattleFocusCommand } from "../battle-focus-command.js";
 import { BattleItemCommandEvent, runBattleItemCommand } from "../battle-item-command.js";
 import {
@@ -13,6 +12,7 @@ import {
   runRecoveryLearningAutomation,
 } from "../../state/recovery-learner.js";
 import { recordActionEffectEvidence } from "../battle-action-effect-recording.js";
+import { recordConsumedRecoveryItem } from "./item-consumption-learning.js";
 
 const EVENT_APPLY_PLAN = "applyPlan";
 const EVENT_UNKNOWN_ITEM_EXECUTION = "unknownItemExecutionEvent";
@@ -38,15 +38,6 @@ const STALL_ATTEMPT_EXECUTORS = Object.freeze({
   focus: executeStallFocusAttempt,
   draught: executeStallDraughtAttempt,
 });
-
-function recordAutoTunePotionUse() {
-  try {
-    runAutoTuneAutomation({ type: AutoTuneEvent.RECORD_POTION_USE });
-    return { ok: true };
-  } catch (error) {
-    return { ok: false, error: error?.message || String(error) };
-  }
-}
 
 function recoveryAbs(snap) {
   return { hp: snap?.hpAbs, mp: snap?.mpAbs, sp: snap?.spAbs };
@@ -78,7 +69,7 @@ function executeGemPlan() {
   if (!itemExecutionActed(runBattleItemCommand({ type: BattleItemCommandEvent.CLICK_GEM }))) {
     return false;
   }
-  recordAutoTunePotionUse();
+  recordConsumedRecoveryItem();
   return true;
 }
 
@@ -96,7 +87,7 @@ function tryPotionCandidate(id, noWaste, snap) {
   };
   if (noWaste) event.beforeClick = () => recordPreDrink(id, snap);
   if (!itemExecutionActed(runBattleItemCommand(event))) return false;
-  recordAutoTunePotionUse();
+  recordConsumedRecoveryItem();
   return true;
 }
 
@@ -118,11 +109,13 @@ function executeStallFocusAttempt() {
 }
 
 function executeStallDraughtAttempt(attempt, snap) {
-  return runBattleItemCommand({
+  const acted = runBattleItemCommand({
     type: BattleItemCommandEvent.CLICK_ITEM,
     itemId: attempt.id,
     beforeClick: () => recordPreDrink(attempt.id, snap),
   });
+  if (itemExecutionActed(acted)) recordConsumedRecoveryItem();
+  return acted;
 }
 
 function executeScrollPlan(plan) {
