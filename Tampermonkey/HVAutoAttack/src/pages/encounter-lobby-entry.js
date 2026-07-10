@@ -2,11 +2,10 @@ import { executeEncounterEntry } from "./encounter-entry-execution.js";
 import { showEncounterGenerationBlock } from "./encounter-generation-block.js";
 import { EncounterPolicyEvent, runEncounterPolicy } from "./encounter-policy.js";
 
-export function planStoredEncounterEntry(state, event) {
+export function planStoredEncounterEntry(state) {
   return runEncounterPolicy({
     type: EncounterPolicyEvent.PLAN_ACTIVATION,
     state,
-    isIsekai: Boolean(event?.isIsekai),
   });
 }
 

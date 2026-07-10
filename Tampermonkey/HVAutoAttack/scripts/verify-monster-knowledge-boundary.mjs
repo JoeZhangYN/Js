@@ -112,24 +112,17 @@ function checkEntry() {
       `${syncImpl.replaceAll("\\", "/")} must expose runMonsterDbSyncAutomation(event)`
     );
   }
-  if (!/const monsterDbSyncEventHandlers\s*=\s*Object\.freeze\(/.test(syncText)) {
-    violations.push(`${syncImpl.replaceAll("\\", "/")} must route events through one table`);
-  }
-  if (/if\s*\(\s*event\.type\s*!==\s*EVENT_SYNC_REQUESTED/.test(syncText)) {
+  if (!syncText.includes("export function createMonsterDbSyncCapability")) {
     violations.push(
-      `${syncImpl.replaceAll("\\", "/")} must not route sync events through an if ladder`
+      `${syncImpl.replaceAll("\\", "/")} must bind data authority through a capability factory`
     );
   }
-  const syncEntryBody =
-    syncText.match(/export function runMonsterDbSyncAutomation\([^)]*\) \{[\s\S]*?\n\}/)?.[0] || "";
-  if (/monsterDbSyncEventHandlers\[event\.type\]/.test(syncEntryBody)) {
+  if (
+    !syncText.includes("if (event?.type !== EVENT_SYNC_REQUESTED) return undefined") ||
+    !syncText.includes("return currentMonsterDbSync.run(event, deps)")
+  ) {
     violations.push(
-      `${syncImpl.replaceAll("\\", "/")} entry must fail closed for invalid sync events`
-    );
-  }
-  if (!/monsterDbSyncEventHandlers\[event\?\.type\]/.test(syncEntryBody)) {
-    violations.push(
-      `${syncImpl.replaceAll("\\", "/")} entry must dispatch invalid sync events through optional type`
+      `${syncImpl.replaceAll("\\", "/")} factory-bound entry must fail closed through optional type`
     );
   }
   const syncTest = path.normalize("src/battle/monster-db-sync.test.js");

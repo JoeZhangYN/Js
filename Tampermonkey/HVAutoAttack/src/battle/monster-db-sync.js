@@ -2,13 +2,10 @@
 // 数据源：hv-monsterdb-data.skk.moe（明文 JSON 数组，MIT, Copyright (c) 2021 Sukka）。
 // 跨域 GET 走统一 gmXhr（@connect 已放开该域）；失败保留旧库（空库不致命，靠 scan 自采补充）。
 import { gmXhr } from "../dom/gm-xhr.js";
-import { isIsekai } from "../env.js";
+import { CURRENT_WORLD_POLICY } from "../core/current-runtime.js";
 import { MonsterDbStoreEvent, runMonsterDbStoreAutomation } from "../state/monster-db-store.js";
 import { TimeEvent, runTimeAutomation } from "../core/time.js";
 
-const DATA_URL = isIsekai
-  ? "https://hv-monsterdb-data.skk.moe/isekai.json"
-  : "https://hv-monsterdb-data.skk.moe/persistent.json";
 const META_LAST_SYNC = "lastSync";
 const EVENT_SYNC_REQUESTED = "syncRequested";
 
@@ -67,15 +64,19 @@ function errorText(error) {
   return error?.message || error?.name || String(error || "unknown");
 }
 
-function classifySyncFailure(stage, reason, detail = {}, error) {
-  const failure = { source: "monsterDbSync", stage, reason, url: DATA_URL, ...detail };
+function classifySyncFailure(dataUrl, stage, reason, detail = {}, error) {
+  const failure = { source: "monsterDbSync", stage, reason, url: dataUrl, ...detail };
   if (error?.failure) failure.cause = error.failure;
   if (error) failure.error = errorText(error);
   return failure;
 }
 
-function syncRejected(stage, reason, detail, error) {
-  return { synced: false, reason, failure: classifySyncFailure(stage, reason, detail, error) };
+function syncRejected(dataUrl, stage, reason, detail, error) {
+  return {
+    synced: false,
+    reason,
+    failure: classifySyncFailure(dataUrl, stage, reason, detail, error),
+  };
 }
 
 /**
@@ -83,7 +84,7 @@ function syncRejected(stage, reason, detail, error) {
  * @param {boolean} [force=false] 跳过每日 gate 强制刷新
  * @returns {Promise<{synced:boolean, count?:number, reason?:string}>}
  */
-async function syncMonsterDb({ force = false, deps }) {
+async function syncMonsterDb({ force = false, deps, dataUrl }) {
   if (!force) {
     const last = await deps.readMeta(META_LAST_SYNC);
     // 每日 gate；但画像库为空（v2 升级后首次 / 新装）时绕过，立即重建——否则旧 lastSync 残留致
@@ -96,7 +97,7 @@ async function syncMonsterDb({ force = false, deps }) {
     try {
       deps.gmXhr({
         method: "GET",
-        url: DATA_URL,
+        url: dataUrl,
         responseType: "json",
         timeout: 30000,
         onload: async (resp) => {
@@ -105,13 +106,13 @@ async function syncMonsterDb({ force = false, deps }) {
             try {
               list = JSON.parse(resp.responseText || "[]");
             } catch (error) {
-              resolve(syncRejected("parse", "parse-error", {}, error));
+              resolve(syncRejected(dataUrl, "parse", "parse-error", {}, error));
               return;
             }
           }
           if (!Array.isArray(list) || list.length === 0) {
             resolve(
-              syncRejected("validate", "empty", {
+              syncRejected(dataUrl, "validate", "empty", {
                 length: Array.isArray(list) ? list.length : null,
               })
             );
@@ -120,31 +121,48 @@ async function syncMonsterDb({ force = false, deps }) {
           try {
             await deps.storeProfiles(list.map(normalize));
           } catch (error) {
-            resolve(syncRejected("store-profiles", "store-error", { count: list.length }, error));
+            resolve(
+              syncRejected(dataUrl, "store-profiles", "store-error", { count: list.length }, error)
+            );
             return;
           }
           try {
             await deps.writeMeta(META_LAST_SYNC, deps.readUtcDateKey());
           } catch (error) {
-            resolve(syncRejected("write-meta", "store-error", { key: META_LAST_SYNC }, error));
+            resolve(
+              syncRejected(dataUrl, "write-meta", "store-error", { key: META_LAST_SYNC }, error)
+            );
             return;
           }
           resolve({ synced: true, count: list.length });
         },
-        onerror: (error) => resolve(syncRejected("network", "network-error", {}, error)),
-        ontimeout: (error) => resolve(syncRejected("timeout", "timeout", {}, error)),
+        onerror: (error) => resolve(syncRejected(dataUrl, "network", "network-error", {}, error)),
+        ontimeout: (error) => resolve(syncRejected(dataUrl, "timeout", "timeout", {}, error)),
       });
     } catch (error) {
-      resolve(syncRejected("request-start", "network-error", {}, error));
+      resolve(syncRejected(dataUrl, "request-start", "network-error", {}, error));
     }
   });
 }
 
-const monsterDbSyncEventHandlers = Object.freeze({
-  [EVENT_SYNC_REQUESTED]: (event, deps) =>
-    syncMonsterDb({ force: Boolean(event.force), deps: makeDeps(deps) }),
+export function createMonsterDbSyncCapability({ dataUrl }) {
+  if (!dataUrl) throw new TypeError("Monster DB sync capability requires a data URL");
+  return Object.freeze({
+    run(event = { type: EVENT_SYNC_REQUESTED }, deps = {}) {
+      if (event?.type !== EVENT_SYNC_REQUESTED) return undefined;
+      return syncMonsterDb({
+        force: Boolean(event.force),
+        deps: makeDeps(deps),
+        dataUrl,
+      });
+    },
+  });
+}
+
+const currentMonsterDbSync = createMonsterDbSyncCapability({
+  dataUrl: CURRENT_WORLD_POLICY.monsterKnowledge.dataUrl,
 });
 
 export function runMonsterDbSyncAutomation(event = { type: EVENT_SYNC_REQUESTED }, deps = {}) {
-  return monsterDbSyncEventHandlers[event?.type]?.(event, deps);
+  return currentMonsterDbSync.run(event, deps);
 }

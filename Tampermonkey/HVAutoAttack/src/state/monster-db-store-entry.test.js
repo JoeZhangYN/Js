@@ -7,6 +7,35 @@ beforeEach(() => {
 });
 
 describe("runMonsterDbStoreAutomation entry behavior", () => {
+  it("keeps two factory-bound database authorities isolated behind the same event calls", async () => {
+    const { createMonsterDbStoreCapability, MonsterDbStoreEvent } =
+      await loadStoreWithIndexedDb(makeFakeIndexedDb());
+    const persistent = createMonsterDbStoreCapability(
+      { dbName: "hvAA_monsterdb" },
+      { indexedDb: makeFakeIndexedDb() }
+    );
+    const isekai = createMonsterDbStoreCapability(
+      { dbName: "hvAA_monsterdb_isekai" },
+      { indexedDb: makeFakeIndexedDb() }
+    );
+
+    await persistent.run({
+      type: MonsterDbStoreEvent.PROFILE_WRITE,
+      info: { monsterId: 7, worldValue: "persistent" },
+    });
+    await isekai.run({
+      type: MonsterDbStoreEvent.PROFILE_WRITE,
+      info: { monsterId: 7, worldValue: "isekai" },
+    });
+
+    await expect(
+      persistent.run({ type: MonsterDbStoreEvent.PROFILE_READ, monsterId: 7 })
+    ).resolves.toMatchObject({ worldValue: "persistent" });
+    await expect(
+      isekai.run({ type: MonsterDbStoreEvent.PROFILE_READ, monsterId: 7 })
+    ).resolves.toMatchObject({ worldValue: "isekai" });
+  });
+
   it("reads and writes monster profiles through one event entry", async () => {
     const { MonsterDbStoreEvent, runMonsterDbStoreAutomation } =
       await loadStoreWithIndexedDb(makeFakeIndexedDb());

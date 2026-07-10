@@ -20,6 +20,7 @@ const SRC_DIR = fileURLToPath(new URL("../src", import.meta.url));
 // 豁免：page-kind.js（SOT 实现）+ 第三方移植脚本（hv-utils 等 sloppy-mode 不能 ESM import page-kind，
 // 其 e-hentai 检测是自身 news.php 功能的独立逻辑，非 HVAA 页面分发，不纳入 SOT 收口）。
 const EXEMPT = [
+  "core/ingress-identity.js",
   "pages/page-kind.js",
   "i18n/hv-utils.js",
   "i18n/equip-translate.js",

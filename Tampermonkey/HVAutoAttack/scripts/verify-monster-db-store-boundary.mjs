@@ -4,6 +4,7 @@ import path from "node:path";
 const root = process.cwd();
 const srcDir = path.join(root, "src");
 const owner = path.normalize("src/state/monster-db-store.js");
+const adapter = path.normalize("src/state/monster-db-store-indexeddb.js");
 const ownerTest = path.normalize("src/state/monster-db-store.test.js");
 const failureEvidenceTest = path.normalize("src/state/monster-db-store-failure-evidence.test.js");
 const diagnosticKeys = path.normalize("src/core/diagnostic-evidence-keys.js");
@@ -56,33 +57,26 @@ function checkFile(file) {
 walk(srcDir);
 
 const ownerText = fs.readFileSync(path.join(root, owner), "utf8");
+const adapterText = fs.readFileSync(path.join(root, adapter), "utf8");
+const implementationText = `${ownerText}\n${adapterText}`;
 if (!/export const MonsterDbStoreEvent\s*=\s*Object\.freeze\(/.test(ownerText)) {
   violations.push(`${owner.replaceAll("\\", "/")} must expose MonsterDbStoreEvent`);
 }
 if (!/export function runMonsterDbStoreAutomation\(\s*event\b/.test(ownerText)) {
   violations.push(`${owner.replaceAll("\\", "/")} must expose runMonsterDbStoreAutomation(event)`);
 }
-const entryBody =
-  ownerText.match(/export function runMonsterDbStoreAutomation\([^)]*\) \{[\s\S]*?\n\}/)?.[0] || "";
-if (
-  !/const monsterDbStoreEventHandlers\s*=\s*Object\.freeze\(\{[\s\S]*\[EVENT_PROFILE_READ\]/.test(
-    ownerText
-  )
-) {
+if (!ownerText.includes("export function createMonsterDbStoreCapability")) {
   violations.push(
-    `${owner.replaceAll("\\", "/")} must route events through a frozen handler table`
+    `${owner.replaceAll("\\", "/")} must expose a database-name-bound capability factory`
   );
 }
-if (/event\.type\s*===/.test(entryBody)) {
-  violations.push(`${owner.replaceAll("\\", "/")} entry must dispatch by handler table`);
-}
-if (entryBody.includes("event.type")) {
-  violations.push(`${owner.replaceAll("\\", "/")} entry must reject null events without throwing`);
-}
-if (!entryBody.includes("event?.type")) {
+if (!ownerText.includes("return handlers[event?.type]?.(event)")) {
   violations.push(
-    `${owner.replaceAll("\\", "/")} entry must fail closed for unknown or null events`
+    `${owner.replaceAll("\\", "/")} capability must fail closed for unknown or null events`
   );
+}
+if (/isIsekai|\.\.\/env\.js/.test(ownerText)) {
+  violations.push(`${owner.replaceAll("\\", "/")} must receive its DB authority at composition`);
 }
 for (const name of legacy) {
   if (new RegExp(`export\\s+function\\s+${name}\\s*\\(`).test(ownerText)) {
@@ -107,11 +101,11 @@ for (const required of [
   "transaction-abort",
   "dbPromise = null",
 ]) {
-  if (!ownerText.includes(required)) {
-    violations.push(`${owner.replaceAll("\\", "/")} must own IndexedDB failure ${required}`);
+  if (!implementationText.includes(required)) {
+    violations.push(`${adapter.replaceAll("\\", "/")} must own IndexedDB failure ${required}`);
   }
 }
-if (/\bconsole\.(?:log|warn|error|info|debug)\s*\(/.test(ownerText)) {
+if (/\bconsole\.(?:log|warn|error|info|debug)\s*\(/.test(implementationText)) {
   violations.push(
     `${owner.replaceAll("\\", "/")} monster db store diagnostics must use the typed diagnostic console entry`
   );

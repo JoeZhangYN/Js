@@ -53,7 +53,7 @@ for (const required of ["runRepairStateParser", "RepairStateParseEvent"]) {
 const entryBody =
   ownerText.match(/export function runRepairStateParser\([^)]*\) \{[\s\S]*?\n\}/)?.[0] || "";
 if (
-  !/const repairStateParseEventHandlers\s*=\s*Object\.freeze\(\{[\s\S]*\[EVENT_PARSE_PERSISTENT\]/.test(
+  !/const repairStateParseEventHandlers\s*=\s*Object\.freeze\(\{[\s\S]*\[EVENT_PARSE_ARMORY\]/.test(
     ownerText
   )
 ) {
@@ -78,11 +78,11 @@ if (!fs.existsSync(path.join(root, ownerTest))) {
   violations.push(`${ownerTest.replaceAll("\\", "/")} must cover repair state parser entry`);
 } else {
   const ownerTestText = fs.readFileSync(path.join(root, ownerTest), "utf8");
-  if (!ownerTestText.includes("rejects unknown parser events without choosing a world parser")) {
+  if (!ownerTestText.includes("rejects unknown and null parser events")) {
     violations.push(`${ownerTest.replaceAll("\\", "/")} must cover unknown parser events`);
   }
   if (
-    !ownerTestText.includes("rejects null parser events without choosing a world parser") ||
+    !ownerTestText.includes("rejects unknown and null parser events") ||
     !ownerTestText.includes("runRepairStateParser(null")
   ) {
     violations.push(`${ownerTest.replaceAll("\\", "/")} must cover null parser events`);

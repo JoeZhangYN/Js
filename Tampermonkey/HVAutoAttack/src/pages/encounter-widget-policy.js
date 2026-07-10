@@ -56,7 +56,6 @@ function planWidgetClick(event) {
     type: EncounterPolicyEvent.PLAN_ACTIVATION,
     state: event.state,
     force: Boolean(event.force),
-    isIsekai: Boolean(event.isIsekai),
   });
   if (plan.action === "enter") {
     if (event.pageType === "eh") {
@@ -135,7 +134,6 @@ function planWidgetEngage(event) {
     type: EncounterPolicyEvent.PLAN_ACTIVATION,
     state: event.state,
     force: true,
-    isIsekai: Boolean(event.isIsekai),
   });
   if (plan.action !== "enter" || event.pageType === "ba") {
     return { ...readWidgetState(plan.state), action: "none" };

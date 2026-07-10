@@ -14,14 +14,16 @@ function rel(file) {
 
 const ownerText = fs.readFileSync(path.join(root, owner), "utf8");
 for (const required of [
-  "warnStorageReadFailure",
+  "createStorageCapability",
+  "CURRENT_WORLD_POLICY.storage",
+  "warnReadFailure",
   'capability: "storageRead"',
   "STORAGE_READ_FAILURE_KEY",
   "HVAA:lastStorageReadFailure",
   "[HVAA] storage read failed",
   "DiagnosticConsoleEvent.WARN",
   "runDiagnosticConsoleAutomation",
-  "parseLocalStorageValue",
+  "JSON.parse(raw)",
   "localStorageJson",
   "GM_getValue",
   "gmValue !== undefined",
@@ -39,17 +41,11 @@ for (const required of ["setValue('option') 写入缺 version 字段", "runOptio
     violations.push(`${rel(owner)} must keep incomplete option write advisory ${required}`);
   }
 }
-if (
-  !/catch\s*\(error\)\s*\{[\s\S]*warnStorageReadFailure\(item,\s*key,\s*"GM_getValue"/.test(
-    ownerText
-  )
-) {
+if (!/catch\s*\(error\)\s*\{[\s\S]*warnReadFailure\(item,\s*key,\s*"GM_getValue"/.test(ownerText)) {
   violations.push(`${rel(owner)} must classify GM_getValue read failures`);
 }
 if (
-  !/catch\s*\(error\)\s*\{[\s\S]*warnStorageReadFailure\(item,\s*key,\s*"localStorageJson"/.test(
-    ownerText
-  )
+  !/catch\s*\(error\)\s*\{[\s\S]*warnReadFailure\(item,\s*key,\s*"localStorageJson"/.test(ownerText)
 ) {
   violations.push(`${rel(owner)} must classify corrupted localStorage JSON`);
 }

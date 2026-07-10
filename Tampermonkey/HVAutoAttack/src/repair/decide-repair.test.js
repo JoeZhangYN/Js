@@ -10,7 +10,7 @@ function iEquip(id, materials) {
   return { id: String(id), conditionPct: null, materials };
 }
 function state(equips, over = {}) {
-  return { isIsekai: false, token: null, equips, ...over };
+  return { token: null, equips, ...over };
 }
 
 function decideRepair(option, repairState, repairedIds) {
@@ -92,12 +92,12 @@ describe("repair decision entry — 止损（repairedIds）", () => {
 describe("repair decision entry — 异世界（conditionPct=null，材料存在性判定）", () => {
   it("有需求材料 → 需修", () => {
     const mats = [{ matId: "50000", name: "Repair Outfit", count: 3 }];
-    const r = decideRepair({ repairValue: 50 }, state([iEquip(100, mats)], { isIsekai: true }), []);
+    const r = decideRepair({ repairValue: 50 }, state([iEquip(100, mats)]), []);
     expect(r).toEqual({ action: "repair", repairIds: ["100"], materials: mats });
   });
 
   it("无需求材料 → proceed（满修件 parse 已剔除，这里兜底）", () => {
-    const r = decideRepair({ repairValue: 50 }, state([iEquip(100, [])], { isIsekai: true }), []);
+    const r = decideRepair({ repairValue: 50 }, state([iEquip(100, [])]), []);
     expect(r).toEqual({ action: "proceed" });
   });
 });

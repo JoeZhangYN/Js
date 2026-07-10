@@ -99,10 +99,10 @@ if (!lobbyText.includes("DayRecordEvent.REFRESH_AND_SCHEDULE_NEXT_UTC_DAY")) {
   );
 }
 if (
-  !/function rerunLobbyPageReady\(\) \{\s*return runLobbyAutomation\(\s*\{\s*type:\s*EVENT_PAGE_READY\s*\}\s*\);\s*\}/.test(
+  !/function rerun\(\) \{\s*return capability\.run\(\{ type: EVENT_PAGE_READY \}\);\s*\}/.test(
     lobbyText
   ) ||
-  !/rerun:\s*rerunLobbyPageReady/.test(lobbyText)
+  !/rerun:\s*context\.rerun/.test(lobbyText)
 ) {
   violations.push(
     `${lobby.replaceAll("\\", "/")} must let the UTC day rollover rerun the lobby page-ready workflow`

@@ -1,6 +1,5 @@
-// GM_* / localStorage 持久化封装。storagePrefix 从 env.js 注入（单例）。
-// 行为对齐原 setValue/getValue/delValue：未装 GM_* 时 fallback 到 window.localStorage。
-import { storagePrefix } from "../env.js";
+// GM_* / localStorage 持久化能力。世界前缀由能力工厂闭包绑定，业务调用不接收 World。
+import { CURRENT_WORLD_POLICY } from "../core/current-runtime.js";
 import {
   DiagnosticConsoleEvent,
   runDiagnosticConsoleAutomation,
@@ -13,110 +12,88 @@ function errorText(error) {
   return error?.message || String(error);
 }
 
-/**
- * 写入持久化数据。
- * @param {string} item key（不含 prefix）
- * @param {*} value 任意可序列化值；非字符串走 JSON.stringify
- */
-export function setValue(item, value) {
-  const key = storagePrefix + item;
-  // 防退化：完整 option 必带 version（init.js 装填时对齐）。缺 version = 疑似散落 `g("option")||{}`
-  // 残缺写覆盖完整配置（现象①根因）。只 warn 不阻断（advisory），引导改走 option 事件入口。
-  if (item === STORAGE_KEYS.OPTION && value && typeof value === "object" && !value.version) {
-    runDiagnosticConsoleAutomation({
-      type: DiagnosticConsoleEvent.WARN,
-      args: [
-        "[HVAA] setValue('option') 写入缺 version 字段，疑似残缺 option 覆盖；应走 runOptionAutomation(event) 统一写入口:",
-        value,
-      ],
-    });
-  }
-  if (typeof GM_setValue === "undefined") {
-    window.localStorage[key] = typeof value === "string" ? value : JSON.stringify(value);
-  } else {
-    GM_setValue(key, value);
-  }
-}
+export function createStorageCapability({ prefix }, ports = {}) {
+  const localStorageOf = () => ports.localStorage || window.localStorage;
+  const diagnostic =
+    ports.warn ||
+    ((...args) => runDiagnosticConsoleAutomation({ type: DiagnosticConsoleEvent.WARN, args }));
 
-function warnStorageReadFailure(item, key, source, error) {
-  const evidence = {
-    capability: "storageRead",
-    item,
-    key,
-    source,
-    error: errorText(error),
-  };
-  try {
-    globalThis.sessionStorage?.setItem(STORAGE_READ_FAILURE_KEY, JSON.stringify(evidence));
-  } catch {
-    // Read fallback must not depend on diagnostic storage.
-  }
-  runDiagnosticConsoleAutomation({
-    type: DiagnosticConsoleEvent.WARN,
-    args: ["[HVAA] storage read failed", evidence],
-  });
-}
-
-function parseLocalStorageValue(item, key, raw) {
-  try {
-    return JSON.parse(raw);
-  } catch (error) {
-    warnStorageReadFailure(item, key, "localStorageJson", error);
-    return null;
-  }
-}
-
-/**
- * 读取持久化数据。
- * @param {string} item key（不含 prefix）
- * @param {boolean=} toJSON true 时对 localStorage fallback 走 JSON.parse
- * @returns {*}
- */
-export function getValue(item, toJSON) {
-  const key = storagePrefix + item;
-  if (typeof GM_getValue !== "undefined") {
+  function warnReadFailure(item, key, source, error) {
+    const evidence = { capability: "storageRead", item, key, source, error: errorText(error) };
     try {
-      const gmValue = GM_getValue(key);
-      if (gmValue !== undefined) return gmValue;
+      globalThis.sessionStorage?.setItem(STORAGE_READ_FAILURE_KEY, JSON.stringify(evidence));
+    } catch {
+      // Read fallback must not depend on diagnostic storage.
+    }
+    diagnostic("[HVAA] storage read failed", evidence);
+  }
+
+  function setValue(item, value) {
+    const key = prefix + item;
+    if (item === STORAGE_KEYS.OPTION && value && typeof value === "object" && !value.version) {
+      diagnostic(
+        "[HVAA] setValue('option') 写入缺 version 字段，疑似残缺 option 覆盖；应走 runOptionAutomation(event) 统一写入口:",
+        value
+      );
+    }
+    const gmSet = ports.gmSetValue || globalThis.GM_setValue;
+    if (typeof gmSet === "function") gmSet(key, value);
+    else localStorageOf()[key] = typeof value === "string" ? value : JSON.stringify(value);
+  }
+
+  function getValue(item, toJSON) {
+    const key = prefix + item;
+    const gmGet = ports.gmGetValue || globalThis.GM_getValue;
+    if (typeof gmGet === "function") {
+      try {
+        const gmValue = gmGet(key);
+        if (gmValue !== undefined) return gmValue;
+      } catch (error) {
+        warnReadFailure(item, key, "GM_getValue", error);
+      }
+    }
+    try {
+      const storage = localStorageOf();
+      if (!(key in storage)) return null;
+      const raw = storage[key];
+      if (!toJSON) return raw;
+      try {
+        return JSON.parse(raw);
+      } catch (error) {
+        warnReadFailure(item, key, "localStorageJson", error);
+        return null;
+      }
     } catch (error) {
-      warnStorageReadFailure(item, key, "GM_getValue", error);
+      warnReadFailure(item, key, "localStorage", error);
+      return null;
     }
   }
-  try {
-    if (!(key in window.localStorage)) return null;
-    const raw = window.localStorage[key];
-    return toJSON ? parseLocalStorageValue(item, key, raw) : raw;
-  } catch (error) {
-    warnStorageReadFailure(item, key, "localStorage", error);
-    return null;
+
+  function delValue(item) {
+    if (typeof item === "number") {
+      if (item === 0) delValue(STORAGE_KEYS.DISABLED);
+      else if (item === 1) {
+        delValue(STORAGE_KEYS.ROUND_NOW);
+        delValue(STORAGE_KEYS.ROUND_ALL);
+        delValue(STORAGE_KEYS.MONSTER_STATUS);
+      } else if (item === 2) {
+        delValue(STORAGE_KEYS.ROUND_TYPE);
+        delValue(STORAGE_KEYS.BATTLE_CODE);
+        delValue(0);
+        delValue(1);
+      }
+      return;
+    }
+    const key = prefix + item;
+    const gmDelete = ports.gmDeleteValue || globalThis.GM_deleteValue;
+    if (typeof gmDelete === "function") gmDelete(key);
+    else localStorageOf().removeItem(key);
   }
+
+  return Object.freeze({ setValue, getValue, delValue });
 }
 
-/**
- * 删除持久化数据。支持字符串 key 或快捷 number：
- * 0 → 清 disabled；1 → 清 round* + monsterStatus；2 → 清 roundType + battleCode + 0+1。
- * @param {string|number} item
- */
-export function delValue(item) {
-  const key = storagePrefix + item;
-  if (typeof item === "string") {
-    if (typeof GM_deleteValue === "undefined") {
-      window.localStorage.removeItem(key);
-    } else {
-      GM_deleteValue(key);
-    }
-  } else if (typeof item === "number") {
-    if (item === 0) {
-      delValue(STORAGE_KEYS.DISABLED);
-    } else if (item === 1) {
-      delValue(STORAGE_KEYS.ROUND_NOW);
-      delValue(STORAGE_KEYS.ROUND_ALL);
-      delValue(STORAGE_KEYS.MONSTER_STATUS);
-    } else if (item === 2) {
-      delValue(STORAGE_KEYS.ROUND_TYPE);
-      delValue(STORAGE_KEYS.BATTLE_CODE);
-      delValue(0);
-      delValue(1);
-    }
-  }
-}
+const currentStorage = createStorageCapability(CURRENT_WORLD_POLICY.storage);
+export const setValue = currentStorage.setValue;
+export const getValue = currentStorage.getValue;
+export const delValue = currentStorage.delValue;

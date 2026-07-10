@@ -12,7 +12,6 @@
 //   在 cap/余额/库存内自动买齐再修；超限/买不到 → 停机 + 标题三语告警（保留「修不动止损」语义）。
 import { OptionEvent, runOptionAutomation } from "../state/option.js";
 import { _alert } from "../core/lang.js";
-import { isIsekai } from "../env.js";
 import { IdleArenaEvent, runIdleArenaAutomation } from "../arena/idle-arena.js";
 import { RepairBackendEvent, runRepairBackendAutomation } from "./repair-backend.js";
 import { RepairDecisionEvent, runRepairDecision } from "./decide-repair.js";
@@ -108,7 +107,7 @@ function runRepair(deps = {}) {
     repairBuyMaterials: readOptionField("repairBuyMaterials", false),
     repairCreditCap: readOptionField("repairCreditCap", 50000),
   };
-  const backend = makeBackend({ type: RepairBackendEvent.CREATE, isIsekai });
+  const backend = makeBackend({ type: RepairBackendEvent.CREATE });
   const repairedIds = []; // 本会话止损态：已提交修理的 id 累积（decideRepair 据此判 stuck）
 
   // 全达标 / 无需修理 → 若开了闲置竞技场，安排下一场（idleArena 调度收归本能力，init.js else-if 互斥）。

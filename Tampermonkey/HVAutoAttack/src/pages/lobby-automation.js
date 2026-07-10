@@ -9,20 +9,12 @@ import { EncounterEvent, runEncounterAutomation } from "./encounter.js";
 import { isAutomaticEncounterEnabled } from "./encounter-option-gate.js";
 import { AbilityAoeEvent, runAbilityAoeAutomation } from "./ability-page.js";
 import { BattleRuntimeEvent, runBattleRuntimeAutomation } from "../battle/battle-runtime.js";
+import { CURRENT_WORLD_POLICY } from "../core/current-runtime.js";
 
 const EVENT_PAGE_READY = "pageReady";
-const EVENT_ISEKAI_PAGE_READY = "isekaiPageReady";
-const pendingLobbyFlows = new Map();
 
 export const LobbyEvent = Object.freeze({
   PAGE_READY: EVENT_PAGE_READY,
-  ISEKAI_PAGE_READY: EVENT_ISEKAI_PAGE_READY,
-});
-
-const lobbyEventHandlers = Object.freeze({
-  [EVENT_PAGE_READY]: () => runLobbyReadyFlow(LOBBY_READY_FLOW_STEPS, rerunLobbyPageReady),
-  [EVENT_ISEKAI_PAGE_READY]: () =>
-    runLobbyReadyFlow(ISEKAI_LOBBY_READY_FLOW_STEPS, rerunIsekaiLobbyPageReady),
 });
 
 const LOBBY_READY_FLOW_STEPS = [
@@ -61,14 +53,6 @@ function runNextBattleAutomation() {
   }
 }
 
-function rerunLobbyPageReady() {
-  return runLobbyAutomation({ type: EVENT_PAGE_READY });
-}
-
-function rerunIsekaiLobbyPageReady() {
-  return runLobbyAutomation({ type: EVENT_ISEKAI_PAGE_READY });
-}
-
 function clearBattleSession() {
   runBattleRuntimeAutomation({ type: BattleRuntimeEvent.CLEAR_SESSION });
   return false;
@@ -92,12 +76,11 @@ function runQuickSiteLobbyReady() {
   return false;
 }
 
-async function handleLobbyEncounter() {
+async function handleLobbyEncounter(context) {
   if (!isAutomaticEncounterEnabled()) return false;
   const encounterOutcome = await runEncounterAutomation({
     type: EncounterEvent.LOBBY_TICK,
-    isIsekai: false,
-    rerun: rerunLobbyPageReady,
+    rerun: context.rerun,
   });
   return encounterOutcome?.claimed === true || encounterOutcome?.blocked === true;
 }
@@ -113,16 +96,35 @@ async function runLobbyReadyFlow(steps, rerun) {
   }
 }
 
+export function createLobbyAutomationCapability({ randomEncounter }) {
+  const steps = randomEncounter ? LOBBY_READY_FLOW_STEPS : ISEKAI_LOBBY_READY_FLOW_STEPS;
+  const pendingFlows = new Map();
+  let capability;
+  function rerun() {
+    return capability.run({ type: EVENT_PAGE_READY });
+  }
+  capability = Object.freeze({
+    run(event = { type: EVENT_PAGE_READY }) {
+      if (event?.type !== EVENT_PAGE_READY) return Promise.resolve(undefined);
+      if (pendingFlows.has(EVENT_PAGE_READY)) return pendingFlows.get(EVENT_PAGE_READY);
+      const pending = Promise.resolve()
+        .then(() => runLobbyReadyFlow(steps, rerun))
+        .finally(() => {
+          if (pendingFlows.get(EVENT_PAGE_READY) === pending) {
+            pendingFlows.delete(EVENT_PAGE_READY);
+          }
+        });
+      pendingFlows.set(EVENT_PAGE_READY, pending);
+      return pending;
+    },
+  });
+  return capability;
+}
+
+const currentLobbyAutomation = createLobbyAutomationCapability({
+  randomEncounter: CURRENT_WORLD_POLICY.features.randomEncounter,
+});
+
 export function runLobbyAutomation(event = { type: EVENT_PAGE_READY }) {
-  const handler = lobbyEventHandlers[event?.type];
-  if (!handler) return Promise.resolve(undefined);
-  const identity = event?.type;
-  if (pendingLobbyFlows.has(identity)) return pendingLobbyFlows.get(identity);
-  const pending = Promise.resolve()
-    .then(() => handler(event))
-    .finally(() => {
-      if (pendingLobbyFlows.get(identity) === pending) pendingLobbyFlows.delete(identity);
-    });
-  pendingLobbyFlows.set(identity, pending);
-  return pending;
+  return currentLobbyAutomation.run(event);
 }

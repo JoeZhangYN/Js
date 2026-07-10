@@ -148,7 +148,7 @@ function parseEquip(container) {
     "?s=Bazaar&ss=am&screen=modify&",
   ];
   const showCompare =
-    /^(\/isekai)?\/equip/.test(location.pathname) ||
+    /\/equip(?:\/|$)/.test(location.pathname) ||
     (document.getElementById("equipinfo")?.contains(container) &&
       location.search !== "" &&
       excludePatterns.every((pattern) => !location.search.includes(pattern)));

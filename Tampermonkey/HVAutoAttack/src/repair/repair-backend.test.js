@@ -1,11 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { RepairBackendEvent, runRepairBackendAutomation } from "./repair-backend.js";
 
-/** happy-dom 全局 DOMParser 造主世界 forge 页 Document。 */
-function doc(html) {
-  return new DOMParser().parseFromString(html, "text/html");
-}
-
 /** 序列化 fake post：按调用顺序回放 responses[i]，记录每次 (href, parm, type)。 */
 function fakePost(responses) {
   const calls = [];
@@ -16,17 +11,15 @@ function fakePost(responses) {
   return { post, calls };
 }
 
-function makeRepairBackend(isIsekai, post) {
-  return runRepairBackendAutomation({ type: RepairBackendEvent.CREATE, isIsekai }, { post });
+function makeRepairBackend(post) {
+  return runRepairBackendAutomation({ type: RepairBackendEvent.CREATE }, { post });
 }
 
 describe("repair backend entry", () => {
   it("rejects unknown backend events without creating a backend", () => {
     const { post } = fakePost([]);
 
-    expect(
-      runRepairBackendAutomation({ type: "unknown", isIsekai: false }, { post })
-    ).toBeUndefined();
+    expect(runRepairBackendAutomation({ type: "unknown" }, { post })).toBeUndefined();
   });
 
   it("rejects null backend events without creating a backend", () => {
@@ -37,13 +30,13 @@ describe("repair backend entry", () => {
   });
 });
 
-describe("makeRepairBackend 主世界 Armory repair authority", () => {
+describe("world-invariant Armory repair authority", () => {
   it("uses Bazaar Armory repair page and postoken submit body", () => {
     const pageText =
       `<form id="equipform"><input name="postoken" value="tokp"></form>` +
       `<script>var eqitems={"5":{"m":{"50000":2}}};var itemdata={"50000":{"n":"Repair Kit","c":0}};</script>`;
     const { post, calls } = fakePost([pageText, ""]);
-    const backend = makeRepairBackend(false, post);
+    const backend = makeRepairBackend(post);
     let state;
     backend.fetchState((s) => {
       state = s;
@@ -54,7 +47,6 @@ describe("makeRepairBackend 主世界 Armory repair authority", () => {
       type: "text",
     });
     expect(state).toMatchObject({
-      isIsekai: false,
       token: "tokp",
       equips: [
         {
@@ -71,13 +63,13 @@ describe("makeRepairBackend 主世界 Armory repair authority", () => {
   });
 });
 
-describe("makeRepairBackend 异世界（token 由 fetchState 取、submitRepair 用）", () => {
-  it("submitRepair 带 postoken + eqids[]", () => {
+describe("repair session token", () => {
+  it("uses the postoken returned by fetchState in submitRepair", () => {
     const pageText =
       `<form id="equipform"><input name="postoken" value="tok9"></form>` +
       `<script>var eqitems={"5":{"m":{"50000":2}}};var itemdata={"50000":{"n":"Repair Kit","c":0}};</script>`;
     const { post, calls } = fakePost([pageText, ""]);
-    const backend = makeRepairBackend(true, post);
+    const backend = makeRepairBackend(post);
     let state;
     backend.fetchState((s) => {
       state = s;

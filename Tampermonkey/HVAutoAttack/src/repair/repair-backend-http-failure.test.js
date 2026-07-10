@@ -1,12 +1,12 @@
 import { describe, expect, it } from "vitest";
 import { RepairBackendEvent, runRepairBackendAutomation } from "./repair-backend.js";
 
-function createBackendForTest(isIsekai, post) {
-  return runRepairBackendAutomation({ type: RepairBackendEvent.CREATE, isIsekai }, { post });
+function createBackendForTest(post) {
+  return runRepairBackendAutomation({ type: RepairBackendEvent.CREATE }, { post });
 }
 
 describe("repair backend HTTP failures", () => {
-  it("routes isekai fetch-state HTTP failures to the failure callback", () => {
+  it("routes fetch-state HTTP failures to the failure callback", () => {
     const failure = { kind: "networkError", href: "?s=Bazaar&ss=am&screen=repair", retries: 4 };
     const post = (_href, _func, _parm, _type, onFailure) => onFailure(failure);
     const onState = () => {
@@ -16,14 +16,14 @@ describe("repair backend HTTP failures", () => {
       expect(value).toBe(failure);
     };
 
-    createBackendForTest(true, post).fetchState(onState, onFailure);
+    createBackendForTest(post).fetchState(onState, onFailure);
   });
 
-  it("routes persistent Armory repair HTTP failures to the failure callback", () => {
+  it("routes Armory HTTP status failures to the failure callback", () => {
     const failure = { kind: "httpStatus", href: "?s=Bazaar&ss=am&screen=repair", status: 500 };
     const post = (_href, _func, _parm, _type, onFailure) => onFailure(failure);
 
-    createBackendForTest(false, post).fetchState(
+    createBackendForTest(post).fetchState(
       () => {},
       (value) => {
         expect(value).toBe(failure);
@@ -35,7 +35,7 @@ describe("repair backend HTTP failures", () => {
     const failure = { kind: "networkError", href: "?s=Bazaar&ss=am&screen=repair", retries: 4 };
     const post = (_href, _func, _parm, _type, onFailure) => onFailure(failure);
 
-    createBackendForTest(false, post).submitRepair(
+    createBackendForTest(post).submitRepair(
       ["7"],
       () => {},
       (value) => {

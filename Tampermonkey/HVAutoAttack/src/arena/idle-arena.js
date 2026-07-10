@@ -10,7 +10,6 @@ import {
   runNavigationAutomation,
 } from "../core/navigate.js";
 import { pollUntil } from "../core/poll.js";
-import { isIsekai } from "../env.js";
 import { StaminaEvent, runStaminaAutomation } from "../state/stamina.js";
 import { DayRecordEvent, runDayRecordAutomation } from "../state/day-record.js";
 import { IDLE_ARENA_TOKEN_URLS, collectIdleArenaToken } from "./idle-arena-token.js";
@@ -147,9 +146,7 @@ function startNextBattle() {
       if (!idleArenaFailure.persistIdleArenaProgress("battle-start-persist", arena)) return;
       reloadCurrentPage();
     },
-    isIsekai
-      ? `initid=${String(id)}&postoken=${arena.token.postoken}`
-      : `initid=${String(id)}&postoken=${arena.token.postoken}`,
+    `initid=${String(id)}&postoken=${arena.token.postoken}`,
     undefined,
     (failure) =>
       idleArenaFailure.recordIdleArenaRequestFailure("battle-start", arenaBeforeStart, failure)

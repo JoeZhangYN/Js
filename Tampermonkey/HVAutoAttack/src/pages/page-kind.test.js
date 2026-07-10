@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { PageKind, PageKindEvent, PageWorld, runPageKindAutomation } from "./page-kind.js";
+import { GameWorld, SiteIdentity } from "../core/ingress-identity.js";
+import { PageKind, PageKindEvent, runPageKindAutomation } from "./page-kind.js";
 
 function docWith(html) {
   const doc = document.implementation.createHTMLDocument("");
@@ -19,7 +20,11 @@ describe("runPageKindAutomation", () => {
         document: docWith('<div id="navbar"></div>'),
         location: locationWith({ host: "e-hentai.org" }),
       })
-    ).toMatchObject({ kind: PageKind.EHENTAI, world: PageWorld.EXTERNAL, isIsekai: false });
+    ).toMatchObject({
+      kind: PageKind.EHENTAI,
+      site: SiteIdentity.EXTERNAL,
+      world: GameWorld.PERSISTENT,
+    });
   });
 
   it("detects game page kinds from the ordered sentinel contract", () => {
@@ -29,28 +34,32 @@ describe("runPageKindAutomation", () => {
         document: docWith('<div id="riddlecounter"></div>'),
         location: locationWith(),
       })
-    ).toMatchObject({ kind: PageKind.RIDDLE, world: PageWorld.PERSISTENT, isIsekai: false });
+    ).toMatchObject({ kind: PageKind.RIDDLE, site: SiteIdentity.HV, world: GameWorld.PERSISTENT });
     expect(
       runPageKindAutomation({
         type: PageKindEvent.DETECT_CURRENT,
         document: docWith('<div id="textlog"></div>'),
         location: locationWith(),
       })
-    ).toMatchObject({ kind: PageKind.BATTLE, world: PageWorld.PERSISTENT, isIsekai: false });
+    ).toMatchObject({ kind: PageKind.BATTLE, site: SiteIdentity.HV, world: GameWorld.PERSISTENT });
     expect(
       runPageKindAutomation({
         type: PageKindEvent.DETECT_CURRENT,
         document: docWith('<div id="navbar"></div>'),
         location: locationWith(),
       })
-    ).toMatchObject({ kind: PageKind.LOBBY, world: PageWorld.PERSISTENT, isIsekai: false });
+    ).toMatchObject({ kind: PageKind.LOBBY, site: SiteIdentity.HV, world: GameWorld.PERSISTENT });
     expect(
       runPageKindAutomation({
         type: PageKindEvent.DETECT_CURRENT,
         document: docWith('<div id="navbar"></div>'),
         location: locationWith({ pathname: "/isekai/" }),
       })
-    ).toMatchObject({ kind: PageKind.ISEKAI_LOBBY, world: PageWorld.ISEKAI, isIsekai: true });
+    ).toMatchObject({
+      kind: PageKind.ISEKAI_LOBBY,
+      site: SiteIdentity.HV,
+      world: GameWorld.ISEKAI,
+    });
   });
 
   it("detects equipment pages and unknown pages", () => {
@@ -60,14 +69,18 @@ describe("runPageKindAutomation", () => {
         document: docWith("<div></div>"),
         location: locationWith({ pathname: "/equip/123" }),
       })
-    ).toMatchObject({ kind: PageKind.SHOWEQUIP, world: PageWorld.PERSISTENT, isIsekai: false });
+    ).toMatchObject({
+      kind: PageKind.SHOWEQUIP,
+      site: SiteIdentity.HV,
+      world: GameWorld.PERSISTENT,
+    });
     expect(
       runPageKindAutomation({
         type: PageKindEvent.DETECT_CURRENT,
         document: docWith("<div></div>"),
         location: locationWith(),
       })
-    ).toMatchObject({ kind: PageKind.UNKNOWN, world: PageWorld.PERSISTENT, isIsekai: false });
+    ).toMatchObject({ kind: PageKind.UNKNOWN, site: SiteIdentity.HV, world: GameWorld.PERSISTENT });
   });
 
   it("rejects unknown and null page kind events without detecting a page", () => {

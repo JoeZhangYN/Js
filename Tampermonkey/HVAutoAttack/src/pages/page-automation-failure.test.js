@@ -43,7 +43,7 @@ vi.mock("./equipment-view-automation.js", () => ({
 }));
 vi.mock("./riddle-automation.js", () => ({ runRiddleAutomation: mocks.runRiddleAutomation }));
 vi.mock("./lobby-automation.js", () => ({
-  LobbyEvent: Object.freeze({ PAGE_READY: "pageReady", ISEKAI_PAGE_READY: "isekaiPageReady" }),
+  LobbyEvent: Object.freeze({ PAGE_READY: "pageReady" }),
   runLobbyAutomation: mocks.runLobbyAutomation,
 }));
 vi.mock("../battle/battle-automation.js", () => ({

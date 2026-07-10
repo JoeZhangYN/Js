@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { LobbyEvent, runLobbyAutomation } from "./lobby-automation.js";
+import { createLobbyAutomationCapability, LobbyEvent } from "./lobby-automation.js";
 
 const mocks = vi.hoisted(() => ({
   runOptionAutomation: vi.fn(),
@@ -61,9 +61,14 @@ beforeEach(() => {
   mocks.runOptionAutomation.mockImplementation((event) => event.key === "idleArena");
 });
 
-describe("runLobbyAutomation isekai identity flow", () => {
-  it("routes isekai lobby flow without encounter orchestration", async () => {
-    await runLobbyAutomation({ type: LobbyEvent.ISEKAI_PAGE_READY });
+function createIsekaiLobbyAutomation() {
+  return createLobbyAutomationCapability({ randomEncounter: false });
+}
+
+describe("Isekai-bound lobby capability", () => {
+  it("runs the shared lobby call without encounter orchestration", async () => {
+    const lobby = createIsekaiLobbyAutomation();
+    await lobby.run({ type: LobbyEvent.PAGE_READY });
 
     expect(mocks.runBattleRuntimeAutomation).toHaveBeenCalledWith({ type: "clearSession" });
     expect(mocks.runDayRecordAutomation).toHaveBeenCalledWith({
@@ -76,8 +81,9 @@ describe("runLobbyAutomation isekai identity flow", () => {
     expect(mocks.runIdleArenaAutomation).toHaveBeenCalledWith({ type: "scheduleNextBattle" });
   });
 
-  it("reruns the isekai lobby workflow without falling back to main encounter flow", async () => {
-    await runLobbyAutomation({ type: LobbyEvent.ISEKAI_PAGE_READY });
+  it("reruns with the same call shape and bound feature policy", async () => {
+    const lobby = createIsekaiLobbyAutomation();
+    await lobby.run({ type: LobbyEvent.PAGE_READY });
     const rolloverEvent = mocks.runDayRecordAutomation.mock.calls[0][0];
     await rolloverEvent.rerun();
 

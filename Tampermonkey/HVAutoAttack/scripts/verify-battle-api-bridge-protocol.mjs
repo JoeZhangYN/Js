@@ -315,16 +315,14 @@ requireText(responseScriptMalformedJsonTest, [
 ]);
 const worldContextText = requireText(worldContext, [
   "BattleApiWorldContextEvent",
-  "battleApiWorldContextEventHandlers",
+  "createBattleApiWorldContextCapability",
   "runBattleApiWorldContext",
-  "WORLD_ISEKAI",
-  "WORLD_PERSISTENT",
+  "CURRENT_WORLD_POLICY",
+  "policy.battleApi.baseUrl",
+  "policy.battleApi.jsonUrl",
   "apiJsonUrl",
   "hvcAssetId",
   "hvcScriptSrc",
-  "isIsekai",
-  "ISEKAI_URL",
-  "MAIN_URL",
 ]);
 requireText(worldContextTest, [
   "classifies persistent battle API authority",
@@ -845,14 +843,21 @@ if (/window\.location|location\.href|window\.location\.search/.test(recoveryText
 if (!/export\s+function\s+runBattleApiWorldContext/.test(worldContextText)) {
   violations.push(`${worldContext.replaceAll("\\", "/")} must expose one world context entry`);
 }
-if (!worldContextText.includes("battleApiWorldContextEventHandlers[event?.type]")) {
+if (!worldContextText.includes("if (event?.type !== EVENT_READ_CURRENT) return undefined")) {
   violations.push(`${worldContext.replaceAll("\\", "/")} must reject null world context events`);
 }
-if (!worldContextText.includes("deps.isIsekai ? deps.isekaiUrl : deps.mainUrl")) {
-  violations.push(`${worldContext.replaceAll("\\", "/")} must own battle API authority selection`);
+if (!worldContextText.includes("createBattleApiWorldContextCapability(CURRENT_WORLD_POLICY)")) {
+  violations.push(
+    `${worldContext.replaceAll("\\", "/")} must bind battle API authority once at composition`
+  );
 }
-if (!worldContextText.includes("world,") || !worldContextText.includes("WORLD_ISEKAI")) {
+if (!worldContextText.includes("world: policy.world")) {
   violations.push(`${worldContext.replaceAll("\\", "/")} must preserve typed world identity`);
+}
+if (/isIsekai|\.\.\/env\.js/.test(worldContextText)) {
+  violations.push(
+    `${worldContext.replaceAll("\\", "/")} must not rediscover or propagate raw world markers`
+  );
 }
 if (
   !worldContextText.includes("hvcAssetId") ||

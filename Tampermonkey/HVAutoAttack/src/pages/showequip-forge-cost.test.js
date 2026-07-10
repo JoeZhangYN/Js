@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { readShowEquipName } from "./showequip-forge-cost.js";
+import { FORGE_COSTS } from "../data/forge-costs.js";
+import { createForgeCostCapability, readShowEquipName } from "./showequip-forge-cost.js";
 
 function showequipBody(innerHtml) {
   document.body.innerHTML = `<div id="navbar"></div><div id="showequip">${innerHtml}</div><div id="eu"><span>Damage Lv.1</span></div>`;
@@ -30,5 +31,20 @@ describe("readShowEquipName", () => {
     document.body.innerHTML = "";
     expect(readShowEquipName(document.body)).toBe("无此物品");
     expect(readShowEquipName(showequipBody("<div></div><div></div>"))).toBe("无此物品");
+  });
+});
+
+describe("createForgeCostCapability", () => {
+  it("binds either world policy while preserving one context-free call shape", () => {
+    document.body.innerHTML = "";
+    const persistent = createForgeCostCapability(FORGE_COSTS.persistent);
+    const isekai = createForgeCostCapability(FORGE_COSTS.isekai);
+
+    expect(persistent.run()).toBeUndefined();
+    expect(isekai.run()).toBeUndefined();
+  });
+
+  it("rejects incomplete world policies at composition time", () => {
+    expect(() => createForgeCostCapability({})).toThrow(/complete world policy/);
   });
 });

@@ -1,11 +1,37 @@
 import { describe, expect, it, vi } from "vitest";
-import { MonsterDbSyncEvent, runMonsterDbSyncAutomation } from "./monster-db-sync.js";
+import {
+  createMonsterDbSyncCapability,
+  MonsterDbSyncEvent,
+  runMonsterDbSyncAutomation,
+} from "./monster-db-sync.js";
 
 function syncRequested(extra = {}) {
   return { type: MonsterDbSyncEvent.SYNC_REQUESTED, ...extra };
 }
 
 describe("runMonsterDbSyncAutomation", () => {
+  it("binds independent data authorities behind the same request shape", async () => {
+    const persistent = createMonsterDbSyncCapability({ dataUrl: "https://data/persistent.json" });
+    const isekai = createMonsterDbSyncCapability({ dataUrl: "https://data/isekai.json" });
+    const requestedUrls = [];
+    const deps = {
+      readMeta: async () => null,
+      profileIsEmpty: async () => true,
+      gmXhr: ({ url, onload }) => {
+        requestedUrls.push(url);
+        onload({ response: [{ monsterId: 1 }] });
+      },
+      storeProfiles: async () => {},
+      writeMeta: async () => {},
+      readUtcDateKey: () => "2026-07-10",
+    };
+
+    await persistent.run(syncRequested(), deps);
+    await isekai.run(syncRequested(), deps);
+
+    expect(requestedUrls).toEqual(["https://data/persistent.json", "https://data/isekai.json"]);
+  });
+
   it("rejects unknown and null sync events without network calls", () => {
     const gmXhr = vi.fn();
     expect(runMonsterDbSyncAutomation({ type: "unknown" }, { gmXhr })).toBeUndefined();

@@ -56,7 +56,7 @@ async function loadAndEnterEncounter(plan, event) {
   if (generation.status !== "available") return generation;
   return {
     ...generation,
-    entry: enterPlannedEncounter(planStoredEncounterEntry(generation.state, event)),
+    entry: enterPlannedEncounter(planStoredEncounterEntry(generation.state)),
   };
 }
 
@@ -142,7 +142,7 @@ export function runEncounterLobbyFlow(event) {
     );
   }
   if (clock.status === "countdown") return waitForNextCheck(state, event);
-  const plan = planStoredEncounterEntry(state, event);
+  const plan = planStoredEncounterEntry(state);
   const entry = enterPlannedEncounter(plan);
   if (entry?.blocked)
     return scheduleBlockedOutcome(blockEncounterEntry(entry, "lobbyEntry"), entry.state, event);

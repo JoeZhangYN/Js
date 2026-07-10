@@ -24,7 +24,7 @@ function eq(id, conditionPct, materials = []) {
   return { id: String(id), conditionPct, materials };
 }
 function st(equips) {
-  return { isIsekai: false, token: null, equips };
+  return { token: null, equips };
 }
 
 beforeEach(() => {

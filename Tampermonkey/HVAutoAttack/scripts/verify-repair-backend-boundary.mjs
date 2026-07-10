@@ -51,22 +51,16 @@ for (const required of ["runRepairBackendAutomation", "RepairBackendEvent"]) {
 }
 const entryBody =
   ownerText.match(/export function runRepairBackendAutomation\([^)]*\) \{[\s\S]*?\n\}/)?.[0] || "";
-if (
-  !/const repairBackendEventHandlers\s*=\s*Object\.freeze\(\{[\s\S]*\[EVENT_CREATE\]/.test(
-    ownerText
-  )
-) {
+if (!ownerText.includes("export function createRepairBackendCapability")) {
+  violations.push(`${owner.replaceAll("\\", "/")} must expose its IO-bound capability factory`);
+}
+if (!entryBody.includes("event?.type") || !entryBody.includes("return undefined")) {
   violations.push(
-    `${owner.replaceAll("\\", "/")} must route events through a frozen handler table`
+    `${owner.replaceAll("\\", "/")} entry must fail closed for unknown or null backend events`
   );
 }
-if (/event\.type\s*(?:!==|===)|switch\s*\(\s*event\.type\s*\)/.test(entryBody)) {
-  violations.push(`${owner.replaceAll("\\", "/")} entry must dispatch by handler table`);
-}
-if (/repairBackendEventHandlers\s*\[\s*event\.type\s*\]/.test(entryBody)) {
-  violations.push(
-    `${owner.replaceAll("\\", "/")} entry must reject null backend events instead of reading event.type directly`
-  );
+if (/isIsekai|\.\.\/env\.js/.test(ownerText)) {
+  violations.push(`${owner.replaceAll("\\", "/")} Armory repair must be world-invariant`);
 }
 if (/export\s+function\s+makeRepairBackend\s*\(/.test(ownerText)) {
   violations.push(`${owner.replaceAll("\\", "/")} legacy makeRepairBackend export is forbidden`);
@@ -95,8 +89,8 @@ if (!fs.existsSync(path.join(root, httpFailureTest))) {
 } else {
   const httpFailureTestText = fs.readFileSync(path.join(root, httpFailureTest), "utf8");
   for (const required of [
-    "routes isekai fetch-state HTTP failures to the failure callback",
-    "routes persistent Armory repair HTTP failures to the failure callback",
+    "routes fetch-state HTTP failures to the failure callback",
+    "routes Armory HTTP status failures to the failure callback",
     "routes submit-repair HTTP failures to the failure callback",
     'kind: "networkError"',
     'kind: "httpStatus"',
@@ -110,7 +104,7 @@ const ownerTestText = fs.existsSync(path.join(root, ownerTest))
   ? fs.readFileSync(path.join(root, ownerTest), "utf8")
   : "";
 for (const required of [
-  "makeRepairBackend 主世界 Armory repair authority",
+  "world-invariant Armory repair authority",
   'href: "?s=Bazaar&ss=am&screen=repair"',
   "postoken=tokp&eqids[]=5",
 ]) {

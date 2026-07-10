@@ -36,10 +36,9 @@ export function runEquipmentViewAutomation(event = { type: EVENT_PAGE_READY }, d
   if (event?.type !== EVENT_PAGE_READY) return false;
   const runtime = makeDeps(deps);
   const { kind } = event;
-  const page = event.page || { kind, isIsekai: Boolean(event.isIsekai) };
   let ran = false;
   if (shouldRunForgeCost(kind, runtime)) {
-    runtime.runForgeCostEnhancement(page);
+    runtime.runForgeCostEnhancement();
     ran = true;
   }
   const equipPercentileMode = readEquipPercentileMode(runtime);

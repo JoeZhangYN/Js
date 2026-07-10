@@ -4,11 +4,7 @@
 // 数据走 src/data/forge-costs.js；isekai 路径选 FORGE_COSTS.isekai，否则 persistent。
 
 import { gE, cE } from "../dom/query.js";
-import { FORGE_COSTS } from "../data/forge-costs.js";
-
-function pickConfig(page = {}) {
-  return page.isIsekai ? FORGE_COSTS.isekai : FORGE_COSTS.persistent;
-}
+import { CURRENT_WORLD_POLICY } from "../core/current-runtime.js";
 
 function credit(credits) {
   if (credits >= 1000000) return (credits / 1000000).toFixed(2).replace(".00", "") + "m";
@@ -224,12 +220,11 @@ function calcCost(levelOverride, ctx) {
  * showequip 页入口：扫 #eu span 强化条目，注入 tooltip + 总价 div + Lv 预测 input。
  * 已检测 isekai/persistent 路径自选价格；无强化条目（非传奇装备/普通页）自然 no-op。
  */
-export function runForgeCostEnhancement(page) {
+function enhanceForgeCost(cfg) {
   const equipment = document.body;
   const upgrades = equipment.querySelectorAll("#eu span");
   if (!upgrades.length) return;
 
-  const cfg = pickConfig(page);
   equipment.style = "height:425px";
   const basicMaterialCost = getBasicMaterialCost(cfg.materialCost);
   const ctx = { upgrades, equipment, cfg, basicMaterialCost, totalInvested: {} };
@@ -257,4 +252,21 @@ export function runForgeCostEnhancement(page) {
   }
 
   calcCost(-1, ctx);
+}
+
+export function createForgeCostCapability(forgeCostPolicy) {
+  if (!forgeCostPolicy?.materialCost || !forgeCostPolicy?.mapping) {
+    throw new TypeError("Forge cost capability requires a complete world policy");
+  }
+  return Object.freeze({
+    run() {
+      return enhanceForgeCost(forgeCostPolicy);
+    },
+  });
+}
+
+const currentForgeCostCapability = createForgeCostCapability(CURRENT_WORLD_POLICY.forgeCost);
+
+export function runForgeCostEnhancement() {
+  return currentForgeCostCapability.run();
 }

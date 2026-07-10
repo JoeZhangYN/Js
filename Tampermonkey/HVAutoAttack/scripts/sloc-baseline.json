@@ -87,10 +87,6 @@
     "maxSloc": 166,
     "reason": "formatted baseline encounter widget policy split debt"
   },
-  "pages/lobby-automation.test.js": {
-    "maxSloc": 152,
-    "reason": "formatted baseline lobby automation test verbosity"
-  },
   "pages/page-automation.test.js": {
     "maxSloc": 174,
     "reason": "formatted baseline page automation test verbosity"
