@@ -6,7 +6,6 @@
 // @author       JoeZhangYN
 // @match        *://*/*
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=baidu.com
-// @grant        GM_setClipboard
 // @grant        GM_registerMenuCommand
 // @run-at       document-start
 // ==/UserScript==
@@ -22,7 +21,6 @@
         maxSiblingTextLength: 500,       // 相邻元素文本超过此长度时跳过
         visualIndicator: true,           // 是否显示视觉标识
         indicatorStyle: 'underline',     // 标识样式: 'underline' | 'badge' | 'both'
-        autoProcess: true,               // 自动处理
         processDelay: [800, 3000],       // 延迟处理时间点(ms)
         scanThrottleMs: 250,             // processAllLinks 节流间隔
         observerDebounceMs: 500,         // MutationObserver 触发后到 scan 的延迟
@@ -64,60 +62,90 @@
         ];
         const BUTTON_TEXT_RE = /^(提取(文件)?|确定|提交)$/;
 
-        const isVisible = (el) => !!(el && el.offsetParent !== null);
+        const isUsable = (el) => !!(el && el.isConnected && !el.disabled);
         const findInput = () => {
             for (const sel of INPUT_SELECTORS) {
                 const el = document.querySelector(sel);
-                if (isVisible(el)) return el;
+                if (isUsable(el)) return el;
             }
             return null;
         };
-        const findButton = () => {
+        const findButton = (input) => {
+            const localRoot = input.closest('form, .input-area, .share-input-line');
+            if (localRoot) {
+                for (const sel of BUTTON_SELECTORS) {
+                    const el = localRoot.querySelector(sel);
+                    if (isUsable(el)) return el;
+                }
+            }
             for (const sel of BUTTON_SELECTORS) {
                 const el = document.querySelector(sel);
-                if (isVisible(el)) return el;
+                if (isUsable(el)) return el;
             }
             // 文本兜底：扫一切按钮形态控件，匹配 "提取文件 / 确定 / 提交"
             const candidates = document.querySelectorAll(
                 'a.g-button, button, a[class*="button"], a[class*="btn"], div[class*="btn"]'
             );
             for (const el of candidates) {
-                const text = (el.innerText || el.textContent || '').trim();
-                if (BUTTON_TEXT_RE.test(text) && isVisible(el)) return el;
+                const text = (el.textContent || '').trim();
+                if (BUTTON_TEXT_RE.test(text) && isUsable(el)) return el;
             }
             return null;
         };
 
-        let submitted = false;
-        const tryFillAndSubmit = () => {
-            if (submitted) return true;
-            const input = findInput();
-            const button = findButton();
-            if (!input || !button) return false;
+        const setInputValue = (input) => {
+            if (input.value === pwd) return;
+            const nativeSetter = Object.getOwnPropertyDescriptor(
+                HTMLInputElement.prototype,
+                'value'
+            )?.set;
+            if (nativeSetter) nativeSetter.call(input, pwd);
+            else input.value = pwd;
+            input.dispatchEvent(new Event('input', { bubbles: true }));
+            input.dispatchEvent(new Event('change', { bubbles: true }));
+            log('分享页：输入框出现后已立即填入提取码');
+        };
 
-            if (input.value !== pwd) {
-                input.focus();
-                input.value = pwd;
-                input.dispatchEvent(new Event('input', { bubbles: true }));
-                input.dispatchEvent(new Event('change', { bubbles: true }));
+        function decideSubmission() {
+            const input = findInput();
+            if (!input) return { status: 'waiting-input' };
+
+            setInputValue(input);
+            const button = findButton(input);
+            if (button) return { status: 'ready', kind: 'button', execute: () => button.click() };
+            if (input.form?.requestSubmit) {
+                return { status: 'ready', kind: 'form', execute: () => input.form.requestSubmit() };
             }
+            return { status: 'waiting-submit', input };
+        }
+
+        let submitted = false;
+        let submitScheduled = false;
+        const tryFillAndSubmit = () => {
+            if (submitted || submitScheduled) return true;
+            const decision = decideSubmission();
+            if (decision.status !== 'ready') return false;
 
             const doClick = () => {
-                button.click();
-                submitted = true;
-                log('分享页：已自动点击提交');
+                submitScheduled = false;
+                try {
+                    decision.execute();
+                    submitted = true;
+                    log(`分享页：已通过${decision.kind === 'form' ? '表单' : '按钮'}直接提交`);
+                } catch (error) {
+                    log('分享页：提交入口失效，等待下一次 DOM 变化重试', error);
+                }
             };
             if (CONFIG.autoSubmitClickDelayMs > 0) {
+                submitScheduled = true;
                 setTimeout(doClick, CONFIG.autoSubmitClickDelayMs);
-                submitted = true; // 标记已调度，避免 observer 再触发
             } else {
                 doClick();
             }
-            return true;
+            return submitted || submitScheduled;
         };
-
-        // 立即试一次（@run-at document-start 时往往太早，但成本极低）
-        if (document.readyState !== 'loading' && tryFillAndSubmit()) return;
+        // 不等待 DOMContentLoaded；脚本若在渐进加载中途注入，现有输入框也要立即消费。
+        if (tryFillAndSubmit()) return;
 
         // MutationObserver 等元素出现 —— 观察 documentElement，body 不存在时也能用
         const observer = new MutationObserver(() => {
@@ -145,8 +173,64 @@
         }, CONFIG.autoSubmitMaxWaitMs);
     }
 
-    // 百度网盘链接正则
-    const BAIDU_PAN_REGEX = /https?:\/\/pan\.baidu\.com\/s\/([a-zA-Z0-9_-]+)/;
+    const EXTRACTION_CODE_RE = /^[0-9a-zA-Z]{4}$/;
+    const BAIDU_SHARE_PATH_RE = /^\/s\/([0-9a-zA-Z_-]+)(?:\/|$)/;
+    const BAIDU_SHARE_URL_IN_TEXT_RE = /https?:\/\/pan\.baidu\.com\/s\/[0-9a-zA-Z_-]+(?:[^\s<>"']*)?/gi;
+
+    function classifyBaiduShareUrl(rawUrl) {
+        try {
+            const url = new URL(rawUrl, location.href);
+            const pathMatch = url.pathname.match(BAIDU_SHARE_PATH_RE);
+            if (!/^https?:$/.test(url.protocol)
+                || url.hostname !== 'pan.baidu.com'
+                || !pathMatch) {
+                return { status: 'not-share-url' };
+            }
+
+            const rawCode = url.searchParams.get('pwd');
+            return {
+                status: 'share-url',
+                shareId: pathMatch[1],
+                url,
+                extractionCode: EXTRACTION_CODE_RE.test(rawCode || '') ? rawCode : null,
+                hasInvalidCode: rawCode !== null && !EXTRACTION_CODE_RE.test(rawCode),
+            };
+        } catch {
+            return { status: 'invalid-url' };
+        }
+    }
+
+    // 唯一链接决策入口：调用方只消费决策，不自行判断或拼接查询参数。
+    function decideBaiduShareLink(rawUrl, candidateCode) {
+        const identity = classifyBaiduShareUrl(rawUrl);
+        if (identity.status !== 'share-url') {
+            return { status: 'rejected', reason: identity.status };
+        }
+        if (identity.extractionCode) {
+            return {
+                status: 'already-ready',
+                href: identity.url.href,
+                code: identity.extractionCode,
+                shareId: identity.shareId,
+            };
+        }
+        if (!EXTRACTION_CODE_RE.test(candidateCode || '')) {
+            return {
+                status: 'code-required',
+                reason: identity.hasInvalidCode ? 'invalid-existing-code' : 'missing-code',
+                shareId: identity.shareId,
+            };
+        }
+
+        identity.url.searchParams.set('pwd', candidateCode);
+        return {
+            status: 'applied',
+            href: identity.url.href,
+            code: candidateCode,
+            shareId: identity.shareId,
+            replacedInvalidCode: identity.hasInvalidCode,
+        };
+    }
 
     // 提取码匹配模式（按优先级排序）
     const CODE_PATTERNS = [
@@ -180,8 +264,8 @@
         new RegExp(p.source, p.flags.includes('g') ? p.flags : p.flags + 'g')
     );
 
-    // 已处理的链接集合（防止重复处理）
-    const processedLinks = new WeakSet();
+    // 仅缓存已得到稳定决策的 href；未找到提取码的链接保留重试资格，支持异步渲染正文。
+    const processedLinks = new WeakMap();
 
     // 单次 scan 内的 textContent 缓存——避免父级走链时重复读取同一节点
     // processAllLinks 进入时设为 WeakMap，退出时置 null（停留期间 GC 友好）
@@ -211,8 +295,9 @@
             let m;
             while ((m = pattern.exec(text)) !== null) {
                 const code = m[1];
-                if (!seen.has(code)) {
-                    seen.add(code);
+                const occurrence = `${code}:${m.index}`;
+                if (!seen.has(occurrence)) {
+                    seen.add(occurrence);
                     codes.push({ code, index: m.index });
                 }
                 // 防止零宽匹配死循环
@@ -220,35 +305,18 @@
             }
         }
 
-        return codes;
+        return codes.sort((a, b) => a.index - b.index);
     }
 
-    // 检查链接是否已包含pwd参数
-    function hasPwdParam(url) {
-        return /[?&]pwd=[0-9a-zA-Z]{4}/.test(url);
-    }
-
-    // 给链接添加pwd参数
-    function appendPwd(url, code) {
-        // 清理URL末尾可能的空白或特殊字符
-        url = url.trim().replace(/[#\s]+$/, '');
-
-        if (url.includes('?')) {
-            return url + '&pwd=' + code;
-        } else {
-            return url + '?pwd=' + code;
+    function getLinkTextOffset(container, linkElement) {
+        try {
+            const range = document.createRange();
+            range.selectNodeContents(container);
+            range.setEndBefore(linkElement);
+            return range.toString().length;
+        } catch {
+            return -1;
         }
-    }
-
-    // 计算元素之间的DOM距离
-    function getDOMDistance(el1, el2) {
-        const rect1 = el1.getBoundingClientRect();
-        const rect2 = el2.getBoundingClientRect();
-
-        return Math.sqrt(
-            Math.pow(rect1.top - rect2.top, 2) +
-            Math.pow(rect1.left - rect2.left, 2)
-        );
     }
 
     // 在容器中查找最近的提取码
@@ -260,21 +328,12 @@
         if (codes.length === 0) return null;
         if (codes.length === 1) return codes[0].code;
 
-        // 多个提取码时，尝试找最近的
-        // 方法：查找链接文本在容器文本中的位置，选择最近的提取码
-        const linkText = linkElement.href || '';
-        const linkMatch = linkText.match(BAIDU_PAN_REGEX);
-
-        if (linkMatch) {
-            const searchText = linkMatch[0];
-            const linkIndex = text.indexOf(searchText);
-
-            if (linkIndex !== -1) {
-                // 按距离排序
-                codes.sort((a, b) => {
-                    return Math.abs(a.index - linkIndex) - Math.abs(b.index - linkIndex);
-                });
-            }
+        // 使用 DOM Range 计算链接在容器文本中的真实位置，避免链接显示文字与 href 不同或重复时误配。
+        const linkIndex = getLinkTextOffset(container, linkElement);
+        if (linkIndex !== -1) {
+            codes.sort((a, b) => {
+                return Math.abs(a.index - linkIndex) - Math.abs(b.index - linkIndex);
+            });
         }
 
         return codes[0].code;
@@ -419,18 +478,14 @@
     // ==================== 链接处理 ====================
 
     function processLink(linkElement) {
-        // 跳过已处理的
-        if (processedLinks.has(linkElement)) return;
-
         const href = linkElement.href;
-        if (!href || !BAIDU_PAN_REGEX.test(href)) return;
+        if (!href || processedLinks.get(linkElement) === href) return;
 
-        // 标记为已处理
-        processedLinks.add(linkElement);
-
-        // 已有pwd参数
-        if (hasPwdParam(href)) {
-            log('链接已包含提取码:', href);
+        const initialDecision = decideBaiduShareLink(href, null);
+        if (initialDecision.status === 'rejected') return;
+        if (initialDecision.status === 'already-ready') {
+            processedLinks.set(linkElement, href);
+            log('链接已包含有效提取码:', href);
             return;
         }
 
@@ -439,10 +494,12 @@
         const code = findCode(linkElement);
 
         if (code) {
-            const newHref = appendPwd(href, code);
-            linkElement.href = newHref;
-            addVisualIndicator(linkElement, code);
-            log('已更新:', newHref);
+            const decision = decideBaiduShareLink(href, code);
+            if (decision.status !== 'applied') return;
+            linkElement.href = decision.href;
+            processedLinks.set(linkElement, decision.href);
+            addVisualIndicator(linkElement, decision.code);
+            log('已更新:', decision.href);
         } else {
             log('未找到提取码');
         }
@@ -492,18 +549,25 @@
             if (!selection.rangeCount) return;
 
             const text = selection.toString();
-            if (!BAIDU_PAN_REGEX.test(text)) return;
+            if (!BAIDU_SHARE_URL_IN_TEXT_RE.test(text)) return;
+            BAIDU_SHARE_URL_IN_TEXT_RE.lastIndex = 0;
 
             // 检查选中的是否是我们处理过的链接
             const anchorNode = selection.anchorNode;
-            const linkElement = anchorNode?.parentElement?.closest?.('a[data-baidu-pwd]');
+            const anchorElement = anchorNode?.nodeType === 1 ? anchorNode : anchorNode?.parentElement;
+            const linkElement = anchorElement?.closest?.('a[data-baidu-pwd]');
 
             if (linkElement && linkElement.dataset.baiduPwd) {
                 const code = linkElement.dataset.baiduPwd;
-                let newText = text;
+                const newText = text.replace(BAIDU_SHARE_URL_IN_TEXT_RE, rawUrl => {
+                    const decision = decideBaiduShareLink(rawUrl, code);
+                    return decision.status === 'applied' || decision.status === 'already-ready'
+                        ? decision.href
+                        : rawUrl;
+                });
+                BAIDU_SHARE_URL_IN_TEXT_RE.lastIndex = 0;
 
-                if (!hasPwdParam(text)) {
-                    newText = appendPwd(text.trim(), code);
+                if (newText !== text) {
                     e.clipboardData.setData('text/plain', newText);
                     e.preventDefault();
                     log('复制增强:', newText);
