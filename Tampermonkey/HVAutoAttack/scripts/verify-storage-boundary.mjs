@@ -24,6 +24,7 @@ for (const required of [
   "parseLocalStorageValue",
   "localStorageJson",
   "GM_getValue",
+  "gmValue !== undefined",
   "sessionStorage?.setItem",
 ]) {
   if (!ownerText.includes(required)) {
@@ -61,6 +62,8 @@ if (!fs.existsSync(path.join(root, ownerTest))) {
     "routes incomplete option write advisories through typed diagnostics",
     "fails closed and records evidence for corrupted localStorage JSON",
     "falls back to localStorage when GM_getValue throws",
+    "preserves an authoritative GM %s value over stale local storage",
+    "uses local storage only when the GM key is absent",
     "fails closed when storage read evidence and diagnostic console both fail",
     'capability: "storageRead"',
     "STORAGE_READ_FAILURE_KEY",

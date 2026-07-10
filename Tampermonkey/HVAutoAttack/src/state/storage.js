@@ -76,8 +76,8 @@ export function getValue(item, toJSON) {
   const key = storagePrefix + item;
   if (typeof GM_getValue !== "undefined") {
     try {
-      const gmValue = GM_getValue(key, null);
-      if (gmValue) return gmValue;
+      const gmValue = GM_getValue(key);
+      if (gmValue !== undefined) return gmValue;
     } catch (error) {
       warnStorageReadFailure(item, key, "GM_getValue", error);
     }

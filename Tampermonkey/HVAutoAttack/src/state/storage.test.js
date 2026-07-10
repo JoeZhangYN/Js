@@ -119,3 +119,24 @@ describe("storage read failures", () => {
     expect(getValue(STORAGE_FAILURE_FIXTURE_KEY, true)).toBeNull();
   });
 });
+
+describe("storage GM authority", () => {
+  it.each([
+    ["false", false],
+    ["zero", 0],
+    ["empty string", ""],
+  ])("preserves an authoritative GM %s value over stale local storage", (_label, gmValue) => {
+    localStorage.setItem("hvAA_storageFailureFixture", JSON.stringify("stale-local"));
+    vi.stubGlobal("GM_getValue", () => gmValue);
+
+    expect(getValue(STORAGE_FAILURE_FIXTURE_KEY, true)).toBe(gmValue);
+    expect(mocks.runDiagnosticConsoleAutomation).not.toHaveBeenCalled();
+  });
+
+  it("uses local storage only when the GM key is absent", () => {
+    localStorage.setItem("hvAA_storageFailureFixture", JSON.stringify({ migrated: true }));
+    vi.stubGlobal("GM_getValue", () => undefined);
+
+    expect(getValue(STORAGE_FAILURE_FIXTURE_KEY, true)).toEqual({ migrated: true });
+  });
+});
