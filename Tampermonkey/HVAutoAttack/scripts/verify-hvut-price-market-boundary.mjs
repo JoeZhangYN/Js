@@ -96,7 +96,7 @@ for (const required of [
 }
 
 for (const required of [
-  "try {\n        await Promise.all(requests);",
+  "try {\n        await run_hvut_async_task_layout('PARALLEL', filters, update);",
   "catch (error) {\n        record_hvut_price_market_parse_failure('marketBulkUpdateRequest'",
   "record_hvut_price_market_parse_failure('marketUpdateRequest'",
   "try {\n        await update(filter);",
@@ -109,8 +109,8 @@ for (const required of [
   }
 }
 
-if (/await Promise\.all\(requests\);\n\s*price\.market_all = true;/.test(updateBody)) {
-  violations.push(`${target} price update must not let bulk market request failures escape`);
+if (/Promise\.all\s*\(/.test(updateBody)) {
+  violations.push(`${target} price update must converge through typed parallel task layout`);
 }
 if (/catch \(_error\) \{\n\s*return null;/.test(updateBody)) {
   violations.push(`${target} price update must not keep untyped request failure`);

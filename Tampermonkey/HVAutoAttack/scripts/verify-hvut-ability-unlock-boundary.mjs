@@ -60,22 +60,22 @@ if (bodies.length !== 2) {
 for (const [index, body] of bodies.entries()) {
   for (const required of [
     "let results;",
-    "try {\n      results = await Promise.all(requests);",
+    "try {\n      results = await run_hvut_async_task_layout('SEQUENTIAL'",
     "catch (error) {",
     "const evidence = record_hvut_ability_unlock_failure(",
     "return run_hvut_ability_unlock_request(ab, { buttonStage:",
     "responseStage:",
     "show_hvut_failure_report('Ability unlock failed', evidence, ['HVAA:lastHvutAbilityParseFailure']);\n      return;",
-    "if (!results.every((r) => r)) return;",
+    "if (results.length !== count || !results.every((r) => r)) return;",
     "reloadCurrentPage(hvutReloadReason('HV_UTILS_ABILITY_UNLOCK'))",
   ]) {
     if (!body.includes(required)) {
       violations.push(`${target} ability unlock[${index}] must guard failure with ${required}`);
     }
   }
-  if (/await Promise\.all\(requests\);\n\s*reloadCurrentPage/.test(body)) {
+  if (/Promise\.all\s*\(/.test(body)) {
     violations.push(
-      `${target} ability unlock[${index}] must not reload after unchecked Promise.all`
+      `${target} ability unlock[${index}] must serialize same-ability writes through task layout`
     );
   }
   if (/popup\(error\);\n\s*}\s*else/.test(body)) {

@@ -122,13 +122,15 @@ if (!sendMatch) {
   const attachBody = attachMatch?.[0] || "";
   for (const required of [
     "let results;",
-    "try {\n        results = await Promise.all(requests);",
+    "try {\n        results = await run_hvut_async_task_layout('SEQUENTIAL'",
     "catch (error) {\n        return stop_hvut_mooglemail_send_failure('attachRequest'",
+    "results = await run_hvut_async_task_layout('SEQUENTIAL', attach, attach_add",
+    "results.length !== attach.length",
     "'attachRequestDiscard'",
     "const response = classify_hvut_mooglemail_attach_response(html, 'attachEmptyResponse'",
     "if (response.kind === 'rejected') {",
     "return response;",
-    "if (!results.every((r) => r.kind === 'accepted')) {",
+    "if (results.length !== attach.length || !results.every((r) => r.kind === 'accepted')) {",
     "return stop_hvut_mooglemail_send_failure('attachRejected'",
     "'attachRejectedDiscard'",
   ]) {

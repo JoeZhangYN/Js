@@ -23,7 +23,7 @@ function setup() {
 }
 
 describe("HVUT Armory loading view", () => {
-  it("replaces the original row with ordered placeholders and reports serial progress", () => {
+  it("replaces the original row with ordered placeholders and reports independent progress", () => {
     const { table, view } = setup();
 
     view.begin({ categories, retrying: false });

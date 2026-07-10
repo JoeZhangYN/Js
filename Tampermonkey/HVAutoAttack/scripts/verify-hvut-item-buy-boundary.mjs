@@ -46,6 +46,8 @@ for (const required of [
   "return reject_hvut_item_shop_buy('insufficientCredits'",
   "return reject_hvut_item_shop_buy('insufficientStock'",
   "return classify_hvut_item_shop_buy_response(doc, 'shopBuyResponse', { name: item.name, id: id, count: count });",
+  "results = await run_hvut_async_task_layout('SEQUENTIAL', items, buy",
+  "results.length !== items.length",
   "return reject_hvut_item_shop_buy('shopBuyRequest'",
   "return reject_hvut_item_shop_buy('shopBuyRejected'",
 ]) {

@@ -638,14 +638,13 @@ try {
       return classify_hvut_item_shop_buy_response(doc, 'shopBuyResponse', { name: item.name, id: id, count: count });
     }
 
-    const requests = items.map((item) => buy(item));
     let results;
     try {
-      results = await Promise.all(requests);
+      results = await run_hvut_async_task_layout('SEQUENTIAL', items, buy, { shouldContinue: (result) => result?.kind === 'accepted' });
     } catch (error) {
       return reject_hvut_item_shop_buy('shopBuyRequest', { items: items.map((item) => ({ name: item.name, id: item.id, count: item.count })), error: error?.message || String(error) });
     }
-    if (!results.every((r) => r?.kind === 'accepted')) {
+    if (results.length !== items.length || !results.every((r) => r?.kind === 'accepted')) {
       return reject_hvut_item_shop_buy('shopBuyRejected', { items: items.map((item) => ({ name: item.name, id: item.id, count: item.count })), results: results });
     }
     return { kind: 'accepted' };
@@ -2538,13 +2537,6 @@ const $ajax = {
       $ajax.add(method, url, data, resolve, reject, context, headers);
     });
   },
-  repeat: function (count, func, ...args) {
-    const list = [];
-    for (let i = 0; i < count; i++) {
-      list.push(func(...args));
-    }
-    return list;
-  },
   add: function (method, url, data, onload, onerror, context = {}, headers = {}) {
     console.log('ajax call', url);
     if (!data) {
@@ -2630,6 +2622,15 @@ const $ajax = {
     r.context.onerror?.();
     $ajax.next();
   },
+};
+
+var run_hvut_async_task_layout = function (layout, items, execute, policy = {}) {
+  const bridge = typeof window !== 'undefined' ? window.HVAA_asyncTaskLayout : null;
+  const type = bridge?.events?.[layout];
+  if (!bridge || typeof bridge.run !== 'function' || !type) {
+    return Promise.reject(new Error(`HVAA async task layout unavailable: ${layout}`));
+  }
+  return bridge.run({ ...policy, type: type, items: items, execute: execute });
 };
 
 // ITEM INVENTORY
@@ -3495,9 +3496,8 @@ const bindPrice = function (price, ctx) {
     const all = !filter;
     if (all && !price.market_all) {
       const filters = Object.keys(price.filters);
-      const requests = filters.map((filter) => update(filter));
       try {
-        await Promise.all(requests);
+        await run_hvut_async_task_layout('PARALLEL', filters, update);
       } catch (error) {
         record_hvut_price_market_parse_failure('marketBulkUpdateRequest', { filters: filters, error: error?.message || String(error) });
         return null;
@@ -4779,14 +4779,13 @@ const $mail = {
 
       const total = attach.length;
       let done = 0;
-      const requests = attach.map((e) => attach_add(e));
       let results;
       try {
-        results = await Promise.all(requests);
+        results = await run_hvut_async_task_layout('SEQUENTIAL', attach, attach_add, { shouldContinue: (result) => result?.kind === 'accepted' });
       } catch (error) {
         return stop_hvut_mooglemail_send_failure('attachRequest', { index: index, total: total, done: done, error: error?.message || String(error) }, `#${index}: !!! Error: Attachment request failed`, 'attachRequestDiscard');
       }
-      if (!results.every((r) => r.kind === 'accepted')) {
+      if (results.length !== attach.length || !results.every((r) => r.kind === 'accepted')) {
         return stop_hvut_mooglemail_send_failure('attachRejected', { index: index, total: total, done: done, results: results }, null, 'attachRejectedDiscard');
       }
     }
@@ -8159,16 +8158,15 @@ if (characterPage.isAbilities) {
       return run_hvut_ability_unlock_request(ab, { buttonStage: 'abilityUnlockButton', responseStage: 'abilityUnlockResponse' });
     }
 
-    const requests = $ajax.repeat(count, unlock, ab);
     let results;
     try {
-      results = await Promise.all(requests);
+      results = await run_hvut_async_task_layout('SEQUENTIAL', Array.from({ length: count }), () => unlock(ab), { shouldContinue: (result) => !!result });
     } catch (error) {
       const evidence = record_hvut_ability_unlock_failure('abilityUnlockRequest', { name: name, to: to, count: count, error: error?.message || String(error) });
       show_hvut_failure_report('Ability unlock failed', evidence, ['HVAA:lastHvutAbilityParseFailure']);
       return;
     }
-    if (!results.every((r) => r)) return;
+    if (results.length !== count || !results.every((r) => r)) return;
     reloadCurrentPage(hvutReloadReason('HV_UTILS_ABILITY_UNLOCK'));
   };
 
@@ -9686,7 +9684,7 @@ if (get_hvut_monster_lab_page_context().isMonsterLab && $config.settings.monster
         //_ml.main.onerror(index);
       },
       feedall: function (stat, value, food) {
-        _ml.mobs.forEach((mob) => { _ml.main.feed(mob.index, (!value || value >= mob[stat]) ? food : null); });
+        return run_hvut_async_task_layout('PARALLEL', _ml.mobs, (mob) => _ml.main.feed(mob.index, (!value || value >= mob[stat]) ? food : null));
       },
       onsuccess: function (index, doc) {
         const mob = _ml.mobs[index];
@@ -10071,9 +10069,8 @@ if (get_hvut_monster_lab_page_context().isMonsterLab && $config.settings.monster
         }
 
         let done = 0;
-        const requests = mobs.map((mob) => update(mob));
         try {
-          await Promise.all(requests);
+          await run_hvut_async_task_layout('PARALLEL', mobs, update);
         } catch (error) {
           const evidence = record_hvut_monster_lab_upgrade_failure('upgradeUpdateRequest', { total: total, done: done, error: error?.message || String(error) });
           show_hvut_failure_report('Monster Lab upgrade failed', evidence);
@@ -10367,9 +10364,8 @@ if (get_hvut_monster_lab_page_context().isMonsterLab && $config.settings.monster
         }
 
         let done = 0;
-        const requests = urls.map(([url, post]) => upgrade(url, post));
         try {
-          await Promise.all(requests);
+          await run_hvut_async_task_layout('GROUPED', urls, ([url, post]) => upgrade(url, post), { identityOf: ([url]) => url });
         } catch (error) {
           const evidence = record_hvut_monster_lab_upgrade_failure('upgradeRunRequest', { total: total, done: done, error: error?.message || String(error) });
           show_hvut_failure_report('Monster Lab upgrade failed', evidence);
@@ -14154,16 +14150,15 @@ if (characterPage.isAbilities) {
       return run_hvut_ability_unlock_request(ab, { buttonStage: 'legacyAbilityUnlockButton', responseStage: 'legacyAbilityUnlockResponse' });
     }
 
-    const requests = $ajax.repeat(count, unlock, ab);
     let results;
     try {
-      results = await Promise.all(requests);
+      results = await run_hvut_async_task_layout('SEQUENTIAL', Array.from({ length: count }), () => unlock(ab), { shouldContinue: (result) => !!result });
     } catch (error) {
       const evidence = record_hvut_ability_unlock_failure('legacyAbilityUnlockRequest', { name: name, to: to, count: count, error: error?.message || String(error) });
       show_hvut_failure_report('Ability unlock failed', evidence, ['HVAA:lastHvutAbilityParseFailure']);
       return;
     }
-    if (!results.every((r) => r)) return;
+    if (results.length !== count || !results.every((r) => r)) return;
     reloadCurrentPage(hvutReloadReason('HV_UTILS_ABILITY_UNLOCK'));
   };
 
@@ -15477,7 +15472,7 @@ if (get_hvut_monster_lab_page_context().isMonsterLab && $config.settings.monster
         //_ml.main.onerror(index);
       },
       feedall: function (stat, value, food) {
-        _ml.mobs.forEach((mob) => { _ml.main.feed(mob.index, !value || value >= mob[stat] ? food : null); });
+        return run_hvut_async_task_layout('PARALLEL', _ml.mobs, (mob) => _ml.main.feed(mob.index, !value || value >= mob[stat] ? food : null));
       },
       onsuccess: function (index, doc) {
         const mob = _ml.mobs[index];
@@ -16003,9 +15998,8 @@ if (get_hvut_monster_lab_page_context().isMonsterLab && $config.settings.monster
         }
 
         let done = 0;
-        const requests = mobs.map((mob) => update(mob));
         try {
-          await Promise.all(requests);
+          await run_hvut_async_task_layout('PARALLEL', mobs, update);
         } catch (error) {
           const evidence = record_hvut_monster_lab_upgrade_failure('legacyUpgradeUpdateRequest', { total: total, done: done, error: error?.message || String(error) });
           show_hvut_failure_report('Monster Lab upgrade failed', evidence);
@@ -16306,9 +16300,8 @@ if (get_hvut_monster_lab_page_context().isMonsterLab && $config.settings.monster
         }
 
         let done = 0;
-        const requests = urls.map(([url, post]) => upgrade(url, post));
         try {
-          await Promise.all(requests);
+          await run_hvut_async_task_layout('GROUPED', urls, ([url, post]) => upgrade(url, post), { identityOf: ([url]) => url });
         } catch (error) {
           const evidence = record_hvut_monster_lab_upgrade_failure('legacyUpgradeRunRequest', { total: total, done: done, error: error?.message || String(error) });
           show_hvut_failure_report('Monster Lab upgrade failed', evidence);

@@ -113,7 +113,7 @@ for (const [index, body] of onsuccessBodies.entries()) {
 
 for (const [index, body] of updateBodies.entries()) {
   for (const required of [
-    "try {\n          await Promise.all(requests);",
+    "try {\n          await run_hvut_async_task_layout('PARALLEL', mobs, update);",
     "catch (error) {\n          const evidence = record_hvut_monster_lab_upgrade_failure(",
     "show_hvut_failure_report('Monster Lab upgrade failed', evidence);",
     "_ml.upgrade.node.button.disabled = false;",
@@ -128,9 +128,9 @@ for (const [index, body] of updateBodies.entries()) {
       violations.push(`${target} Monster Lab update[${index}] must guard failure with ${required}`);
     }
   }
-  if (/await Promise\.all\(requests\);[\s\S]*?\n\s*\$config\.set\('ml_log'/.test(body)) {
+  if (/Promise\.all\s*\(/.test(body)) {
     violations.push(
-      `${target} Monster Lab update[${index}] must not save success after unchecked Promise.all`
+      `${target} Monster Lab update[${index}] must use the typed parallel layout before saving`
     );
   }
   if (
@@ -156,7 +156,7 @@ for (const [index, body] of runBodies.entries()) {
   const emptyResponseStage =
     index === 0 ? "upgradeRunEmptyResponse" : "legacyUpgradeRunEmptyResponse";
   for (const required of [
-    "try {\n          await Promise.all(requests);",
+    "try {\n          await run_hvut_async_task_layout('GROUPED', urls, ([url, post]) => upgrade(url, post), { identityOf: ([url]) => url });",
     "catch (error) {\n          const evidence = record_hvut_monster_lab_upgrade_failure(",
     "show_hvut_failure_report('Monster Lab upgrade failed', evidence);",
     "_ml.upgrade.node.run.disabled = false;",
@@ -174,9 +174,9 @@ for (const [index, body] of runBodies.entries()) {
       violations.push(`${target} Monster Lab run[${index}] must guard failure with ${required}`);
     }
   }
-  if (/await Promise\.all\(requests\);\n\s*_ml\.upgrade\.update\(\);/.test(body)) {
+  if (/Promise\.all\s*\(/.test(body)) {
     violations.push(
-      `${target} Monster Lab run[${index}] must not fire update after unchecked Promise.all`
+      `${target} Monster Lab run[${index}] must serialize per-monster writes and parallelize groups`
     );
   }
   if (

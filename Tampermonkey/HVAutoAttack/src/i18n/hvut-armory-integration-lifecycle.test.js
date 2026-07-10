@@ -36,6 +36,7 @@ function setup(overrides = {}) {
     preserve: vi.fn(),
     retranslate: vi.fn(),
     recordFailure: vi.fn(),
+    schedule: vi.fn((task) => task()),
     wait: vi.fn(),
     ...overrides,
   };

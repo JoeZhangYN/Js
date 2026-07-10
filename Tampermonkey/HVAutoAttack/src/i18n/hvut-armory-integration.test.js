@@ -26,6 +26,7 @@ function setup(overrides = {}) {
     preserve: vi.fn(),
     retranslate: vi.fn(),
     recordFailure: vi.fn(),
+    schedule: vi.fn((task) => task()),
     wait: vi.fn().mockResolvedValue(undefined),
     ...overrides,
   };
@@ -43,7 +44,7 @@ function table(category) {
 }
 
 describe("HVUT Armory integration capability", () => {
-  it("loads categories serially, stages off-DOM, then commits once", async () => {
+  it("arranges category reads asynchronously, stages off-DOM, then commits once", async () => {
     const { deps, capability } = setup();
     deps.pageReader.read.mockImplementation(async ({ category }) => table(category));
 
@@ -57,7 +58,7 @@ describe("HVUT Armory integration capability", () => {
       "weapon_1handed",
       "armor_heavy",
     ]);
-    expect(deps.wait).toHaveBeenCalledWith(300);
+    expect(deps.schedule.mock.calls.map(([, delay]) => delay)).toEqual([0, 300]);
     expect(deps.beginLoading).toHaveBeenCalledWith({
       screen: "sell",
       categories,

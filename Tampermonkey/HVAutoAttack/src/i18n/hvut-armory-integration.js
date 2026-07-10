@@ -1,4 +1,5 @@
 import { ArmoryPageKind } from "./hvut-armory-page-reader.js";
+import { AsyncTaskLayoutEvent, runAsyncTaskLayout } from "../core/async-task-layout.js";
 
 export const ArmoryIntegrationEvent = Object.freeze({
   INTEGRATE_ALL: "integrateAll",
@@ -34,6 +35,39 @@ function failureOf(result) {
   };
 }
 
+async function loadCategory(deps, screen, category, index, total) {
+  let result;
+  try {
+    const page = await loadWithRecovery(deps, screen, category);
+    if (page.kind === ArmoryPageKind.TABLE) {
+      const stage = await deps.stageCategory(page, screen);
+      if (stage?.kind === "table") result = { status: ArmoryCategoryStatus.STAGED, stage };
+      else if (stage?.kind === "empty") result = { status: ArmoryCategoryStatus.EMPTY, empty: true };
+      else {
+        const failure = failureOf({ ...page, kind: stage?.reason || "stageRejected" });
+        deps.recordFailure("categoryStageRejected", failure);
+        result = { status: ArmoryCategoryStatus.FAILED, failure };
+      }
+    } else if (page.kind === ArmoryPageKind.EMPTY) {
+      result = { status: ArmoryCategoryStatus.EMPTY, empty: true };
+    } else {
+      const failure = failureOf(page);
+      deps.recordFailure("categoryLoadRejected", failure);
+      result = { status: ArmoryCategoryStatus.FAILED, failure };
+    }
+  } catch (error) {
+    const failure = {
+      category: category.key,
+      reason: "categoryExecutionFailed",
+      detail: { error: error?.message || String(error) },
+    };
+    deps.recordFailure("categoryExecutionFailed", failure);
+    result = { status: ArmoryCategoryStatus.FAILED, failure };
+  }
+  deps.reportCategory({ screen, category: category.key, status: result.status, index, total });
+  return { category, ...result };
+}
+
 export function createArmoryIntegrationCapability(options) {
   const deps = {
     wait: waitDefault,
@@ -60,53 +94,17 @@ export function createArmoryIntegrationCapability(options) {
     let loadingStarted = true;
     try {
       await deps.beginLoading({ screen: event.screen, categories, retrying });
-      const stages = [];
-      const empty = [];
-      const failures = [];
-      for (let index = 0; index < categories.length; index += 1) {
-        const category = categories[index];
-        let status = ArmoryCategoryStatus.FAILED;
-        try {
-          const page = await loadWithRecovery(deps, event.screen, category);
-          if (page.kind === ArmoryPageKind.TABLE) {
-            const stage = await deps.stageCategory(page, event.screen);
-            if (stage?.kind === "table") {
-              stages.push(stage);
-              status = ArmoryCategoryStatus.STAGED;
-            } else if (stage?.kind === "empty") {
-              empty.push(category.key);
-              status = ArmoryCategoryStatus.EMPTY;
-            } else {
-              const failure = failureOf({ ...page, kind: stage?.reason || "stageRejected" });
-              failures.push(failure);
-              deps.recordFailure("categoryStageRejected", failure);
-            }
-          } else if (page.kind === ArmoryPageKind.EMPTY) {
-            empty.push(category.key);
-            status = ArmoryCategoryStatus.EMPTY;
-          } else {
-            const failure = failureOf(page);
-            failures.push(failure);
-            deps.recordFailure("categoryLoadRejected", failure);
-          }
-        } catch (error) {
-          const failure = {
-            category: category.key,
-            reason: "categoryExecutionFailed",
-            detail: { error: error?.message || String(error) },
-          };
-          failures.push(failure);
-          deps.recordFailure("categoryExecutionFailed", failure);
-        }
-        deps.reportCategory({
-          screen: event.screen,
-          category: category.key,
-          status,
-          index,
-          total: categories.length,
-        });
-        if (index < categories.length - 1) await deps.wait(deps.requestDelayMs);
-      }
+      const categoryResults = await runAsyncTaskLayout({
+        type: AsyncTaskLayoutEvent.PARALLEL,
+        items: categories,
+        execute: (category, index) =>
+          loadCategory(deps, event.screen, category, index, categories.length),
+        schedule: deps.schedule,
+        staggerMs: deps.requestDelayMs,
+      });
+      const stages = categoryResults.flatMap((result) => (result.stage ? [result.stage] : []));
+      const empty = categoryResults.flatMap((result) => (result.empty ? [result.category.key] : []));
+      const failures = categoryResults.flatMap((result) => (result.failure ? [result.failure] : []));
 
       failedCategories = categories.filter((category) =>
         failures.some((failure) => failure.category === category.key)

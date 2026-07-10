@@ -9,6 +9,7 @@ import "./i18n/shrine-offer-message-bridge.js"; // hv-utils sloppy-mode 不能 i
 import "./i18n/shrine-offer-reservation-bridge.js"; // hv-utils sloppy-mode 不能 import；Shrine offer reservation 经桥复用纯函数。
 import "./i18n/hvut-config-migration-bridge.js"; // hv-utils sloppy-mode 不能 import；配置迁移 segment 差异经桥选择。
 import "./i18n/hvut-config-field-bridge.js"; // hv-utils sloppy-mode 不能 import；配置字段适用性经桥统一裁决。
+import "./core/async-task-layout-bridge.js"; // hv-utils 批处理按 typed parallel/sequential/grouped 拓扑排布。
 import "./i18n/hvut-armory-integration-bridge.js"; // hv-utils Armory 聚合经能力工厂执行同源读取/原子提交。
 import "./core/navigation-bridge.js"; // hv-utils sloppy-mode 不能 import；重定向能力经全局导航桥统一收口。
 import "./i18n/hv-utils.js"; // 副作用 import：HV Utils 统一汉化（sssss2）自执行，整页汉化。

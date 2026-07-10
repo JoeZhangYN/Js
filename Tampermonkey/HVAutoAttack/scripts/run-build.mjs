@@ -6,6 +6,7 @@ const commands = [
   "node scripts/check-circular.mjs",
   "node scripts/check-mainloop-imports.mjs",
   "node scripts/verify-world-capability-factory-boundary.mjs",
+  "node scripts/verify-async-task-layout-boundary.mjs",
   "node scripts/verify-battle-business-map.mjs",
   "node scripts/verify-no-eval.mjs",
   "node scripts/verify-diagnostic-console-boundary.mjs",

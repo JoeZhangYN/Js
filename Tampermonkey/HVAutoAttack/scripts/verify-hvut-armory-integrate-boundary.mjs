@@ -35,11 +35,14 @@ function requireAll(target, text, needles) {
 
 requireAll(ownerTarget, owner, [
   "export function createArmoryIntegrationCapability(options)",
-  "for (let index = 0; index < categories.length; index += 1)",
+  "AsyncTaskLayoutEvent.PARALLEL",
+  "const categoryResults = await runAsyncTaskLayout({",
+  "items: categories",
+  "staggerMs: deps.requestDelayMs",
   "await deps.beginLoading({ screen: event.screen, categories, retrying });",
   "deps.reportCategory({",
-  "status = ArmoryCategoryStatus.STAGED;",
-  "status = ArmoryCategoryStatus.EMPTY;",
+  "status: ArmoryCategoryStatus.STAGED",
+  "status: ArmoryCategoryStatus.EMPTY",
   'reason: "categoryExecutionFailed"',
   "await deps.restoreLoading(result);",
   "await deps.commit(result);",
@@ -49,7 +52,7 @@ requireAll(ownerTarget, owner, [
 ]);
 if (/Promise\.all\s*\(/.test(owner)) {
   violations.push(
-    `${ownerTarget} must serialize Armory category reads instead of using Promise.all`
+    `${ownerTarget} must delegate fan-out and final convergence to async-task-layout`
   );
 }
 
@@ -75,7 +78,7 @@ requireAll(loadingTarget, loading, [
   'LOADING]: "Loading..."',
 ]);
 requireAll(loadingTestTarget, loadingTest, [
-  "replaces the original row with ordered placeholders and reports serial progress",
+  "replaces the original row with ordered placeholders and reports independent progress",
   "restores the exact original table after an aborted integration",
   "only replaces and restores attempted failure rows during retry",
 ]);
@@ -136,5 +139,5 @@ if (violations.length) {
 }
 
 console.log(
-  "[verify-hvut-armory-integrate-boundary] OK - Armory loading is visible and serialized while fact commit stays atomic"
+  "[verify-hvut-armory-integrate-boundary] OK - Armory loading is visible, reads are staggered async, and fact commit stays atomic"
 );
