@@ -21,6 +21,7 @@ function buildIncident(generation, source) {
     response: generation.result,
     recovery: generation.recovery,
     persistence: generation.persistence,
+    state: generation.state,
     attemptKey,
     recoveryEpisode,
     blockedAt: Date.now(),

@@ -52,7 +52,7 @@ describe("CST 8 encounter generation recovery", () => {
     const rerun = vi.fn();
 
     const first = await runEncounterAutomation({ type: EncounterEvent.LOBBY_TICK, rerun });
-    expect(vi.getTimerCount()).toBe(0);
+    expect(vi.getTimerCount()).toBe(1);
     const second = await runEncounterAutomation({ type: EncounterEvent.LOBBY_TICK, rerun });
 
     expect(first).toMatchObject({
@@ -81,6 +81,40 @@ describe("CST 8 encounter generation recovery", () => {
       generationFailureReason: "dailyResetEvent",
       generationNextAttemptAt: Date.now() + 5 * 60 * 1000,
     });
+  });
+
+  it("retries a displayed dawn incident after its recovery window expires", async () => {
+    localStorage.setItem(
+      HVUT_RE_KEY,
+      JSON.stringify({
+        date: Date.UTC(2026, 5, 26, 23, 59),
+        key: "",
+        count: 24,
+        clear: true,
+      })
+    );
+    mocks.gmXhr
+      .mockImplementationOnce(({ onload }) => onload({ responseText: DAWN_HTML }))
+      .mockImplementationOnce(({ onload }) =>
+        onload({
+          responseText:
+            '<div id="eventpane"><a href="?s=Battle&amp;ss=ba&amp;encounter=recovered=">RE</a></div>',
+        })
+      );
+    const rerun = vi.fn();
+
+    await runEncounterAutomation({ type: EncounterEvent.LOBBY_TICK, rerun });
+    vi.setSystemTime(new Date("2026-06-27T00:05:06.000Z"));
+    const recovered = await runEncounterAutomation({ type: EncounterEvent.LOBBY_TICK, rerun });
+
+    expect(recovered).toMatchObject({
+      action: "navigated",
+      href: "?s=Battle&ss=ba&encounter=recovered=",
+      claimed: true,
+    });
+    expect(mocks.gmXhr).toHaveBeenCalledTimes(2);
+    expect(mocks.runNavigationAutomation).toHaveBeenCalledOnce();
+    expect(sessionStorage.getItem("HVAA:lastEncounterGenerationIncident")).toBeNull();
   });
 
   it("coalesces simultaneous rollover ticks into one generation request", async () => {

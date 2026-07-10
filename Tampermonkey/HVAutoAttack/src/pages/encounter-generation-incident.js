@@ -3,12 +3,14 @@ import { DiagnosticEvidenceKey } from "../core/diagnostic-evidence-keys.js";
 const EVENT_RECORD = "record";
 const EVENT_MARK_DISPLAYED = "markDisplayed";
 const EVENT_READ_ACTIVE = "readActive";
+const EVENT_CLEAR = "clear";
 const displayedIncidentIds = new Set();
 
 export const EncounterGenerationIncidentEvent = Object.freeze({
   RECORD: EVENT_RECORD,
   MARK_DISPLAYED: EVENT_MARK_DISPLAYED,
   READ_ACTIVE: EVENT_READ_ACTIVE,
+  CLEAR: EVENT_CLEAR,
 });
 
 function errorText(error) {
@@ -63,6 +65,42 @@ function readMirroredIncident() {
 function readActiveIncident() {
   const stored = readStoredIncident(selectAuthority());
   return stored || readMirroredIncident();
+}
+
+function clearMirroredIncident() {
+  try {
+    globalThis.sessionStorage?.removeItem(DiagnosticEvidenceKey.ENCOUNTER_GENERATION_INCIDENT);
+    return { ok: true, scope: "originSession" };
+  } catch (error) {
+    return { ok: false, scope: "originSession", error: errorText(error) };
+  }
+}
+
+function clearIncident(event) {
+  const authority = selectAuthority();
+  const mirror = clearMirroredIncident();
+  if (event.incident?.id) displayedIncidentIds.delete(event.incident.id);
+  if (authority.authority === "unavailable") {
+    return { ok: false, kind: "clearFailed", ...authority, mirror };
+  }
+  if (authority.authority === "session") {
+    return mirror.ok
+      ? { ok: true, kind: "cleared", ...authority, mirror }
+      : { ok: false, kind: "clearFailed", ...authority, reason: "sessionClearFailed", mirror };
+  }
+  try {
+    GM_setValue(DiagnosticEvidenceKey.ENCOUNTER_GENERATION_INCIDENT, null);
+    return { ok: true, kind: "cleared", ...authority, mirror };
+  } catch (error) {
+    return {
+      ok: false,
+      kind: "clearFailed",
+      ...authority,
+      reason: "gmClearFailed",
+      error: errorText(error),
+      mirror,
+    };
+  }
 }
 
 function persistIncident(incident, authority) {
@@ -138,5 +176,6 @@ export function runEncounterGenerationIncident(event) {
   if (event?.type === EVENT_RECORD) return recordIncident(event);
   if (event?.type === EVENT_MARK_DISPLAYED) return markDisplayed(event);
   if (event?.type === EVENT_READ_ACTIVE) return readActiveIncident();
+  if (event?.type === EVENT_CLEAR) return clearIncident(event);
   return undefined;
 }

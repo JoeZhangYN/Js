@@ -17,12 +17,17 @@ function claimLobby() {
 }
 
 function waitForNextCheck(state, event) {
-  runEncounterLobbySchedule({
+  const scheduled = runEncounterLobbySchedule({
     type: EncounterLobbyScheduleEvent.SCHEDULE_NEXT_CHECK,
     state,
     rerun: event.rerun,
   });
-  return { claimed: false };
+  return { claimed: false, scheduled };
+}
+
+function scheduleBlockedOutcome(outcome, state, event) {
+  if (!state) return outcome;
+  return { ...outcome, retry: waitForNextCheck(state, event) };
 }
 
 function planStoredEncounterEntry(state, event) {
@@ -38,16 +43,20 @@ function enterPlannedEncounter(plan) {
   return outcome?.handled || outcome?.blocked ? outcome : undefined;
 }
 
-function blockEncounterEntry(outcome, source) {
-  return showEncounterGenerationBlock(
-    {
-      status: "persistenceFailed",
-      reason: outcome.reason,
-      state: outcome.state,
-      persistence: outcome.persistence || outcome.rollback?.persistence,
-      blocked: true,
-    },
-    source
+function blockEncounterEntry(outcome, source, event) {
+  return scheduleBlockedOutcome(
+    showEncounterGenerationBlock(
+      {
+        status: "persistenceFailed",
+        reason: outcome.reason,
+        state: outcome.state,
+        persistence: outcome.persistence || outcome.rollback?.persistence,
+        blocked: true,
+      },
+      source
+    ),
+    outcome.state,
+    event
   );
 }
 
@@ -78,10 +87,15 @@ async function loadAndEnterEncounter(plan, event) {
 }
 
 function finishLobbyGeneration(generation, event) {
-  if (generation.entry?.blocked) return blockEncounterEntry(generation.entry, "lobbyEntry");
+  if (generation.entry?.blocked) return blockEncounterEntry(generation.entry, "lobbyEntry", event);
   const entered = claimEnteredEncounter(generation.entry);
   if (entered) return entered;
-  if (generation.blocked) return showEncounterGenerationBlock(generation, "lobby");
+  if (generation.blocked)
+    return scheduleBlockedOutcome(
+      showEncounterGenerationBlock(generation, "lobby"),
+      generation.state,
+      event
+    );
   return {
     ...waitForNextCheck(generation.state, event),
     generation,
@@ -101,37 +115,57 @@ function continueAfterLoadedEncounter(event, plan) {
 export function runEncounterLobbyFlow(event) {
   const snapshot = readEncounterSnapshot();
   if (!snapshot?.ok) {
-    return showEncounterGenerationBlock(
-      {
-        status: "persistenceFailed",
-        reason: snapshot?.reason || "encounterStateReadFailed",
-        state: snapshot?.state,
-        persistence: snapshot,
-        blocked: true,
-      },
-      "lobbyState"
+    return scheduleBlockedOutcome(
+      showEncounterGenerationBlock(
+        {
+          status: "persistenceFailed",
+          reason: snapshot?.reason || "encounterStateReadFailed",
+          state: snapshot?.state,
+          persistence: snapshot,
+          blocked: true,
+        },
+        "lobbyState"
+      ),
+      snapshot?.state,
+      event
     );
   }
-  const state = snapshot.state;
-  const clock = runEncounterPolicy({ type: EncounterPolicyEvent.READ_CLOCK, state });
-  const activeBlock = blockActiveEncounterIncident(clock, state);
-  if (activeBlock) return activeBlock;
+  let state = snapshot.state;
+  let clock = runEncounterPolicy({ type: EncounterPolicyEvent.READ_CLOCK, state });
+  const activeBlock = blockActiveEncounterIncident(clock, state, {
+    persistState: (recoveryState) =>
+      runEncounterStateAutomation({
+        type: EncounterStateEvent.RESTORE_ENTRY,
+        state: recoveryState,
+      }),
+  });
+  if (activeBlock?.status === "blocked") {
+    return scheduleBlockedOutcome(activeBlock.outcome, activeBlock.state, event);
+  }
+  if (activeBlock?.status === "recovered") {
+    state = activeBlock.state;
+    clock = runEncounterPolicy({ type: EncounterPolicyEvent.READ_CLOCK, state });
+  }
   if (clock.reason === "generationCircuitOpen") {
-    return showEncounterGenerationBlock(
-      {
-        status: "unavailable",
-        reason: state.generationFailureReason,
-        state,
-        recovery: clock,
-        blocked: true,
-      },
-      "lobbyResume"
+    return scheduleBlockedOutcome(
+      showEncounterGenerationBlock(
+        {
+          status: "unavailable",
+          reason: state.generationFailureReason,
+          state,
+          recovery: clock,
+          blocked: true,
+        },
+        "lobbyResume"
+      ),
+      state,
+      event
     );
   }
   if (clock.status === "countdown") return waitForNextCheck(state, event);
   const plan = planStoredEncounterEntry(state, event);
   const entry = enterPlannedEncounter(plan);
-  if (entry?.blocked) return blockEncounterEntry(entry, "lobbyEntry");
+  if (entry?.blocked) return blockEncounterEntry(entry, "lobbyEntry", event);
   const entered = claimEnteredEncounter(entry);
   if (entered) return entered;
   if (runStaminaAutomation({ type: StaminaEvent.SHOULD_RESTORE_FOR_BATTLE })) {

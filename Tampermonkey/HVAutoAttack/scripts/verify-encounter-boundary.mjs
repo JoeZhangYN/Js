@@ -639,6 +639,7 @@ for (const required of [
 for (const required of [
   "GM_setValue",
   "EVENT_READ_ACTIVE",
+  "EVENT_CLEAR",
   "sharedAuthorityUnavailable",
   "alreadyActive",
   "ENCOUNTER_GENERATION_INCIDENT",
@@ -1069,8 +1070,10 @@ for (const required of [
 }
 for (const required of [
   "EncounterGenerationIncidentEvent.READ_ACTIVE",
+  "EncounterGenerationIncidentEvent.CLEAR",
   "runEncounterGenerationIncident",
   "showEncounterGenerationBlock",
+  "REPLAYABLE_PERSISTENCE_REASONS",
 ]) {
   if (!lobbyActiveBlockText.includes(required)) {
     violations.push(`${lobbyActiveBlockFile.replaceAll("\\", "/")} must preserve ${required}`);
