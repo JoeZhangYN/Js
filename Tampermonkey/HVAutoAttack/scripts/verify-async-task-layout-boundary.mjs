@@ -64,8 +64,8 @@ requireAll(hvutTarget, hvut, [
   "run_hvut_async_task_layout('PARALLEL', filters, update)",
   "run_hvut_async_task_layout('PARALLEL', mobs, update)",
 ]);
-if ((hvut.match(/run_hvut_async_task_layout\('SEQUENTIAL'/g) || []).length !== 4) {
-  violations.push(`${hvutTarget} must keep four causal same-URL write layouts`);
+if ((hvut.match(/run_hvut_async_task_layout\('SEQUENTIAL'/g) || []).length !== 3) {
+  violations.push(`${hvutTarget} must keep one causal layout per item buy, ability unlock, and mail attach flow`);
 }
 if ((hvut.match(/run_hvut_async_task_layout\('GROUPED'/g) || []).length !== 2) {
   violations.push(`${hvutTarget} must keep two per-monster grouped write layouts`);

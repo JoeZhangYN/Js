@@ -906,6 +906,252 @@ try {
     node.dataset.warn = warn;
     return true;
   };
+  var parse_hvut_ability_slotbar = function (page) {
+    var categories = ['General', '单手重甲盾战', '双手轻甲战士', '双持轻甲战士', '', 'Staff', 'Cloth Armor', 'Light Armor', 'Heavy Armor', 'Deprecating 1', 'Deprecating 2', 'Supportive 1', 'Supportive 2', 'Elemental', 'Forbidden', 'Divine'];
+    var treeNodes = $qsa('#ability_treelist > div');
+    for (const div of $qsa('#ability_top div[onmouseover*="overability"]')) {
+      var onmouseover = div.getAttribute('onmouseover') || '';
+      var match = /overability\(\d+, '([^']+)'.+?(?:(Not Acquired)|Requires <strong>Level (\d+))/.exec(onmouseover);
+      if (!match) {
+        record_hvut_ability_parse_failure('abilitySlotbar', { onmouseover: onmouseover });
+        return false;
+      }
+      var name = match[1];
+      var ability = page.abilities[name];
+      if (!ability) {
+        console.warn('[HVAA][i18n] 技能表缺少此项(槽位), 已跳过:', JSON.stringify(name));
+        continue;
+      }
+      ability.slotted = true;
+      ability.level = match[2] ? 0 : ability.unlock.indexOf(parseInt(match[3])) + 1;
+      ability.max = ability.unlock.length;
+      ability.cap = ability.unlock.findIndex((level) => level > page.player.level);
+      if (ability.cap === -1) ability.cap = ability.max;
+      page.presets['Current Set'].push(name);
+      if (ability.level) page.levels[name] = ability.level;
+
+      var status = $element('span', div, ['.hvut-ab-slot']);
+      status.textContent = ability.level === ability.max ? '已满' : `${ability.level}/${ability.max}`;
+      if (ability.level === ability.max) {
+        status.classList.add('hvut-ab-max');
+      } else if (ability.level === ability.cap) {
+        status.classList.add('hvut-ab-cap');
+      } else {
+        status.classList.add('hvut-ab-up');
+        var categoryIndex = categories.indexOf(ability.category);
+        var treeNode = treeNodes[categoryIndex];
+        if (!treeNode) {
+          record_hvut_ability_parse_failure('abilitySlotbar', { reason: 'abilityCategoryNodeMissing', name: name, category: ability.category });
+          return false;
+        }
+        treeNode.classList.add('hvut-ab-tree');
+      }
+    }
+    return true;
+  };
+  var render_hvut_ability_tree = function (page) {
+    var entries = prepare_hvut_ability_tree($qsa('#ability_treepane > div'), page.abilities, page.points, { stage: 'abilityTreePrepare', panelStage: 'abilityButtonPanel', unlockIdStage: 'abilityUnlockId', requirementStage: 'abilityRankRequirement', upgradeLimitKey: 'cap' });
+    if (entries === null) return false;
+    for (const { div, name, ability, id, ranks, acquiredLevel } of entries) {
+      ability.div = div;
+      ability.id = id;
+      ability.level = acquiredLevel;
+      for (const { button, decision, index } of ranks) {
+        button.classList.add('hvut-ab-bar');
+        if (render_hvut_ability_rank_requirement(button, decision, index, { name: name }) === false) return false;
+      }
+      if (ability.level && !ability.slotted) {
+        if (mark_hvut_ability_warning(div, '未激活', 'abilityWarningNode') === null) return false;
+      } else if (ability.level && ability.level !== ability.cap) {
+        if (mark_hvut_ability_warning(div, '可升级', 'abilityWarningNode') === null) return false;
+      }
+    }
+    return true;
+  };
+  var unlock_hvut_ability_ranks = async function (page, name, to) {
+    var ability = page.abilities[name];
+    var count = to - ability.level;
+    try {
+      var results = await run_hvut_async_task_layout('SEQUENTIAL', Array.from({ length: count }), () => run_hvut_ability_unlock_request(ability, { buttonStage: 'abilityUnlockButton', responseStage: 'abilityUnlockResponse' }), { shouldContinue: (result) => !!result });
+      if (results.length !== count || !results.every((result) => result)) return false;
+    } catch (error) {
+      var evidence = record_hvut_ability_unlock_failure('abilityUnlockRequest', { name: name, to: to, count: count, error: error?.message || String(error) });
+      show_hvut_failure_report('Ability unlock failed', evidence, ['HVAA:lastHvutAbilityParseFailure']);
+      return false;
+    }
+    reloadCurrentPage(hvutReloadReason('HV_UTILS_ABILITY_UNLOCK'));
+    return true;
+  };
+  var create_hvut_ability_calculator = function (page) {
+    var calculator = {
+      node: { ability: {} },
+      level: [],
+      selected: [],
+      init: function () {
+        if (calculator.inited) return;
+        calculator.inited = true;
+        Object.entries(page.abilities).forEach(([name, ability]) => {
+          ability.unlock.forEach((unlock, index) => {
+            if (!calculator.level[unlock]) calculator.level[unlock] = [];
+            calculator.level[unlock].push({ name: name, level: index + 1, point: ability.point[index] });
+          });
+        });
+        var node = calculator.node;
+        node.div = $element('div', $id('mainpane'), ['.hvut-ab-calc'], (event) => { calculator.click(event); });
+        node.side = $element('div', node.div, ['.hvut-side hvut-ab-side']);
+        node.ul = $element('ul', $element('div', node.div), ['.hvut-ab-ul']);
+        node.table = $element('table', $element('div', node.div), ['.hvut-ab-table']);
+        $input(['button', '关闭'], node.side, { dataset: { action: 'toggle' }, className: 'hvut-side-margin' });
+        Object.keys(page.presets).forEach((name) => { $input(['button', name], node.side, { dataset: { action: 'preset', name: name } }); });
+        var category;
+        var item;
+        Object.entries(page.abilities).forEach(([name, ability]) => {
+          if (category !== ability.category) {
+            category = ability.category;
+            item = $element('li', node.ul);
+            $element('span', item, [hvaaT(category, 'abCategory'), '.hvut-ab-category']);
+          }
+          var icon = $element('div', item, [{ dataset: { action: 'ability', name: name } }, '.hvut-ab-icon hvut-ab-off', `!background-image: url("/y/t/${ability.img}"); background-position-x: ${ability.pos - 2}px;`]);
+          $element('span', icon, [name, '.hvut-ab-tooltip']);
+          node.ability[name] = icon;
+        });
+        calculator.preset('Current Set');
+      },
+      preset: function (name) {
+        calculator.selected.forEach((ability) => { calculator.node.ability[ability].classList.add('hvut-ab-off'); });
+        calculator.selected = page.presets[name].slice();
+        calculator.selected.forEach((ability) => { calculator.node.ability[ability].classList.remove('hvut-ab-off'); });
+        calculator.table();
+      },
+      ability: function (name) {
+        if (calculator.selected.includes(name)) {
+          calculator.selected.splice(calculator.selected.indexOf(name), 1);
+          calculator.node.ability[name].classList.add('hvut-ab-off');
+        } else {
+          calculator.selected.push(name);
+          calculator.node.ability[name].classList.remove('hvut-ab-off');
+        }
+        calculator.table();
+      },
+      table: function () {
+        var rows = [];
+        var sum = 0;
+        calculator.level.forEach((list, unlock) => {
+          var selected = list.filter(({ name }) => calculator.selected.includes(name));
+          if (!selected.length) return;
+          sum += selected.reduce((total, entry) => total + entry.point, 0);
+          var boost = sum - unlock;
+          var row = $element('tr', null, [page.player.level < unlock ? '.hvut-ab-nolevel' : '']);
+          $element('td', row, unlock);
+          $element('td', row, sum);
+          $element('td', row, [`/<span>${boost}</span>`, boost < 0 ? '.hvut-ab-noab' : '']);
+          var abilitiesCell = $element('td', row);
+          selected.forEach(({ name, level, point }) => {
+            var ability = page.abilities[name];
+            var icon = $element('div', abilitiesCell, ['.hvut-ab-icon', `!background-image: url("/y/t/${ability.img}"); background-position-x: ${ability.pos - 2}px;`]);
+            $element('span', icon, [point, '.hvut-ab-point']);
+            $element('span', icon, [`${name} Lv.${level}`, '.hvut-ab-tooltip']);
+          });
+          rows.push(row);
+        });
+        calculator.node.table.innerHTML = '<thead><tr><td>等级</td><td>所需技能点</td><td>能力升级需求</td><td>获得能力</td></tr></thead><tbody></tbody>';
+        calculator.node.table.tBodies[0].append(...rows);
+        $qsa('.hvut-ab-table tr:not(.hvut-ab-nolevel)').at(-1)?.scrollIntoView({ block: 'center' });
+      },
+      toggle: function () {
+        calculator.node.div?.classList.toggle('hvut-none');
+        calculator.init();
+      },
+      click: function (event) {
+        var target = event.target.closest('[data-action]');
+        if (!target) return;
+        var { action, name } = target.dataset;
+        if (action === 'preset') calculator.preset(name);
+        else if (action === 'ability') calculator.ability(name);
+        else if (action === 'toggle') calculator.toggle();
+      },
+    };
+    return calculator;
+  };
+  var inject_hvut_ability_page_style = function () {
+    GM_addStyle(/*css*/`
+      .hvut-ab-slot { position: absolute; bottom: -5px; left: 2px; width: 30px; font-size: 9pt; color: var(--color-ab-font); }
+      .hvut-ab-max { background-color: var(--color-ab-max); }
+      .hvut-ab-cap { background-color: var(--color-ab-cap); }
+      .hvut-ab-up { background-color: var(--color-ab-up); }
+      .hvut-ab-tree > img[src*='/td'] { filter: brightness(250%); }
+      .hvut-ab-bar { position: relative; margin-bottom: 13px; font-size: 10pt; line-height: 30px; white-space: nowrap; overflow: visible; }
+      .hvut-ab-points { display: block; font-weight: bold; text-shadow: 0 0 1px #777; }
+      .hvut-ab-level { display: block; position: absolute; top: 27px; left: 50%; min-width: 34px; transform: translateX(-50%); color: var(--color-font-invalid); font-size: 8pt; line-height: 12px; text-align: center; white-space: nowrap; z-index: 1; }
+      .hvut-ab-bf { opacity: 0.65; }
+      .hvut-ab-bux { cursor: not-allowed; }
+      #ability_treepane > div > div:first-child { padding-top: 13px; }
+      .hvut-ab-warn { display: block; margin-top: -6px; }
+      .hvut-ab-warn::before { content: attr(data-warn); display: inline-block; margin-bottom: 2px; padding: 1px 3px; border-radius: 2px; background-color: var(--color-font-highlight); color: var(--color-font-invert); font-size: 9pt; }
+      .hvut-ab-calc { display: flex; position: absolute; top: 27px; left: 0; width: 100%; height: 675px; justify-content: center; align-items: center; background-color: var(--color-bg-default); z-index: 9; font-size: 10pt; text-align: left; }
+      .hvut-ab-calc > div { margin: 0 10px; height: 616px; }
+      .hvut-ab-calc > div:nth-child(3) { overflow: hidden scroll; }
+      .hvut-ab-icon { display: inline-block; position: relative; width: 30px; margin: 2px; height: 32px; vertical-align: middle; background-position-y: -2px; cursor: default; }
+      .hvut-ab-off { filter: grayscale(100%); box-shadow: 0 0 0 20px var(--color-bg-alpha) inset; }
+      .hvut-ab-off:hover { filter: none; }
+      .hvut-ab-point { position: absolute; top: 0; right: 0; width: 14px; padding: 1px; text-align: center; background-color: var(--color-ab-max); color: var(--color-ab-font); font-size: 9pt; }
+      .hvut-ab-tooltip { visibility: hidden; position: absolute; bottom: 32px; left: 0; padding: 0 3px; border: 1px solid var(--color-border-default); background-color: var(--color-bg-light); font-size: 9pt; line-height: 16px; white-space: nowrap; z-index: 1; pointer-events: none; }
+      .hvut-ab-icon:hover > .hvut-ab-tooltip { visibility: visible; }
+      .hvut-ab-side { position: static; }
+      .hvut-ab-ul { width: 450px; margin: 0; padding: 0; border: 1px solid var(--color-border-default); list-style: none; }
+      .hvut-ab-ul > li { padding: 2px; border-bottom: 1px solid var(--color-border-default); }
+      .hvut-ab-ul > li:last-child { border-bottom: 0; }
+      .hvut-ab-category { display: inline-block; width: 130px; margin-left: 10px; font-weight: bold; vertical-align: middle; }
+      .hvut-ab-ul .hvut-ab-icon { cursor: pointer; }
+      .hvut-ab-table { table-layout: fixed; border-collapse: separate; border-spacing: 0; position: relative; width: 400px; text-align: right; }
+      .hvut-ab-table thead td { position: sticky; top: 0; height: 36px; border-top-width: 1px; font-weight: bold; text-align: center; background-color: var(--color-bg-h1); z-index: 1; }
+      .hvut-ab-table td { border-width: 0 1px 1px 0; border-style: solid; border-color: var(--color-border-default); padding: 2px 5px; }
+      .hvut-ab-table td:nth-child(1) { border-left-width: 1px; }
+      .hvut-ab-table td:nth-child(2), .hvut-ab-table td:nth-child(3) { width: 50px; }
+      .hvut-ab-table td:nth-child(4) { width: 204px; text-align: left; }
+      .hvut-ab-table .hvut-ab-icon:nth-child(n+7) { margin-top: 7px; }
+      .hvut-ab-nolevel { background-color: var(--color-bg-h1); }
+      .hvut-ab-noab > span { color: var(--color-font-invalid); }
+    `);
+  };
+  var run_hvut_ability_page = function (context) {
+    var definition = context?.definition;
+    if (!definition || definition.kind !== 'accepted') {
+      var compositionEvidence = record_hvut_ability_parse_failure('abilityCatalogCompose', { reason: definition?.reason || 'abilityPageDefinitionMissing' });
+      show_hvut_failure_report('Ability parse failed', compositionEvidence);
+      return false;
+    }
+    var page = { state: context.state, config: context.config, player: context.player, abilities: definition.catalog, presets: definition.presets, levels: {} };
+    var rejectPage = function (evidence) {
+      show_hvut_failure_report('Ability parse failed', evidence || read_hvut_session_evidence('HVAA:lastHvutAbilityParseFailure'));
+      return false;
+    };
+    page.points = parse_hvut_ability_points_from_top($id('ability_top'), 'abilityPointsNode');
+    if (page.points === null) return rejectPage();
+    if (parse_hvut_ability_slotbar(page) === false) return rejectPage();
+    if (!page.config.set('ab_level', page.levels)) {
+      return rejectPage(record_hvut_ability_parse_failure('abilityLevelPersistence', { reason: 'configWriteRejected' }));
+    }
+    if (render_hvut_ability_tree(page) === false) {
+      return rejectPage();
+    }
+    page.state.abilities = page.abilities;
+    page.state.preset = page.presets;
+    page.state.point = page.points;
+    page.state.level = page.levels;
+    page.state.calc = create_hvut_ability_calculator(page);
+    page.state.unlock = (name, to) => unlock_hvut_ability_ranks(page, name, to);
+    page.state.click = function (event) {
+      var target = event.target.closest('[data-action]');
+      if (!target || target.dataset.action !== 'unlock') return;
+      event.stopPropagation();
+      page.state.unlock(target.dataset.name, target.dataset.to);
+    };
+    inject_hvut_ability_page_style();
+    $id('ability_treepane').addEventListener('click', page.state.click, true);
+    $input(['button', '能力点计算器'], $id('ability_outer'), { style: 'position: absolute; top: 20px; left: -80px; width: 90px; white-space: normal;' }, () => { page.state.calc.toggle(); });
+    return true;
+  };
   var record_hvut_training_notification_failure = function (stage, detail) {
     var evidence = { capability: 'hvutTrainingNotification', stage: stage, detail: detail || {} };
     try {
@@ -8032,297 +8278,7 @@ if (characterPage.isEquipment) {
 //* [3] Character - Abilities
 if (characterPage.isAbilities) {
   const abilityPageDefinition = create_hvut_ability_page_definition('isekai', 'abilityCatalogCompose');
-  _ab.abilities = abilityPageDefinition?.catalog || null;
-  if (_ab.abilities === null) {
-    show_hvut_failure_report('Ability parse failed', read_hvut_session_evidence('HVAA:lastHvutAbilityParseFailure'));
-    return;
-  }
-
-  _ab.preset = abilityPageDefinition.presets;
-
-  _ab.point = parse_hvut_ability_points_from_top($id('ability_top'), 'abilityPointsNode');
-  _ab.level = {};
-
-  _ab.init = function () {
-    if (_ab.point === null) {
-      alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
-      return false;
-    }
-    if (_ab.parse_slotbar() === false) {
-      alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
-      return false;
-    }
-    if (!$config.set('ab_level', _ab.level)) {
-      alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
-      return false;
-    }
-
-    if (_ab.parse_treepane() === false) {
-      return false;
-    }
-    $id('ability_treepane').addEventListener('click', _ab.click, true);
-
-    $input(['button', '技能模拟器'], $id('ability_outer'), ['!position: absolute; top: 20px; left: -80px; width: 90px; white-space: normal;'], () => { _ab.calc.toggle(); });
-    return true;
-  };
-
-  _ab.parse_slotbar = function () {
-    for (const div of $qsa('#ability_top div[onmouseover*="overability"]')) {
-      const exec = /overability\(\d+, '([^']+)'.+?(?:(Not Acquired)|Requires <strong>Level (\d+))/.exec(div.getAttribute('onmouseover'));
-      if (!exec) {
-        record_hvut_ability_parse_failure('abilitySlotbar', { onmouseover: div.getAttribute('onmouseover') || '' });
-        return false;
-      }
-      const name = exec[1];
-      const ab = _ab.abilities[name];
-      // 同 parse_treepane: HV 新增/改名技能时跳过该槽位, 不让一项未知技能崩掉整段汉化。
-      if (!ab) {
-        console.warn('[HVAA][i18n] 技能表缺少此项(槽位), 已跳过:', JSON.stringify(name));
-        continue;
-      }
-
-      ab.slotted = true;
-      ab.level = exec[2] ? 0 : 1 + ab.unlock.indexOf(parseInt(exec[3]));
-      ab.max = ab.unlock.length;
-      ab.cap = ab.unlock.findIndex((e) => e > _player.level);
-      if (ab.cap === -1) {
-        ab.cap = ab.max;
-      }
-
-      _ab.preset['Current Set'].push(name);
-      if (ab.level) {
-        _ab.level[name] = ab.level;
-      }
-
-      const span = $element('span', div, ['.hvut-ab-slot']);
-      if (ab.level === ab.max) {
-        span.textContent = '已满';
-        span.classList.add('hvut-ab-max');
-      } else if (ab.level === ab.cap) {
-        span.textContent = `${ab.level}/${ab.max}`;
-        span.classList.add('hvut-ab-cap');
-      } else {
-        span.textContent = `${ab.level}/${ab.max}`;
-        span.classList.add('hvut-ab-up');
-        const categories = ['General', '单手重甲盾战', '双手轻甲战士', '双持轻甲战士', '', 'Staff', 'Cloth Armor', 'Light Armor', 'Heavy Armor', 'Deprecating 1', 'Deprecating 2', 'Supportive 1', 'Supportive 2', 'Elemental', 'Forbidden', 'Divine'];
-        const index = categories.indexOf(ab.category);
-        $qsa('#ability_treelist > div')[index].classList.add('hvut-ab-tree');
-      }
-    }
-    return true;
-  };
-
-  _ab.parse_treepane = function () {
-    const entries = prepare_hvut_ability_tree($qsa('#ability_treepane > div'), _ab.abilities, _ab.point, { stage: 'abilityTreePrepare', panelStage: 'abilityButtonPanel', unlockIdStage: 'abilityUnlockId', requirementStage: 'abilityRankRequirement', upgradeLimitKey: 'cap' });
-    if (entries === null) {
-      show_hvut_failure_report('Ability parse failed', read_hvut_session_evidence('HVAA:lastHvutAbilityParseFailure'));
-      return false;
-    }
-    for (const { div, name, ability: ab, id, ranks, acquiredLevel } of entries) {
-      ab.div = div;
-      ab.id = id;
-      ab.level = acquiredLevel;
-      for (const { button, decision, index } of ranks) {
-        button.classList.add('hvut-ab-bar');
-        if (render_hvut_ability_rank_requirement(button, decision, index, { name: name }) === false) return false;
-      }
-      if (ab.level) {
-        if (!ab.slotted) {
-          if (mark_hvut_ability_warning(div, '未激活', 'abilityWarningNode') === null) return false;
-        } else if (ab.level !== ab.cap) {
-          if (mark_hvut_ability_warning(div, '可升级', 'abilityWarningNode') === null) return false;
-        }
-      }
-    }
-    return true;
-  };
-
-  _ab.click = function (e) {
-    const target = e.target.closest('[data-action]');
-    if (!target) {
-      return;
-    }
-    const { action, name, to } = target.dataset;
-    if (action === 'unlock') {
-      e.stopPropagation();
-      _ab.unlock(name, to);
-    }
-  };
-
-  _ab.unlock = async function (name, to) {
-    const ab = _ab.abilities[name];
-    const count = to - ab.level;
-
-    async function unlock(ab) {
-      return run_hvut_ability_unlock_request(ab, { buttonStage: 'abilityUnlockButton', responseStage: 'abilityUnlockResponse' });
-    }
-
-    let results;
-    try {
-      results = await run_hvut_async_task_layout('SEQUENTIAL', Array.from({ length: count }), () => unlock(ab), { shouldContinue: (result) => !!result });
-    } catch (error) {
-      const evidence = record_hvut_ability_unlock_failure('abilityUnlockRequest', { name: name, to: to, count: count, error: error?.message || String(error) });
-      show_hvut_failure_report('Ability unlock failed', evidence, ['HVAA:lastHvutAbilityParseFailure']);
-      return;
-    }
-    if (results.length !== count || !results.every((r) => r)) return;
-    reloadCurrentPage(hvutReloadReason('HV_UTILS_ABILITY_UNLOCK'));
-  };
-
-  _ab.calc = {
-    node: { ability: {} },
-    level: [],
-    selected: [],
-
-    init: function () {
-      if (_ab.calc.inited) {
-        return;
-      }
-      _ab.calc.inited = true;
-
-      Object.entries(_ab.abilities).forEach(([n, ab]) => {
-        ab.unlock.forEach((u, i) => {
-          if (!_ab.calc.level[u]) {
-            _ab.calc.level[u] = [];
-          }
-          _ab.calc.level[u].push({ name: n, level: i + 1, point: ab.point[i] });
-        });
-      });
-
-      const node = _ab.calc.node;
-      node.div = $element('div', $id('mainpane'), ['.hvut-ab-calc'], (e) => { _ab.calc.click(e); });
-      node.side = $element('div', node.div, ['.hvut-side hvut-ab-side']);
-      node.ul = $element('ul', $element('div', node.div), ['.hvut-ab-ul']);
-      node.table = $element('table', $element('div', node.div), ['.hvut-ab-table']);
-
-      $input(['button', '关闭'], node.side, { dataset: { action: 'toggle' }, className: 'hvut-side-margin' });
-      Object.keys(_ab.preset).forEach((n) => { $input(['button', n], node.side, { dataset: { action: 'preset', name: n } }); });
-
-      let category;
-      let li;
-      Object.entries(_ab.abilities).forEach(([n, ab]) => {
-        if (category !== ab.category) {
-          category = ab.category;
-          li = $element('li', node.ul);
-          $element('span', li, [category, '.hvut-ab-category']);
-        }
-        const icon = $element('div', li, [{ dataset: { action: 'ability', name: n } }, '.hvut-ab-icon hvut-ab-off', `!background-image: url("/y/t/${ab.img}"); background-position-x: ${ab.pos - 2}px;`]);
-        $element('span', icon, [n, '.hvut-ab-tooltip']);
-        node.ability[n] = icon;
-      });
-
-      _ab.calc.preset('目前流派');
-    },
-    preset: function (name) {
-      _ab.calc.selected.forEach((e) => { _ab.calc.node.ability[e].classList.add('hvut-ab-off'); });
-      _ab.calc.selected = _ab.preset[name].slice();
-      _ab.calc.selected.forEach((e) => { _ab.calc.node.ability[e].classList.remove('hvut-ab-off'); });
-      _ab.calc.table();
-    },
-    ability: function (name) {
-      const selected = _ab.calc.selected;
-      if (selected.includes(name)) {
-        selected.splice(selected.indexOf(name), 1);
-        _ab.calc.node.ability[name].classList.add('hvut-ab-off');
-      } else {
-        selected.push(name);
-        _ab.calc.node.ability[name].classList.remove('hvut-ab-off');
-      }
-      _ab.calc.table();
-    },
-    table: function () {
-      const tbody = [];
-      let sum = 0;
-      _ab.calc.level.forEach((list, unlock) => {
-        const selected = list.filter(({ name }) => _ab.calc.selected.includes(name));
-        if (!selected.length) {
-          return;
-        }
-        sum += selected.reduce((s, e) => (s + e.point), 0);
-        const aboost = sum - unlock;
-        const tr = $element('tr', null, [(_player.level < unlock ? '.hvut-ab-nolevel' : '')]);
-        $element('td', tr, unlock);
-        $element('td', tr, sum);
-        $element('td', tr, [`/<span>${aboost}</span>`, (aboost < 0 ? '.hvut-ab-noab' : '')]);
-        const td = $element('td', tr);
-        selected.forEach(({ name, level, point }) => {
-          const ab = _ab.abilities[name];
-          const icon = $element('div', td, ['.hvut-ab-icon', `!background-image: url("/y/t/${ab.img}"); background-position-x: ${ab.pos - 2}px;`]);
-          $element('span', icon, [point, '.hvut-ab-point']);
-          $element('span', icon, [`${name} Lv.${level}`, '.hvut-ab-tooltip']);
-        });
-        tbody.push(tr);
-      });
-
-      _ab.calc.node.table.innerHTML = '<thead><tr><td>Level</td><td>Ability Points</td><td>Ability Boost</td><td>Abilities</td></tr></thead><tbody></tbody>';
-      _ab.calc.node.table.tBodies[0].append(...tbody);
-      $qsa('.hvut-ab-table tr:not(.hvut-ab-nolevel)').at(-1).scrollIntoView({ block: 'center' });
-    },
-    toggle: function () {
-      _ab.calc.node.div?.classList.toggle('hvut-none');
-      _ab.calc.init();
-    },
-    click: function (e) {
-      const target = e.target.closest('[data-action]');
-      if (!target) {
-        return;
-      }
-      const { action, name } = target.dataset;
-      if (action === 'preset') {
-        _ab.calc.preset(name);
-      } else if (action === 'ability') {
-        _ab.calc.ability(name);
-      } else if (action === 'toggle') {
-        _ab.calc.toggle();
-      }
-    },
-  };
-
-  GM_addStyle(/*css*/`
-    .hvut-ab-slot { position: absolute; bottom: -5px; left: 2px; width: 30px; font-size: 9pt; color: var(--color-ab-font); }
-    .hvut-ab-max { background-color: var(--color-ab-max); }
-    .hvut-ab-cap { background-color: var(--color-ab-cap); }
-    .hvut-ab-up { background-color: var(--color-ab-up); }
-    .hvut-ab-tree > img[src*='/td'] { filter: brightness(250%); }
-    .hvut-ab-bar { position: relative; margin-bottom: 13px; font-size: 9pt; line-height: 30px; white-space: nowrap; overflow: visible; }
-    .hvut-ab-points { display: block; font-weight: bold; text-shadow: 0 0 1px #777; }
-    .hvut-ab-level { display: block; position: absolute; top: 27px; left: 50%; min-width: 34px; transform: translateX(-50%); color: var(--color-font-invalid); font-size: 8pt; line-height: 12px; text-align: center; white-space: nowrap; z-index: 1; }
-    .hvut-ab-bf { opacity: 0.65; }
-    .hvut-ab-bux { cursor: not-allowed; }
-
-    #ability_treepane > div > div:first-child { padding-top: 13px; }
-    .hvut-ab-warn { display: block; margin-top: -6px; }
-    .hvut-ab-warn::before { content: attr(data-warn); display: inline-block; margin-bottom: 2px; padding: 1px 3px; border-radius: 2px; background-color: var(--color-font-highlight); color: var(--color-font-invert); font-size: 9pt; }
-
-    .hvut-ab-calc { display: flex; position: absolute; top: 27px; left: 0; width: 100%; height: 675px; justify-content: center; align-items: center; background-color: var(--color-bg-default); z-index: 9; font-size: 10pt; text-align: left; }
-    .hvut-ab-calc > div { margin: 0 10px; height: 616px; }
-    .hvut-ab-calc > div:nth-child(3) { overflow: hidden scroll; }
-    .hvut-ab-icon { display: inline-block; position: relative; width: 30px; margin: 2px; height: 32px; vertical-align: middle; background-position-y: -2px; cursor: default; }
-    .hvut-ab-off { filter: grayscale(100%); box-shadow: 0 0 0 20px var(--color-bg-alpha) inset; }
-    .hvut-ab-off:hover { filter: none; }
-    .hvut-ab-point { position: absolute; top: 0; right: 0; width: 14px; padding: 1px; text-align: center; background-color: var(--color-ab-max); color: var(--color-ab-font); font-size: 9pt; }
-    .hvut-ab-tooltip { visibility: hidden; position: absolute; bottom: 32px; left: 0; padding: 0 3px; border: 1px solid var(--color-border-default); background-color: var(--color-bg-light); font-size: 9pt; line-height: 16px; white-space: nowrap; z-index: 1; pointer-events: none; }
-    .hvut-ab-icon:hover > .hvut-ab-tooltip { visibility: visible; }
-
-    .hvut-ab-side { position: static; }
-    .hvut-ab-ul { width: 450px; margin: 0; padding: 0; border: 1px solid var(--color-border-default); list-style: none; }
-    .hvut-ab-ul > li { padding: 2px; border-bottom: 1px solid var(--color-border-default); }
-    .hvut-ab-ul > li:last-child { border-bottom: 0; }
-    .hvut-ab-category { display: inline-block; width: 130px; margin-left: 10px; font-weight: bold; vertical-align: middle; }
-    .hvut-ab-ul .hvut-ab-icon { cursor: pointer; }
-    .hvut-ab-table { table-layout: fixed; border-collapse: separate; border-spacing: 0; position: relative; width: 400px; text-align: right; }
-    .hvut-ab-table thead td { position: sticky; top: 0; height: 36px; border-top-width: 1px; font-weight: bold; text-align: center; background-color: var(--color-bg-h1); z-index: 1; }
-    .hvut-ab-table td { border-width: 0 1px 1px 0; border-style: solid; border-color: var(--color-border-default); padding: 2px 5px; }
-    .hvut-ab-table td:nth-child(1) { border-left-width: 1px; }
-    .hvut-ab-table td:nth-child(2) { width: 50px; }
-    .hvut-ab-table td:nth-child(3) { width: 50px; }
-    .hvut-ab-table td:nth-child(4) { width: 204px; text-align: left; }
-    .hvut-ab-table .hvut-ab-icon:nth-child(n+7) { margin-top: 7px; }
-    .hvut-ab-nolevel { background-color: var(--color-bg-h1); }
-    .hvut-ab-noab > span { color: var(--color-font-invalid); }
-  `);
-
-  _ab.init();
+  if (run_hvut_ability_page({ state: _ab, config: $config, player: _player, definition: abilityPageDefinition }) === false) return;
 } else
 // [END 3] Character - Abilities */
 
@@ -14035,294 +13991,7 @@ if (characterPage.isEquipment) {
 //* [3] Character - Abilities
 if (characterPage.isAbilities) {
   const abilityPageDefinition = create_hvut_ability_page_definition('persistent', 'abilityCatalogCompose');
-  _ab.ability = abilityPageDefinition?.catalog || null;
-  if (_ab.ability === null) {
-    show_hvut_failure_report('Ability parse failed', read_hvut_session_evidence('HVAA:lastHvutAbilityParseFailure'));
-    return;
-  }
-
-  _ab.preset = abilityPageDefinition.presets;
-
-  _ab.point = parse_hvut_ability_points_from_top($id('ability_top'), 'legacyAbilityPointsNode');
-  _ab.level = {};
-  if (_ab.point === null) {
-    alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
-    return false;
-  }
-
-  _ab.click = function (e) {
-    const target = e.target.closest('[data-action]');
-    if (!target) {
-      return;
-    }
-    const { action, name, to } = target.dataset;
-    if (action === 'unlock') {
-      e.stopPropagation();
-      _ab.unlock(name, to);
-    }
-  };
-
-  _ab.unlock = async function (name, to) {
-    const ab = _ab.ability[name];
-    const count = to - ab.level;
-
-    async function unlock(ab) {
-      return run_hvut_ability_unlock_request(ab, { buttonStage: 'legacyAbilityUnlockButton', responseStage: 'legacyAbilityUnlockResponse' });
-    }
-
-    let results;
-    try {
-      results = await run_hvut_async_task_layout('SEQUENTIAL', Array.from({ length: count }), () => unlock(ab), { shouldContinue: (result) => !!result });
-    } catch (error) {
-      const evidence = record_hvut_ability_unlock_failure('legacyAbilityUnlockRequest', { name: name, to: to, count: count, error: error?.message || String(error) });
-      show_hvut_failure_report('Ability unlock failed', evidence, ['HVAA:lastHvutAbilityParseFailure']);
-      return;
-    }
-    if (results.length !== count || !results.every((r) => r)) return;
-    reloadCurrentPage(hvutReloadReason('HV_UTILS_ABILITY_UNLOCK'));
-  };
-
-  _ab.calc = {
-
-    node: { ability: {} },
-    level: [],
-    selected: [],
-
-    init: function () {
-      if (_ab.calc.inited) {
-        return;
-      }
-      _ab.calc.inited = true;
-
-      Object.entries(_ab.ability).forEach(([n, ab]) => {
-        ab.unlock.forEach((u, i) => {
-          if (!_ab.calc.level[u]) {
-            _ab.calc.level[u] = [];
-          }
-          _ab.calc.level[u].push({ name: n, level: i + 1, point: ab.point[i] });
-        });
-      });
-
-      const node = _ab.calc.node;
-      node.div = $element('div', $id('mainpane'), ['.hvut-ab-calc'], (e) => { _ab.calc.click(e); });
-      node.side = $element('div', node.div, ['.hvut-side hvut-ab-side']);
-      node.ul = $element('ul', $element('div', node.div), ['.hvut-ab-ul']);
-      node.table = $element('table', $element('div', node.div), ['.hvut-ab-table']);
-
-      $input(['button', '关闭'], node.side, { dataset: { action: 'toggle' }, className: 'hvut-side-margin' });
-      Object.keys(_ab.preset).forEach((n) => { $input(['button', n], node.side, { dataset: { action: 'preset', name: n } }); });
-
-      let category;
-      let li;
-      Object.entries(_ab.ability).forEach(([n, ab]) => {
-        if (category !== ab.category) {
-          category = ab.category;
-          li = $element('li', node.ul);
-          $element('span', li, [hvaaT(category, 'abCategory'), '.hvut-ab-category']);
-        }
-        const icon = $element('div', li, [{ dataset: { action: 'ability', name: n } }, '.hvut-ab-icon hvut-ab-off', `!background-image: url("/y/t/${ab.img}"); background-position-x: ${ab.pos - 2}px;`]);
-        $element('span', icon, [n, '.hvut-ab-tooltip']);
-        node.ability[n] = icon;
-      });
-
-      _ab.calc.preset('目前流派');
-    },
-
-    preset: function (name) {
-      _ab.calc.selected.forEach((e) => { _ab.calc.node.ability[e].classList.add('hvut-ab-off'); });
-      _ab.calc.selected = _ab.preset[name].slice();
-      _ab.calc.selected.forEach((e) => { _ab.calc.node.ability[e].classList.remove('hvut-ab-off'); });
-      _ab.calc.table();
-    },
-
-    ability: function (name) {
-      const selected = _ab.calc.selected;
-      if (selected.includes(name)) {
-        selected.splice(selected.indexOf(name), 1);
-        _ab.calc.node.ability[name].classList.add('hvut-ab-off');
-      } else {
-        selected.push(name);
-        _ab.calc.node.ability[name].classList.remove('hvut-ab-off');
-      }
-      _ab.calc.table();
-    },
-
-    table: function () {
-      const tbody = [];
-      let sum = 0;
-      _ab.calc.level.forEach((list, unlock) => {
-        const selected = list.filter(({ name }) => _ab.calc.selected.includes(name));
-        if (!selected.length) {
-          return;
-        }
-        sum += selected.reduce((s, e) => (s + e.point), 0);
-        const aboost = sum - unlock;
-        const tr = $element('tr', null, [_player.level < unlock ? '.hvut-ab-nolevel' : '']);
-        $element('td', tr, unlock);
-        $element('td', tr, sum);
-        $element('td', tr, [`/<span>${aboost}</span>`, aboost < 0 ? '.hvut-ab-noab' : '']);
-        const td = $element('td', tr);
-        selected.forEach(({ name, level, point }) => {
-          const ab = _ab.ability[name];
-          const icon = $element('div', td, ['.hvut-ab-icon', `!background-image: url("/y/t/${ab.img}"); background-position-x: ${ab.pos - 2}px;`]);
-          $element('span', icon, [point, '.hvut-ab-point']);
-          $element('span', icon, [`${name} 等级${level}`, '.hvut-ab-tooltip']);
-        });
-        tbody.push(tr);
-      });
-
-      _ab.calc.node.table.innerHTML = '<thead><tr><td>等级</td><td>所需技能点</td><td>"能力升级"需求级数</td><td>获得能力</td></tr></thead><tbody></tbody>';
-      _ab.calc.node.table.tBodies[0].append(...tbody);
-      $qsa('.hvut-ab-table tr:not(.hvut-ab-nolevel)').at(-1).scrollIntoView({ block: 'center' });
-    },
-
-    toggle: function () {
-      _ab.calc.node.div?.classList.toggle('hvut-none');
-      _ab.calc.init();
-    },
-
-    click: function (e) {
-      const target = e.target.closest('[data-action]');
-      if (!target) {
-        return;
-      }
-      const { action, name } = target.dataset;
-      if (action === 'preset') {
-        _ab.calc.preset(name);
-      } else if (action === 'ability') {
-        _ab.calc.ability(name);
-      } else if (action === 'toggle') {
-        _ab.calc.toggle();
-      }
-    },
-
-  };
-
-  GM_addStyle(/*css*/`
-    .hvut-ab-slot { position: absolute; bottom: -5px; left: 2px; width: 30px; font-size: 9pt; color: #fff; }
-    .hvut-ab-max { background-color: #333; }
-    .hvut-ab-limit { background-color: #03c; }
-    .hvut-ab-up { background-color: #c00; }
-    .hvut-ab-tree > img[src*='/td'] { filter: brightness(250%); }
-    .hvut-ab-bar { position: relative; margin-bottom: 13px; font-size: 10pt; line-height: 30px; white-space: nowrap; overflow: visible; }
-    .hvut-ab-points { display: block; font-weight: bold; text-shadow: 0 0 1px #777; }
-    .hvut-ab-level { display: block; position: absolute; top: 27px; left: 50%; min-width: 34px; transform: translateX(-50%); color: #999; font-size: 8pt; line-height: 12px; text-align: center; white-space: nowrap; z-index: 1; }
-    .hvut-ab-bf { opacity: 0.65; }
-    .hvut-ab-bux { cursor: not-allowed; }
-
-    #ability_treepane > div > div:first-child { padding-top: 13px; }
-    .hvut-ab-warn { display: block; margin-top: -6px; }
-    .hvut-ab-warn::before { content: attr(data-warn); display: inline-block; margin-bottom: 2px; padding: 1px 3px; border-radius: 2px; background-color: #c00; color: #fff; font-size: 9pt; }
-
-    .hvut-ab-calc { display: flex; position: absolute; top: 27px; left: 0; width: 100%; height: 675px; justify-content: center; align-items: center; background-color: #EDEBDF; z-index: 9; font-size: 10pt; text-align: left; }
-    .hvut-ab-calc > div { margin: 0 10px; height: 616px; }
-    .hvut-ab-calc > div:nth-child(3) { overflow: hidden scroll; }
-    .hvut-ab-icon { display: inline-block; position: relative; width: 30px; margin: 2px; height: 32px; vertical-align: middle; background-position-y: -2px; cursor: default; }
-    .hvut-ab-off { filter: grayscale(100%); box-shadow: 0 0 0 20px #fff9 inset; }
-    .hvut-ab-off:hover { filter: none; }
-    .hvut-ab-point { position: absolute; top: 0; right: 0; width: 14px; padding: 1px; text-align: center; background-color: #333; color: #fff; font-size: 9pt; }
-    .hvut-ab-tooltip { visibility: hidden; position: absolute; bottom: 32px; left: 0; padding: 0 3px; border: 1px solid; background-color: #fff; font-size: 9pt; line-height: 16px; white-space: nowrap; z-index: 1; pointer-events: none; }
-    .hvut-ab-icon:hover > .hvut-ab-tooltip { visibility: visible; }
-
-    .hvut-ab-side { position: static; }
-    .hvut-ab-ul { width: 450px; margin: 0; padding: 0; border: 1px solid; list-style: none; }
-    .hvut-ab-ul > li { padding: 2px; border-bottom: 1px solid; }
-    .hvut-ab-ul > li:last-child { border-bottom: none; }
-    .hvut-ab-category { display: inline-block; width: 130px; margin-left: 10px; font-weight: bold; vertical-align: middle; }
-    .hvut-ab-ul .hvut-ab-icon { cursor: pointer; }
-    .hvut-ab-table { table-layout: fixed; border-collapse: separate; border-spacing: 0; position: relative; width: 400px; text-align: right; }
-    .hvut-ab-table thead td { position: sticky; top: 0; height: 36px; border-top-width: 1px; font-weight: bold; text-align: center; background-color: #edb; z-index: 1; }
-    .hvut-ab-table td { border-style: solid; border-width: 0 1px 1px 0; padding: 2px 5px; }
-    .hvut-ab-table td:nth-child(1) { border-left-width: 1px; }
-    .hvut-ab-table td:nth-child(2) { width: 50px; }
-    .hvut-ab-table td:nth-child(3) { width: 50px; }
-    .hvut-ab-table td:nth-child(4) { width: 204px; text-align: left; }
-    .hvut-ab-table .hvut-ab-icon:nth-child(n+7) { margin-top: 7px; }
-    .hvut-ab-nolevel { background-color: #edb; }
-    .hvut-ab-noab > span { color: #999; }
-  `);
-
-  for (const div of $qsa('#ability_top div[onmouseover*="overability"]')) {
-    const exec = /overability\(\d+, '([^']+)'.+?(?:(Not Acquired)|Requires <strong>Level (\d+))/.exec(div.getAttribute('onmouseover'));
-    if (!exec) {
-      const evidence = record_hvut_ability_parse_failure('abilitySlotbar', { onmouseover: div.getAttribute('onmouseover') || '' });
-      show_hvut_failure_report('Ability parse failed', evidence);
-      return false;
-    }
-    const name = exec[1];
-    const ab = _ab.ability[name];
-    // HV 新增/改名技能时 _ab.ability 无此键 → 跳过该槽位, 不让一项未知技能崩掉整段汉化。
-    if (!ab) {
-      console.warn('[HVAA][i18n] 技能表缺少此项(槽位), 已跳过:', JSON.stringify(name));
-      continue;
-    }
-
-    ab.slotted = true;
-    ab.level = exec[2] ? 0 : ab.unlock.indexOf(parseInt(exec[3])) + 1;
-    ab.max = ab.unlock.length;
-    ab.limit = ab.unlock.findIndex((e) => e > _player.level);
-    if (ab.limit === -1) {
-      ab.limit = ab.max;
-    }
-
-    _ab.preset['Current Set'].push(name);
-    if (ab.level) {
-      _ab.level[name] = ab.level;
-    }
-
-    const span = $element('span', div, ['.hvut-ab-slot']);
-    if (ab.level === ab.max) {
-      span.textContent = '已满';
-      span.classList.add('hvut-ab-max');
-    } else if (ab.level === ab.limit) {
-      span.textContent = `${ab.level}/${ab.max}`;
-      span.classList.add('hvut-ab-limit');
-    } else {
-      span.textContent = `${ab.level}/${ab.max}`;
-      span.classList.add('hvut-ab-up');
-      const categories = ['General', '单手重甲盾战', '双手轻甲战士', '双持轻甲战士', '', 'Staff', 'Cloth Armor', 'Light Armor', 'Heavy Armor', 'Deprecating 1', 'Deprecating 2', 'Supportive 1', 'Supportive 2', 'Elemental', 'Forbidden', 'Divine'];
-      const index = categories.indexOf(ab.category);
-      $qsa('#ability_treelist > div')[index].classList.add('hvut-ab-tree');
-    }
-  }
-  if (!$config.set('ab_level', _ab.level)) {
-    alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
-    return false;
-  }
-
-  const abilityTreeEntries = prepare_hvut_ability_tree($qsa('#ability_treepane > div'), _ab.ability, _ab.point, { stage: 'legacyAbilityTreePrepare', panelStage: 'legacyAbilityButtonPanel', unlockIdStage: 'legacyAbilityUnlockId', requirementStage: 'legacyAbilityRankRequirement', upgradeLimitKey: 'limit' });
-  if (abilityTreeEntries === null) {
-    show_hvut_failure_report('Ability parse failed', read_hvut_session_evidence('HVAA:lastHvutAbilityParseFailure'));
-    return false;
-  }
-  for (const { div, name, ability: ab, id, ranks, acquiredLevel } of abilityTreeEntries) {
-    ab.div = div;
-    ab.id = id;
-    ab.level = acquiredLevel;
-    for (const { button, decision, index } of ranks) {
-      button.classList.add('hvut-ab-bar');
-      if (render_hvut_ability_rank_requirement(button, decision, index, { name: name }) === false) {
-        return false;
-      }
-    }
-
-    if (ab.level) {
-      if (!ab.slotted) {
-        if (mark_hvut_ability_warning(div, '未激活', 'legacyAbilityWarningNode') === null) {
-          alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
-          return false;
-        }
-      } else if (ab.level !== ab.limit) {
-        if (mark_hvut_ability_warning(div, '可升级', 'legacyAbilityWarningNode') === null) {
-          alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
-          return false;
-        }
-      }
-    }
-  }
-  $id('ability_treepane').addEventListener('click', _ab.click, true);
-
-  $input(['button', '能力点计算器'], $id('ability_outer'), { style: 'position: absolute; top: 20px; left: -80px; width: 90px; white-space: normal;' }, () => { _ab.calc.toggle(); });
+  if (run_hvut_ability_page({ state: _ab, config: $config, player: _player, definition: abilityPageDefinition }) === false) return;
 } else
 // [END 3] Character - Abilities */
 

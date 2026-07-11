@@ -53,34 +53,25 @@ const helperRegion =
   /var record_hvut_ability_parse_failure = function \(stage, detail\) \{[\s\S]*?\n  var reloadCurrentPage/.exec(
     text
   )?.[0] || "";
-const modernInit =
-  /_ab\.init = function \(\) \{[\s\S]*?\n  \};\n\n  _ab\.parse_slotbar/.exec(text)?.[0] || "";
-const modernSlotbar =
-  /_ab\.parse_slotbar = function \(\) \{[\s\S]*?\n  \};\n\n  _ab\.parse_treepane/.exec(text)?.[0] ||
-  "";
-const modernTreepane =
-  /_ab\.parse_treepane = function \(\) \{[\s\S]*?\n  \};\n\n  _ab\.click/.exec(text)?.[0] || "";
-const abilityRegions = [
+const lifecycleRegion =
+  /var parse_hvut_ability_slotbar = function \(page\) \{[\s\S]*?\n  var record_hvut_training_notification_failure/.exec(
+    text
+  )?.[0] || "";
+const compositionCalls = [
   ...text.matchAll(
-    /_ab\.point = parse_hvut_ability_points_from_top\(\$id\('ability_top'\)[\s\S]*?\n\} else\n\/\/ \[END 3\] Character - Abilities/g
+    /run_hvut_ability_page\(\{ state: _ab, config: \$config, player: _player, definition: abilityPageDefinition \}\)/g
   ),
-].map((match) => match[0]);
-const legacyRegion = abilityRegions[1] || "";
+];
 
 for (const [label, body] of [
   ["ability parse helper", helperRegion],
-  ["modern ability init", modernInit],
-  ["modern ability slotbar parser", modernSlotbar],
-  ["modern ability treepane parser", modernTreepane],
-  ["legacy ability region", legacyRegion],
+  ["shared ability lifecycle", lifecycleRegion],
 ]) {
   if (!body) violations.push(`${target} must keep ${label} visible`);
 }
 
-if (abilityRegions.length !== 2) {
-  violations.push(
-    `${target} must keep exactly two HVUT ability page regions, found ${abilityRegions.length}`
-  );
+if (compositionCalls.length !== 2) {
+  violations.push(`${target} must compose one shared ability entry for both worlds`);
 }
 
 for (const required of [
@@ -111,52 +102,40 @@ for (const required of [
 }
 
 for (const required of [
-  "if (_ab.point === null) {",
-  "if (_ab.parse_slotbar() === false) {",
-  "if (!$config.set('ab_level', _ab.level)) {",
-  "if (_ab.parse_treepane() === false) {",
-  "return false;",
-]) {
-  requirePart("modern ability init", modernInit, required);
-}
-
-for (const required of [
+  "var parse_hvut_ability_slotbar = function (page) {",
   "for (const div of $qsa('#ability_top div[onmouseover*=\"overability\"]')) {",
   "record_hvut_ability_parse_failure('abilitySlotbar'",
-  "return false;",
+  "reason: 'abilityCategoryNodeMissing'",
   "continue;",
-  "return true;",
-]) {
-  requirePart("modern ability slotbar parser", modernSlotbar, required);
-}
-
-for (const required of [
-  "const entries = prepare_hvut_ability_tree(",
-  "if (entries === null) {",
-  "for (const { div, name, ability: ab, id, ranks, acquiredLevel } of entries) {",
+  "var render_hvut_ability_tree = function (page) {",
+  "var entries = prepare_hvut_ability_tree(",
+  "for (const { div, name, ability, id, ranks, acquiredLevel } of entries) {",
   "for (const { button, decision, index } of ranks) {",
   "if (render_hvut_ability_rank_requirement(button, decision, index, { name: name }) === false) return false;",
   "mark_hvut_ability_warning(div, '未激活', 'abilityWarningNode')",
   "mark_hvut_ability_warning(div, '可升级', 'abilityWarningNode')",
-  "return true;",
+  "var unlock_hvut_ability_ranks = async function (page, name, to) {",
+  "var create_hvut_ability_calculator = function (page) {",
+  "calculator.preset('Current Set')",
+  "var inject_hvut_ability_page_style = function () {",
+  "var run_hvut_ability_page = function (context) {",
+  "page.points = parse_hvut_ability_points_from_top($id('ability_top'), 'abilityPointsNode')",
+  "parse_hvut_ability_slotbar(page) === false",
+  "!page.config.set('ab_level', page.levels)",
+  "render_hvut_ability_tree(page) === false",
+  "page.state.unlock = (name, to) => unlock_hvut_ability_ranks(page, name, to)",
 ]) {
-  requirePart("modern ability treepane parser", modernTreepane, required);
+  requirePart("shared ability lifecycle", lifecycleRegion, required);
 }
 
-for (const required of [
-  "_ab.point = parse_hvut_ability_points_from_top($id('ability_top'), 'legacyAbilityPointsNode');",
-  "if (_ab.point === null) {",
-  "for (const div of $qsa('#ability_top div[onmouseover*=\"overability\"]')) {",
-  "record_hvut_ability_parse_failure('abilitySlotbar'",
-  "const abilityTreeEntries = prepare_hvut_ability_tree(",
-  "if (abilityTreeEntries === null) {",
-  "for (const { div, name, ability: ab, id, ranks, acquiredLevel } of abilityTreeEntries) {",
-  "for (const { button, decision, index } of ranks) {",
-  "if (render_hvut_ability_rank_requirement(button, decision, index, { name: name }) === false) {",
-  "mark_hvut_ability_warning(div, '未激活', 'legacyAbilityWarningNode')",
-  "mark_hvut_ability_warning(div, '可升级', 'legacyAbilityWarningNode')",
+for (const forbidden of [
+  /_ab\.(?:init|parse_slotbar|parse_treepane|unlock)\s*=/,
+  /legacyAbility(?:Points|Tree|Button|Unlock|Rank|Warning)/,
+  /\.hvut-ab-limit/,
 ]) {
-  requirePart("legacy ability region", legacyRegion, required);
+  if (forbidden.test(text)) {
+    violations.push(`${target} must retire the duplicated legacy ability lifecycle: ${forbidden}`);
+  }
 }
 
 for (const forbidden of [
@@ -238,15 +217,17 @@ const renderCalls = [
     /render_hvut_ability_rank_requirement\(button, decision, index, \{ name: name \}\)/g
   ),
 ].length;
-if (renderCalls !== 2) {
+if (renderCalls !== 1) {
   violations.push(
-    `both HVUT ability worlds must use one rank requirement renderer, found ${renderCalls}`
+    `shared HVUT ability lifecycle must render requirements once, found ${renderCalls}`
   );
 }
 const prepareCalls = [...text.matchAll(/prepare_hvut_ability_tree\(\$qsa\('#ability_treepane/g)]
   .length;
-if (prepareCalls !== 2) {
-  violations.push(`both HVUT ability worlds must prepare the whole tree, found ${prepareCalls}`);
+if (prepareCalls !== 1) {
+  violations.push(
+    `shared HVUT ability lifecycle must prepare the tree once, found ${prepareCalls}`
+  );
 }
 if (/if \(type === null\)/.test(text)) {
   violations.push("unknown ability button state must not leave a partially rendered tree");
@@ -284,9 +265,9 @@ if (text.includes("mix-blend-mode: difference")) {
 }
 if (
   (text.match(/\.hvut-ab-level \{ display: block; position: absolute; top: 27px;/g) || [])
-    .length !== 2
+    .length !== 1
 ) {
-  violations.push("both ability worlds must place the required level below the rank button");
+  violations.push("shared ability renderer must place the required level below the rank button");
 }
 if (/\.hvut-ab-b(?:f|u|ux|x) \{ color:/.test(text)) {
   violations.push("ability point state classes must not override adaptive background contrast");
@@ -401,7 +382,7 @@ for (const required of [
 for (const required of [
   "create_hvut_ability_page_definition('isekai', 'abilityCatalogCompose')",
   "create_hvut_ability_page_definition('persistent', 'abilityCatalogCompose')",
-  "_ab.preset = abilityPageDefinition.presets",
+  "run_hvut_ability_page({ state: _ab, config: $config, player: _player, definition: abilityPageDefinition })",
 ]) {
   if (!text.includes(required))
     violations.push(`ability page composition must consume ${required}`);

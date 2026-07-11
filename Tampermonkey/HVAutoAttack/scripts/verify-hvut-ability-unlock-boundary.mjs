@@ -11,9 +11,10 @@ const diagnosticTestText = fs.readFileSync(
 );
 const violations = [];
 
-const bodies = [
-  ...text.matchAll(/_ab\.unlock = async function \(name, to\) \{[\s\S]*?\n  \};/g),
-].map((match) => match[0]);
+const unlockEntry =
+  /var unlock_hvut_ability_ranks = async function \(page, name, to\) \{[\s\S]*?\n  \};\n  var create_hvut_ability_calculator/.exec(
+    text
+  )?.[0] || "";
 
 for (const required of [
   "var record_hvut_ability_unlock_failure = function (stage, detail) {",
@@ -53,61 +54,30 @@ if (!diagnosticTestText.includes("HVAA:lastHvutAbilityUnlockFailure")) {
   violations.push("diagnostic-evidence.test.js must cover HVUT ability unlock evidence");
 }
 
-if (bodies.length !== 2) {
-  violations.push(`${target} must keep both HVUT ability unlock segment entries visible`);
+for (const required of [
+  "var count = to - ability.level;",
+  "var results = await run_hvut_async_task_layout('SEQUENTIAL'",
+  "run_hvut_ability_unlock_request(ability, { buttonStage: 'abilityUnlockButton', responseStage: 'abilityUnlockResponse' })",
+  "if (results.length !== count || !results.every((result) => result)) return false;",
+  "catch (error) {",
+  "var evidence = record_hvut_ability_unlock_failure('abilityUnlockRequest'",
+  "show_hvut_failure_report('Ability unlock failed', evidence, ['HVAA:lastHvutAbilityParseFailure']);",
+  "reloadCurrentPage(hvutReloadReason('HV_UTILS_ABILITY_UNLOCK'))",
+]) {
+  if (!unlockEntry.includes(required)) {
+    violations.push(`${target} shared ability unlock entry must guard failure with ${required}`);
+  }
 }
-
-for (const [index, body] of bodies.entries()) {
-  for (const required of [
-    "let results;",
-    "try {\n      results = await run_hvut_async_task_layout('SEQUENTIAL'",
-    "catch (error) {",
-    "const evidence = record_hvut_ability_unlock_failure(",
-    "return run_hvut_ability_unlock_request(ab, { buttonStage:",
-    "responseStage:",
-    "show_hvut_failure_report('Ability unlock failed', evidence, ['HVAA:lastHvutAbilityParseFailure']);\n      return;",
-    "if (results.length !== count || !results.every((r) => r)) return;",
-    "reloadCurrentPage(hvutReloadReason('HV_UTILS_ABILITY_UNLOCK'))",
-  ]) {
-    if (!body.includes(required)) {
-      violations.push(`${target} ability unlock[${index}] must guard failure with ${required}`);
-    }
-  }
-  if (/Promise\.all\s*\(/.test(body)) {
-    violations.push(
-      `${target} ability unlock[${index}] must serialize same-ability writes through task layout`
-    );
-  }
-  if (/popup\(error\);\n\s*}\s*else/.test(body)) {
-    violations.push(`${target} ability unlock[${index}] must not continue after HV error popup`);
-  }
-  if (/catch \(_error\) \{\n\s*alert\(IS_ISEKAI/.test(body)) {
-    violations.push(`${target} ability unlock[${index}] must not keep untyped request failure`);
-  }
-  if (/record_hvut_ability_unlock_failure\([^;]+;\n\s*alert\(IS_ISEKAI/.test(body)) {
-    violations.push(
-      `${target} ability unlock[${index}] must show copyable diagnostic evidence instead of a bare alert`
-    );
-  }
-  if (/\$ajax\.fetch\(location\.href/.test(body)) {
-    violations.push(
-      `${target} ability unlock[${index}] must delegate current-page POST to run_hvut_ability_unlock_request`
-    );
-  }
-  if (/get_message\(doc\)/.test(body)) {
-    violations.push(
-      `${target} ability unlock[${index}] must not classify unlock response outside request entry`
-    );
-  }
-  if (/ab\.div\.children\[2\]/.test(body)) {
-    violations.push(
-      `${target} ability unlock[${index}] must not rediscover button panel from raw DOM child index`
-    );
-  }
-  if (/\$qs\('div\[style\*="u\.png"\]',\s*ab\.div/.test(body)) {
-    violations.push(
-      `${target} ability unlock[${index}] must use the typed ability unlock button parser`
-    );
+for (const forbidden of [
+  /Promise\.all\s*\(/,
+  /_ab\.unlock\s*=/,
+  /legacyAbilityUnlock/,
+  /\$ajax\.fetch\(location\.href/,
+  /get_message\(doc\)/,
+  /ab\.div\.children\[2\]/,
+]) {
+  if (forbidden.test(unlockEntry || text)) {
+    violations.push(`${target} shared ability unlock entry must retire ${forbidden}`);
   }
 }
 
