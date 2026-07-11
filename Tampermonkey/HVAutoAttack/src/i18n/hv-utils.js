@@ -769,7 +769,7 @@ try {
   };
   var render_hvut_ability_rank_requirement = function (button, decision, index, context) {
     var bridge = window.HVAA_hvutAbilityRequirement;
-    var className = decision.rankState === bridge.state.ACQUIRED ? '.hvut-ab-bf' : decision.action === bridge.action.UNLOCK ? '.hvut-ab-bu' : decision.action === bridge.action.INSUFFICIENT_POINTS ? '.hvut-ab-bux' : '.hvut-ab-bx';
+    var className = decision.rankState === bridge.state.ACQUIRED ? 'hvut-ab-bf' : decision.action === bridge.action.UNLOCK ? 'hvut-ab-bu' : decision.action === bridge.action.INSUFFICIENT_POINTS ? 'hvut-ab-bux' : 'hvut-ab-bx';
     var attributes = decision.action === bridge.action.UNLOCK ? { dataset: { action: 'unlock', name: context?.name || '', to: index + 1 } } : null;
     var isSplitLayout = decision.requirement.layout === bridge.layout.POINTS_CENTER_LEVEL_BELOW;
     if (!isSplitLayout) {
@@ -789,7 +789,7 @@ try {
       record_hvut_ability_parse_failure(context?.stage || 'abilityRankRequirementContrast', { reason: contrast?.reason || 'abilityRequirementContrastRejected', name: context?.name || '', index: index, backgroundColors: backgroundColors });
       return false;
     }
-    var point = $element('span', button, attributes ? [decision.requirement.abilityPointsText, '.hvut-ab-points' + className, attributes] : [decision.requirement.abilityPointsText, '.hvut-ab-points' + className]);
+    var point = $element('span', button, attributes ? [decision.requirement.abilityPointsText, '.hvut-ab-points ' + className, attributes] : [decision.requirement.abilityPointsText, '.hvut-ab-points ' + className]);
     point.style.color = contrast.textColor;
     point.dataset.contrastTone = contrast.tone;
     point.dataset.contrastBackground = contrast.effectiveBackground;

@@ -266,7 +266,7 @@ for (const required of [
   "point.dataset.contrastBackground = contrast.effectiveBackground",
   "point.dataset.contrastSource = contrast.source",
   "point.dataset.backgroundFamily = contrast.backgroundFamily",
-  "'.hvut-ab-points'",
+  "'.hvut-ab-points ' + className",
   "'.hvut-ab-level'",
   "reason: 'abilityRequirementLayoutUnknown'",
   "reason: contrast?.reason || 'abilityRequirementContrastRejected'",
@@ -287,6 +287,9 @@ if (
 if (/\.hvut-ab-b(?:f|u|ux|x) \{ color:/.test(text)) {
   violations.push("ability point state classes must not override adaptive background contrast");
 }
+if (text.includes("'.hvut-ab-points' + className")) {
+  violations.push("ability point and state identities must be separate CSS classes");
+}
 for (const required of [
   "export function decideHvutAbilityPointContrast(input)",
   "ABILITY_ASSET_PALETTE",
@@ -294,7 +297,9 @@ for (const required of [
   "backgroundColors",
   "contrastRatio",
   'textColor: tone === HvutAbilityPointTone.DARK ? "#000" : "#fff"',
-  'source: asset ? "abilityAsset" : parsedLayers.length ? "computedLayers" : "defaultWhite"',
+  '"abilityAssetOpaque"',
+  '"abilityAssetTransparent"',
+  'transparentStates: "u/x use computed background layers"',
   'sourceOrigin: "https://hentaiverse.org/isekai/y/ab/"',
 ]) {
   if (!contrastText.includes(required)) {
@@ -308,6 +313,9 @@ for (const required of [
   '"/isekai/y/ab/7gf.png"',
   '"url(/isekai/y/ab/2rf.png)"',
   '"url(/isekai/y/ab/1pf.png)"',
+  '"url(/isekai/y/ab/2ru.png)"',
+  "uses the real parent background under transparent unlock asset %s",
+  "uses the parent background under the colorless locked asset",
   '"major red"',
   '"supportive green"',
   '"protection blue"',

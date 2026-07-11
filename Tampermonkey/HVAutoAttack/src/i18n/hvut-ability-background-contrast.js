@@ -10,6 +10,7 @@ export const HvutAbilityBackgroundPaletteEvidence = Object.freeze({
   reachability: "successful",
   sourceOrigin: "https://hentaiverse.org/isekai/y/ab/",
   sample: "opaque center pixel",
+  transparentStates: "u/x use computed background layers",
 });
 
 const ABILITY_ASSET_PALETTE = Object.freeze({
@@ -49,15 +50,22 @@ function parseCssColor(value) {
 
 function abilityAssetBackground(backgroundImage) {
   if (typeof backgroundImage !== "string") return null;
-  const match = /\/ab\/(\d+)([bgrp])([fux])\.png(?:["')]|$)/i.exec(backgroundImage);
-  if (!match) return null;
-  const palette = ABILITY_ASSET_PALETTE[match[2].toLowerCase()];
-  return palette
-    ? {
-        assetCode: `${match[1]}${match[2].toLowerCase()}${match[3].toLowerCase()}`,
-        family: palette.family,
-        color: palette.color,
-      }
+  const colored = /\/ab\/(\d+)([bgrp])([fu])\.png(?:["')]|$)/i.exec(backgroundImage);
+  if (colored) {
+    const palette = ABILITY_ASSET_PALETTE[colored[2].toLowerCase()];
+    const state = colored[3].toLowerCase();
+    return palette
+      ? {
+          assetCode: `${colored[1]}${colored[2].toLowerCase()}${state}`,
+          family: palette.family,
+          state,
+          opaqueColor: state === "f" ? palette.color : null,
+        }
+      : null;
+  }
+  const locked = /\/ab\/(\d+)x\.png(?:["')]|$)/i.exec(backgroundImage);
+  return locked
+    ? { assetCode: `${locked[1]}x`, family: "default", state: "x", opaqueColor: null }
     : null;
 }
 
@@ -98,8 +106,8 @@ function contrastRatio(first, second) {
 
 export function decideHvutAbilityPointContrast(input) {
   const asset = abilityAssetBackground(input?.backgroundImage);
-  const parsedLayers = asset
-    ? [parseCssColor(asset.color)]
+  const parsedLayers = asset?.opaqueColor
+    ? [parseCssColor(asset.opaqueColor)]
     : Array.from(input?.backgroundColors || []).map(parseCssColor).filter(Boolean);
   let effective = WHITE;
   for (const layer of parsedLayers.reverse()) effective = composite(layer, effective);
@@ -115,7 +123,13 @@ export function decideHvutAbilityPointContrast(input) {
     textColor: tone === HvutAbilityPointTone.DARK ? "#000" : "#fff",
     effectiveBackground: `rgb(${rounded.join(", ")})`,
     contrastRatio: Number(Math.max(darkContrast, lightContrast).toFixed(2)),
-    source: asset ? "abilityAsset" : parsedLayers.length ? "computedLayers" : "defaultWhite",
+    source: asset?.opaqueColor
+      ? "abilityAssetOpaque"
+      : asset
+        ? "abilityAssetTransparent"
+        : parsedLayers.length
+          ? "computedLayers"
+          : "defaultWhite",
     backgroundFamily: asset?.family || "unclassified",
     assetCode: asset?.assetCode || "",
   });

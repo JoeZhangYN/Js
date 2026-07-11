@@ -13,10 +13,45 @@ describe("HVUT ability point background contrast", () => {
   ])("classifies the real ability asset %s", (backgroundImage, family, tone, textColor) => {
     expect(decideHvutAbilityPointContrast({ backgroundImage })).toMatchObject({
       kind: "accepted",
-      source: "abilityAsset",
+      source: "abilityAssetOpaque",
       backgroundFamily: family,
       tone,
       textColor,
+    });
+  });
+
+  it.each([
+    ["url(/isekai/y/ab/5bu.png)", "blue"],
+    ["url(/isekai/y/ab/7gu.png)", "green"],
+    ["url(/isekai/y/ab/2ru.png)", "red"],
+    ["url(/isekai/y/ab/1pu.png)", "purple"],
+  ])("uses the real parent background under transparent unlock asset %s", (backgroundImage, family) => {
+    expect(
+      decideHvutAbilityPointContrast({
+        backgroundImage,
+        backgroundColors: ["rgba(0, 0, 0, 0)", "rgb(255, 255, 255)"],
+      })
+    ).toMatchObject({
+      kind: "accepted",
+      source: "abilityAssetTransparent",
+      backgroundFamily: family,
+      tone: HvutAbilityPointTone.DARK,
+      textColor: "#000",
+      effectiveBackground: "rgb(255, 255, 255)",
+    });
+  });
+
+  it("uses the parent background under the colorless locked asset", () => {
+    expect(
+      decideHvutAbilityPointContrast({
+        backgroundImage: "url(/isekai/y/ab/2x.png)",
+        backgroundColors: ["transparent", "rgb(237, 235, 223)"],
+      })
+    ).toMatchObject({
+      source: "abilityAssetTransparent",
+      backgroundFamily: "default",
+      tone: HvutAbilityPointTone.DARK,
+      textColor: "#000",
     });
   });
 
