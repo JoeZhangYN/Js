@@ -3,17 +3,18 @@ import path from "node:path";
 
 const root = process.cwd();
 const hvut = fs.readFileSync(path.join(root, "src/i18n/hv-utils.js"), "utf8");
-const bridge = fs.readFileSync(path.join(root, "src/i18n/hvut-world-policy-bridge.js"), "utf8");
+const bridge = fs.readFileSync(path.join(root, "src/i18n/hvut-runtime-policy-bridge.js"), "utf8");
 const main = fs.readFileSync(path.join(root, "src/main.js"), "utf8");
 const violations = [];
 
 for (const required of [
-  "createHvutWorldPolicyBridge",
+  "createHvutRuntimePolicyBridge",
   "worldPolicy.world",
   "worldPolicy.hvut.namespace",
   "worldPolicy.features.randomEncounter",
-  "createHvutWorldPolicyBridge(CURRENT_WORLD_POLICY)",
-  'Object.defineProperty(window, "HVAA_hvutWorldPolicy"',
+  "selectHvutRuntimeEntryPolicy(ingressIdentity).mode",
+  "createHvutRuntimePolicyBridge(CURRENT_WORLD_POLICY, CURRENT_INGRESS_IDENTITY)",
+  'Object.defineProperty(window, "HVAA_hvutRuntimePolicy"',
   "writable: false",
   "value: policy",
 ]) {
@@ -21,13 +22,14 @@ for (const required of [
 }
 
 for (const required of [
-  "var HVUT_WORLD_POLICY = window.HVAA_hvutWorldPolicy;",
-  "throw new Error('[HVAA][HVUT] world policy bridge missing');",
-  "var IS_ISEKAI = HVUT_WORLD_POLICY.world === 'isekai';",
-  "var world = HVUT_WORLD_POLICY.world;",
-  "serverName: HVUT_WORLD_POLICY.serverName,",
-  "storageNamespace: HVUT_WORLD_POLICY.storageNamespace,",
-  "return HVUT_WORLD_POLICY.storageNamespace;",
+  "var HVUT_RUNTIME_POLICY = window.HVAA_hvutRuntimePolicy;",
+  "throw new Error('[HVAA][HVUT] runtime policy bridge missing');",
+  "var IS_ISEKAI = HVUT_RUNTIME_POLICY.world === 'isekai';",
+  "var HVUT_ENTRY_MODE = HVUT_RUNTIME_POLICY.entryMode;",
+  "var world = HVUT_RUNTIME_POLICY.world;",
+  "serverName: HVUT_RUNTIME_POLICY.serverName,",
+  "storageNamespace: HVUT_RUNTIME_POLICY.storageNamespace,",
+  "return HVUT_RUNTIME_POLICY.storageNamespace;",
   "const HVUT_WORLD = create_hvut_world_identity({ seasonStage: 'serverSeason' });",
 ]) {
   if (!hvut.includes(required)) violations.push(`HVUT runtime must contain ${required}`);
@@ -36,10 +38,10 @@ for (const required of [
 if (/var IS_ISEKAI[^\n]*(?:location|pathname)/.test(hvut)) {
   violations.push("HVUT runtime must not classify World from raw location markers");
 }
-if (!main.includes('import "./i18n/hvut-world-policy-bridge.js"')) {
+if (!main.includes('import "./i18n/hvut-runtime-policy-bridge.js"')) {
   violations.push("main must install the frozen HVUT world bridge");
 }
-if (main.indexOf("hvut-world-policy-bridge.js") > main.indexOf("hv-utils.js")) {
+if (main.indexOf("hvut-runtime-policy-bridge.js") > main.indexOf("hv-utils.js")) {
   violations.push("main must install the HVUT world bridge before the sloppy runtime");
 }
 

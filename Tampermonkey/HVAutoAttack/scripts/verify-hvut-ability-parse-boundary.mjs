@@ -4,6 +4,19 @@ import path from "node:path";
 const root = process.cwd();
 const target = path.normalize("src/i18n/hv-utils.js");
 const text = fs.readFileSync(path.join(root, target), "utf8");
+const requirementText = fs.readFileSync(
+  path.join(root, "src/i18n/hvut-ability-requirement.js"),
+  "utf8"
+);
+const requirementTestText = fs.readFileSync(
+  path.join(root, "src/i18n/hvut-ability-requirement.test.js"),
+  "utf8"
+);
+const bridgeText = fs.readFileSync(
+  path.join(root, "src/i18n/hvut-ability-requirement-bridge.js"),
+  "utf8"
+);
+const mainText = fs.readFileSync(path.join(root, "src/main.js"), "utf8");
 const violations = [];
 
 function requirePart(label, body, part) {
@@ -58,7 +71,13 @@ for (const required of [
   "var mark_hvut_ability_warning = function (div, warn, stage) {",
   "record_hvut_ability_parse_failure(stage, { reason: 'abilityWarningNodeMissing'",
   "return match ? parseInt(match[1]) : record_hvut_ability_parse_failure('abilityPoints'",
-  "return match ? match[1] : record_hvut_ability_parse_failure('abilityButtonType'",
+  "record_hvut_ability_parse_failure('abilityButtonType'",
+  "return '?';",
+  "var decide_hvut_ability_rank_requirement = function",
+  "var render_hvut_ability_rank_requirement = function",
+  "var prepare_hvut_ability_tree = function",
+  "reason: 'abilityCatalogEntryMissing'",
+  "reason: 'abilityRankCountMismatch'",
 ]) {
   requirePart("ability parse helper", helperRegion, required);
 }
@@ -84,15 +103,13 @@ for (const required of [
 }
 
 for (const required of [
-  "for (const div of $qsa('#ability_treepane > div')) {",
-  "const buttonPanel = parse_hvut_ability_button_panel(div, 'abilityButtonPanel');",
-  "ab.id = parse_hvut_ability_unlock_id(buttonPanel, 'abilityUnlockId');",
-  "for (const [i, button] of Array.from(buttonPanel.children).entries()) {",
-  "const type = parse_hvut_ability_button_type(button.style.backgroundImage);",
-  "if (type === null) return false;",
+  "const entries = prepare_hvut_ability_tree(",
+  "if (entries === null) {",
+  "for (const { div, name, ability: ab, id, ranks, acquiredLevel } of entries) {",
+  "for (const { button, decision, index } of ranks) {",
+  "render_hvut_ability_rank_requirement(button, decision, index, { name: name });",
   "mark_hvut_ability_warning(div, '未激活', 'abilityWarningNode')",
   "mark_hvut_ability_warning(div, '可升级', 'abilityWarningNode')",
-  "continue;",
   "return true;",
 ]) {
   requirePart("modern ability treepane parser", modernTreepane, required);
@@ -103,11 +120,11 @@ for (const required of [
   "if (_ab.point === null) {",
   "for (const div of $qsa('#ability_top div[onmouseover*=\"overability\"]')) {",
   "record_hvut_ability_parse_failure('abilitySlotbar'",
-  "const buttonPanel = parse_hvut_ability_button_panel(div, 'legacyAbilityButtonPanel');",
-  "ab.id = parse_hvut_ability_unlock_id(buttonPanel, 'legacyAbilityUnlockId');",
-  "for (const [i, button] of Array.from(buttonPanel.children).entries()) {",
-  "const type = parse_hvut_ability_button_type(button.style.backgroundImage);",
-  "if (type === null) {",
+  "const abilityTreeEntries = prepare_hvut_ability_tree(",
+  "if (abilityTreeEntries === null) {",
+  "for (const { div, name, ability: ab, id, ranks, acquiredLevel } of abilityTreeEntries) {",
+  "for (const { button, decision, index } of ranks) {",
+  "render_hvut_ability_rank_requirement(button, decision, index, { name: name });",
   "mark_hvut_ability_warning(div, '未激活', 'legacyAbilityWarningNode')",
   "mark_hvut_ability_warning(div, '可升级', 'legacyAbilityWarningNode')",
 ]) {
@@ -128,6 +145,88 @@ for (const forbidden of [
   if (text.includes(forbidden)) {
     violations.push(`${target} must not keep unchecked ability parse path: ${forbidden}`);
   }
+}
+
+for (const required of [
+  "HvutAbilityRankState",
+  "HvutAbilityRankAction",
+  "export function decideHvutAbilityRankRequirement(input)",
+  'kind: "unknownState"',
+  "displayText:",
+  "requirement,",
+]) {
+  if (!requirementText.includes(required)) {
+    violations.push(`ability requirement decision must contain ${required}`);
+  }
+}
+for (const required of [
+  "keeps point and level requirements for button state",
+  "preserves requirements while classifying an unknown button state",
+  "rejects missing catalog requirements instead of rendering empty text",
+]) {
+  if (!requirementTestText.includes(required)) {
+    violations.push(`ability requirement tests must cover ${required}`);
+  }
+}
+for (const required of [
+  'Object.defineProperty(window, "HVAA_hvutAbilityRequirement"',
+  "decide: decideHvutAbilityRankRequirement",
+  "writable: false",
+]) {
+  if (!bridgeText.includes(required)) {
+    violations.push(`ability requirement bridge must contain ${required}`);
+  }
+}
+if (!mainText.includes('import "./i18n/hvut-ability-requirement-bridge.js"')) {
+  violations.push("main must bind ability requirement decisions before the sloppy runtime");
+}
+if (mainText.indexOf("hvut-ability-requirement-bridge.js") > mainText.indexOf("hv-utils.js")) {
+  violations.push("ability requirement bridge must be installed before hv-utils");
+}
+
+const renderCalls = [
+  ...text.matchAll(
+    /render_hvut_ability_rank_requirement\(button, decision, index, \{ name: name \}\)/g
+  ),
+].length;
+if (renderCalls !== 2) {
+  violations.push(
+    `both HVUT ability worlds must use one rank requirement renderer, found ${renderCalls}`
+  );
+}
+const prepareCalls = [...text.matchAll(/prepare_hvut_ability_tree\(\$qsa\('#ability_treepane/g)]
+  .length;
+if (prepareCalls !== 2) {
+  violations.push(`both HVUT ability worlds must prepare the whole tree, found ${prepareCalls}`);
+}
+if (/if \(type === null\)/.test(text)) {
+  violations.push("unknown ability button state must not leave a partially rendered tree");
+}
+for (const forbidden of [
+  /\$element\('span', button, \[ab\.point\[i\], '\.hvut-ab-bu/,
+  /\$element\('span', button, \[`\$\{ab\.point\[i\]\} \(\$\{ab\.unlock\[i\]\}\)`/,
+]) {
+  if (forbidden.test(text)) {
+    violations.push("ability rank requirements must not keep state-specific rendering dialects");
+  }
+}
+
+const catalogEntries = [
+  ...text.matchAll(
+    /'([^']+)': \{ category: '[^']*', img: '[^']*', pos: -?\d+, unlock: \[([^\]]*)\], point: \[([^\]]*)\] \}/g
+  ),
+];
+for (const [, name, unlocks, points] of catalogEntries) {
+  const unlockCount = unlocks.split(",").filter((value) => value.trim()).length;
+  const pointCount = points.split(",").filter((value) => value.trim()).length;
+  if (unlockCount !== pointCount) {
+    violations.push(
+      `ability catalog ${name} has ${unlockCount} levels but ${pointCount} point costs`
+    );
+  }
+}
+if (!catalogEntries.some(([, name]) => name === "Better Immobilize")) {
+  violations.push("ability catalog must preserve Better Immobilize requirement identity");
 }
 
 if (violations.length) {

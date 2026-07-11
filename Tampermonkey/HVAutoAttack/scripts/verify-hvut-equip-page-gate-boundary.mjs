@@ -2,38 +2,35 @@ import fs from "node:fs";
 import path from "node:path";
 
 const root = process.cwd();
-const target = path.join(root, "src/i18n/hv-utils.js");
-const text = fs.readFileSync(target, "utf8");
+const hvut = fs.readFileSync(path.join(root, "src/i18n/hv-utils.js"), "utf8");
+const policy = fs.readFileSync(path.join(root, "src/i18n/hvut-runtime-entry-policy.js"), "utf8");
+const bridge = fs.readFileSync(path.join(root, "src/i18n/hvut-runtime-policy-bridge.js"), "utf8");
 const violations = [];
 
-const classifierBody =
-  text.match(/var is_hvut_isekai_equip_page = function \(pathname\) \{[\s\S]*?\n  \};/)?.[0] || "";
-
-if (!classifierBody) {
-  violations.push(
-    "hv-utils must classify the Isekai equip page through is_hvut_isekai_equip_page(pathname)"
-  );
-}
-
 for (const required of [
-  "var is_hvut_isekai_equip_page = function (pathname) {",
-  "return /\\/isekai\\/equip(\\/|$)/.test(pathname || '');",
+  "HvutRuntimeEntryMode",
+  'EXCLUDED_ISEKAI_EQUIPMENT_DOCUMENT: "excludedIsekaiEquipmentDocument"',
+  "export function selectHvutRuntimeEntryPolicy(ingressIdentity)",
+  "ingressIdentity?.world === GameWorld.ISEKAI",
+  "/^\\/isekai\\/equip(?:\\/|$)/",
 ]) {
-  if (!classifierBody.includes(required)) {
-    violations.push(`is_hvut_isekai_equip_page(pathname) must include ${required}`);
-  }
+  if (!policy.includes(required)) violations.push(`HVUT entry policy must contain ${required}`);
 }
 
-if (!text.includes("if (!is_hvut_isekai_equip_page(window.location.pathname)) {")) {
-  violations.push("hv-utils embed guard must consume the named Isekai equip page classifier");
+for (const required of ["selectHvutRuntimeEntryPolicy(ingressIdentity).mode", "entryMode:"]) {
+  if (!bridge.includes(required)) violations.push(`HVUT bridge must carry ${required}`);
 }
 
-const withoutClassifier = text.replace(classifierBody, "");
-if (/\/\\\/isekai\\\/equip\(\\\/\|\$\)\//.test(withoutClassifier)) {
-  violations.push("raw Isekai equip pathname regex must stay inside the classifier");
+const sharedRequest = hvut.indexOf("const $ajax = {");
+const runtimeGate = hvut.indexOf("if (HVUT_ENTRY_MODE === 'active') {");
+const worldBranch = hvut.indexOf("if (IS_ISEKAI) {", runtimeGate);
+if (sharedRequest < 0 || runtimeGate < 0 || worldBranch < 0) {
+  violations.push("HVUT runtime must expose shared composition, entry gate and world branch");
+} else if (!(sharedRequest < runtimeGate && runtimeGate < worldBranch)) {
+  violations.push("HVUT shared composition must precede entry policy and world runtime startup");
 }
-if (/!\s*\/\\\/isekai\\\/equip\(\\\/\|\$\)\/\.test\(window\.location\.pathname\)/.test(text)) {
-  violations.push("hv-utils embed guard must not inline the Isekai equip pathname regex");
+if (/is_hvut_isekai_equip_page|window\.location\.pathname/.test(hvut)) {
+  violations.push("HVUT runtime must not rediscover equipment-document entry identity");
 }
 
 if (violations.length) {
@@ -43,5 +40,5 @@ if (violations.length) {
 }
 
 console.log(
-  "[verify-hvut-equip-page-gate-boundary] OK - HVUT Isekai equip page gate uses one classifier"
+  "[verify-hvut-equip-page-gate-boundary] OK - typed entry policy gates composed HVUT runtime"
 );

@@ -115,18 +115,15 @@ const requestEntry =
   /var run_hvut_ability_unlock_request = async function \(ability, context\) \{[\s\S]*?\n  \};/.exec(
     text
   )?.[0] || "";
-const requestAdapterDeclaration = text.indexOf("var $ajax;");
-const hvutPageGuard = text.indexOf("if (!is_hvut_isekai_equip_page");
-const requestAdapterAssignment = text.indexOf("$ajax = {");
+const requestAdapterDeclaration = text.indexOf("const $ajax = {");
+const hvutPageGuard = text.indexOf("if (HVUT_ENTRY_MODE === 'active') {");
 if (
   requestAdapterDeclaration < 0 ||
   hvutPageGuard < 0 ||
-  requestAdapterDeclaration > hvutPageGuard ||
-  requestAdapterAssignment < hvutPageGuard ||
-  /(?:const|let|var) \$ajax = \{/.test(text)
+  requestAdapterDeclaration > hvutPageGuard
 ) {
   violations.push(
-    `${target} must bind the shared HVUT request adapter in the enclosing runtime scope`
+    `${target} must compose the shared HVUT request adapter before applying entry policy`
   );
 }
 if (/var error = get_message\(doc\);/.test(requestEntry)) {

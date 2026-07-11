@@ -150,9 +150,6 @@ try {
     if (registered === false) { bound(); }
     return node;
   };
-  var is_hvut_isekai_equip_page = function (pathname) {
-    return /\/isekai\/equip(\/|$)/.test(pathname || '');
-  };
   var record_hvut_navigation_bridge_failure = function (stage, detail) {
     var evidence = { capability: 'hvutNavigationBridge', stage: stage, detail: detail || {} };
     try {
@@ -238,13 +235,13 @@ try {
     return match ? match[1] : (record_hvut_config_parse_failure(stage, { text: text }), '1');
   };
   var create_hvut_world_identity = function (context) {
-    var world = HVUT_WORLD_POLICY.world;
+    var world = HVUT_RUNTIME_POLICY.world;
     var isIsekai = world === 'isekai';
     return {
       world: world,
       isIsekai: isIsekai,
-      serverName: HVUT_WORLD_POLICY.serverName,
-      storageNamespace: HVUT_WORLD_POLICY.storageNamespace,
+      serverName: HVUT_RUNTIME_POLICY.serverName,
+      storageNamespace: HVUT_RUNTIME_POLICY.storageNamespace,
       season: context?.season || parse_hvut_world_season(isIsekai, context?.seasonStage || 'worldSeason'),
     };
   };
@@ -276,7 +273,7 @@ try {
     return run_hvut_config_migration_bridge('carryKeys', [segment], 'configCarryKeysBridgeMissing', segment || {}, null);
   };
   var get_hvut_config_namespace = function () {
-    return HVUT_WORLD_POLICY.storageNamespace;
+    return HVUT_RUNTIME_POLICY.storageNamespace;
   };
   var build_hvut_legacy_equipdata = function (inEquipdata, inJson) {
     return run_hvut_config_migration_bridge('buildEquipData', [inEquipdata, inJson], 'configEquipDataBridgeMissing', {}, null);
@@ -748,7 +745,33 @@ try {
   };
   var parse_hvut_ability_button_type = function (backgroundImage) {
     var match = /(.)\.png/.exec(backgroundImage || '');
-    return match ? match[1] : record_hvut_ability_parse_failure('abilityButtonType', { backgroundImage: backgroundImage || '' });
+    if (match) return match[1];
+    record_hvut_ability_parse_failure('abilityButtonType', { backgroundImage: backgroundImage || '', reason: 'unrecognizedButtonType' });
+    return '?';
+  };
+  var decide_hvut_ability_rank_requirement = function (ability, index, buttonType, remainingAbilityPoints, context) {
+    var bridge = typeof window !== 'undefined' ? window.HVAA_hvutAbilityRequirement : null;
+    var decision;
+    try {
+      decision = bridge?.decide({ abilityPoints: ability?.point?.[index], requiredPlayerLevel: ability?.unlock?.[index], buttonType: buttonType, remainingAbilityPoints: remainingAbilityPoints });
+    } catch (error) {
+      record_hvut_ability_parse_failure(context?.stage || 'abilityRankRequirement', { reason: 'requirementDecisionFailed', name: context?.name || '', index: index, error: error?.message || String(error) });
+      return null;
+    }
+    if (!decision || decision.kind === 'rejected') {
+      record_hvut_ability_parse_failure(context?.stage || 'abilityRankRequirement', { reason: decision?.reason || 'requirementBridgeMissing', name: context?.name || '', index: index });
+      return null;
+    }
+    if (decision.kind === 'unknownState') {
+      record_hvut_ability_parse_failure(context?.stage || 'abilityRankRequirement', { reason: decision.reason, name: context?.name || '', index: index, buttonType: buttonType });
+    }
+    return decision;
+  };
+  var render_hvut_ability_rank_requirement = function (button, decision, index, context) {
+    var bridge = window.HVAA_hvutAbilityRequirement;
+    var className = decision.rankState === bridge.state.ACQUIRED ? '.hvut-ab-bf' : decision.action === bridge.action.UNLOCK ? '.hvut-ab-bu' : decision.action === bridge.action.INSUFFICIENT_POINTS ? '.hvut-ab-bux' : '.hvut-ab-bx';
+    var attributes = decision.action === bridge.action.UNLOCK ? { dataset: { action: 'unlock', name: context?.name || '', to: index + 1 } } : null;
+    $element('span', button, attributes ? [decision.requirement.displayText, className, attributes] : [decision.requirement.displayText, className]);
   };
   var parse_hvut_ability_points_from_top = function (top, stage) {
     var text = top?.children?.[3]?.textContent;
@@ -796,6 +819,44 @@ try {
     if (match) return match[1];
     var hasUnlockButton = !!$qs('div[style*="u.png"]', panel);
     return hasUnlockButton ? record_hvut_ability_parse_failure(stage, { onclick: onclick, reason: 'unlockIdMissingForUnlockableAbility' }) : '';
+  };
+  var prepare_hvut_ability_tree = function (divs, catalog, availableAbilityPoints, context) {
+    var entries = [];
+    for (const div of Array.from(divs || [])) {
+      var name = div?.firstElementChild?.textContent || '';
+      var ability = catalog?.[name];
+      if (!ability) {
+        record_hvut_ability_parse_failure(context?.stage || 'abilityTreePrepare', { reason: 'abilityCatalogEntryMissing', name: name });
+        return null;
+      }
+      var panel = parse_hvut_ability_button_panel(div, context?.panelStage || 'abilityButtonPanel');
+      if (panel === null) return null;
+      var id = parse_hvut_ability_unlock_id(panel, context?.unlockIdStage || 'abilityUnlockId');
+      if (id === null) return null;
+      var buttons = Array.from(panel.children);
+      if (buttons.length !== ability.point.length || buttons.length !== ability.unlock.length) {
+        record_hvut_ability_parse_failure(context?.stage || 'abilityTreePrepare', { reason: 'abilityRankCountMismatch', name: name, buttons: buttons.length, points: ability.point.length, levels: ability.unlock.length });
+        return null;
+      }
+      var remainingAbilityPoints = availableAbilityPoints;
+      var ranks = [];
+      for (const [index, button] of buttons.entries()) {
+        var buttonType = parse_hvut_ability_button_type(button.style.backgroundImage);
+        if (buttonType === 'u') remainingAbilityPoints -= ability.point[index];
+        var decision = decide_hvut_ability_rank_requirement(ability, index, buttonType, remainingAbilityPoints, { name: name, stage: context?.requirementStage || 'abilityRankRequirement' });
+        if (decision === null) return null;
+        ranks.push({ button: button, buttonType: buttonType, decision: decision, index: index });
+      }
+      var acquiredLevel = ranks.filter((rank) => rank.buttonType === 'f').length;
+      var upgradeLimit = ability?.[context?.upgradeLimitKey || 'cap'];
+      var needsWarning = acquiredLevel && (!ability.slotted || acquiredLevel !== upgradeLimit);
+      if (needsWarning && !div?.firstElementChild?.firstElementChild) {
+        record_hvut_ability_parse_failure(context?.stage || 'abilityTreePrepare', { reason: 'abilityWarningNodeMissing', name: name });
+        return null;
+      }
+      entries.push({ div: div, name: name, ability: ability, panel: panel, id: id, ranks: ranks, acquiredLevel: acquiredLevel });
+    }
+    return entries;
   };
   var mark_hvut_ability_warning = function (div, warn, stage) {
     var node = div?.firstElementChild?.firstElementChild;
@@ -2463,11 +2524,6 @@ try {
     return el;
   };
   // <<< equip-name-render
-  // Shared request authority is declared outside the page guard because the
-  // capability entries above close over it. The guarded runtime assigns the
-  // concrete queue only on pages where HVUT is active.
-  var $ajax;
-  if (!is_hvut_isekai_equip_page(window.location.pathname)) {
 // G1 拆桥：HVAA_ITEM_CN 表 + hvaaItemCn() 已删 —— 物品/材料名归一到 canonical SSOT
 // (src/data/i18n/equip-dict EQUIP_ITEMS)，调用点改 hvaaT(name,'item'|'material') 经全局桥查。
 // 漂移修复样本：Health Potion 原私表"生命药水" → canonical"体力药水"(与外部游戏 DOM 一致)。
@@ -2476,7 +2532,7 @@ try {
 // HV Utils 主世界版 (v4.0.0) + Isekai 版 (v4.2.0) 统一脚本  [2026-06-02 迁移]
 //
 // 设计要点:
-// 1. World 由 ESM 入口分类并经冻结 HVAA_hvutWorldPolicy 桥绑定；本文件不再读取 URL 判世界。
+// 1. World authority 与 entry mode 由 ESM 组合并经冻结 HVAA_hvutRuntimePolicy 桥绑定；本文件不再读取 URL 判身份。
 // 2. 两版整体各自包在 IIFE 中  ——  顶层 const/var/let 同名声明互不冲突
 // 3. GM_setValue 命名空间: 两版动态切换 (hvut_ / hvuti_), 老用户配置 100% 保留, 未改
 // 4. 两版 utility 去重策略 [2026-06 dedup epic 证伪"整体可机械去重" → 2026-06-10 修正为分轨]:
@@ -2495,11 +2551,12 @@ try {
 //    已收口 物品/材料/装备名/术语, 删 HVAA_ITEM_CN + HVUT_CN 漂移表(仅 stamina tooltip 暂留)。
 // ============================================================================
 
-var HVUT_WORLD_POLICY = window.HVAA_hvutWorldPolicy;
-if (!HVUT_WORLD_POLICY || (HVUT_WORLD_POLICY.world !== 'persistent' && HVUT_WORLD_POLICY.world !== 'isekai')) {
-  throw new Error('[HVAA][HVUT] world policy bridge missing');
+var HVUT_RUNTIME_POLICY = window.HVAA_hvutRuntimePolicy;
+if (!HVUT_RUNTIME_POLICY || (HVUT_RUNTIME_POLICY.world !== 'persistent' && HVUT_RUNTIME_POLICY.world !== 'isekai') || (HVUT_RUNTIME_POLICY.entryMode !== 'active' && HVUT_RUNTIME_POLICY.entryMode !== 'excludedIsekaiEquipmentDocument')) {
+  throw new Error('[HVAA][HVUT] runtime policy bridge missing');
 }
-var IS_ISEKAI = HVUT_WORLD_POLICY.world === 'isekai';
+var IS_ISEKAI = HVUT_RUNTIME_POLICY.world === 'isekai';
+var HVUT_ENTRY_MODE = HVUT_RUNTIME_POLICY.entryMode;
 
 /* eslint-disable arrow-spacing, block-spacing, comma-spacing, key-spacing, keyword-spacing, object-curly-spacing, space-before-blocks, space-before-function-paren, space-infix-ops, semi-spacing */
 // ===== L1 公共底层工具：两 IIFE 经作用域链共享。去重自双版 byte-identical（机械 diff 证 distinct=1）；scrollIntoView 取带空值守卫版；popup_text width 按 IS_ISEKAI 配置保两版观感。=====
@@ -2528,7 +2585,7 @@ function get_message(d,s) {if(typeof d==='string'){d=$doc(d);}const m=$qsa('#mes
 // ===== L2 公共依赖闭包基础设施（$ajax 请求队列 + _query URL 参数，两 IIFE 共享）=====
 const _query = Object.fromEntries(location.search.slice(1).split('&').map((q) => { const [k, v = ''] = q.split('=', 2); return [decodeURIComponent(k.replace(/\+/g, ' ')), decodeURIComponent(v.replace(/\+/g, ' '))]; }));
 
-$ajax = {
+const $ajax = {
   interval: 300, // DO NOT DECREASE THIS NUMBER, OR IT MAY TRIGGER THE SERVER'S LIMITER AND YOU WILL GET BANNED
   max: 4,
   tid: null,
@@ -6886,6 +6943,7 @@ const bindArmory = function (armory, ctx) {
   //document.addEventListener('keydown', (e) => { if (e.target.nodeName === 'INPUT' || e.target.nodeName === 'TEXTAREA') { e.stopPropagation(); } }, true);
 };
 
+if (HVUT_ENTRY_MODE === 'active') {
 if (IS_ISEKAI) {
   // [ISEKAI 分支] 原 "HV Utils Isekai 汉化" → 迁移至英文 4.2.0
   (function () {
@@ -8039,7 +8097,6 @@ if (characterPage.isAbilities) {
     }
 
     if (_ab.parse_treepane() === false) {
-      alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
       return false;
     }
     $id('ability_treepane').addEventListener('click', _ab.click, true);
@@ -8095,42 +8152,19 @@ if (characterPage.isAbilities) {
   };
 
   _ab.parse_treepane = function () {
-    for (const div of $qsa('#ability_treepane > div')) {
-      const name = div.firstElementChild.textContent;
-      const ab = _ab.abilities[name];
-      // HV 新增/改名技能时 _ab.abilities 无此键 → 跳过该项, 避免整段汉化崩溃。
-      if (!ab) {
-        console.warn('[HVAA][i18n] 技能表缺少此项, 已跳过:', JSON.stringify(name));
-        continue;
-      }
-      let point = _ab.point;
-
+    const entries = prepare_hvut_ability_tree($qsa('#ability_treepane > div'), _ab.abilities, _ab.point, { stage: 'abilityTreePrepare', panelStage: 'abilityButtonPanel', unlockIdStage: 'abilityUnlockId', requirementStage: 'abilityRankRequirement', upgradeLimitKey: 'cap' });
+    if (entries === null) {
+      show_hvut_failure_report('Ability parse failed', read_hvut_session_evidence('HVAA:lastHvutAbilityParseFailure'));
+      return false;
+    }
+    for (const { div, name, ability: ab, id, ranks, acquiredLevel } of entries) {
       ab.div = div;
-      const buttonPanel = parse_hvut_ability_button_panel(div, 'abilityButtonPanel');
-      if (buttonPanel === null) return false;
-      ab.id = parse_hvut_ability_unlock_id(buttonPanel, 'abilityUnlockId');
-      if (ab.id === null) return false;
-      ab.level = 0;
-
-      for (const [i, button] of Array.from(buttonPanel.children).entries()) {
-        const type = parse_hvut_ability_button_type(button.style.backgroundImage);
-        if (type === null) return false;
+      ab.id = id;
+      ab.level = acquiredLevel;
+      for (const { button, decision, index } of ranks) {
         button.classList.add('hvut-ab-bar');
-
-        if (type === 'f') {
-          ab.level++;
-        } else if (type === 'u') {
-          point -= ab.point[i];
-          if (point < 0) {
-            $element('span', button, [ab.point[i], '.hvut-ab-bux']);
-          } else {
-            $element('span', button, [ab.point[i], '.hvut-ab-bu', { dataset: { action: 'unlock', name: name, to: i + 1 } }]);
-          }
-        } else if (type === 'x') {
-          $element('span', button, [`${ab.point[i]} (${ab.unlock[i]})`, '.hvut-ab-bx']);
-        }
+        render_hvut_ability_rank_requirement(button, decision, index, { name: name });
       }
-
       if (ab.level) {
         if (!ab.slotted) {
           if (mark_hvut_ability_warning(div, '未激活', 'abilityWarningNode') === null) return false;
@@ -8290,6 +8324,7 @@ if (characterPage.isAbilities) {
     .hvut-ab-up { background-color: var(--color-ab-up); }
     .hvut-ab-tree > img[src*='/td'] { filter: brightness(250%); }
     .hvut-ab-bar { font-size: 9pt; line-height: 30px; white-space: nowrap; }
+    .hvut-ab-bf { color: var(--color-ab-slot); display: block; opacity: 0.65; }
     .hvut-ab-bu { color: var(--color-ab-slot); display: block; }
     .hvut-ab-bux { color: var(--color-font-invalid); display: block; cursor: not-allowed; }
     .hvut-ab-bx { color: var(--color-font-invalid); }
@@ -14289,6 +14324,7 @@ if (characterPage.isAbilities) {
     .hvut-ab-up { background-color: #c00; }
     .hvut-ab-tree > img[src*='/td'] { filter: brightness(250%); }
     .hvut-ab-bar { font-size: 10pt; line-height: 30px; }
+    .hvut-ab-bf { color: #333; display: block; opacity: 0.65; }
     .hvut-ab-bu { color: #333; display: block; }
     .hvut-ab-bux { color: #999; display: block; cursor: not-allowed; }
     .hvut-ab-bx { color: #999; }
@@ -14373,50 +14409,18 @@ if (characterPage.isAbilities) {
     return false;
   }
 
-  $id('ability_treepane').addEventListener('click', _ab.click, true);
-  for (const div of $qsa('#ability_treepane > div')) {
-    const name = div.firstElementChild.textContent;
-    const ab = _ab.ability[name];
-    // HV 新增/改名技能时 _ab.ability 无此键 → 跳过该项, 避免整段汉化崩溃。
-    if (!ab) {
-      console.warn('[HVAA][i18n] 技能表缺少此项, 已跳过:', JSON.stringify(name));
-      continue;
-    }
-    let point = _ab.point;
-
+  const abilityTreeEntries = prepare_hvut_ability_tree($qsa('#ability_treepane > div'), _ab.ability, _ab.point, { stage: 'legacyAbilityTreePrepare', panelStage: 'legacyAbilityButtonPanel', unlockIdStage: 'legacyAbilityUnlockId', requirementStage: 'legacyAbilityRankRequirement', upgradeLimitKey: 'limit' });
+  if (abilityTreeEntries === null) {
+    show_hvut_failure_report('Ability parse failed', read_hvut_session_evidence('HVAA:lastHvutAbilityParseFailure'));
+    return false;
+  }
+  for (const { div, name, ability: ab, id, ranks, acquiredLevel } of abilityTreeEntries) {
     ab.div = div;
-    const buttonPanel = parse_hvut_ability_button_panel(div, 'legacyAbilityButtonPanel');
-    if (buttonPanel === null) {
-      alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
-      return false;
-    }
-    ab.id = parse_hvut_ability_unlock_id(buttonPanel, 'legacyAbilityUnlockId');
-    if (ab.id === null) {
-      alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
-      return false;
-    }
-    ab.level = 0;
-
-    for (const [i, button] of Array.from(buttonPanel.children).entries()) {
-      const type = parse_hvut_ability_button_type(button.style.backgroundImage);
-      if (type === null) {
-        alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
-        return false;
-      }
+    ab.id = id;
+    ab.level = acquiredLevel;
+    for (const { button, decision, index } of ranks) {
       button.classList.add('hvut-ab-bar');
-
-      if (type === 'f') {
-        ab.level++;
-      } else if (type === 'u') {
-        point -= ab.point[i];
-        if (point < 0) {
-          $element('span', button, [ab.point[i], '.hvut-ab-bux']);
-        } else {
-          $element('span', button, [ab.point[i], '.hvut-ab-bu', { dataset: { action: 'unlock', name: name, to: i + 1 } }]);
-        }
-      } else if (type === 'x') {
-        $element('span', button, [`${ab.point[i]} (${ab.unlock[i]})`, '.hvut-ab-bx']);
-      }
+      render_hvut_ability_rank_requirement(button, decision, index, { name: name });
     }
 
     if (ab.level) {
@@ -14433,6 +14437,7 @@ if (characterPage.isAbilities) {
       }
     }
   }
+  $id('ability_treepane').addEventListener('click', _ab.click, true);
 
   $input(['button', '能力点计算器'], $id('ability_outer'), { style: 'position: absolute; top: 20px; left: -80px; width: 90px; white-space: normal;' }, () => { _ab.calc.toggle(); });
 } else
