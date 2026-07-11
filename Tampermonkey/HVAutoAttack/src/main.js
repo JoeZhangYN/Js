@@ -4,6 +4,7 @@ import { initEquipTranslate } from "./i18n/equip-translate.js"; // indefined HV�
 import { initInterfaceTranslate } from "./i18n/interface-translate.js"; // indefined HentaiVerse汉化(界面) #404118（角色页/界面词条，含 Fighting Style 等）
 import "./pages/encounter-bridge.js"; // hv-utils sloppy-mode 不能 import；随机遭遇业务口径通过桥复用。
 import "./i18n/hvut-runtime-policy-bridge.js"; // sloppy-mode HVUT 只消费已分类世界 authority + typed entry policy。
+import "./i18n/hvut-ability-catalog-bridge.js"; // 两个世界只保留展示名差异，等级/AP 统一由当前规则目录注入。
 import "./i18n/hvut-ability-requirement-bridge.js"; // 能力等级需求先归一为 typed decision，再由 sloppy runtime 统一渲染。
 import "./i18n/equip-filter-expression-bridge.js"; // hv-utils sloppy-mode 不能 import；装备筛选表达式经受限 parser 桥求值。
 import "./i18n/shrine-offer-message-bridge.js"; // hv-utils sloppy-mode 不能 import；Shrine offer 响应分类经桥复用纯函数。

@@ -1,5 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
+import { HvutAbilityRequirementCatalog } from "../src/data/hvut-ability-requirements.js";
 
 const root = process.cwd();
 const target = path.normalize("src/i18n/hv-utils.js");
@@ -14,6 +15,19 @@ const requirementTestText = fs.readFileSync(
 );
 const bridgeText = fs.readFileSync(
   path.join(root, "src/i18n/hvut-ability-requirement-bridge.js"),
+  "utf8"
+);
+const catalogText = fs.readFileSync(path.join(root, "src/i18n/hvut-ability-catalog.js"), "utf8");
+const requirementCatalogText = fs.readFileSync(
+  path.join(root, "src/data/hvut-ability-requirements.js"),
+  "utf8"
+);
+const catalogTestText = fs.readFileSync(
+  path.join(root, "src/data/hvut-ability-catalog.test.js"),
+  "utf8"
+);
+const catalogBridgeText = fs.readFileSync(
+  path.join(root, "src/i18n/hvut-ability-catalog-bridge.js"),
   "utf8"
 );
 const mainText = fs.readFileSync(path.join(root, "src/main.js"), "utf8");
@@ -75,6 +89,8 @@ for (const required of [
   "return '?';",
   "var decide_hvut_ability_rank_requirement = function",
   "var render_hvut_ability_rank_requirement = function",
+  "var create_hvut_ability_catalog = function",
+  "reason: 'abilityCatalogBridgeMissing'",
   "var prepare_hvut_ability_tree = function",
   "reason: 'abilityCatalogEntryMissing'",
   "reason: 'abilityRankCountMismatch'",
@@ -183,6 +199,21 @@ if (!mainText.includes('import "./i18n/hvut-ability-requirement-bridge.js"')) {
 if (mainText.indexOf("hvut-ability-requirement-bridge.js") > mainText.indexOf("hv-utils.js")) {
   violations.push("ability requirement bridge must be installed before hv-utils");
 }
+for (const required of [
+  'Object.defineProperty(window, "HVAA_hvutAbilityCatalog"',
+  "create: createHvutAbilityCatalog",
+  "writable: false",
+]) {
+  if (!catalogBridgeText.includes(required)) {
+    violations.push(`ability catalog bridge must contain ${required}`);
+  }
+}
+if (!mainText.includes('import "./i18n/hvut-ability-catalog-bridge.js"')) {
+  violations.push("main must bind the ability catalog before the sloppy runtime");
+}
+if (mainText.indexOf("hvut-ability-catalog-bridge.js") > mainText.indexOf("hv-utils.js")) {
+  violations.push("ability catalog bridge must be installed before hv-utils");
+}
 
 const renderCalls = [
   ...text.matchAll(
@@ -211,22 +242,74 @@ for (const forbidden of [
   }
 }
 
-const catalogEntries = [
-  ...text.matchAll(
-    /'([^']+)': \{ category: '[^']*', img: '[^']*', pos: -?\d+, unlock: \[([^\]]*)\], point: \[([^\]]*)\] \}/g
-  ),
-];
-for (const [, name, unlocks, points] of catalogEntries) {
-  const unlockCount = unlocks.split(",").filter((value) => value.trim()).length;
-  const pointCount = points.split(",").filter((value) => value.trim()).length;
-  if (unlockCount !== pointCount) {
+const catalog = HvutAbilityRequirementCatalog;
+if (Object.keys(catalog).length !== 75) {
+  violations.push(
+    `ability requirement catalog must contain all 75 skills, found ${Object.keys(catalog).length}`
+  );
+}
+for (const [name, requirement] of Object.entries(catalog)) {
+  if (requirement.unlock.length !== requirement.point.length) {
     violations.push(
-      `ability catalog ${name} has ${unlockCount} levels but ${pointCount} point costs`
+      `ability catalog ${name} has ${requirement.unlock.length} levels but ${requirement.point.length} point costs`
     );
   }
 }
-if (!catalogEntries.some(([, name]) => name === "Better Immobilize")) {
-  violations.push("ability catalog must preserve Better Immobilize requirement identity");
+for (const [name, unlock, point] of [
+  ["2H Parry", [50, 200], [2, 3]],
+  ["Staff Accuracy", [50, 150, 300], [1, 2, 3]],
+  ["Cloth Spellacc", [0, 120, 240], [2, 3, 5]],
+]) {
+  if (
+    JSON.stringify(catalog[name]?.unlock) !== JSON.stringify(unlock) ||
+    JSON.stringify(catalog[name]?.point) !== JSON.stringify(point)
+  ) {
+    violations.push(`current ability requirement drifted for ${name}`);
+  }
+}
+for (const required of [
+  "file-size-gate: exempt data-table-HVUT能力等级与AP纯数据SOT",
+  "freezeRequirementCatalog(CURRENT_REQUIREMENTS)",
+]) {
+  if (!requirementCatalogText.includes(required)) {
+    violations.push(`ability requirement data authority must contain ${required}`);
+  }
+}
+for (const required of [
+  "sourceIdentity:",
+  'reachability: "successful"',
+  'required: "Better Immobilize"',
+  'required: "Better MagNet"',
+  'reason: "abilityCatalogIdentityMismatch"',
+]) {
+  if (!catalogText.includes(required)) {
+    violations.push(`ability catalog authority must contain ${required}`);
+  }
+}
+for (const required of [
+  "hydrates every %s ability through the same requirement authority",
+  "rejects partial or mixed-world catalogs instead of rendering some skills",
+]) {
+  if (!catalogTestText.includes(required)) {
+    violations.push(`ability catalog tests must cover ${required}`);
+  }
+}
+for (const required of [
+  "_ab.abilities = create_hvut_ability_catalog('isekai', {",
+  "_ab.ability = create_hvut_ability_catalog('persistent', {",
+]) {
+  if (!text.includes(required)) violations.push(`both ability worlds must consume ${required}`);
+}
+const presentationRegions = [
+  /_ab\.abilities = create_hvut_ability_catalog\('isekai',[\s\S]*?'abilityCatalogCompose'\)/.exec(
+    text
+  )?.[0] || "",
+  /_ab\.ability = create_hvut_ability_catalog\('persistent',[\s\S]*?'legacyAbilityCatalogCompose'\)/.exec(
+    text
+  )?.[0] || "",
+];
+if (presentationRegions.some((region) => /\b(?:unlock|point): \[/.test(region))) {
+  violations.push("ability presentation catalogs must not fork level/AP requirements");
 }
 
 if (violations.length) {
