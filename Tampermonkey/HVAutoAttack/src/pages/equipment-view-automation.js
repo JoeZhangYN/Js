@@ -1,13 +1,13 @@
-// 装备查看页增强编排入口：init 只上报页面类型，不拼 option/DOM 门控。
+// 装备分析文档运行期入口：动态 surface 生命周期与静态 showequip 页面能力在此组合。
 import { OptionEvent, runOptionAutomation } from "../state/option.js";
 import { PageKind } from "./page-kind.js";
 import { runEquipPercentileEnhancement } from "./equip-percentile-dispatcher.js";
 import { runForgeCostEnhancement } from "./showequip-forge-cost.js";
 
-const EVENT_PAGE_READY = "pageReady";
+const EVENT_DOCUMENT_STARTED = "documentStarted";
 
 export const EquipmentViewEvent = Object.freeze({
-  PAGE_READY: EVENT_PAGE_READY,
+  DOCUMENT_STARTED: EVENT_DOCUMENT_STARTED,
 });
 
 function makeDeps(deps) {
@@ -32,12 +32,12 @@ function readEquipPercentileMode(deps) {
   return mode || "off";
 }
 
-export function runEquipmentViewAutomation(event = { type: EVENT_PAGE_READY }, deps = {}) {
-  if (event?.type !== EVENT_PAGE_READY) return false;
+export function runEquipmentViewAutomation(event = { type: EVENT_DOCUMENT_STARTED }, deps = {}) {
+  if (event?.type !== EVENT_DOCUMENT_STARTED) return false;
   const runtime = makeDeps(deps);
-  const { kind } = event;
+  const { pageKind } = event;
   let ran = false;
-  if (shouldRunForgeCost(kind, runtime)) {
+  if (shouldRunForgeCost(pageKind, runtime)) {
     runtime.runForgeCostEnhancement();
     ran = true;
   }

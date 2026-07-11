@@ -100,8 +100,8 @@ function runGamePageAutomation(kind) {
 
 function reportEquipmentViewPageReady(context) {
   runEquipmentViewAutomation({
-    type: EquipmentViewEvent.PAGE_READY,
-    kind: context.kind,
+    type: EquipmentViewEvent.DOCUMENT_STARTED,
+    pageKind: context.kind,
   });
   return false;
 }

@@ -17,6 +17,11 @@ const percentileOfflinePopupTest = path.join(
   root,
   "src/pages/equip-percentile-offline-popup.test.js"
 );
+const equipmentSurfaceLifecycleFile = path.join(root, "src/pages/equipment-surface-lifecycle.js");
+const equipmentSurfaceLifecycleTest = path.join(
+  root,
+  "src/pages/equipment-surface-lifecycle.test.js"
+);
 const forgeCostFile = path.join(root, "src/pages/showequip-forge-cost.js");
 const forgeCostTest = path.join(root, "src/pages/showequip-forge-cost.test.js");
 const diagnosticKeysFile = path.join(root, "src/core/diagnostic-evidence-keys.js");
@@ -62,15 +67,15 @@ function checkEntry() {
   if (/export function runEquipmentViewAutomation\(\s*kind\s*\)/.test(text)) {
     violations.push(`${rel(entryFile)} must not expose raw kind-based equipment entry`);
   }
-  if (text.includes("event.type !== EVENT_PAGE_READY")) {
+  if (text.includes("event.type !== EVENT_DOCUMENT_STARTED")) {
     violations.push(`${rel(entryFile)} must reject null equipment view events without throwing`);
   }
-  if (!text.includes("event?.type !== EVENT_PAGE_READY")) {
+  if (!text.includes("event?.type !== EVENT_DOCUMENT_STARTED")) {
     violations.push(`${rel(entryFile)} must fail closed for unknown or null equipment view events`);
   }
   for (const required of [
     "EquipmentViewEvent",
-    "EVENT_PAGE_READY",
+    "EVENT_DOCUMENT_STARTED",
     "runForgeCostEnhancement",
     "runEquipPercentileEnhancement",
     "PageKind.SHOWEQUIP",
@@ -95,8 +100,8 @@ function checkEntry() {
 
 function checkPageAutomation() {
   const text = fs.readFileSync(path.join(root, "src/pages/page-automation.js"), "utf8");
-  if (!text.includes("EquipmentViewEvent.PAGE_READY")) {
-    violations.push("src/pages/page-automation.js must report EquipmentViewEvent.PAGE_READY");
+  if (!text.includes("EquipmentViewEvent.DOCUMENT_STARTED")) {
+    violations.push("src/pages/page-automation.js must start the equipment document runtime");
   }
   if (/runEquipmentViewAutomation\(\s*kind\s*\)/.test(text)) {
     violations.push(
@@ -310,25 +315,48 @@ function checkPercentileFailureBoundary() {
 function checkPercentileAsyncPopupBoundary() {
   const percentileText = fs.readFileSync(percentileFile, "utf8");
   const popupTestText = fs.readFileSync(percentileOfflinePopupTest, "utf8");
+  const lifecycleText = fs.readFileSync(equipmentSurfaceLifecycleFile, "utf8");
+  const lifecycleTestText = fs.readFileSync(equipmentSurfaceLifecycleTest, "utf8");
   for (const required of [
-    "function parseEquipmentSurfaces(node)",
-    "observer.observe(popup, { attributes: true, childList: true, subtree: true });",
-    "observer.observe(equipInfo, { childList: true, subtree: true });",
+    "EquipmentSurfaceLifecycleEvent.DOCUMENT_STARTED",
+    "runEquipmentSurfaceLifecycle",
+    "onSurfaceReady: ({ root }) => parseEquip(root)",
   ]) {
     if (!percentileText.includes(required)) {
-      violations.push(
-        `${rel(percentileFile)} must keep async equipment surface coverage: ${required}`
-      );
+      violations.push(`${rel(percentileFile)} must consume surface lifecycle: ${required}`);
     }
   }
   for (const required of [
-    "renders percentages when an already-visible Isekai equipment popup fills asynchronously",
+    "EquipmentSurfaceKind",
+    "EquipmentSurfaceLifecycleEvent",
+    "runEquipmentSurfaceLifecycle(event, deps = {})",
+    'element.closest("#popup_box")',
+    'element.closest("#equipinfo")',
+    'element.closest(".showequip")',
+    "observer.observe(root",
+    "subtree: true",
+  ]) {
+    if (!lifecycleText.includes(required)) {
+      violations.push(`${rel(equipmentSurfaceLifecycleFile)} must own ${required}`);
+    }
+  }
+  for (const required of [
+    "renders percentages when an Isekai equipment popup is created after startup",
     'popup.style.visibility = "visible"',
     "popup.innerHTML = equipmentMarkup()",
     'querySelector(".hv-lpr-avg")',
   ]) {
     if (!popupTestText.includes(required)) {
       violations.push(`${rel(percentileOfflinePopupTest)} must cover ${required}`);
+    }
+  }
+  for (const required of [
+    "discovers a popup that is created and filled after document start",
+    "prefers a concrete showequip identity over its popup container",
+    "rejects unknown lifecycle events without observing the document",
+  ]) {
+    if (!lifecycleTestText.includes(required)) {
+      violations.push(`${rel(equipmentSurfaceLifecycleTest)} must cover ${required}`);
     }
   }
 }

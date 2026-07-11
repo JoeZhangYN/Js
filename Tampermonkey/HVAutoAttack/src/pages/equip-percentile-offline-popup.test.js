@@ -24,15 +24,14 @@ beforeEach(() => {
 });
 
 describe("offline equipment percentile popup lifecycle", () => {
-  it("renders percentages when an already-visible Isekai equipment popup fills asynchronously", async () => {
+  it("renders percentages when an Isekai equipment popup is created after startup", async () => {
+    const { runOfflineEquipPercentileEnhancement } = await loadSubject();
+    const dispose = runOfflineEquipPercentileEnhancement();
+
     const popup = document.createElement("div");
     popup.id = "popup_box";
     popup.style.visibility = "visible";
     document.body.appendChild(popup);
-
-    const { runOfflineEquipPercentileEnhancement } = await loadSubject();
-    const dispose = runOfflineEquipPercentileEnhancement();
-
     popup.innerHTML = equipmentMarkup();
 
     await vi.waitFor(() => {

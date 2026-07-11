@@ -32,7 +32,7 @@ vi.mock("./cross-site-encounter-navigation.js", () => ({
   runCrossSiteEncounterNavigation: mocks.runCrossSiteEncounterNavigation,
 }));
 vi.mock("./equipment-view-automation.js", () => ({
-  EquipmentViewEvent: Object.freeze({ PAGE_READY: "pageReady" }),
+  EquipmentViewEvent: Object.freeze({ DOCUMENT_STARTED: "documentStarted" }),
   runEquipmentViewAutomation: mocks.runEquipmentViewAutomation,
 }));
 vi.mock("./riddle-automation.js", () => ({ runRiddleAutomation: mocks.runRiddleAutomation }));
@@ -79,8 +79,8 @@ describe("runPageAutomation", () => {
     runPageAutomation(pageReady(PageKind.RIDDLE));
 
     expect(mocks.runEquipmentViewAutomation).toHaveBeenCalledWith({
-      type: "pageReady",
-      kind: PageKind.RIDDLE,
+      type: "documentStarted",
+      pageKind: PageKind.RIDDLE,
     });
     expect(mocks.runAppStartup).toHaveBeenCalledWith({ type: "gamePageReady" });
     expect(mocks.runPageRefreshAutomation).toHaveBeenCalledWith({

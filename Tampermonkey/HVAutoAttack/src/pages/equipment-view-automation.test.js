@@ -3,7 +3,7 @@ import { EquipmentViewEvent, runEquipmentViewAutomation } from "./equipment-view
 import { PageKind } from "./page-kind.js";
 
 function pageReady(kind) {
-  return { type: EquipmentViewEvent.PAGE_READY, kind };
+  return { type: EquipmentViewEvent.DOCUMENT_STARTED, pageKind: kind };
 }
 
 describe("runEquipmentViewAutomation", () => {

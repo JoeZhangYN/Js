@@ -6,6 +6,10 @@ import {
   persistEquipmentPercentilePreference,
   recordEquipmentPercentilePreferenceReadFailure,
 } from "./equip-percentile-failure.js";
+import {
+  EquipmentSurfaceLifecycleEvent,
+  runEquipmentSurfaceLifecycle,
+} from "./equipment-surface-lifecycle.js";
 
 const STORAGE_KEY_SHOW_PERCENT = "hvAA_equipPercentile_offline_showPercent";
 
@@ -26,14 +30,10 @@ const state = {
 
 /** @type {WeakMap<HTMLElement, any>} */
 const equipMap = new WeakMap();
-
-let popup = null;
+const activeEquipmentRoots = new Set();
 
 function $sub(container, selector) {
   return container.querySelector(selector);
-}
-function $$all(selector) {
-  return document.querySelectorAll(selector);
 }
 function elc(tag, props, children) {
   const e = document.createElement(tag);
@@ -141,6 +141,7 @@ function parseEquip(container) {
   };
 
   equipMap.set(container, equip);
+  activeEquipmentRoots.add(container);
 
   const excludePatterns = [
     "?s=Character&ss=eq",
@@ -173,20 +174,6 @@ function parseEquip(container) {
   }
 
   renderEquip(container, null);
-}
-
-function parseEquipmentSurfaces(node) {
-  if (!(node instanceof HTMLElement)) return;
-
-  const showEquip = node.matches(".showequip") ? node : node.closest(".showequip");
-  if (showEquip) parseEquip(showEquip);
-  node.querySelectorAll(".showequip").forEach(parseEquip);
-
-  const popupSurface = node.matches("#popup_box") ? node : node.closest("#popup_box");
-  if (popupSurface?.style.visibility === "visible") parseEquip(popupSurface);
-
-  const equipInfoSurface = node.matches("#equipinfo") ? node : node.closest("#equipinfo");
-  if (equipInfoSurface) parseEquip(equipInfoSurface);
 }
 
 function getColor(percent, max = 70, min = 30) {
@@ -276,8 +263,7 @@ function renderEquip(container, compareQuality) {
 }
 
 function renderAll() {
-  if (popup?.style.visibility === "visible") renderEquip(popup, null);
-  $$all(".showequip").forEach((el) => {
+  activeEquipmentRoots.forEach((el) => {
     const select = el.querySelector("select");
     renderEquip(el, select ? select.value : null);
   });
@@ -335,6 +321,7 @@ function restoreEquip(container) {
   equip._avg?.remove();
   equip._compare?.remove();
   equipMap.delete(container);
+  activeEquipmentRoots.delete(container);
 }
 
 export function runOfflineEquipPercentileEnhancement() {
@@ -349,24 +336,14 @@ export function runOfflineEquipPercentileEnhancement() {
 
   const style = injectStyle();
 
-  const observer = new MutationObserver((mutations) => {
-    for (const m of mutations) {
-      if (m.type === "childList") {
-        parseEquipmentSurfaces(m.target);
-        m.addedNodes.forEach(parseEquipmentSurfaces);
-      } else if (m.type === "attributes" && m.attributeName === "style") {
-        parseEquipmentSurfaces(m.target);
-      }
+  const disposeSurfaceLifecycle = runEquipmentSurfaceLifecycle(
+    {
+      type: EquipmentSurfaceLifecycleEvent.DOCUMENT_STARTED,
+    },
+    {
+      onSurfaceReady: ({ root }) => parseEquip(root),
     }
-  });
-
-  popup = document.getElementById("popup_box");
-  if (popup) observer.observe(popup, { attributes: true, childList: true, subtree: true });
-
-  const equipInfo = document.getElementById("equipinfo");
-  if (equipInfo) observer.observe(equipInfo, { childList: true, subtree: true });
-
-  document.querySelectorAll(".showequip").forEach(parseEquip);
+  );
 
   const handleKeydown = (e) => {
     if (!isValidKey(e)) return;
@@ -382,13 +359,10 @@ export function runOfflineEquipPercentileEnhancement() {
   document.addEventListener("keydown", handleKeydown, true);
 
   activeDisposer = () => {
-    observer.disconnect();
+    disposeSurfaceLifecycle?.();
     document.removeEventListener("keydown", handleKeydown, true);
-    const containers = new Set(document.querySelectorAll(".showequip"));
-    if (popup) containers.add(popup);
-    containers.forEach(restoreEquip);
+    Array.from(activeEquipmentRoots).forEach(restoreEquip);
     style.remove();
-    popup = null;
     activeDisposer = null;
   };
   return activeDisposer;
