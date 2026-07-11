@@ -783,7 +783,8 @@ try {
       if (backgroundNode.id === 'ability_treepane') break;
       backgroundNode = backgroundNode.parentElement;
     }
-    var contrast = bridge.contrast({ backgroundColors: backgroundColors });
+    var backgroundImage = window.getComputedStyle(button).backgroundImage || button.style.backgroundImage || '';
+    var contrast = bridge.contrast({ backgroundImage: backgroundImage, backgroundColors: backgroundColors });
     if (!contrast || contrast.kind !== 'accepted') {
       record_hvut_ability_parse_failure(context?.stage || 'abilityRankRequirementContrast', { reason: contrast?.reason || 'abilityRequirementContrastRejected', name: context?.name || '', index: index, backgroundColors: backgroundColors });
       return false;
@@ -792,6 +793,8 @@ try {
     point.style.color = contrast.textColor;
     point.dataset.contrastTone = contrast.tone;
     point.dataset.contrastBackground = contrast.effectiveBackground;
+    point.dataset.contrastSource = contrast.source;
+    point.dataset.backgroundFamily = contrast.backgroundFamily;
     $element('span', button, [decision.requirement.playerLevelText, '.hvut-ab-level']);
     return true;
   };

@@ -5,6 +5,20 @@ export const HvutAbilityPointTone = Object.freeze({
 
 const WHITE = Object.freeze({ red: 255, green: 255, blue: 255, alpha: 1 });
 
+export const HvutAbilityBackgroundPaletteEvidence = Object.freeze({
+  observedAt: "2026-07-11T11:29:41Z",
+  reachability: "successful",
+  sourceOrigin: "https://hentaiverse.org/isekai/y/ab/",
+  sample: "opaque center pixel",
+});
+
+const ABILITY_ASSET_PALETTE = Object.freeze({
+  b: Object.freeze({ family: "blue", color: "rgb(28, 36, 142)", sample: "5bf.png" }),
+  g: Object.freeze({ family: "green", color: "rgb(86, 152, 22)", sample: "7gf.png" }),
+  r: Object.freeze({ family: "red", color: "rgb(161, 0, 0)", sample: "2rf.png" }),
+  p: Object.freeze({ family: "purple", color: "rgb(174, 1, 160)", sample: "1pf.png" }),
+});
+
 function channel(value) {
   const number = Number(value);
   return Number.isFinite(number) ? Math.max(0, Math.min(255, number)) : null;
@@ -31,6 +45,20 @@ function parseCssColor(value) {
     alpha: alpha(match[4]),
   };
   return Object.values(parsed).some((part) => part === null) ? null : parsed;
+}
+
+function abilityAssetBackground(backgroundImage) {
+  if (typeof backgroundImage !== "string") return null;
+  const match = /\/ab\/(\d+)([bgrp])([fux])\.png(?:["')]|$)/i.exec(backgroundImage);
+  if (!match) return null;
+  const palette = ABILITY_ASSET_PALETTE[match[2].toLowerCase()];
+  return palette
+    ? {
+        assetCode: `${match[1]}${match[2].toLowerCase()}${match[3].toLowerCase()}`,
+        family: palette.family,
+        color: palette.color,
+      }
+    : null;
 }
 
 function composite(foreground, background) {
@@ -69,9 +97,10 @@ function contrastRatio(first, second) {
 }
 
 export function decideHvutAbilityPointContrast(input) {
-  const parsedLayers = Array.from(input?.backgroundColors || [])
-    .map(parseCssColor)
-    .filter(Boolean);
+  const asset = abilityAssetBackground(input?.backgroundImage);
+  const parsedLayers = asset
+    ? [parseCssColor(asset.color)]
+    : Array.from(input?.backgroundColors || []).map(parseCssColor).filter(Boolean);
   let effective = WHITE;
   for (const layer of parsedLayers.reverse()) effective = composite(layer, effective);
 
@@ -86,6 +115,8 @@ export function decideHvutAbilityPointContrast(input) {
     textColor: tone === HvutAbilityPointTone.DARK ? "#000" : "#fff",
     effectiveBackground: `rgb(${rounded.join(", ")})`,
     contrastRatio: Number(Math.max(darkContrast, lightContrast).toFixed(2)),
-    source: parsedLayers.length ? "computedLayers" : "defaultWhite",
+    source: asset ? "abilityAsset" : parsedLayers.length ? "computedLayers" : "defaultWhite",
+    backgroundFamily: asset?.family || "unclassified",
+    assetCode: asset?.assetCode || "",
   });
 }

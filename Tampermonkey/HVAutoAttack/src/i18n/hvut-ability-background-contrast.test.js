@@ -6,6 +6,21 @@ import {
 
 describe("HVUT ability point background contrast", () => {
   it.each([
+    ["url(/isekai/y/ab/5bf.png)", "blue", HvutAbilityPointTone.LIGHT, "#fff"],
+    ['url("/isekai/y/ab/7gf.png")', "green", HvutAbilityPointTone.DARK, "#000"],
+    ["url(/isekai/y/ab/2rf.png)", "red", HvutAbilityPointTone.LIGHT, "#fff"],
+    ["url(/isekai/y/ab/1pf.png)", "purple", HvutAbilityPointTone.LIGHT, "#fff"],
+  ])("classifies the real ability asset %s", (backgroundImage, family, tone, textColor) => {
+    expect(decideHvutAbilityPointContrast({ backgroundImage })).toMatchObject({
+      kind: "accepted",
+      source: "abilityAsset",
+      backgroundFamily: family,
+      tone,
+      textColor,
+    });
+  });
+
+  it.each([
     ["default", "rgb(237, 235, 223)", HvutAbilityPointTone.DARK, "#000"],
     ["major red", "rgb(204, 0, 0)", HvutAbilityPointTone.LIGHT, "#fff"],
     ["supportive green", "rgb(0, 153, 0)", HvutAbilityPointTone.DARK, "#000"],
@@ -17,6 +32,7 @@ describe("HVUT ability point background contrast", () => {
       tone,
       textColor,
       source: "computedLayers",
+      backgroundFamily: "unclassified",
     });
   });
 

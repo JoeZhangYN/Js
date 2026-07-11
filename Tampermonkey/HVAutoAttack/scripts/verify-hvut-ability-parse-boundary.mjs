@@ -260,9 +260,12 @@ for (const required of [
   "decision.requirement.abilityPointsText",
   "decision.requirement.playerLevelText",
   "window.getComputedStyle(backgroundNode).backgroundColor",
-  "bridge.contrast({ backgroundColors: backgroundColors })",
+  "window.getComputedStyle(button).backgroundImage",
+  "bridge.contrast({ backgroundImage: backgroundImage, backgroundColors: backgroundColors })",
   "point.dataset.contrastTone = contrast.tone",
   "point.dataset.contrastBackground = contrast.effectiveBackground",
+  "point.dataset.contrastSource = contrast.source",
+  "point.dataset.backgroundFamily = contrast.backgroundFamily",
   "'.hvut-ab-points'",
   "'.hvut-ab-level'",
   "reason: 'abilityRequirementLayoutUnknown'",
@@ -286,10 +289,13 @@ if (/\.hvut-ab-b(?:f|u|ux|x) \{ color:/.test(text)) {
 }
 for (const required of [
   "export function decideHvutAbilityPointContrast(input)",
+  "ABILITY_ASSET_PALETTE",
+  "abilityAssetBackground(input?.backgroundImage)",
   "backgroundColors",
   "contrastRatio",
   'textColor: tone === HvutAbilityPointTone.DARK ? "#000" : "#fff"',
-  'source: parsedLayers.length ? "computedLayers" : "defaultWhite"',
+  'source: asset ? "abilityAsset" : parsedLayers.length ? "computedLayers" : "defaultWhite"',
+  'sourceOrigin: "https://hentaiverse.org/isekai/y/ab/"',
 ]) {
   if (!contrastText.includes(required)) {
     violations.push(`ability background contrast decision must contain ${required}`);
@@ -297,6 +303,11 @@ for (const required of [
 }
 for (const required of [
   "chooses maximum contrast for %s",
+  "classifies the real ability asset %s",
+  '"url(/isekai/y/ab/5bf.png)"',
+  '"/isekai/y/ab/7gf.png"',
+  '"url(/isekai/y/ab/2rf.png)"',
+  '"url(/isekai/y/ab/1pf.png)"',
   '"major red"',
   '"supportive green"',
   '"protection blue"',
