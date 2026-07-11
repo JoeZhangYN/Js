@@ -11,6 +11,10 @@ export const HvutAbilityRankAction = Object.freeze({
   INSUFFICIENT_POINTS: "insufficientPoints",
 });
 
+export const HvutAbilityRequirementLayout = Object.freeze({
+  POINTS_CENTER_LEVEL_BELOW: "pointsCenterLevelBelow",
+});
+
 const BUTTON_STATE = Object.freeze({
   f: HvutAbilityRankState.ACQUIRED,
   u: HvutAbilityRankState.UNLOCKABLE,
@@ -24,7 +28,9 @@ function requirementOf(input) {
   return Object.freeze({
     abilityPoints,
     playerLevel,
-    displayText: `${abilityPoints} (${playerLevel})`,
+    abilityPointsText: String(abilityPoints),
+    playerLevelText: `(${playerLevel})`,
+    layout: HvutAbilityRequirementLayout.POINTS_CENTER_LEVEL_BELOW,
   });
 }
 

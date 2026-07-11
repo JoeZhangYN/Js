@@ -771,7 +771,14 @@ try {
     var bridge = window.HVAA_hvutAbilityRequirement;
     var className = decision.rankState === bridge.state.ACQUIRED ? '.hvut-ab-bf' : decision.action === bridge.action.UNLOCK ? '.hvut-ab-bu' : decision.action === bridge.action.INSUFFICIENT_POINTS ? '.hvut-ab-bux' : '.hvut-ab-bx';
     var attributes = decision.action === bridge.action.UNLOCK ? { dataset: { action: 'unlock', name: context?.name || '', to: index + 1 } } : null;
-    $element('span', button, attributes ? [decision.requirement.displayText, className, attributes] : [decision.requirement.displayText, className]);
+    var isSplitLayout = decision.requirement.layout === bridge.layout.POINTS_CENTER_LEVEL_BELOW;
+    if (!isSplitLayout) {
+      record_hvut_ability_parse_failure(context?.stage || 'abilityRankRequirementLayout', { reason: 'abilityRequirementLayoutUnknown', name: context?.name || '', index: index, layout: decision.requirement.layout || '' });
+      return false;
+    }
+    $element('span', button, attributes ? [decision.requirement.abilityPointsText, '.hvut-ab-points.hvut-ab-points-adaptive' + className, attributes] : [decision.requirement.abilityPointsText, '.hvut-ab-points.hvut-ab-points-adaptive' + className]);
+    $element('span', button, [decision.requirement.playerLevelText, '.hvut-ab-level']);
+    return true;
   };
   var parse_hvut_ability_points_from_top = function (top, stage) {
     var text = top?.children?.[3]?.textContent;
@@ -8183,7 +8190,7 @@ if (characterPage.isAbilities) {
       ab.level = acquiredLevel;
       for (const { button, decision, index } of ranks) {
         button.classList.add('hvut-ab-bar');
-        render_hvut_ability_rank_requirement(button, decision, index, { name: name });
+        if (render_hvut_ability_rank_requirement(button, decision, index, { name: name }) === false) return false;
       }
       if (ab.level) {
         if (!ab.slotted) {
@@ -8343,11 +8350,12 @@ if (characterPage.isAbilities) {
     .hvut-ab-cap { background-color: var(--color-ab-cap); }
     .hvut-ab-up { background-color: var(--color-ab-up); }
     .hvut-ab-tree > img[src*='/td'] { filter: brightness(250%); }
-    .hvut-ab-bar { font-size: 9pt; line-height: 30px; white-space: nowrap; }
-    .hvut-ab-bf { color: var(--color-ab-slot); display: block; opacity: 0.65; }
-    .hvut-ab-bu { color: var(--color-ab-slot); display: block; }
-    .hvut-ab-bux { color: var(--color-font-invalid); display: block; cursor: not-allowed; }
-    .hvut-ab-bx { color: var(--color-font-invalid); }
+    .hvut-ab-bar { position: relative; margin-bottom: 13px; font-size: 9pt; line-height: 30px; white-space: nowrap; overflow: visible; }
+    .hvut-ab-points { display: block; }
+    .hvut-ab-points-adaptive { color: #fff; mix-blend-mode: difference; text-shadow: 0 0 1px #777; }
+    .hvut-ab-level { display: block; position: absolute; top: 27px; left: 50%; min-width: 34px; transform: translateX(-50%); color: var(--color-font-invalid); font-size: 8pt; line-height: 12px; text-align: center; white-space: nowrap; z-index: 1; }
+    .hvut-ab-bf { opacity: 0.65; }
+    .hvut-ab-bux { cursor: not-allowed; }
 
     #ability_treepane > div > div:first-child { padding-top: 13px; }
     .hvut-ab-warn { display: block; margin-top: -6px; }
@@ -14347,11 +14355,12 @@ if (characterPage.isAbilities) {
     .hvut-ab-limit { background-color: #03c; }
     .hvut-ab-up { background-color: #c00; }
     .hvut-ab-tree > img[src*='/td'] { filter: brightness(250%); }
-    .hvut-ab-bar { font-size: 10pt; line-height: 30px; }
-    .hvut-ab-bf { color: #333; display: block; opacity: 0.65; }
-    .hvut-ab-bu { color: #333; display: block; }
-    .hvut-ab-bux { color: #999; display: block; cursor: not-allowed; }
-    .hvut-ab-bx { color: #999; }
+    .hvut-ab-bar { position: relative; margin-bottom: 13px; font-size: 10pt; line-height: 30px; white-space: nowrap; overflow: visible; }
+    .hvut-ab-points { display: block; }
+    .hvut-ab-points-adaptive { color: #fff; mix-blend-mode: difference; text-shadow: 0 0 1px #777; }
+    .hvut-ab-level { display: block; position: absolute; top: 27px; left: 50%; min-width: 34px; transform: translateX(-50%); color: #999; font-size: 8pt; line-height: 12px; text-align: center; white-space: nowrap; z-index: 1; }
+    .hvut-ab-bf { opacity: 0.65; }
+    .hvut-ab-bux { cursor: not-allowed; }
 
     #ability_treepane > div > div:first-child { padding-top: 13px; }
     .hvut-ab-warn { display: block; margin-top: -6px; }
@@ -14444,7 +14453,9 @@ if (characterPage.isAbilities) {
     ab.level = acquiredLevel;
     for (const { button, decision, index } of ranks) {
       button.classList.add('hvut-ab-bar');
-      render_hvut_ability_rank_requirement(button, decision, index, { name: name });
+      if (render_hvut_ability_rank_requirement(button, decision, index, { name: name }) === false) {
+        return false;
+      }
     }
 
     if (ab.level) {

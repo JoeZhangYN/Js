@@ -123,7 +123,7 @@ for (const required of [
   "if (entries === null) {",
   "for (const { div, name, ability: ab, id, ranks, acquiredLevel } of entries) {",
   "for (const { button, decision, index } of ranks) {",
-  "render_hvut_ability_rank_requirement(button, decision, index, { name: name });",
+  "if (render_hvut_ability_rank_requirement(button, decision, index, { name: name }) === false) return false;",
   "mark_hvut_ability_warning(div, '未激活', 'abilityWarningNode')",
   "mark_hvut_ability_warning(div, '可升级', 'abilityWarningNode')",
   "return true;",
@@ -140,7 +140,7 @@ for (const required of [
   "if (abilityTreeEntries === null) {",
   "for (const { div, name, ability: ab, id, ranks, acquiredLevel } of abilityTreeEntries) {",
   "for (const { button, decision, index } of ranks) {",
-  "render_hvut_ability_rank_requirement(button, decision, index, { name: name });",
+  "if (render_hvut_ability_rank_requirement(button, decision, index, { name: name }) === false) {",
   "mark_hvut_ability_warning(div, '未激活', 'legacyAbilityWarningNode')",
   "mark_hvut_ability_warning(div, '可升级', 'legacyAbilityWarningNode')",
 ]) {
@@ -166,9 +166,12 @@ for (const forbidden of [
 for (const required of [
   "HvutAbilityRankState",
   "HvutAbilityRankAction",
+  "HvutAbilityRequirementLayout",
   "export function decideHvutAbilityRankRequirement(input)",
   'kind: "unknownState"',
-  "displayText:",
+  "abilityPointsText:",
+  "playerLevelText:",
+  "POINTS_CENTER_LEVEL_BELOW",
   "requirement,",
 ]) {
   if (!requirementText.includes(required)) {
@@ -179,6 +182,7 @@ for (const required of [
   "keeps point and level requirements for button state",
   "preserves requirements while classifying an unknown button state",
   "rejects missing catalog requirements instead of rendering empty text",
+  "keeps points centered and formats the lower level with ASCII parentheses",
 ]) {
   if (!requirementTestText.includes(required)) {
     violations.push(`ability requirement tests must cover ${required}`);
@@ -187,6 +191,7 @@ for (const required of [
 for (const required of [
   'Object.defineProperty(window, "HVAA_hvutAbilityRequirement"',
   "decide: decideHvutAbilityRankRequirement",
+  "layout: HvutAbilityRequirementLayout",
   "writable: false",
 ]) {
   if (!bridgeText.includes(required)) {
@@ -236,10 +241,32 @@ if (/if \(type === null\)/.test(text)) {
 for (const forbidden of [
   /\$element\('span', button, \[ab\.point\[i\], '\.hvut-ab-bu/,
   /\$element\('span', button, \[`\$\{ab\.point\[i\]\} \(\$\{ab\.unlock\[i\]\}\)`/,
+  /decision\.requirement\.displayText/,
 ]) {
   if (forbidden.test(text)) {
     violations.push("ability rank requirements must not keep state-specific rendering dialects");
   }
+}
+for (const required of [
+  "decision.requirement.abilityPointsText",
+  "decision.requirement.playerLevelText",
+  "'.hvut-ab-points.hvut-ab-points-adaptive'",
+  "'.hvut-ab-level'",
+  "reason: 'abilityRequirementLayoutUnknown'",
+]) {
+  requirePart("ability requirement renderer", helperRegion, required);
+}
+if ((text.match(/mix-blend-mode: difference/g) || []).length !== 2) {
+  violations.push("both ability worlds must adapt centered AP color to the rank background");
+}
+if (
+  (text.match(/\.hvut-ab-level \{ display: block; position: absolute; top: 27px;/g) || [])
+    .length !== 2
+) {
+  violations.push("both ability worlds must place the required level below the rank button");
+}
+if (/\.hvut-ab-b(?:f|u|ux|x) \{ color:/.test(text)) {
+  violations.push("ability point state classes must not override adaptive background contrast");
 }
 
 const catalog = HvutAbilityRequirementCatalog;

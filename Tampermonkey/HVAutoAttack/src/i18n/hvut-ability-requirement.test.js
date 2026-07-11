@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   decideHvutAbilityRankRequirement,
   HvutAbilityRankAction,
+  HvutAbilityRequirementLayout,
   HvutAbilityRankState,
 } from "./hvut-ability-requirement.js";
 
@@ -21,7 +22,13 @@ describe("HVUT ability rank requirement decision", () => {
       })
     ).toEqual({
       kind: "accepted",
-      requirement: { abilityPoints: 4, playerLevel: 295, displayText: "4 (295)" },
+      requirement: {
+        abilityPoints: 4,
+        playerLevel: 295,
+        abilityPointsText: "4",
+        playerLevelText: "(295)",
+        layout: HvutAbilityRequirementLayout.POINTS_CENTER_LEVEL_BELOW,
+      },
       rankState: state,
       action,
     });
@@ -37,7 +44,13 @@ describe("HVUT ability rank requirement decision", () => {
     ).toEqual({
       kind: "unknownState",
       reason: "unrecognizedButtonType",
-      requirement: { abilityPoints: 4, playerLevel: 295, displayText: "4 (295)" },
+      requirement: {
+        abilityPoints: 4,
+        playerLevel: 295,
+        abilityPointsText: "4",
+        playerLevelText: "(295)",
+        layout: HvutAbilityRequirementLayout.POINTS_CENTER_LEVEL_BELOW,
+      },
       rankState: HvutAbilityRankState.UNKNOWN,
       action: HvutAbilityRankAction.NONE,
     });
@@ -47,5 +60,22 @@ describe("HVUT ability rank requirement decision", () => {
     expect(
       decideHvutAbilityRankRequirement({ abilityPoints: undefined, requiredPlayerLevel: 295 })
     ).toEqual({ kind: "rejected", reason: "invalidRequirement" });
+  });
+
+  it("keeps points centered and formats the lower level with ASCII parentheses", () => {
+    for (const buttonType of ["f", "u", "x", "drifted"]) {
+      const outcome = decideHvutAbilityRankRequirement({
+        abilityPoints: 3,
+        requiredPlayerLevel: 200,
+        buttonType,
+        remainingAbilityPoints: 10,
+      });
+      expect(outcome.requirement).toMatchObject({
+        abilityPointsText: "3",
+        playerLevelText: "(200)",
+        layout: "pointsCenterLevelBelow",
+      });
+      expect(outcome.requirement.playerLevelText).not.toMatch(/[（）]/);
+    }
   });
 });
