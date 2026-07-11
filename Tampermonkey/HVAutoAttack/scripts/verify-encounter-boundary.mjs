@@ -1215,18 +1215,18 @@ if (!/\bWIDGET_TIMER_ELAPSED\b/.test(hvUtilsText)) {
     `${hvUtilsFile.replaceAll("\\", "/")} widget countdown expiry must report WIDGET_TIMER_ELAPSED`
   );
 }
-if (/re\.type\s*=\s*\([^;]*\|\|\s*IS_ISEKAI/.test(hvUtilsText)) {
+if (/\bIS_ISEKAI\b/.test(hvUtilsText)) {
   violations.push(
     `${hvUtilsFile.replaceAll("\\", "/")} must not classify the isekai world as gallery/e-hentai page type`
   );
 }
 if (
   !hvUtilsText.includes(
-    "re.type = !location.hostname.includes('hentaiverse.org') ? 'eh' : $id('battle_top') ? 'ba' : IS_ISEKAI ? 'is' : $id('navbar') ? 'hv' : false;"
+    "re.type = !location.hostname.includes('hentaiverse.org') ? 'eh' : $id('battle_top') ? 'ba' : $id('navbar') ? ctx.hvPageType : false;"
   )
 ) {
   violations.push(
-    `${hvUtilsFile.replaceAll("\\", "/")} must classify encounter widget page type before world-specific authority`
+    `${hvUtilsFile.replaceAll("\\", "/")} must consume the page type bound at world composition`
   );
 }
 for (const required of [

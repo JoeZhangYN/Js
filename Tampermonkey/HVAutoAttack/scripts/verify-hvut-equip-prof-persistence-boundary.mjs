@@ -28,7 +28,7 @@ for (const part of [
   "const json = JSON.parse(JSON.stringify(data.values));",
   "const persisted = _eq.prof.list.filter((entry) => entry === data || !entry.new).map((entry) => (entry === data ? json : entry.json));",
   "if (!$config.set('eq_prof', persisted)) {",
-  "alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');",
+  "show_hvut_generic_error();",
   "return false;",
   "data.json = json;",
   "data.node.button.classList.remove('hvut-eq-new');",
@@ -41,7 +41,7 @@ for (const part of [
 for (const part of [
   "const json = _eq.prof.list.filter((entry) => entry !== data && !entry.new).map((data) => data.json);",
   "if (!$config.set('eq_prof', json)) {",
-  "alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');",
+  "show_hvut_generic_error();",
   "return false;",
   "data.node.button.remove();",
   "_eq.prof.list.splice(index, 1);",

@@ -3,7 +3,7 @@
 // 背景：hv-utils.js 是「主世界 4.0.0 + isekai 4.2.0」双 IIFE 合并脚本。2026-06-10 应抽尽抽收口
 // （继 bindTr/render_supply_li/equip-name-render 之后）把以下真重复收到守卫块共享区（L1）：
 //   bindRe($re)        — 随机遭遇引擎 15 方法（RE 状态本就 'hvut_' 跨服共享，散落纯属物理）
-//   bindPrice($price)  — 物价管理（上游 4.2.0 本就单实现 + IS_ISEKAI 运行时分发；数据分服、逻辑统一）
+//   bindPrice($price)  — 物价管理（世界内容目录在组合根绑定；数据分服、逻辑统一）
 //   bindDfct($dfct)    — 难度切换 4 方法（"被 topmenu node 形态阻塞"已证伪，纯表层漂移）
 //   bindPersona($persona) — 角色/装备套装切换 12/13 方法（真分叉经 ctx 倒置: warnSelector/
 //     parseEquipElem/applyDynjs；parse_stats_pane 解析模型大分叉留各 IIFE 字面量）
@@ -82,10 +82,10 @@ const src = stripComments(readFileSync(TARGET, "utf8"));
 const lines = src.split("\n");
 
 // 定位两 IIFE 区（共享区 < isekaiStart 豁免——bind* 定义合法地住在那里）
-const isekaiStart = lines.findIndex((l) => /^if \(IS_ISEKAI\) \{/.test(l));
+const isekaiStart = lines.findIndex((l) => /^if \(HVUT_RUNTIME_POLICY\.profile\.identity === 'isekai'\) \{/.test(l));
 if (isekaiStart < 0) {
   console.error(
-    "[verify-no-iife-dup] FAIL — 找不到 `if (IS_ISEKAI) {` 分发行（文件结构变更？同步更新本 probe）"
+    "[verify-no-iife-dup] FAIL — 找不到冻结世界档案分发行（文件结构变更？同步更新本 probe）"
   );
   process.exit(1);
 }

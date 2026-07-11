@@ -17,13 +17,13 @@ for (const required of [
   if (!policy.includes(required)) violations.push(`HVUT entry policy must contain ${required}`);
 }
 
-for (const required of ["selectHvutRuntimeEntryPolicy(ingressIdentity).mode", "entryMode:"]) {
+for (const required of ["selectHvutRuntimeEntryPolicy(ingressIdentity).mode", "entry: Object.freeze("]) {
   if (!bridge.includes(required)) violations.push(`HVUT bridge must carry ${required}`);
 }
 
 const sharedRequest = hvut.indexOf("const $ajax = {");
 const runtimeGate = hvut.indexOf("if (HVUT_ENTRY_MODE === 'active') {");
-const worldBranch = hvut.indexOf("if (IS_ISEKAI) {", runtimeGate);
+const worldBranch = hvut.indexOf("if (HVUT_RUNTIME_POLICY.profile.identity === 'isekai') {", runtimeGate);
 if (sharedRequest < 0 || runtimeGate < 0 || worldBranch < 0) {
   violations.push("HVUT runtime must expose shared composition, entry gate and world branch");
 } else if (!(sharedRequest < runtimeGate && runtimeGate < worldBranch)) {

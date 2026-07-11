@@ -28,7 +28,7 @@ for (const [label, part, expected] of [
 }
 
 for (const part of [
-  "alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');",
+  "show_hvut_generic_error();",
   "return false;",
   "return true;",
 ]) {

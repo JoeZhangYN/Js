@@ -20,7 +20,7 @@ for (const part of [
   "nextEquipdata = { version: $armory.equipdata.version };",
   "nextEquipdata[eq.info.eid] = { checked: eq.node.check.checked, ...data };",
   "if (!$config.set('equipdata', nextEquipdata)) {",
-  "alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');",
+  "show_hvut_generic_error();",
   "return false;",
   "$armory.equipdata = nextEquipdata;",
   "return true;",

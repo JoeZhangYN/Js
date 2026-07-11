@@ -36,7 +36,7 @@ for (const required of [
   "return { kind: 'accepted' };",
   "var reject_hvut_item_shop_buy = function (reason, detail, message) {",
   "var evidence = create_hvut_item_shop_parse_evidence(reason, detail);",
-  "return { kind: 'rejected', reason: reason, message: message || (IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.'), evidence: evidence };",
+  "return { kind: 'rejected', reason: reason, message: message || resolve_hvut_feedback_copy('genericError'), evidence: evidence };",
   "var run_hvut_item_shop_buy = async function (items, itemShop) {",
   "var create_hvut_item_shop_url = function () {",
   "$ajax.fetch(create_hvut_item_shop_url()",
@@ -148,7 +148,7 @@ for (const required of [
   "if ((await $item.load()) === false) {",
   "battle.render_supply_grid();",
   "if (!ctx.config.set('items', $item.count())) {",
-  "alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');",
+  "show_hvut_generic_error();",
   "return false;",
   "return true;",
 ]) {

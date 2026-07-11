@@ -112,7 +112,7 @@ for (const [label, value, key] of [
   requireParts(label, value, [
     `const write = persona.write_config_value('${key}'`,
     "if (write.kind === 'rejected') {",
-    "alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');",
+    "show_hvut_generic_error();",
   ]);
 }
 

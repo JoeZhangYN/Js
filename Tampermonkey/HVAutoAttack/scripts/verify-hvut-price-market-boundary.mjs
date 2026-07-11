@@ -56,13 +56,13 @@ for (const required of [
   "const new_prices = await price.update_market(filter, key);",
   "if (!new_prices) {",
   "p.textarea.disabled = false;",
-  "alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');",
+  "show_hvut_generic_error();",
   "return;",
   "save(p);",
   "let saved;",
   "saved = price.reset();",
   "saved = price.set(new_prices, replace);",
-  "if (!saved) {\n        alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');\n        return false;",
+  "if (!saved) {\n        show_hvut_generic_error();\n        return false;",
 ]) {
   if (!editBody.includes(required)) {
     violations.push(`${target} price edit must keep market failure visible with ${required}`);

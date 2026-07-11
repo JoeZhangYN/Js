@@ -44,7 +44,7 @@ const load = body(
 
 requireParts("applyEncounterState", applyState, [
   "if (!ctx.config.set('re', outcome.state, 'hvut_')) {",
-  "alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');",
+  "show_hvut_generic_error();",
   "return false;",
   "re.json = outcome.state;",
   "return true;",
@@ -54,12 +54,15 @@ requireParts("run_hvut_encounter_bridge", encounterBridge, [
   "const bridge = typeof window !== 'undefined' ? window.HVAA_encounter : undefined",
   "const type = bridge?.Event?.[eventName]",
   "record_hvut_random_encounter_failure('widgetEncounterBridgeMissing', { eventName })",
-  "return bridge.run({ isIsekai: IS_ISEKAI, ...event, type })",
+  "return bridge.run({ ...event, type })",
   "record_hvut_random_encounter_failure('widgetEncounterBridgeFailed'",
   "return undefined",
 ]);
 
-requireParts("re.init", init, ["return re.get();"]);
+requireParts("re.init", init, ["ctx.hvPageType", "return re.get();"]);
+if (/\bisIsekai\b|\bIS_ISEKAI\b/.test(bindRe)) {
+  violations.push(`${target} bindRe must not forward world identity through invariant widget events`);
+}
 requireParts("re.clock", clock, [
   "if (re.init() === false) return false;",
   "const dayState = run_hvut_encounter_bridge('WIDGET_TICK', { state: re.json });",

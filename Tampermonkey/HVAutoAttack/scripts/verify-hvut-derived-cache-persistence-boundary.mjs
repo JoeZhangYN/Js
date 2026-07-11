@@ -41,7 +41,7 @@ for (const [label, body, part] of [
   ["legacy training cache", legacyTraining, "if (!$config.set('tr_level', _tr.level)) {"],
 ]) {
   requirePart(label, body, part);
-  requirePart(label, body, "alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');");
+  requirePart(label, body, "show_hvut_generic_error();");
   requirePart(label, body, "return false;");
 }
 

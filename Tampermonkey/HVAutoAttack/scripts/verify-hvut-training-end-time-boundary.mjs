@@ -65,7 +65,7 @@ for (const required of [
 for (const required of [
   "const current_end = parse_hvut_training_end_time(_window.end_time, 'trainingPageWindowEndTime');",
   "if (current_end === null) {",
-  "alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');",
+  "show_hvut_generic_error();",
   "return false;",
   "_tr.json.current_end = current_end;",
 ]) {
@@ -89,7 +89,7 @@ for (const required of [
 for (const required of [
   "const current_end = parse_hvut_training_end_time(_window.end_time, 'legacyTrainingPageWindowEndTime');",
   "if (current_end === null) {",
-  "alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');",
+  "show_hvut_generic_error();",
   "return false;",
   "_tr.json.current_end = current_end;",
 ]) {

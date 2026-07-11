@@ -47,7 +47,7 @@ for (const [label, value] of [
   requireParts(label, value, [
     "const write = write_hvut_character_config_value(ctx, 'ch_style', ch_style, 'difficultyCharacterStyleWrite');",
     "if (write.kind === 'rejected') {",
-    "alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');",
+    "show_hvut_generic_error();",
   ]);
 }
 requireParts("dfct.init", init, ["return false;"]);

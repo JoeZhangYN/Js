@@ -235,13 +235,13 @@ try {
     return match ? match[1] : (record_hvut_config_parse_failure(stage, { text: text }), '1');
   };
   var create_hvut_world_identity = function (context) {
-    var world = HVUT_RUNTIME_POLICY.world;
+    var world = HVUT_RUNTIME_POLICY.profile.identity;
     var isIsekai = world === 'isekai';
     return {
       world: world,
       isIsekai: isIsekai,
-      serverName: HVUT_RUNTIME_POLICY.serverName,
-      storageNamespace: HVUT_RUNTIME_POLICY.storageNamespace,
+      serverName: HVUT_RUNTIME_POLICY.authority.serverName,
+      storageNamespace: HVUT_RUNTIME_POLICY.authority.storageNamespace,
       season: context?.season || parse_hvut_world_season(isIsekai, context?.seasonStage || 'worldSeason'),
     };
   };
@@ -273,7 +273,7 @@ try {
     return run_hvut_config_migration_bridge('carryKeys', [segment], 'configCarryKeysBridgeMissing', segment || {}, null);
   };
   var get_hvut_config_namespace = function () {
-    return HVUT_RUNTIME_POLICY.storageNamespace;
+    return HVUT_RUNTIME_POLICY.authority.storageNamespace;
   };
   var build_hvut_legacy_equipdata = function (inEquipdata, inJson) {
     return run_hvut_config_migration_bridge('buildEquipData', [inEquipdata, inJson], 'configEquipDataBridgeMissing', {}, null);
@@ -602,11 +602,11 @@ try {
   };
   var reject_hvut_item_shop_buy = function (reason, detail, message) {
     var evidence = create_hvut_item_shop_parse_evidence(reason, detail);
-    return { kind: 'rejected', reason: reason, message: message || (IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.'), evidence: evidence };
+    return { kind: 'rejected', reason: reason, message: message || resolve_hvut_feedback_copy('genericError'), evidence: evidence };
   };
   var run_hvut_item_shop_buy = async function (items, itemShop) {
     if (!items.length) {
-      return reject_hvut_item_shop_buy('emptyRequest', {}, IS_ISEKAI ? 'The purchase request list is empty.' : '购买请求列表为空.');
+      return reject_hvut_item_shop_buy('emptyRequest', {}, resolve_hvut_feedback_copy('itemShopEmptyRequest'));
     }
     try {
       if ((await itemShop.load_shop()) === false) {
@@ -621,7 +621,7 @@ try {
     }
     const nostock = items.find((item) => item.count > (itemShop.shop[item.name]?.shop_stock || 0));
     if (nostock) {
-      return reject_hvut_item_shop_buy('insufficientStock', { name: nostock.name, count: nostock.count, stock: itemShop.shop[nostock.name]?.shop_stock || 0 }, IS_ISEKAI ? 'Insufficient number of items in the Item Shop.' : '系统商店中的物品数量不足.');
+      return reject_hvut_item_shop_buy('insufficientStock', { name: nostock.name, count: nostock.count, stock: itemShop.shop[nostock.name]?.shop_stock || 0 }, resolve_hvut_feedback_copy('itemShopInsufficientStock'));
     }
     items.forEach((item) => {
       item.id = itemShop.shop[item.name].id;
@@ -2312,6 +2312,9 @@ try {
     ALERT_MOOGLEMAIL_MULTI_SEND_HATH_SHORTAGE: 'alertMoogleMailMultiSendHathShortage',
   });
   var HVUT_FEEDBACK_COPY = Object.freeze({
+    genericError: { main: '发生了一个错误.', isekai: 'An error has occurred.' },
+    itemShopEmptyRequest: { main: '购买请求列表为空.', isekai: 'The purchase request list is empty.' },
+    itemShopInsufficientStock: { main: '系统商店中的物品数量不足.', isekai: 'Insufficient number of items in the Item Shop.' },
     equipForumLinkPrompt: { main: '论坛链接:', isekai: 'Forum Link:' },
     settingsNamePrompt: { main: '输入方案名称', isekai: 'Enter the name of the settings' },
     monsterUpgradeConfirm: { main: '确定要升级选中的怪物吗?', isekai: '确定要升级所选的怪物吗？' },
@@ -2374,7 +2377,8 @@ try {
   });
   var resolve_hvut_feedback_copy = function (key) {
     var copy = HVUT_FEEDBACK_COPY[key] || {};
-    return IS_ISEKAI ? (copy.isekai || copy.main || '') : (copy.main || copy.isekai || '');
+    var preferred = HVUT_RUNTIME_POLICY.profile.feedbackCopy;
+    return copy[preferred] || copy.main || copy.isekai || '';
   };
   var format_hvut_feedback_copy = function (key, values) {
     var message = resolve_hvut_feedback_copy(key);
@@ -2382,6 +2386,9 @@ try {
       message = message.split(`{${name}}`).join(values[name]);
     });
     return message;
+  };
+  var show_hvut_generic_error = function () {
+    alert(resolve_hvut_feedback_copy('genericError'));
   };
   var run_hvut_user_feedback = function (event) {
     if (event?.type === HVUT_FEEDBACK_EVENT.PROMPT_EQUIP_FORUM_LINK ||
@@ -2839,14 +2846,13 @@ try {
 // ============================================================================
 
 var HVUT_RUNTIME_POLICY = window.HVAA_hvutRuntimePolicy;
-if (!HVUT_RUNTIME_POLICY || (HVUT_RUNTIME_POLICY.world !== 'persistent' && HVUT_RUNTIME_POLICY.world !== 'isekai') || (HVUT_RUNTIME_POLICY.entryMode !== 'active' && HVUT_RUNTIME_POLICY.entryMode !== 'excludedIsekaiEquipmentDocument')) {
+if (!HVUT_RUNTIME_POLICY || !HVUT_RUNTIME_POLICY.authority || !HVUT_RUNTIME_POLICY.profile || (HVUT_RUNTIME_POLICY.profile.identity !== 'persistent' && HVUT_RUNTIME_POLICY.profile.identity !== 'isekai') || (HVUT_RUNTIME_POLICY.entry?.mode !== 'active' && HVUT_RUNTIME_POLICY.entry?.mode !== 'excludedIsekaiEquipmentDocument')) {
   throw new Error('[HVAA][HVUT] runtime policy bridge missing');
 }
-var IS_ISEKAI = HVUT_RUNTIME_POLICY.world === 'isekai';
-var HVUT_ENTRY_MODE = HVUT_RUNTIME_POLICY.entryMode;
+var HVUT_ENTRY_MODE = HVUT_RUNTIME_POLICY.entry.mode;
 
 /* eslint-disable arrow-spacing, block-spacing, comma-spacing, key-spacing, keyword-spacing, object-curly-spacing, space-before-blocks, space-before-function-paren, space-infix-ops, semi-spacing */
-// ===== L1 公共底层工具：两 IIFE 经作用域链共享。去重自双版 byte-identical（机械 diff 证 distinct=1）；scrollIntoView 取带空值守卫版；popup_text width 按 IS_ISEKAI 配置保两版观感。=====
+// ===== L1 公共底层工具：两 IIFE 经作用域链共享。去重自双版 byte-identical（机械 diff 证 distinct=1）。=====
 function $id(id,d) {return (d||document).getElementById(id);}
 function $qs(q,d) {return (d||document).querySelector(q);}
 function $qsa(q,d) {return Array.from((d||document).querySelectorAll(q));}
@@ -2865,7 +2871,7 @@ function scrollIntoView(e,p=e.parentNode) {if(!e){return;}p.scrollTop+=e.getBoun
 function confirm_event(n,e,m,c,f) {if(!n){return;}const a=n.getAttribute('on'+e);n.removeAttribute('on'+e);n.addEventListener(e,(e)=>{if(!c||c()){if(confirm(m)){if(f){f();}}else{e.preventDefault();e.stopImmediatePropagation();}}},true);n.setAttribute('on'+e,a);}
 function play_beep(volume=0.2,frequency=500,duration=0.5) {const delay=1;if(!volume){return;}const c=new window.AudioContext();const o=c.createOscillator();const g=c.createGain();o.type='sine';o.frequency.value=frequency;g.gain.value=volume;o.connect(g);g.connect(c.destination);o.start(delay);o.stop(delay+duration);}
 function popup(t) {function r(e){e.preventDefault();e.stopImmediatePropagation();if(e.button===0||e.key==='Enter'||e.key===' '||e.key==='Escape'){w.remove();document.removeEventListener('keydown',r);}}const w=$element('div',document.body,['!position:fixed;top:0;left:0;width:1236px;height:702px;padding:3px 100% 100% 3px;background-color:#0006;z-index:1001;cursor:pointer;display:flex;justify-content:center;align-items:center;'],r);const d=$element('div',w,['/'+t,'!min-width:400px;min-height:100px;max-width:100%;max-height:100%;padding:10px;background-color:#fff;border:1px solid;display:flex;flex-direction:column;justify-content:center;font-size:10pt;color:#333;']);document.addEventListener('keydown',r);return d;}
-function popup_text(m,wd,ht,b=[]) {let v;if(typeof m==='string'){v=m;}else{v=m.join('\n');}const w=$element('div',document.body,['!position:fixed;top:0;left:0;width:1236px;height:702px;padding:3px 100% 100% 3px;background-color:#0006;z-index:1001;display:flex;justify-content:center;align-items:center;']);const d=$element('div',w,['!border:1px solid;padding:5px;background-color:#fff;']);const _w=IS_ISEKAI?`width:stretch;min-width:${wd}px;`:`width:${wd}px;`;const t=$element('textarea',d,{value:v,spellcheck:false,style:`display:block;margin:0 0 5px;font-size:9pt;line-height:1.5em;${_w}height:${ht}px;white-space:pre;`});function c(){w.remove();}b.forEach((o)=>{$element('input',d,{type:'button',value:o.text},()=>{if(o.click==='default'){t.value=o.value;}else if(o.click==='revert'){t.value=v;}else if(typeof o.click==='function'){o.click(p);}});});$element('input',d,{type:'button',value:'关闭'},c);const p={wrapper:w,textarea:t,close:c};return p;}
+function popup_text(m,wd,ht,b=[]) {let v;if(typeof m==='string'){v=m;}else{v=m.join('\n');}const w=$element('div',document.body,['!position:fixed;top:0;left:0;width:1236px;height:702px;padding:3px 100% 100% 3px;background-color:#0006;z-index:1001;display:flex;justify-content:center;align-items:center;']);const d=$element('div',w,['!border:1px solid;padding:5px;background-color:#fff;']);const _w=`width:${wd}px;max-width:100%;`;const t=$element('textarea',d,{value:v,spellcheck:false,style:`display:block;margin:0 0 5px;font-size:9pt;line-height:1.5em;${_w}height:${ht}px;white-space:pre;`});function c(){w.remove();}b.forEach((o)=>{$element('input',d,{type:'button',value:o.text},()=>{if(o.click==='default'){t.value=o.value;}else if(o.click==='revert'){t.value=v;}else if(typeof o.click==='function'){o.click(p);}});});$element('input',d,{type:'button',value:'关闭'},c);const p={wrapper:w,textarea:t,close:c};return p;}
 function get_message(d,s) {if(typeof d==='string'){d=$doc(d);}const m=$qsa('#messagebox_inner>p',d).map((p)=>p.textContent);if(s){return m;}else{return m.join('\n');}}
 /* eslint-enable */
 
@@ -2955,7 +2961,7 @@ const $ajax = {
       r.context.onerror?.();
     } else if (text === 'state lock limiter in effect') {
       if ($ajax.error !== text) {
-        popup(IS_ISEKAI ? `<p style="color: #e00; font-weight: bold;">${text}</p><p>You have reached the maximum connection limit.<br>Try again later.</p>` : `<p style="color: #f00; font-weight: bold;">${text}</p><p>已达到连接数上限.<br>请稍后再试.</p>`);
+        popup(`<p style="color: #e00; font-weight: bold;">${text}</p><p>已达到连接数上限.<br>请稍后再试.</p>`);
       }
       $ajax.error = text;
       r.context.onerror?.();
@@ -3413,7 +3419,7 @@ const bindTr = function (tr, ctx) {
       tr.json.next_id = 0;
     }
     if (!ctx.config.set('tr_notif', tr.json, 'hvut_')) {
-      alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
+      show_hvut_generic_error();
       return false;
     }
 
@@ -3445,7 +3451,7 @@ const bindRe = function (re, ctx) {
       return undefined;
     }
     try {
-      return bridge.run({ isIsekai: IS_ISEKAI, ...event, type });
+      return bridge.run({ ...event, type });
     } catch (error) {
       record_hvut_random_encounter_failure('widgetEncounterBridgeFailed', { eventName, error: error?.message || String(error) });
       return undefined;
@@ -3456,7 +3462,7 @@ const bindRe = function (re, ctx) {
       return true;
     }
     if (!ctx.config.set('re', outcome.state, 'hvut_')) {
-      alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
+      show_hvut_generic_error();
       return false;
     }
     re.json = outcome.state;
@@ -3467,7 +3473,7 @@ const bindRe = function (re, ctx) {
       return true;
     }
     re.inited = true;
-    re.type = !location.hostname.includes('hentaiverse.org') ? 'eh' : $id('battle_top') ? 'ba' : IS_ISEKAI ? 'is' : $id('navbar') ? 'hv' : false;
+    re.type = !location.hostname.includes('hentaiverse.org') ? 'eh' : $id('battle_top') ? 'ba' : $id('navbar') ? ctx.hvPageType : false;
     return re.get();
   };
   re.clock = function (button) {
@@ -3654,7 +3660,7 @@ const bindRe = function (re, ctx) {
 };
 
 // $price 物价管理(两 IIFE 收口一处, 基准 = ISEKAI 4.2.0; 铁律1e 应抽尽抽)。上游 4.2.0 本就按
-// 「单一实现 + IS_ISEKAI 运行时分发」设计(init 内过滤 groups/filters), 主世界副本是旧 4.0.0 残留。
+// 世界内容目录在组合根绑定，init 只消费目录能力，不读取世界身份；主世界副本是旧 4.0.0 残留。
 // 收口时统一的漂移: ① get_items(4.0.0)→items(4.2.0 命名); ② 双向汉化漂移取并集(isekai 已翻按钮
 // 要价/卖价/编辑所有材料 + 主世界已翻 alert 错误提示); ③ parse_market 取 slice(1) 写法;
 // ④ get_market 取 4.2.0 alt 回退(bid 缺则取 ask); ⑤ 主世界获得 value()(原 isekai 独有, 无消费冲突)。
@@ -3691,15 +3697,21 @@ const bindPrice = function (price, ctx) {
     if (price.json) {
       return;
     }
-    if (IS_ISEKAI) {
+    if (!ctx.catalog.seasonalConsumables) {
       price.groups['Consumables'] = price.groups['Consumables'].filter((n) => !'Last Elixir|Energy Drink|Caffeinated Candy'.includes(n));
+    }
+    if (!ctx.catalog.bindings) {
       price.groups['Materials'] = price.groups['Materials'].filter((n) => !n.startsWith('Binding of'));
+    }
+    if (!ctx.catalog.crystals) {
       delete price.groups['Crystals'];
-      delete price.groups['Figures'];
-      delete price.filters['ar'];
-      delete price.filters['fi'];
       delete price.filters['mo'];
     }
+    if (!ctx.catalog.figures) {
+      delete price.groups['Figures'];
+      delete price.filters['fi'];
+    }
+    if (!ctx.catalog.bindings) delete price.filters['ar'];
     price.json = ctx.config.get('prices');
     if (!price.json) {
       price.reset();
@@ -3780,7 +3792,7 @@ const bindPrice = function (price, ctx) {
         saved = price.set(new_prices, replace);
       }
       if (!saved) {
-        alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
+        show_hvut_generic_error();
         return false;
       }
       p.close();
@@ -3793,7 +3805,7 @@ const bindPrice = function (price, ctx) {
       const new_prices = await price.update_market(filter, key);
       if (!new_prices) {
         p.textarea.disabled = false;
-        alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
+        show_hvut_generic_error();
         return;
       }
       p.textarea.value = ctx.config.obj2text(new_prices, ['\n', '@']);
@@ -4259,12 +4271,12 @@ const bindBattlePanel = function (battle, ctx) {
   battle.load_items = async function () {
     battle.node.items.innerHTML = '';
     if ((await $item.load()) === false) {
-      alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
+      show_hvut_generic_error();
       return false;
     }
     battle.render_supply_grid();
     if (!ctx.config.set('items', $item.count())) {
-      alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
+      show_hvut_generic_error();
       return false;
     }
     return true;
@@ -4277,7 +4289,7 @@ const _servername = HVUT_WORLD.serverName;
 const _server = {
   name: HVUT_WORLD.serverName,
   season: HVUT_WORLD.season || '1',
-  [_servername]: true, // 当前服务器标记 key; isekai 判定统一走顶层 IS_ISEKAI（L0 归一）
+  [_servername]: true, // 当前服务器标记 key由世界权威适配器一次生成
 };
 
 // --color-* 主题 token 单一定义(L1 收口 2026-06-10): HV 两服 UI 配色本就一致, 原 isekai :root 全量 +
@@ -4430,7 +4442,7 @@ const bindTop = function (top, ctx) {
       ctx.re().hv();
     }
     $element('div', top.node.div, ['.hvut-top-placeholder']);
-    top.node.server = $element('div', top.node.div, ['!width: 80px;', `/<span>${IS_ISEKAI ? '异世界' : '永久区'}</span>`]);
+    top.node.server = $element('div', top.node.div, ['!width: 80px;', `/<span>${ctx.profile.label}</span>`]);
 
     top.node.config = $element('div', top.node.div, ['!width: 30px;']);
     $element('span', top.node.config, ['#hvut-top-config-icon', '/<svg xmlns="http://www.w3.org/2000/svg" x="0px" y="0px" width="30" height="22" viewBox="0 0 50 50" fill="#5C0D11"><path d="M47.16,21.221l-5.91-0.966c-0.346-1.186-0.819-2.326-1.411-3.405l3.45-4.917c0.279-0.397,0.231-0.938-0.112-1.282 l-3.889-3.887c-0.347-0.346-0.893-0.391-1.291-0.104l-4.843,3.481c-1.089-0.602-2.239-1.08-3.432-1.427l-1.031-5.886 C28.607,2.35,28.192,2,27.706,2h-5.5c-0.49,0-0.908,0.355-0.987,0.839l-0.956,5.854c-1.2,0.345-2.352,0.818-3.437,1.412l-4.83-3.45 c-0.399-0.285-0.942-0.239-1.289,0.106L6.82,10.648c-0.343,0.343-0.391,0.883-0.112,1.28l3.399,4.863 c-0.605,1.095-1.087,2.254-1.438,3.46l-5.831,0.971c-0.482,0.08-0.836,0.498-0.836,0.986v5.5c0,0.485,0.348,0.9,0.825,0.985 l5.831,1.034c0.349,1.203,0.831,2.362,1.438,3.46l-3.441,4.813c-0.284,0.397-0.239,0.942,0.106,1.289l3.888,3.891 c0.343,0.343,0.884,0.391,1.281,0.112l4.87-3.411c1.093,0.601,2.248,1.078,3.445,1.424l0.976,5.861C21.3,47.647,21.717,48,22.206,48 h5.5c0.485,0,0.9-0.348,0.984-0.825l1.045-5.89c1.199-0.353,2.348-0.833,3.43-1.435l4.905,3.441 c0.398,0.281,0.938,0.232,1.282-0.111l3.888-3.891c0.346-0.347,0.391-0.894,0.104-1.292l-3.498-4.857 c0.593-1.08,1.064-2.222,1.407-3.408l5.918-1.039c0.479-0.084,0.827-0.5,0.827-0.985v-5.5C47.999,21.718,47.644,21.3,47.16,21.221z M25,32c-3.866,0-7-3.134-7-7c0-3.866,3.134-7,7-7s7,3.134,7,7C32,28.866,28.866,32,25,32z"></path></svg>'], () => { open_hvaa_config_from_hvut('topConfigIcon'); });
@@ -4467,7 +4479,7 @@ const bindTop = function (top, ctx) {
     });
 
     const stamina_sub = $element('div', top.node.stamina, ['.hvut-top-sub hvut-top-stamina']);
-    if (!IS_ISEKAI) {
+    if (ctx.profile.staminaRestorative) {
       top.node.stamina_form = $element('form', stamina_sub, { method: 'POST' }, { submit: (e) => { top.stamina_submit(e); } });
       $element('input', top.node.stamina_form, { type: 'hidden', name: 'recover', value: 'stamina' });
       $element('input', top.node.stamina_form, { type: 'submit', value: '使用精力恢复剂', disabled: ctx.player().stamina >= ctx.config.settings.disableStaminaRestorative, style: 'width: 200px;' });
@@ -4495,11 +4507,7 @@ const bindTop = function (top, ctx) {
     }
 
     const server_sub = $element('div', top.node.server, ['.hvut-top-sub hvut-top-server']);
-    if (IS_ISEKAI) {
-      $element('a', server_sub, { href: '/', innerHTML: `<p>你现在在异世界</p><p>${_server.season}</p><p>点击切换到永久区</p>` });
-    } else {
-      $element('a', server_sub, { href: '/isekai/', innerHTML: '<p>你现在在永久区</p><p>点击切换到异世界</p>' });
-    }
+    $element('a', server_sub, { href: ctx.profile.switchHref, innerHTML: ctx.profile.switchHtml.replace('{season}', _server.season) });
 
     const config_sub = $element('div', top.node.config, ['.hvut-top-sub hvut-top-config']);
     $element('div', config_sub, 'HVAA 设置', () => { open_hvaa_config_from_hvut('topConfigMenu'); }); // chunk1: 齿轮槽位整槽对应 HVAA 面板；hv-utils 配置由 HVAA 面板内「HV Utils 设置」入口开
@@ -4520,7 +4528,7 @@ const bindTop = function (top, ctx) {
     top.stamina_create.inited = true;
     const p = $element('p', top.node.stamina_form, '加载中...');
     if ((await $item.once()) === false) {
-      p.textContent = IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.';
+      p.textContent = resolve_hvut_feedback_copy('genericError');
       return false;
     }
     const items = ['Caffeinated Candy', 'Energy Drink'].filter((e) => $item.count(e));
@@ -4608,7 +4616,7 @@ const bindDfct = function (dfct, ctx) {
       ch_style.difficulty = ctx.player.difficulty;
       const write = write_hvut_character_config_value(ctx, 'ch_style', ch_style, 'difficultyCharacterStyleWrite');
       if (write.kind === 'rejected') {
-        alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
+        show_hvut_generic_error();
         return false;
       }
     }
@@ -4675,7 +4683,7 @@ const bindDfct = function (dfct, ctx) {
     ch_style.difficulty = value;
     const write = write_hvut_character_config_value(ctx, 'ch_style', ch_style, 'difficultyCharacterStyleWrite');
     if (write.kind === 'rejected') {
-      alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
+      show_hvut_generic_error();
       return { kind: 'rejected', reason: 'difficultyCharacterStyleWriteRejected', evidence: write.evidence };
     }
     return { kind: 'accepted', value: value };
@@ -4981,7 +4989,7 @@ const bindPersona = function (persona, ctx) {
     }
     const write = persona.write_config_value('ch_style', ch_style, 'personaCharacterStyleWrite');
     if (write.kind === 'rejected') {
-      alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
+      show_hvut_generic_error();
       return { kind: 'rejected', reason: 'personaCharacterStyleWriteRejected', evidence: write.evidence };
     }
     return { kind: 'accepted', stats_pane: stats_pane };
@@ -4997,7 +5005,7 @@ const bindPersona = function (persona, ctx) {
     }
     const write = persona.write_config_value('persona', json, 'personaStateWrite');
     if (write.kind === 'rejected') {
-      alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
+      show_hvut_generic_error();
       return false;
     }
     return true;
@@ -5019,7 +5027,7 @@ const bindPersona = function (persona, ctx) {
     const equipset = $qsa('.eqb', doc).map((d) => persona.read_equipset_row(d));
     const write = persona.write_config_value('equipset', equipset, 'personaEquipsetWrite');
     if (write.kind === 'rejected') {
-      alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
+      show_hvut_generic_error();
       return { kind: 'rejected', reason: 'personaEquipsetWriteRejected', evidence: write.evidence };
     }
     return { kind: 'accepted' };
@@ -6286,7 +6294,7 @@ const bindArmory = function (armory, ctx) {
           materials[scrap] = Math.min(10, Math.ceil(p / 100));
         } else {
           const item = ((q === 4) ? 'Low-Grade ' : (q === 5) ? 'Mid-Grade ' : 'High-Grade ') + (t === 'Metal' ? 'Metals' : t);
-          materials[item] = !IS_ISEKAI ? 1 : (q === 4) ? 3 : (q === 5) ? 2 : 1;
+          materials[item] = ctx.materialCountByQuality[q] || ctx.materialCountByQuality.default;
         }
         if (q >= 7) {
           const core = ((q === 7) ? 'Legendary ' : 'Peerless ') + c + ' Core';
@@ -7015,7 +7023,7 @@ const bindArmory = function (armory, ctx) {
           nextEquipdata[eq.info.eid] = { checked: eq.node.check.checked, ...data };
         });
         if (!$config.set('equipdata', nextEquipdata)) {
-          alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
+          show_hvut_generic_error();
           return false;
         }
         $armory.equipdata = nextEquipdata;
@@ -7231,7 +7239,7 @@ const bindArmory = function (armory, ctx) {
 };
 
 if (HVUT_ENTRY_MODE === 'active') {
-if (IS_ISEKAI) {
+if (HVUT_RUNTIME_POLICY.profile.identity === 'isekai') {
   // [ISEKAI 分支] 原 "HV Utils Isekai 汉化" → 迁移至英文 4.2.0
   (function () {
 
@@ -7596,7 +7604,7 @@ window.addEventListener('unhandledrejection', (e) => { console.log($ajax.error |
 
 // RANDOM ENCOUNTER
 const $re = {};
-bindRe($re, { config: $config, get top() { return _top; } }); // 收口共享内核(L1 bindRe), GM 命名空间经 ctx.config 注入
+bindRe($re, { config: $config, hvPageType: HVUT_RUNTIME_POLICY.profile.encounterPageType, get top() { return _top; } }); // 世界页型在组合根绑定, 业务 tick 不携带身份
 
 /* NO-NAVBAR */
 if (!$id('navbar')) {
@@ -7680,7 +7688,7 @@ bindEquip($equip, { config: $config });
 
 // ITEM PRICE
 const $price = {};
-bindPrice($price, { config: $config }); // 收口共享内核(L1 bindPrice), 物价数据分服(默认命名空间)、逻辑统一
+bindPrice($price, { config: $config, catalog: HVUT_RUNTIME_POLICY.profile.priceCatalog }); // 世界内容目录在组合根绑定
 
 // MoogleMail
 // $mail 已提公共区（L2）
@@ -7908,7 +7916,7 @@ if ($config.settings.equipTouchFunctions) {
 
 
 // TOP MENU
-bindTop(_top, { config: $config, player: () => _player, re: () => $re }); // 全量收口(L1 bindTop, 能量模型 am 体系菜单; menu 表 server 字段过滤本服项)
+bindTop(_top, { config: $config, player: () => _player, re: () => $re, profile: HVUT_RUNTIME_POLICY.profile.top }); // 世界展示与能力在组合根绑定
 _top.init();
 
 // DIFFICULTY CHANGER
@@ -8366,7 +8374,7 @@ if (characterPage.isTraining) {
     if (parseFailed) return false;
     $element('tr', $id('train_table').tBodies[0], [`/<td colspan="9"><div class="fc4 far fcb"><div>Total ${total_spent.toLocaleString()}</div></div></td>`]);
     if (!$config.set('tr_level', _tr.level)) {
-      alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
+      show_hvut_generic_error();
       return false;
     }
     return true;
@@ -8378,7 +8386,7 @@ if (characterPage.isTraining) {
     if (_tr.current && _tr.data[_tr.current]) {
       const current_end = parse_hvut_training_end_time(_window.end_time, 'trainingPageWindowEndTime');
       if (current_end === null) {
-        alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
+        show_hvut_generic_error();
         return false;
       }
       _tr.json.current_name = _tr.current;
@@ -8399,7 +8407,7 @@ if (characterPage.isTraining) {
       }
     }
     if (!$config.set('tr_notif', _tr.json, 'hvut_')) {
-      alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
+      show_hvut_generic_error();
       return false;
     }
     return true;
@@ -8482,7 +8490,7 @@ if (characterPage.isSettings) {
     delete _se.json[name];
     if (!$config.set('se_settings', _se.json)) {
       _se.json[name] = removed;
-      alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
+      show_hvut_generic_error();
       return false;
     }
     _se.node.buttons[name].nextElementSibling.remove();
@@ -8506,7 +8514,7 @@ if (characterPage.isSettings) {
       } else {
         delete _se.json[name];
       }
-      alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
+      show_hvut_generic_error();
       return false;
     }
     if (!exists) {
@@ -9645,7 +9653,7 @@ if (get_hvut_monster_lab_page_context().isMonsterLab && $config.settings.monster
       onsuccess: function (index, doc) {
         const mob = _ml.mobs[index];
         if (_ml.parse(mob, doc) === false) {
-          alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
+          show_hvut_generic_error();
           _ml.main.onerror(index);
           return false;
         }
@@ -9914,7 +9922,7 @@ if (get_hvut_monster_lab_page_context().isMonsterLab && $config.settings.monster
         let ct_slot = $qsa('#slot_pane > div.msl').length;
         const ct_next = parse_hvut_monster_lab_chaos_token_cost($id('monster_actions').textContent, 'upgradeChaosTokenCost');
         if (ct_next === null) {
-          alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
+          show_hvut_generic_error();
           _ml.upgrade.node.button.disabled = false;
           _ml.upgrade.inited = false;
           return false;
@@ -10493,7 +10501,7 @@ if (get_hvut_monster_lab_page_context().isMonsterLab && $config.settings.monster
       },
       save: function () {
         if (!$config.set('ml_plc', _ml.plc.list.filter((m) => m).map((m) => m.json))) {
-          alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
+          show_hvut_generic_error();
           return false;
         }
         _ml.plc.load();
@@ -10758,9 +10766,7 @@ if (get_hvut_mail_page_context().isMoogleMail && $config.settings.moogleMail) {
 
         $element('span', _mm.write.node.left, ['可选项:', '!width: 60px;']);
         _mm.write.node.cod_deduction = $input(['text', null, 'CoD抵扣额'], _mm.write.node.left, { pattern: '(\\d+|\\d{1,3}(,\\d{3})*)(\\.\\d+)?[KMkm]?', style: 'width: 60px; text-align: right;' }, { input: (e) => { _mm.write.calc(e); } });
-        if (IS_ISEKAI) {
-          _mm.write.node.cod_persistent = $input(['checkbox', null, '永久区货到付款'], _mm.write.node.left, { checked: true });
-        }
+        _mm.write.node.cod_persistent = $input(['checkbox', null, '永久区货到付款'], _mm.write.node.left, { checked: true });
 
         _mm.write.node.body = $element('textarea', _mm.write.node.left, { value: $id('mailform').elements.message_body.value || '', tabIndex: 3, spellcheck: false, style: 'width: 580px; height: 250px; margin-top: 10px;' });
         _mm.write.node.log = $element('textarea', _mm.write.node.left, { readOnly: true, spellcheck: false, style: 'width: 480px; height: 200px; color: unset;' });
@@ -10847,7 +10853,7 @@ if (get_hvut_mail_page_context().isMoogleMail && $config.settings.moogleMail) {
           body: _mm.write.node.body.value,
           attach,
           cod_deduction: _mm.parse_price(_mm.write.node.cod_deduction.value),
-          cod_persistent: IS_ISEKAI && _mm.write.node.cod_persistent.checked,
+          cod_persistent: _mm.write.node.cod_persistent.checked,
         };
         $mail.request(mail).finally(stop);
       },
@@ -10888,7 +10894,7 @@ if (get_hvut_mail_page_context().isMoogleMail && $config.settings.moogleMail) {
       save: function () {
         _mm.userlist.list = _mm.userlist.list.filter((e, i, a) => e && a.indexOf(e) === i);
         if (!$config.set('mm_userlist', _mm.userlist.list)) {
-          alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
+          show_hvut_generic_error();
           return false;
         }
         if (_mm.write.node.userlist) {
@@ -11432,17 +11438,15 @@ if (get_hvut_mail_page_context().isMoogleMail && $config.settings.moogleMail) {
     };
 
     if (_mm.credits.init() === false) {
-      alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
+      show_hvut_generic_error();
       return false;
     }
 
     if (!['item', 'equip', 'credits'].some((panel) => { if (_mm[panel].node.div.parentNode) { _mm.write.toggle(panel); return true; } })) {
       $element('div', _mm.write.node.right, ['/' + $id('mmail_right').innerHTML, '.hvut-mm-disabled']);
       _mm.write.node.cod_deduction.disabled = true;
-      if (IS_ISEKAI) {
-        _mm.write.node.cod_persistent.disabled = true;
-        _mm.write.node.cod_persistent.checked = false;
-      }
+      _mm.write.node.cod_persistent.disabled = true;
+      _mm.write.node.cod_persistent.checked = false;
     }
 
     // MM LIST
@@ -11453,17 +11457,15 @@ if (get_hvut_mail_page_context().isMoogleMail && $config.settings.moogleMail) {
       node: {},
 
       init: function () {
-        if (IS_ISEKAI) {
-          _mm.db.season = _server.season;
-          const exec = /(\d+) Season (\d+)/.exec(_server.season);
-          if (exec) {
-            const year = exec[1];
-            const season = exec[2];
-            const version = parseInt(year.slice(2)) * 100 + parseInt(season);
-            _mm.db.version = version;
-          } else {
-            _mm.db.version = 1;
-          }
+        _mm.db.season = _server.season;
+        const exec = /(\d+) Season (\d+)/.exec(_server.season);
+        if (exec) {
+          const year = exec[1];
+          const season = exec[2];
+          const version = parseInt(year.slice(2)) * 100 + parseInt(season);
+          _mm.db.version = version;
+        } else {
+          _mm.db.version = 1;
         }
       },
       open: function (callback) {
@@ -12085,11 +12087,9 @@ if (get_hvut_mail_page_context().isMoogleMail && $config.settings.moogleMail) {
         _mm.search.node.form = $element('div', _mm.page.node.bottom, null, { keydown: (e) => { _mm.search.keydown(e); } });
         $input(['button', '关闭'], _mm.search.node.form, null, () => { _mm.search.toggle(); });
 
-        if (IS_ISEKAI) {
-          const seasons = Array.from(_mm.db.database.objectStoreNames);
-          _mm.search.node.season = $input(['select', seasons], _mm.search.node.form);
-          _mm.search.node.season.value = _server.season;
-        }
+        const seasons = Array.from(_mm.db.database.objectStoreNames);
+        _mm.search.node.season = $input(['select', seasons], _mm.search.node.form);
+        _mm.search.node.season.value = _server.season;
         _mm.search.node.filter = $input(['select', [':all', 'inbox', 'read', 'sent']], _mm.search.node.form);
         _mm.search.node.name = $input('text', _mm.search.node.form, { placeholder: '用户', style: 'width: 120px;' });
         _mm.search.node.subject = $input('text', _mm.search.node.form, { placeholder: '主题', style: 'width: 120px;' });
@@ -12304,7 +12304,7 @@ if (get_hvut_battle_page_context().isBattle) {
 //* [10] Armory - Equiplist
 if (get_hvut_armory_page_context($config).isArmory && get_hvut_armory_page_context($config).hasEquiplist) {
   const $armory = {};
-  bindArmory($armory, { config: $config, equip: $equip, price: $price }); // 七屏内核收口公共区(2026-06-10; $equip/$price 闭包私有, ctx 注入)
+  bindArmory($armory, { config: $config, equip: $equip, price: $price, materialCountByQuality: HVUT_RUNTIME_POLICY.profile.armory.materialCountByQuality }); // 材料规则在组合根绑定
 } else
 // [END 10] Armory - Equiplist */
 
@@ -12324,7 +12324,7 @@ if (get_hvut_armory_page_context($config).isArmory && get_hvut_armory_page_conte
   })();
 } else {
   // [主世界分支] 原 "HV Utils 汉化" → 迁移至英文 4.0.0
-  // GM_setValue 前缀: 外层 IS_ISEKAI 已挡 isekai 分支, 此处恒 hvut_
+  // GM_setValue 前缀: 外层世界组合根已选中永久区分支, 此处恒 hvut_
   (function () {
 
 const settings = {
@@ -12674,7 +12674,7 @@ window.addEventListener('unhandledrejection', (e) => { console.log($ajax.error |
 
 // RANDOM ENCOUNTER
 const $re = {};
-bindRe($re, { config: $config, get top() { return _top; } }); // 收口共享内核(L1 bindRe), GM 命名空间经 ctx.config 注入
+bindRe($re, { config: $config, hvPageType: HVUT_RUNTIME_POLICY.profile.encounterPageType, get top() { return _top; } }); // 世界页型在组合根绑定, 业务 tick 不携带身份
 
 /* NO-NAVBAR */
 if (!$id('navbar')) {
@@ -12781,7 +12781,7 @@ bindEquip($equip, { config: $config });
 
 // ITEM PRICE
 const $price = {};
-bindPrice($price, { config: $config }); // 收口共享内核(L1 bindPrice), 物价数据分服(默认命名空间)、逻辑统一
+bindPrice($price, { config: $config, catalog: HVUT_RUNTIME_POLICY.profile.priceCatalog }); // 世界内容目录在组合根绑定
 
 // MoogleMail
 // $mail 已提公共区（L2）
@@ -13002,7 +13002,7 @@ if ($config.settings.equipTouchFunctions) {
 }
 
 // TOP MENU
-bindTop(_top, { config: $config, player: () => _player, re: () => $re }); // 全量收口(L1 bindTop): 旧 4.0.0 菜单表(Forge 组/Equip Inventory ss=in/Equipment Shop ss=es 死端点)随能量模型下线, 菜单/首行导航两服一致由内核结构性保证
+bindTop(_top, { config: $config, player: () => _player, re: () => $re, profile: HVUT_RUNTIME_POLICY.profile.top }); // 世界展示与能力在组合根绑定
 _top.init();
 
 // DIFFICULTY CHANGER
@@ -13275,7 +13275,7 @@ if ($config.settings.lotteryNotification) {
     }
     _bottom.node[ss] = {};
     _bottom.node[ss].div = $element('div', _bottom.node.div, ['.hvut-lt-div']);
-    _bottom.node[ss].equip = $element('a', _bottom.node[ss].div, { textContent: '加载中...', href: create_hvut_bazaar_section_url(ss), target: !IS_ISEKAI ? '_self' : '_blank' });
+    _bottom.node[ss].equip = $element('a', _bottom.node[ss].div, { textContent: '加载中...', href: create_hvut_bazaar_section_url(ss), target: '_self' });
     _bottom.node[ss].time = $element('span', _bottom.node[ss].div, '--:--');
 
     if (lottery.date > now) {
@@ -13845,7 +13845,7 @@ if (characterPage.isEquipment) {
       const json = JSON.parse(JSON.stringify(data.values));
       const persisted = _eq.prof.list.filter((entry) => entry === data || !entry.new).map((entry) => (entry === data ? json : entry.json));
       if (!$config.set('eq_prof', persisted)) {
-        alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
+        show_hvut_generic_error();
         return false;
       }
       data.json = json;
@@ -13870,7 +13870,7 @@ if (characterPage.isEquipment) {
       const index = _eq.prof.list.findIndex((data) => data.key === key);
       const json = _eq.prof.list.filter((entry) => entry !== data && !entry.new).map((data) => data.json);
       if (!$config.set('eq_prof', json)) {
-        alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
+        show_hvut_generic_error();
         return false;
       }
       data.node.button.remove();
@@ -14083,14 +14083,14 @@ if (characterPage.isTraining) {
   $element('tr', $id('train_table').tBodies[0], [`/<td colspan="9"><div class="fc4 far fcb"><div>累计花费 ${_tr.spent.toLocaleString()}</div></div></td>`]);
 
   if (!$config.set('tr_level', _tr.level)) {
-    alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
+    show_hvut_generic_error();
     return false;
   }
 
   if (_tr.current && _tr.data[_tr.current]) {
     const current_end = parse_hvut_training_end_time(_window.end_time, 'legacyTrainingPageWindowEndTime');
     if (current_end === null) {
-      alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
+      show_hvut_generic_error();
       return false;
     }
     _tr.json.current_name = _tr.current;
@@ -14112,7 +14112,7 @@ if (characterPage.isTraining) {
   }
   _tr.json.error = '';
   if (!$config.set('tr_notif', _tr.json, 'hvut_')) {
-    alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
+    show_hvut_generic_error();
     return false;
   }
 } else
@@ -14167,7 +14167,7 @@ if (characterPage.isSettings) {
       } else {
         delete _se.json[name];
       }
-      alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
+      show_hvut_generic_error();
       return false;
     }
     if (!exists) {
@@ -14195,7 +14195,7 @@ if (characterPage.isSettings) {
     delete _se.json[name];
     if (!$config.set('se_settings', _se.json)) {
       _se.json[name] = removed;
-      alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
+      show_hvut_generic_error();
       return false;
     }
     _se.node[name].nextElementSibling.remove();
@@ -15038,7 +15038,7 @@ if (get_hvut_monster_lab_page_context().isMonsterLab && $config.settings.monster
       onsuccess: function (index, doc) {
         const mob = _ml.mobs[index];
         if (_ml.parse(mob, doc) === false) {
-          alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
+          show_hvut_generic_error();
           _ml.main.onerror(index);
           return false;
         }
@@ -15270,7 +15270,7 @@ if (get_hvut_monster_lab_page_context().isMonsterLab && $config.settings.monster
     mob.node.gifts.textContent = mob.gifts;
   });
   if (parseFailed) {
-    alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
+    show_hvut_generic_error();
     return false;
   }
 
@@ -15465,7 +15465,7 @@ if (get_hvut_monster_lab_page_context().isMonsterLab && $config.settings.monster
         let ct_slot = $qsa('#slot_pane > div.msl').length;
         const ct_next = parse_hvut_monster_lab_chaos_token_cost($id('monster_actions').textContent, 'legacyUpgradeChaosTokenCost');
         if (ct_next === null) {
-          alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
+          show_hvut_generic_error();
           _ml.upgrade.node.button.disabled = false;
           _ml.upgrade.inited = false;
           return false;
@@ -16037,7 +16037,7 @@ if (get_hvut_monster_lab_page_context().isMonsterLab && $config.settings.monster
       },
       save: function () {
         if (!$config.set('ml_plc', _ml.plc.list.filter((m) => m).map((m) => m.json))) {
-          alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
+          show_hvut_generic_error();
           return false;
         }
         _ml.plc.load();
@@ -16345,7 +16345,7 @@ if (get_hvut_mail_page_context().isMoogleMail && $config.settings.moogleMail) {
         body: _mm.node.write_body.value,
         attach,
         cod_deduction: _mm.parse_price(_mm.node.write_cod_deduction.value),
-        cod_persistent: IS_ISEKAI && _mm.node.write_cod_persistent.checked,
+        cod_persistent: false,
       };
       $mail.request(mail).finally(stop);
     };
@@ -16385,7 +16385,7 @@ if (get_hvut_mail_page_context().isMoogleMail && $config.settings.moogleMail) {
       save: function () {
         _mm.userlist.list = _mm.userlist.list.filter((e, i, a) => e && a.indexOf(e) === i);
         if (!$config.set('mm_userlist', _mm.userlist.list)) {
-          alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
+          show_hvut_generic_error();
           return false;
         }
         if (_mm.node.write_userlist) {
@@ -16458,10 +16458,6 @@ if (get_hvut_mail_page_context().isMoogleMail && $config.settings.moogleMail) {
 
     $element('span', _mm.node.write_left, ['可选项:', '!width: 60px;']);
     _mm.node.write_cod_deduction = $input(['text', 'CoD抵扣额'], _mm.node.write_left, { pattern: '(\\d+|\\d{1,3}(,\\d{3})*)(\\.\\d+)?[KMkm]?', style: 'width: 60px; text-align: right;' }, { input: (e) => { _mm.write_calc(e); } });
-    if (IS_ISEKAI) {
-      _mm.node.write_cod_persistent = $input(['checkbox', '永久区货到付款'], _mm.node.write_left, { checked: true });
-    }
-
     _mm.node.write_body = $element('textarea', _mm.node.write_left, { value: $id('mailform').elements.message_body.value || '', tabIndex: 3, spellcheck: false, style: 'width: 580px; height: 250px; margin-top: 10px;' });
     _mm.node.write_log = $element('textarea', _mm.node.write_left, { readOnly: true, spellcheck: false, style: 'width: 480px; height: 200px; color: unset;' });
     $mail.log = _mm.write_log;
@@ -16837,14 +16833,14 @@ if (get_hvut_mail_page_context().isMoogleMail && $config.settings.moogleMail) {
     if ($id('mmail_attachcredits')) {
       credits.data.stock = parse_hvut_mooglemail_count($id('mmail_attachcredits').textContent, /Current Funds: ([0-9,]+) Credits/, 'legacyWriteCreditsStock');
       if (credits.data.stock === null) {
-        alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
+        show_hvut_generic_error();
         return false;
       }
     }
     if ($id('mmail_attachhath')) {
       hath.data.stock = parse_hvut_mooglemail_count($id('mmail_attachhath').textContent, /Current Funds: ([0-9,]+) Hath/, 'legacyWriteHathStock');
       if (hath.data.stock === null) {
-        alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
+        show_hvut_generic_error();
         return false;
       }
     }
@@ -16952,10 +16948,6 @@ if (get_hvut_mail_page_context().isMoogleMail && $config.settings.moogleMail) {
     if (!['item_div', 'equip_div', 'credits_div'].some((d) => { if (_mm.node[d].parentNode) { _mm.write_toggle(d); return true; } })) {
       $element('div', _mm.node.write_right, ['/' + $id('mmail_right').innerHTML, '.hvut-mm-disabled']);
       _mm.node.write_cod_deduction.disabled = true;
-      if (IS_ISEKAI) {
-        _mm.node.write_cod_persistent.disabled = true;
-        _mm.node.write_cod_persistent.checked = false;
-      }
     }
     _mm.node.write_to_name.focus();
 
@@ -17143,20 +17135,7 @@ if (get_hvut_mail_page_context().isMoogleMail && $config.settings.moogleMail) {
         _mm.node.db_export = $input(['button', '导出为JSON'], _mm.node.db_div, null, () => { _mm.db.export(); });
         _mm.node.db_import = $input(['button', '从JSON导入'], _mm.node.db_div, null, () => { _mm.db.import(); });
       },
-      init: function () {
-        if (IS_ISEKAI) {
-          _mm.db.season = $config.season;
-          const exec = /(\d+) Season (\d+)/.exec($config.season);
-          if (exec) {
-            const year = exec[1];
-            const season = exec[2];
-            const version = parseInt(year.slice(2)) * 100 + parseInt(season);
-            _mm.db.version = version;
-          } else {
-            _mm.db.version = 1;
-          }
-        }
-      },
+      init: function () {},
 
     };
 
@@ -17599,11 +17578,6 @@ if (get_hvut_mail_page_context().isMoogleMail && $config.settings.moogleMail) {
       _mm.node.search_form = $element('div', _mm.node.bottom, null, { keypress: (e) => { _mm.search_keypress(e); } });
       $input(['button', '关闭'], _mm.node.search_form, null, () => { _mm.search_toggle(); });
 
-      if (IS_ISEKAI) {
-        const seasons = Array.from(_mm.db.database.objectStoreNames);
-        _mm.node.search_season = $input(['select', seasons], _mm.node.search_form);
-        _mm.node.search_season.value = $config.season;
-      }
       _mm.node.search_filter = $input(['select', [':all', 'inbox', 'read', 'sent']], _mm.node.search_form);
       _mm.node.search_name = $input('text', _mm.node.search_form, { placeholder: '用户', style: 'width: 120px;' });
       _mm.node.search_subject = $input('text', _mm.node.search_form, { placeholder: '主题', style: 'width: 120px;' });
@@ -17971,7 +17945,7 @@ if (get_hvut_battle_page_context().isBattleList) {
 //* [20] Armory - Equiplist (能量模型 am 体系七屏; 收口内核 bindArmory)
 if (get_hvut_armory_page_context($config).isArmory && get_hvut_armory_page_context($config).hasEquiplist) {
   const $armory = {};
-  bindArmory($armory, { config: $config, equip: $equip, price: $price });
+  bindArmory($armory, { config: $config, equip: $equip, price: $price, materialCountByQuality: HVUT_RUNTIME_POLICY.profile.armory.materialCountByQuality });
 } else
 // [END 20] Armory - Equiplist */
 

@@ -27,7 +27,7 @@ const cancelBody = body(
 
 requireParts("tr.set", setBody, [
   "if (!ctx.config.set('tr_notif', tr.json, 'hvut_')) {",
-  "alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');",
+  "show_hvut_generic_error();",
   "return false;",
   "reloadCurrentPage(hvutReloadReason('HV_UTILS_TRAINING_NOTIFICATION'))",
   "return true;",

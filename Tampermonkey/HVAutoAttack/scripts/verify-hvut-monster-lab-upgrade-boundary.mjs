@@ -94,7 +94,7 @@ for (const [index, body] of parseBodies.entries()) {
 for (const [index, body] of onsuccessBodies.entries()) {
   for (const required of [
     "if (_ml.parse(mob, doc) === false) {",
-    "alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');",
+    "show_hvut_generic_error();",
     "_ml.main.onerror(index);",
     "return false;",
   ]) {

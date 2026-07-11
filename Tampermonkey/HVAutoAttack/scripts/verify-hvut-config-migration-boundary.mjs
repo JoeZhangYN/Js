@@ -99,7 +99,7 @@ for (const required of [
   "return bridge[method](...(args || []));",
   "record_hvut_config_parse_failure(stage + 'Failed'",
   "return run_hvut_config_migration_bridge('carryKeys', [segment], 'configCarryKeysBridgeMissing'",
-  "return HVUT_RUNTIME_POLICY.storageNamespace;",
+  "return HVUT_RUNTIME_POLICY.authority.storageNamespace;",
   "return run_hvut_config_migration_bridge('buildEquipData', [inEquipdata, inJson], 'configEquipDataBridgeMissing'",
   "return run_hvut_config_migration_bridge('normalizeEquipCode', [equipCode], 'configEquipCodeBridgeMissing'",
   "return run_hvut_config_migration_bridge('normalizeSettings', [settings, defaults], 'configSettingsBridgeMissing'",

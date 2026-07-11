@@ -15,11 +15,13 @@ describe("HVUT runtime policy bridge", () => {
     });
 
     expect(bridge).toMatchObject({
-      world,
-      serverName: world,
-      storageNamespace,
-      randomEncounter,
-      entryMode: HvutRuntimeEntryMode.ACTIVE,
+      entry: { mode: HvutRuntimeEntryMode.ACTIVE },
+      authority: {
+        serverName: world,
+        storageNamespace,
+        randomEncounter,
+      },
+      profile: { identity: world },
     });
     expect(Object.isFrozen(bridge)).toBe(true);
   });
@@ -30,7 +32,7 @@ describe("HVUT runtime policy bridge", () => {
       pathname: "/isekai/equip/123/key",
     });
 
-    expect(bridge.entryMode).toBe(HvutRuntimeEntryMode.EXCLUDED_ISEKAI_EQUIPMENT_DOCUMENT);
+    expect(bridge.entry.mode).toBe(HvutRuntimeEntryMode.EXCLUDED_ISEKAI_EQUIPMENT_DOCUMENT);
   });
 
   it("installs an immutable out-of-box bridge for the sloppy runtime", () => {

@@ -45,7 +45,7 @@ for (const [label, body] of [
 ]) {
   for (const part of [
     "if (!$config.set('tr_notif', _tr.json, 'hvut_')) {",
-    "alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');",
+    "show_hvut_generic_error();",
     "return false;",
   ]) {
     requirePart(label, body, part);

@@ -25,7 +25,7 @@ for (const [label, part] of [
   ["MoogleMail user list save guard", "if (!$config.set('mm_userlist', _mm.userlist.list)) {"],
   [
     "list persistence failure alert",
-    "alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');",
+    "show_hvut_generic_error();",
   ],
   ["list persistence false return", "return false;"],
   ["list persistence true return", "return true;"],

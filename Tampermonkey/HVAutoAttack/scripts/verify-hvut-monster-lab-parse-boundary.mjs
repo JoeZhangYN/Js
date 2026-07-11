@@ -61,7 +61,7 @@ for (const [index, body] of initBodies.entries()) {
   for (const required of [
     `const ct_next = parse_hvut_monster_lab_chaos_token_cost($id('monster_actions').textContent, '${stage}');`,
     "if (ct_next === null) {",
-    "alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');",
+    "show_hvut_generic_error();",
     "_ml.upgrade.node.button.disabled = false;",
     "_ml.upgrade.inited = false;",
     "return false;",

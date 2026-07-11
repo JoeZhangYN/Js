@@ -53,7 +53,7 @@ for (const required of [
 }
 
 const bindArmoryBody =
-  /const bindArmory = function \(armory, ctx\) \{[\s\S]*?\n\};\n\nif \(HVUT_ENTRY_MODE === 'active'\) \{\nif \(IS_ISEKAI\)/.exec(text)?.[0] || "";
+  /const bindArmory = function \(armory, ctx\) \{[\s\S]*?\n\};\n\nif \(HVUT_ENTRY_MODE === 'active'\) \{\nif \(HVUT_RUNTIME_POLICY\.profile\.identity === 'isekai'\)/.exec(text)?.[0] || "";
 
 if (!bindArmoryBody) {
   violations.push(`${target} must keep bindArmory body visible for page context guard`);
