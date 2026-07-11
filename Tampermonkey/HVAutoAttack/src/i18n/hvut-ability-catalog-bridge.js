@@ -1,11 +1,11 @@
 import {
-  createHvutAbilityCatalog,
+  createHvutAbilityPageDefinition,
   HvutAbilityCatalogEvidence,
   HvutAbilityWorld,
 } from "./hvut-ability-catalog.js";
 
 const bridge = Object.freeze({
-  create: createHvutAbilityCatalog,
+  createDefinition: createHvutAbilityPageDefinition,
   evidence: HvutAbilityCatalogEvidence,
   world: HvutAbilityWorld,
 });

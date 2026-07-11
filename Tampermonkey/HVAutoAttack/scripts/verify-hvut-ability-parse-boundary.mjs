@@ -30,6 +30,10 @@ const requirementCatalogText = fs.readFileSync(
   path.join(root, "src/data/hvut-ability-requirements.js"),
   "utf8"
 );
+const presentationCatalogText = fs.readFileSync(
+  path.join(root, "src/data/hvut-ability-presentation.js"),
+  "utf8"
+);
 const catalogTestText = fs.readFileSync(
   path.join(root, "src/data/hvut-ability-catalog.test.js"),
   "utf8"
@@ -97,7 +101,7 @@ for (const required of [
   "return '?';",
   "var decide_hvut_ability_rank_requirement = function",
   "var render_hvut_ability_rank_requirement = function",
-  "var create_hvut_ability_catalog = function",
+  "var create_hvut_ability_page_definition = function",
   "reason: 'abilityCatalogBridgeMissing'",
   "var prepare_hvut_ability_tree = function",
   "reason: 'abilityCatalogEntryMissing'",
@@ -215,7 +219,7 @@ if (mainText.indexOf("hvut-ability-requirement-bridge.js") > mainText.indexOf("h
 }
 for (const required of [
   'Object.defineProperty(window, "HVAA_hvutAbilityCatalog"',
-  "create: createHvutAbilityCatalog",
+  "createDefinition: createHvutAbilityPageDefinition",
   "writable: false",
 ]) {
   if (!catalogBridgeText.includes(required)) {
@@ -363,6 +367,9 @@ for (const required of [
 for (const required of [
   "sourceIdentity:",
   'reachability: "successful"',
+  'coverage: "partial"',
+  "HvutAbilityPresentationCatalog",
+  "HvutAbilityPresetCatalog",
   'required: "Better Immobilize"',
   'required: "Better MagNet"',
   'reason: "abilityCatalogIdentityMismatch"',
@@ -372,29 +379,38 @@ for (const required of [
   }
 }
 for (const required of [
+  "file-size-gate: exempt data-table-HVUT能力展示与预设纯数据SOT",
+  "export const HvutAbilityPresentationCatalog",
+  "export const HvutAbilityPresetCatalog",
+  '"HP Tank": { category: "General", img: "3.png", pos: 0 }',
+  '"Current Set": Object.freeze([])',
+]) {
+  if (!presentationCatalogText.includes(required)) {
+    violations.push(`ability presentation data authority must contain ${required}`);
+  }
+}
+for (const required of [
   "hydrates every %s ability through the same requirement authority",
-  "rejects partial or mixed-world catalogs instead of rendering some skills",
+  "rejects an unknown world before exposing a partial page definition",
+  "returns fresh mutable runtime state without exposing catalog authority",
 ]) {
   if (!catalogTestText.includes(required)) {
     violations.push(`ability catalog tests must cover ${required}`);
   }
 }
 for (const required of [
-  "_ab.abilities = create_hvut_ability_catalog('isekai', {",
-  "_ab.ability = create_hvut_ability_catalog('persistent', {",
+  "create_hvut_ability_page_definition('isekai', 'abilityCatalogCompose')",
+  "create_hvut_ability_page_definition('persistent', 'abilityCatalogCompose')",
+  "_ab.preset = abilityPageDefinition.presets",
 ]) {
-  if (!text.includes(required)) violations.push(`both ability worlds must consume ${required}`);
+  if (!text.includes(required))
+    violations.push(`ability page composition must consume ${required}`);
 }
-const presentationRegions = [
-  /_ab\.abilities = create_hvut_ability_catalog\('isekai',[\s\S]*?'abilityCatalogCompose'\)/.exec(
-    text
-  )?.[0] || "",
-  /_ab\.ability = create_hvut_ability_catalog\('persistent',[\s\S]*?'legacyAbilityCatalogCompose'\)/.exec(
-    text
-  )?.[0] || "",
-];
-if (presentationRegions.some((region) => /\b(?:unlock|point): \[/.test(region))) {
-  violations.push("ability presentation catalogs must not fork level/AP requirements");
+if (text.includes("'HP Tank': { category:")) {
+  violations.push("HVUT runtime must not own a duplicated ability presentation catalog");
+}
+if (/create_hvut_ability_page_definition\([^)]*,\s*\{/.test(text)) {
+  violations.push("ability page callers must not assemble presentation fields");
 }
 
 if (violations.length) {

@@ -1,4 +1,8 @@
 import { HvutAbilityRequirementCatalog } from "../data/hvut-ability-requirements.js";
+import {
+  HvutAbilityPresentationCatalog,
+  HvutAbilityPresetCatalog,
+} from "../data/hvut-ability-presentation.js";
 
 export const HvutAbilityWorld = Object.freeze({
   ISEKAI: "isekai",
@@ -6,10 +10,11 @@ export const HvutAbilityWorld = Object.freeze({
 });
 
 export const HvutAbilityCatalogEvidence = Object.freeze({
-  revision: "2026-07-11-current-progression",
+  revision: "2026-07-11-user-report-partial-progression",
   observedAt: "2026-07-11T11:07:29Z",
   sourceIdentity: "user-reported-live-hentaiverse-ability-dom",
   reachability: "successful",
+  coverage: "partial",
   page: "https://hentaiverse.org/?s=Character&ss=ab&tree=twohanded",
   observedFact: Object.freeze({
     name: "2H Parry",
@@ -44,7 +49,22 @@ function expectedNamesForWorld(world) {
   return names;
 }
 
-export function createHvutAbilityCatalog({ world, presentationCatalog }) {
+function presentationForWorld(world) {
+  const presentation = { ...HvutAbilityPresentationCatalog };
+  if (world === HvutAbilityWorld.PERSISTENT) {
+    presentation["Better MagNet"] = presentation["Better Immobilize"];
+    delete presentation["Better Immobilize"];
+  }
+  return presentation;
+}
+
+function createPresets() {
+  return Object.fromEntries(
+    Object.entries(HvutAbilityPresetCatalog).map(([name, abilities]) => [name, [...abilities]])
+  );
+}
+
+export function createHvutAbilityPageDefinition({ world }) {
   const policy = WORLD_NAME_POLICY[world];
   if (!policy) {
     return Object.freeze({
@@ -53,14 +73,7 @@ export function createHvutAbilityCatalog({ world, presentationCatalog }) {
       world,
     });
   }
-  if (!presentationCatalog || typeof presentationCatalog !== "object") {
-    return Object.freeze({
-      kind: "rejected",
-      reason: "presentationCatalogMissing",
-      world,
-    });
-  }
-
+  const presentationCatalog = presentationForWorld(world);
   const expectedNames = expectedNamesForWorld(world);
   const expected = new Set(expectedNames);
   const actualNames = Object.keys(presentationCatalog);
@@ -95,5 +108,6 @@ export function createHvutAbilityCatalog({ world, presentationCatalog }) {
     world,
     evidence: HvutAbilityCatalogEvidence,
     catalog,
+    presets: createPresets(),
   });
 }

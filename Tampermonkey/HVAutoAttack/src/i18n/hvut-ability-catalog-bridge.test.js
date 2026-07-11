@@ -13,6 +13,6 @@ describe("HVUT ability catalog bridge", () => {
       writable: false,
     });
     expect(Object.isFrozen(window.HVAA_hvutAbilityCatalog)).toBe(true);
-    expect(typeof window.HVAA_hvutAbilityCatalog.create).toBe("function");
+    expect(typeof window.HVAA_hvutAbilityCatalog.createDefinition).toBe("function");
   });
 });

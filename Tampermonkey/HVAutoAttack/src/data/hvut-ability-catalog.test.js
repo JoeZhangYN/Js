@@ -1,23 +1,10 @@
 import { describe, expect, it } from "vitest";
 import {
-  createHvutAbilityCatalog,
+  createHvutAbilityPageDefinition,
   HvutAbilityCatalogEvidence,
   HvutAbilityWorld,
 } from "../i18n/hvut-ability-catalog.js";
 import { HvutAbilityRequirementCatalog } from "./hvut-ability-requirements.js";
-
-function presentationFor(world) {
-  const entries = Object.keys(HvutAbilityRequirementCatalog).map((name) => [
-    name,
-    { category: "test", img: "test.png", pos: 0 },
-  ]);
-  const presentation = Object.fromEntries(entries);
-  if (world === HvutAbilityWorld.PERSISTENT) {
-    presentation["Better MagNet"] = presentation["Better Immobilize"];
-    delete presentation["Better Immobilize"];
-  }
-  return presentation;
-}
 
 describe("HVUT ability catalog authority", () => {
   it("publishes one complete current requirement catalog", () => {
@@ -43,10 +30,7 @@ describe("HVUT ability catalog authority", () => {
   it.each([HvutAbilityWorld.ISEKAI, HvutAbilityWorld.PERSISTENT])(
     "hydrates every %s ability through the same requirement authority",
     (world) => {
-      const outcome = createHvutAbilityCatalog({
-        world,
-        presentationCatalog: presentationFor(world),
-      });
+      const outcome = createHvutAbilityPageDefinition({ world });
 
       expect(outcome.kind).toBe("accepted");
       expect(Object.keys(outcome.catalog)).toHaveLength(75);
@@ -57,18 +41,14 @@ describe("HVUT ability catalog authority", () => {
       expect(outcome.catalog["2H Parry"].unlock).not.toBe(
         HvutAbilityRequirementCatalog["2H Parry"].unlock
       );
+      expect(Object.keys(outcome.presets)).toHaveLength(8);
+      expect(outcome.presets["Current Set"]).toEqual([]);
     }
   );
 
   it("keeps the world-owned control-spell name without forking progression", () => {
-    const isekai = createHvutAbilityCatalog({
-      world: HvutAbilityWorld.ISEKAI,
-      presentationCatalog: presentationFor(HvutAbilityWorld.ISEKAI),
-    });
-    const persistent = createHvutAbilityCatalog({
-      world: HvutAbilityWorld.PERSISTENT,
-      presentationCatalog: presentationFor(HvutAbilityWorld.PERSISTENT),
-    });
+    const isekai = createHvutAbilityPageDefinition({ world: HvutAbilityWorld.ISEKAI });
+    const persistent = createHvutAbilityPageDefinition({ world: HvutAbilityWorld.PERSISTENT });
 
     expect(isekai.catalog["Better Immobilize"].point).toEqual([1, 2, 3, 4, 5]);
     expect(isekai.catalog["Better MagNet"]).toBeUndefined();
@@ -76,21 +56,21 @@ describe("HVUT ability catalog authority", () => {
     expect(persistent.catalog["Better Immobilize"]).toBeUndefined();
   });
 
-  it("rejects partial or mixed-world catalogs instead of rendering some skills", () => {
-    const partial = presentationFor(HvutAbilityWorld.PERSISTENT);
-    delete partial["2H Parry"];
-    partial["Better Immobilize"] = { category: "wrong world" };
-
-    expect(
-      createHvutAbilityCatalog({
-        world: HvutAbilityWorld.PERSISTENT,
-        presentationCatalog: partial,
-      })
-    ).toMatchObject({
+  it("rejects an unknown world before exposing a partial page definition", () => {
+    expect(createHvutAbilityPageDefinition({ world: "unknown" })).toMatchObject({
       kind: "rejected",
-      reason: "abilityCatalogIdentityMismatch",
-      missing: ["2H Parry"],
-      unexpected: ["Better Immobilize"],
+      reason: "unknownAbilityWorld",
     });
+  });
+
+  it("returns fresh mutable runtime state without exposing catalog authority", () => {
+    const first = createHvutAbilityPageDefinition({ world: HvutAbilityWorld.ISEKAI });
+    const second = createHvutAbilityPageDefinition({ world: HvutAbilityWorld.ISEKAI });
+
+    first.presets["Current Set"].push("HP Tank");
+    first.catalog["HP Tank"].level = 3;
+
+    expect(second.presets["Current Set"]).toEqual([]);
+    expect(second.catalog["HP Tank"].level).toBeUndefined();
   });
 });
