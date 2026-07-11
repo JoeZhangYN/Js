@@ -2463,6 +2463,10 @@ try {
     return el;
   };
   // <<< equip-name-render
+  // Shared request authority is declared outside the page guard because the
+  // capability entries above close over it. The guarded runtime assigns the
+  // concrete queue only on pages where HVUT is active.
+  var $ajax;
   if (!is_hvut_isekai_equip_page(window.location.pathname)) {
 // G1 拆桥：HVAA_ITEM_CN 表 + hvaaItemCn() 已删 —— 物品/材料名归一到 canonical SSOT
 // (src/data/i18n/equip-dict EQUIP_ITEMS)，调用点改 hvaaT(name,'item'|'material') 经全局桥查。
@@ -2524,7 +2528,7 @@ function get_message(d,s) {if(typeof d==='string'){d=$doc(d);}const m=$qsa('#mes
 // ===== L2 公共依赖闭包基础设施（$ajax 请求队列 + _query URL 参数，两 IIFE 共享）=====
 const _query = Object.fromEntries(location.search.slice(1).split('&').map((q) => { const [k, v = ''] = q.split('=', 2); return [decodeURIComponent(k.replace(/\+/g, ' ')), decodeURIComponent(v.replace(/\+/g, ' '))]; }));
 
-const $ajax = {
+$ajax = {
   interval: 300, // DO NOT DECREASE THIS NUMBER, OR IT MAY TRIGGER THE SERVER'S LIMITER AND YOU WILL GET BANNED
   max: 4,
   tid: null,

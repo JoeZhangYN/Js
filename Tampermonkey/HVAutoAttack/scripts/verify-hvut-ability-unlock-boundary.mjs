@@ -115,6 +115,20 @@ const requestEntry =
   /var run_hvut_ability_unlock_request = async function \(ability, context\) \{[\s\S]*?\n  \};/.exec(
     text
   )?.[0] || "";
+const requestAdapterDeclaration = text.indexOf("var $ajax;");
+const hvutPageGuard = text.indexOf("if (!is_hvut_isekai_equip_page");
+const requestAdapterAssignment = text.indexOf("$ajax = {");
+if (
+  requestAdapterDeclaration < 0 ||
+  hvutPageGuard < 0 ||
+  requestAdapterDeclaration > hvutPageGuard ||
+  requestAdapterAssignment < hvutPageGuard ||
+  /(?:const|let|var) \$ajax = \{/.test(text)
+) {
+  violations.push(
+    `${target} must bind the shared HVUT request adapter in the enclosing runtime scope`
+  );
+}
 if (/var error = get_message\(doc\);/.test(requestEntry)) {
   violations.push(
     `${target} ability unlock request must use typed response classification instead of local error variable`
