@@ -1,0 +1,31 @@
+export const HvutAbilityAuthenticatedDomEvidence = Object.freeze({
+  schemaVersion: 1,
+  evidenceIdentity: "userReportedHvutRenderedDom",
+  observedOn: "2026-07-11",
+  coverage: "partialIsekaiRenderedSurface",
+  currentReachability: "historicalUserReportNotCurrentProbe",
+  samples: Object.freeze([
+    Object.freeze({
+      name: "Cloth Castspeed",
+      world: "isekai",
+      state: "unlockable",
+      backgroundImage: "url(/isekai/y/ab/2ru.png)",
+      backgroundColors: Object.freeze(["transparent", "rgb(255, 255, 255)"]),
+      classTokens: Object.freeze(["hvut-ab-points", "hvut-ab-bu"]),
+      points: "5",
+      level: "(250)",
+      expectedTextColor: "#000",
+    }),
+    Object.freeze({
+      name: "reported red learned ability",
+      world: "isekai",
+      state: "learned",
+      backgroundImage: "url(/isekai/y/ab/2rf.png)",
+      backgroundColors: Object.freeze([]),
+      classTokens: Object.freeze(["hvut-ab-points", "hvut-ab-bf"]),
+      points: "1",
+      level: "(50)",
+      expectedTextColor: "#fff",
+    }),
+  ]),
+});

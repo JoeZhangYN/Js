@@ -5,17 +5,9 @@ export const HvutAbilityPointTone = Object.freeze({
 
 const WHITE = Object.freeze({ red: 255, green: 255, blue: 255, alpha: 1 });
 
-export const HvutAbilityBackgroundPaletteEvidence = Object.freeze({
-  observedAt: "2026-07-11T11:29:41Z",
-  reachability: "successful",
-  sourceOrigin: "https://hentaiverse.org/isekai/y/ab/",
-  sample: "opaque center pixel",
-  transparentStates: "u/x use computed background layers",
-});
-
 const ABILITY_ASSET_PALETTE = Object.freeze({
   b: Object.freeze({ family: "blue", color: "rgb(28, 36, 142)", sample: "5bf.png" }),
-  g: Object.freeze({ family: "green", color: "rgb(86, 152, 22)", sample: "7gf.png" }),
+  g: Object.freeze({ family: "green", color: "rgb(87, 153, 22)", sample: "7gf.png" }),
   r: Object.freeze({ family: "red", color: "rgb(161, 0, 0)", sample: "2rf.png" }),
   p: Object.freeze({ family: "purple", color: "rgb(174, 1, 160)", sample: "1pf.png" }),
 });

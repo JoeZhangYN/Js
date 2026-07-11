@@ -20,6 +20,7 @@ const commands = [
   "node scripts/verify-hvut-market-page-context-boundary.mjs",
   "node scripts/verify-hvut-ability-unlock-boundary.mjs",
   "node scripts/verify-hvut-ability-parse-boundary.mjs",
+  "node scripts/verify-hvut-ability-live-evidence.mjs",
   "node scripts/verify-hvut-player-state-parse-boundary.mjs",
   "node scripts/verify-hvut-monster-lab-upgrade-boundary.mjs",
   "node scripts/verify-hvut-monster-upgrade-feedback-boundary.mjs",

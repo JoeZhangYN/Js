@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <title>HVUT ability dual-world browser smoke</title>
+    <style>
+      body { font: 16px sans-serif; background: #eee; }
+      .hvut-ab-bar { width: 250px; height: 32px; margin: 8px; display: flex; align-items: center; }
+      .hvut-ab-points { padding: 2px 8px; font-weight: bold; }
+    </style>
+  </head>
+  <body>
+    <main id="cases"></main>
+    <script type="module">
+      import { decideHvutAbilityPointContrast } from "/src/i18n/hvut-ability-background-contrast.js";
+      import { HvutAbilityAuthenticatedDomEvidence } from "/src/data/hvut-ability-authenticated-dom-evidence.js";
+
+      const worldCases = [
+        { world: "main", asset: "5bf.png", family: "blue", learned: true, expected: "#fff" },
+        { world: "main", asset: "7gf.png", family: "green", learned: true, expected: "#000" },
+        { world: "isekai", asset: "1pf.png", family: "purple", learned: true, expected: "#fff" },
+      ];
+      const reportedCases = HvutAbilityAuthenticatedDomEvidence.samples.map((sample) => ({
+        world: sample.world,
+        asset: sample.backgroundImage.match(/\/ab\/([^/)]+)/)[1],
+        family: "red",
+        learned: sample.state === "learned",
+        expected: sample.expectedTextColor,
+        backgroundColors: sample.backgroundColors,
+        classTokens: sample.classTokens,
+      }));
+      const cases = [...worldCases, ...reportedCases];
+      const root = document.querySelector("#cases");
+      const resourceLoads = [];
+      for (const current of cases) {
+        const prefix = current.world === "isekai" ? "/isekai" : "";
+        const path = `${prefix}/y/ab/${current.asset}`;
+        const decision = decideHvutAbilityPointContrast({
+          backgroundImage: `url(${path})`,
+          backgroundColors: current.backgroundColors || (current.learned ? [] : ["transparent", "rgb(255, 255, 255)"]),
+        });
+        if (decision.textColor !== current.expected || decision.backgroundFamily !== current.family) {
+          throw new Error(`contrastMismatch:${current.world}:${current.asset}`);
+        }
+        const bar = document.createElement("div");
+        bar.className = "hvut-ab-bar";
+        bar.style.backgroundImage = `url(https://hentaiverse.org${path})`;
+        const points = document.createElement("span");
+        points.className = (current.classTokens || ["hvut-ab-points", current.learned ? "hvut-ab-bf" : "hvut-ab-bu"]).join(" ");
+        points.textContent = current.learned ? "1" : "5";
+        points.style.color = decision.textColor;
+        points.dataset.contrastTone = decision.tone;
+        points.dataset.backgroundFamily = decision.backgroundFamily;
+        bar.append(points);
+        root.append(bar);
+        const image = new Image();
+        image.referrerPolicy = "no-referrer";
+        resourceLoads.push(
+          new Promise((resolve, reject) => {
+            image.onload = () => image.naturalWidth > 0 ? resolve() : reject(new Error(`emptyAsset:${path}`));
+            image.onerror = () => reject(new Error(`assetLoadFailed:${path}`));
+          })
+        );
+        image.src = `https://hentaiverse.org${path}`;
+      }
+      await Promise.all(resourceLoads);
+      const learnedRed = document.querySelector(".hvut-ab-bf[data-background-family='red']");
+      const unlockableRed = document.querySelector(".hvut-ab-bu[data-background-family='red']");
+      if (learnedRed?.style.color !== "rgb(255, 255, 255)" || unlockableRed?.style.color !== "rgb(0, 0, 0)") {
+        throw new Error("learnedUnlockableColorContractFailed");
+      }
+      const ok = document.createElement("output");
+      ok.id = "smoke-ok";
+      ok.textContent = "main + isekai live resources and contrast policy passed";
+      document.body.prepend(ok);
+      console.log("hvutAbilityBrowserSmoke", { cases: cases.length, worlds: ["main", "isekai"] });
+    </script>
+  </body>
+</html>

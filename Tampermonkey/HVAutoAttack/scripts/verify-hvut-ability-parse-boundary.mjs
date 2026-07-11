@@ -284,11 +284,17 @@ for (const required of [
   'textColor: tone === HvutAbilityPointTone.DARK ? "#000" : "#fff"',
   '"abilityAssetOpaque"',
   '"abilityAssetTransparent"',
-  'transparentStates: "u/x use computed background layers"',
-  'sourceOrigin: "https://hentaiverse.org/isekai/y/ab/"',
+  'color: "rgb(87, 153, 22)"',
 ]) {
   if (!contrastText.includes(required)) {
     violations.push(`ability background contrast decision must contain ${required}`);
+  }
+}
+for (const retiredEvidence of ["HvutAbilityBackgroundPaletteEvidence", "sourceOrigin:"]) {
+  if (contrastText.includes(retiredEvidence)) {
+    violations.push(
+      `ability contrast policy must not own stale inline evidence: ${retiredEvidence}`
+    );
   }
 }
 for (const required of [
