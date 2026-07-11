@@ -7,8 +7,10 @@ describe("HVUT ability requirement bridge", () => {
     expect(descriptor).toMatchObject({ configurable: false, writable: false });
     expect(Object.isFrozen(window.HVAA_hvutAbilityRequirement)).toBe(true);
     expect(typeof window.HVAA_hvutAbilityRequirement.decide).toBe("function");
+    expect(typeof window.HVAA_hvutAbilityRequirement.contrast).toBe("function");
     expect(window.HVAA_hvutAbilityRequirement.layout).toEqual({
       POINTS_CENTER_LEVEL_BELOW: "pointsCenterLevelBelow",
     });
+    expect(window.HVAA_hvutAbilityRequirement.tone).toEqual({ DARK: "dark", LIGHT: "light" });
   });
 });

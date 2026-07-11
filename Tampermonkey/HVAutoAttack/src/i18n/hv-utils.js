@@ -776,7 +776,22 @@ try {
       record_hvut_ability_parse_failure(context?.stage || 'abilityRankRequirementLayout', { reason: 'abilityRequirementLayoutUnknown', name: context?.name || '', index: index, layout: decision.requirement.layout || '' });
       return false;
     }
-    $element('span', button, attributes ? [decision.requirement.abilityPointsText, '.hvut-ab-points.hvut-ab-points-adaptive' + className, attributes] : [decision.requirement.abilityPointsText, '.hvut-ab-points.hvut-ab-points-adaptive' + className]);
+    var backgroundColors = [];
+    var backgroundNode = button;
+    while (backgroundNode && backgroundColors.length < 8) {
+      backgroundColors.push(window.getComputedStyle(backgroundNode).backgroundColor);
+      if (backgroundNode.id === 'ability_treepane') break;
+      backgroundNode = backgroundNode.parentElement;
+    }
+    var contrast = bridge.contrast({ backgroundColors: backgroundColors });
+    if (!contrast || contrast.kind !== 'accepted') {
+      record_hvut_ability_parse_failure(context?.stage || 'abilityRankRequirementContrast', { reason: contrast?.reason || 'abilityRequirementContrastRejected', name: context?.name || '', index: index, backgroundColors: backgroundColors });
+      return false;
+    }
+    var point = $element('span', button, attributes ? [decision.requirement.abilityPointsText, '.hvut-ab-points' + className, attributes] : [decision.requirement.abilityPointsText, '.hvut-ab-points' + className]);
+    point.style.color = contrast.textColor;
+    point.dataset.contrastTone = contrast.tone;
+    point.dataset.contrastBackground = contrast.effectiveBackground;
     $element('span', button, [decision.requirement.playerLevelText, '.hvut-ab-level']);
     return true;
   };
@@ -8351,8 +8366,7 @@ if (characterPage.isAbilities) {
     .hvut-ab-up { background-color: var(--color-ab-up); }
     .hvut-ab-tree > img[src*='/td'] { filter: brightness(250%); }
     .hvut-ab-bar { position: relative; margin-bottom: 13px; font-size: 9pt; line-height: 30px; white-space: nowrap; overflow: visible; }
-    .hvut-ab-points { display: block; }
-    .hvut-ab-points-adaptive { color: #fff; mix-blend-mode: difference; text-shadow: 0 0 1px #777; }
+    .hvut-ab-points { display: block; font-weight: bold; text-shadow: 0 0 1px #777; }
     .hvut-ab-level { display: block; position: absolute; top: 27px; left: 50%; min-width: 34px; transform: translateX(-50%); color: var(--color-font-invalid); font-size: 8pt; line-height: 12px; text-align: center; white-space: nowrap; z-index: 1; }
     .hvut-ab-bf { opacity: 0.65; }
     .hvut-ab-bux { cursor: not-allowed; }
@@ -14356,8 +14370,7 @@ if (characterPage.isAbilities) {
     .hvut-ab-up { background-color: #c00; }
     .hvut-ab-tree > img[src*='/td'] { filter: brightness(250%); }
     .hvut-ab-bar { position: relative; margin-bottom: 13px; font-size: 10pt; line-height: 30px; white-space: nowrap; overflow: visible; }
-    .hvut-ab-points { display: block; }
-    .hvut-ab-points-adaptive { color: #fff; mix-blend-mode: difference; text-shadow: 0 0 1px #777; }
+    .hvut-ab-points { display: block; font-weight: bold; text-shadow: 0 0 1px #777; }
     .hvut-ab-level { display: block; position: absolute; top: 27px; left: 50%; min-width: 34px; transform: translateX(-50%); color: #999; font-size: 8pt; line-height: 12px; text-align: center; white-space: nowrap; z-index: 1; }
     .hvut-ab-bf { opacity: 0.65; }
     .hvut-ab-bux { cursor: not-allowed; }

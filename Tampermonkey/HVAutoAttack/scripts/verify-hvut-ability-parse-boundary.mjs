@@ -17,6 +17,14 @@ const bridgeText = fs.readFileSync(
   path.join(root, "src/i18n/hvut-ability-requirement-bridge.js"),
   "utf8"
 );
+const contrastText = fs.readFileSync(
+  path.join(root, "src/i18n/hvut-ability-background-contrast.js"),
+  "utf8"
+);
+const contrastTestText = fs.readFileSync(
+  path.join(root, "src/i18n/hvut-ability-background-contrast.test.js"),
+  "utf8"
+);
 const catalogText = fs.readFileSync(path.join(root, "src/i18n/hvut-ability-catalog.js"), "utf8");
 const requirementCatalogText = fs.readFileSync(
   path.join(root, "src/data/hvut-ability-requirements.js"),
@@ -191,6 +199,7 @@ for (const required of [
 for (const required of [
   'Object.defineProperty(window, "HVAA_hvutAbilityRequirement"',
   "decide: decideHvutAbilityRankRequirement",
+  "contrast: decideHvutAbilityPointContrast",
   "layout: HvutAbilityRequirementLayout",
   "writable: false",
 ]) {
@@ -250,14 +259,21 @@ for (const forbidden of [
 for (const required of [
   "decision.requirement.abilityPointsText",
   "decision.requirement.playerLevelText",
-  "'.hvut-ab-points.hvut-ab-points-adaptive'",
+  "window.getComputedStyle(backgroundNode).backgroundColor",
+  "bridge.contrast({ backgroundColors: backgroundColors })",
+  "point.dataset.contrastTone = contrast.tone",
+  "point.dataset.contrastBackground = contrast.effectiveBackground",
+  "'.hvut-ab-points'",
   "'.hvut-ab-level'",
   "reason: 'abilityRequirementLayoutUnknown'",
+  "reason: contrast?.reason || 'abilityRequirementContrastRejected'",
 ]) {
   requirePart("ability requirement renderer", helperRegion, required);
 }
-if ((text.match(/mix-blend-mode: difference/g) || []).length !== 2) {
-  violations.push("both ability worlds must adapt centered AP color to the rank background");
+if (text.includes("mix-blend-mode: difference")) {
+  violations.push(
+    "ability point contrast must use computed background evidence, not visual blending"
+  );
 }
 if (
   (text.match(/\.hvut-ab-level \{ display: block; position: absolute; top: 27px;/g) || [])
@@ -267,6 +283,29 @@ if (
 }
 if (/\.hvut-ab-b(?:f|u|ux|x) \{ color:/.test(text)) {
   violations.push("ability point state classes must not override adaptive background contrast");
+}
+for (const required of [
+  "export function decideHvutAbilityPointContrast(input)",
+  "backgroundColors",
+  "contrastRatio",
+  'textColor: tone === HvutAbilityPointTone.DARK ? "#000" : "#fff"',
+  'source: parsedLayers.length ? "computedLayers" : "defaultWhite"',
+]) {
+  if (!contrastText.includes(required)) {
+    violations.push(`ability background contrast decision must contain ${required}`);
+  }
+}
+for (const required of [
+  "chooses maximum contrast for %s",
+  '"major red"',
+  '"supportive green"',
+  '"protection blue"',
+  '"drain purple"',
+  "composites transparent child layers over the actual ancestor background",
+]) {
+  if (!contrastTestText.includes(required)) {
+    violations.push(`ability background contrast tests must cover ${required}`);
+  }
 }
 
 const catalog = HvutAbilityRequirementCatalog;
