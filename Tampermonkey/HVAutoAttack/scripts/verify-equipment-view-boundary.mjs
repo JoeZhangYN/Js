@@ -13,6 +13,10 @@ const percentileOfflineFailureTest = path.join(
   root,
   "src/pages/equip-percentile-offline-failure.test.js"
 );
+const percentileOfflinePopupTest = path.join(
+  root,
+  "src/pages/equip-percentile-offline-popup.test.js"
+);
 const forgeCostFile = path.join(root, "src/pages/showequip-forge-cost.js");
 const forgeCostTest = path.join(root, "src/pages/showequip-forge-cost.test.js");
 const diagnosticKeysFile = path.join(root, "src/core/diagnostic-evidence-keys.js");
@@ -303,6 +307,32 @@ function checkPercentileFailureBoundary() {
   }
 }
 
+function checkPercentileAsyncPopupBoundary() {
+  const percentileText = fs.readFileSync(percentileFile, "utf8");
+  const popupTestText = fs.readFileSync(percentileOfflinePopupTest, "utf8");
+  for (const required of [
+    "function parseEquipmentSurfaces(node)",
+    "observer.observe(popup, { attributes: true, childList: true, subtree: true });",
+    "observer.observe(equipInfo, { childList: true, subtree: true });",
+  ]) {
+    if (!percentileText.includes(required)) {
+      violations.push(
+        `${rel(percentileFile)} must keep async equipment surface coverage: ${required}`
+      );
+    }
+  }
+  for (const required of [
+    "renders percentages when an already-visible Isekai equipment popup fills asynchronously",
+    'popup.style.visibility = "visible"',
+    "popup.innerHTML = equipmentMarkup()",
+    'querySelector(".hv-lpr-avg")',
+  ]) {
+    if (!popupTestText.includes(required)) {
+      violations.push(`${rel(percentileOfflinePopupTest)} must cover ${required}`);
+    }
+  }
+}
+
 checkInit();
 checkEntry();
 checkPageAutomation();
@@ -311,6 +341,7 @@ checkDeletedSetupEntrypoints();
 checkForgeCostNameParsing();
 checkPercentileModeDecisionPoint();
 checkPercentileFailureBoundary();
+checkPercentileAsyncPopupBoundary();
 
 if (violations.length) {
   console.error("[verify-equipment-view-boundary] FAIL");

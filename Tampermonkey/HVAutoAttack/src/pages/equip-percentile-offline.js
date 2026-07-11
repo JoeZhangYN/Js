@@ -175,6 +175,20 @@ function parseEquip(container) {
   renderEquip(container, null);
 }
 
+function parseEquipmentSurfaces(node) {
+  if (!(node instanceof HTMLElement)) return;
+
+  const showEquip = node.matches(".showequip") ? node : node.closest(".showequip");
+  if (showEquip) parseEquip(showEquip);
+  node.querySelectorAll(".showequip").forEach(parseEquip);
+
+  const popupSurface = node.matches("#popup_box") ? node : node.closest("#popup_box");
+  if (popupSurface?.style.visibility === "visible") parseEquip(popupSurface);
+
+  const equipInfoSurface = node.matches("#equipinfo") ? node : node.closest("#equipinfo");
+  if (equipInfoSurface) parseEquip(equipInfoSurface);
+}
+
 function getColor(percent, max = 70, min = 30) {
   return percent >= max ? "hv-txt-green" : percent <= min ? "hv-txt-red" : "hv-txt-mid";
 }
@@ -338,24 +352,19 @@ export function runOfflineEquipPercentileEnhancement() {
   const observer = new MutationObserver((mutations) => {
     for (const m of mutations) {
       if (m.type === "childList") {
-        for (const node of m.addedNodes) {
-          if (!(node instanceof HTMLElement)) continue;
-          if (!node.classList.contains("showequip")) continue;
-          parseEquip(node);
-        }
+        parseEquipmentSurfaces(m.target);
+        m.addedNodes.forEach(parseEquipmentSurfaces);
       } else if (m.type === "attributes" && m.attributeName === "style") {
-        const target = m.target;
-        if (!(target instanceof HTMLElement)) continue;
-        if (target.style.visibility === "visible") parseEquip(target);
+        parseEquipmentSurfaces(m.target);
       }
     }
   });
 
   popup = document.getElementById("popup_box");
-  if (popup) observer.observe(popup, { attributes: true });
+  if (popup) observer.observe(popup, { attributes: true, childList: true, subtree: true });
 
   const equipInfo = document.getElementById("equipinfo");
-  if (equipInfo) observer.observe(equipInfo, { childList: true });
+  if (equipInfo) observer.observe(equipInfo, { childList: true, subtree: true });
 
   document.querySelectorAll(".showequip").forEach(parseEquip);
 
