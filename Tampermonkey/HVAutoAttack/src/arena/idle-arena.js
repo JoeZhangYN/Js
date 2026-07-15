@@ -4,50 +4,40 @@ import { STORAGE_KEYS } from "../state/persist-keys.js";
 import { OptionEvent, runOptionAutomation } from "../state/option.js";
 import { _alert } from "../core/lang.js";
 import { post } from "../dom/http.js";
-import {
-  NavigationEvent,
-  NavigationReloadReason,
-  runNavigationAutomation,
-} from "../core/navigate.js";
 import { pollUntil } from "../core/poll.js";
 import { StaminaEvent, runStaminaAutomation } from "../state/stamina.js";
 import { DayRecordEvent, runDayRecordAutomation } from "../state/day-record.js";
 import { IDLE_ARENA_TOKEN_URLS, collectIdleArenaToken } from "./idle-arena-token.js";
 import * as idleArenaFailure from "./idle-arena-failure.js";
+import { planIdleArenaBattle } from "./idle-arena-plan.js";
+import { IdleArenaStartStatus } from "./idle-arena-outcome.js";
+import { reloadAfterIdleArenaBattle } from "./idle-arena-navigation.js";
 
-const EVENT_SCHEDULE_NEXT_BATTLE = "scheduleNextBattle";
+const EVENT_PLAN_NEXT_BATTLE = "planNextBattle";
 const EVENT_START_NEXT_BATTLE = "startNextBattle";
 const EVENT_RESET_PROGRESS = "resetProgress";
 
 export const IdleArenaEvent = Object.freeze({
-  SCHEDULE_NEXT_BATTLE: EVENT_SCHEDULE_NEXT_BATTLE,
+  PLAN_NEXT_BATTLE: EVENT_PLAN_NEXT_BATTLE,
   START_NEXT_BATTLE: EVENT_START_NEXT_BATTLE,
   RESET_PROGRESS: EVENT_RESET_PROGRESS,
 });
 
 const idleArenaEventHandlers = Object.freeze({
-  [EVENT_SCHEDULE_NEXT_BATTLE]: () => scheduleNextBattle(),
+  [EVENT_PLAN_NEXT_BATTLE]: (event) => planNextBattle(event),
   [EVENT_START_NEXT_BATTLE]: () => startNextBattle(),
   [EVENT_RESET_PROGRESS]: () => resetProgress(),
 });
-
-function reloadCurrentPage() {
-  runNavigationAutomation({
-    type: NavigationEvent.RELOAD_NOW,
-    reason: NavigationReloadReason.PAGE_REFRESH,
-  });
-}
 
 function readIdleArenaOption(key, fallback) {
   return runOptionAutomation({ type: OptionEvent.READ_FIELD, key, fallback });
 }
 
-function scheduleNextBattle() {
+function planNextBattle(event = {}) {
+  const nowMs = event.nowMs ?? Date.now();
   const idleSeconds = Number(readIdleArenaOption("idleArenaTime", 0)) || 0;
-  setTimeout(
-    () => runIdleArenaAutomation({ type: EVENT_START_NEXT_BATTLE }),
-    ((idleSeconds * (Math.random() * 20 + 90)) / 100) * 1000
-  );
+  const jitter = Math.max(0, Math.min(1, event.jitter ?? Math.random()));
+  return planIdleArenaBattle({ idleSeconds, nowMs, jitter });
 }
 
 function resetProgress() {
@@ -80,22 +70,27 @@ function startNextBattle() {
         failTokenFetch
       )
     );
-    // 轮询至 4 个 token POST 全部返回 → 存档 + 重入 idleArena
-    pollUntil(() => arena.token.length >= 4 || tokenFailed).then(() => {
-      if (tokenFailed) return;
-      if (!idleArenaFailure.persistIdleArenaProgress("token-persist", arena)) return;
-      setTimeout(startNextBattle, 200);
+    // 轮询至 4 个 token POST 全部返回 → 存档，并交回下一战仲裁器复检。
+    return pollUntil(() => arena.token.length >= 4 || tokenFailed).then(() => {
+      if (tokenFailed) {
+        return { status: IdleArenaStartStatus.FAILED, reason: "tokenFetchFailed" };
+      }
+      if (!idleArenaFailure.persistIdleArenaProgress("token-persist", arena)) {
+        return { status: IdleArenaStartStatus.FAILED, reason: "tokenPersistenceFailed" };
+      }
+      return { status: IdleArenaStartStatus.PREPARED, reason: "tokensReady" };
     });
-    return;
   }
   arena.done = arena.done || [];
   arena.array = String(readIdleArenaOption("idleArenaValue", ""))
     .split(",")
     .filter((id) => (id === "gr" || isNaN(id * 1) ? arena.gr > 0 : !arena.done.includes(id)));
-  if (arena.array.length === 0) return;
+  if (arena.array.length === 0) {
+    return { status: IdleArenaStartStatus.UNAVAILABLE, reason: "noCandidate" };
+  }
   if (runStaminaAutomation({ type: StaminaEvent.SHOULD_RESTORE_FOR_IDLE_ARENA })) {
     runStaminaAutomation({ type: StaminaEvent.CLAIM_RECOVERY });
-    return;
+    return { status: IdleArenaStartStatus.RECOVERY_REQUESTED, reason: "staminaRecovery" };
   }
   let href;
   let id;
@@ -119,14 +114,13 @@ function startNextBattle() {
   }
   if (arena.array.length === 0) {
     idleArenaFailure.persistIdleArenaProgress("progress-persist", arena);
-    return;
+    return { status: IdleArenaStartStatus.UNAVAILABLE, reason: "noUsableToken" };
   }
   document.title = _alert(-1, "闲置竞技场", "閒置競技場開始", "Idle Arena start");
   if (arena.array[0] === "gr" && arena.gr <= 0) {
     arena.array.splice(0, 1);
     if (!idleArenaFailure.persistIdleArenaProgress("progress-persist", arena)) return;
-    startNextBattle();
-    return;
+    return startNextBattle();
   }
   const arenaBeforeStart = arena;
   if (arena.array[0] === "gr" && arena.gr > 0) {
@@ -144,15 +138,16 @@ function startNextBattle() {
     `?s=Battle&ss=${href}`,
     () => {
       if (!idleArenaFailure.persistIdleArenaProgress("battle-start-persist", arena)) return;
-      reloadCurrentPage();
+      reloadAfterIdleArenaBattle();
     },
     `initid=${String(id)}&postoken=${arena.token.postoken}`,
     undefined,
     (failure) =>
       idleArenaFailure.recordIdleArenaRequestFailure("battle-start", arenaBeforeStart, failure)
   );
+  return { status: IdleArenaStartStatus.BATTLE_REQUESTED, reason: "battleRequest", battleId: id };
 }
 
-export function runIdleArenaAutomation(event = { type: EVENT_START_NEXT_BATTLE }) {
+export function runIdleArenaAutomation(event) {
   return idleArenaEventHandlers[event?.type]?.(event) ?? false;
 }

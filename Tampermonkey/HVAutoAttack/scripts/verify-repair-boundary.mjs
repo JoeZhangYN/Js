@@ -5,6 +5,7 @@ const root = process.cwd();
 const srcDir = path.join(root, "src");
 const owner = path.normalize("src/repair/repair-orchestrator.js");
 const backendFailure = path.normalize("src/repair/repair-backend-failure.js");
+const stopCopy = path.normalize("src/repair/repair-stop-copy.js");
 const ownerTest = path.normalize("src/repair/repair-orchestrator.test.js");
 const backendFailureTest = path.normalize("src/repair/repair-orchestrator-backend-failure.test.js");
 const diagnosticKeys = path.normalize("src/core/diagnostic-evidence-keys.js");
@@ -50,9 +51,22 @@ walk(srcDir);
 
 const ownerText = fs.readFileSync(path.join(root, owner), "utf8");
 const backendFailureText = fs.readFileSync(path.join(root, backendFailure), "utf8");
+const stopCopyText = fs.readFileSync(path.join(root, stopCopy), "utf8");
 for (const required of ["runRepairAutomation", "RepairEvent"]) {
   if (!ownerText.includes(required)) {
     violations.push(`${owner.replaceAll("\\", "/")} must own ${required}`);
+  }
+}
+for (const required of ["RepairStatus", "READY", "BLOCKED", "return new Promise("]) {
+  if (!ownerText.includes(required)) {
+    violations.push(`${owner.replaceAll("\\", "/")} must expose typed async readiness ${required}`);
+  }
+}
+for (const forbidden of ["idle-arena.js", "IdleArenaEvent", "idleArena", "scheduleIdleArena"]) {
+  if (ownerText.includes(forbidden)) {
+    violations.push(
+      `${owner.replaceAll("\\", "/")} repair must not own next-battle policy: ${forbidden}`
+    );
   }
 }
 const entryBody =
@@ -81,10 +95,10 @@ if (/export\s+function\s+runRepair\s*\(/.test(ownerText)) {
 for (const required of [
   "stopBackendFailure",
   "recordRepairBackendFailure",
-  "BACKEND_FAIL_MSG",
+  "readRepairStopCopy",
   "维修请求失败",
 ]) {
-  if (!ownerText.includes(required)) {
+  if (!(ownerText + stopCopyText).includes(required)) {
     violations.push(`${owner.replaceAll("\\", "/")} must own backend failure recovery ${required}`);
   }
 }
@@ -139,7 +153,7 @@ if (!fs.existsSync(path.join(root, ownerTest))) {
     violations.push(`${ownerTest.replaceAll("\\", "/")} must cover null repair events`);
   }
   for (const required of [
-    "买料缺少商店凭证 → 停机 + 对应三语告警，不修不开下一场",
+    "买料缺少商店凭证 → 返回 BLOCKED + 对应三语告警",
     "missing-storetoken",
     "商店凭证",
   ]) {
@@ -157,9 +171,9 @@ if (!fs.existsSync(path.join(root, backendFailureTest))) {
 } else {
   const backendFailureTestText = fs.readFileSync(path.join(root, backendFailureTest), "utf8");
   for (const required of [
-    "stops idle arena when backend fetch-state fails",
-    "stops idle arena when backend submit-repair fails",
-    "still stops idle arena when backend failure diagnostics are blocked",
+    "returns BLOCKED when backend fetch-state fails",
+    "returns BLOCKED when backend submit-repair fails",
+    "still returns BLOCKED when backend failure diagnostics are blocked",
     "REPAIR_BACKEND_FAILURE_KEY",
     "HVAA:lastRepairBackendFailure",
     "session blocked",

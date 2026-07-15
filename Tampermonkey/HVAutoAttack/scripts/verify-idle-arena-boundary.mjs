@@ -4,6 +4,7 @@ import path from "node:path";
 const root = process.cwd();
 const srcDir = path.join(root, "src");
 const owner = path.normalize("src/arena/idle-arena.js");
+const planOwner = path.normalize("src/arena/idle-arena-plan.js");
 const failureOwner = path.normalize("src/arena/idle-arena-failure.js");
 const ownerTest = path.normalize("src/arena/idle-arena.test.js");
 const failureTest = path.normalize("src/arena/idle-arena-failure.test.js");
@@ -51,7 +52,7 @@ function checkFile(file) {
     }
     if (relative !== owner && /setTimeout\(\s*idleArena\b/.test(line)) {
       violations.push(
-        `${where} direct idleArena scheduling is forbidden; use SCHEDULE_NEXT_BATTLE`
+        `${where} direct idleArena scheduling is forbidden; use next-battle arbitration`
       );
     }
     if (
@@ -77,6 +78,7 @@ function checkFile(file) {
 walk(srcDir);
 
 const ownerText = fs.readFileSync(path.join(root, owner), "utf8");
+const planOwnerText = fs.readFileSync(path.join(root, planOwner), "utf8");
 const failureOwnerText = fs.readFileSync(path.join(root, failureOwner), "utf8");
 const diagnosticKeysText = fs.readFileSync(path.join(root, diagnosticKeys), "utf8");
 const diagnosticTestText = fs.readFileSync(path.join(root, diagnosticTest), "utf8");
@@ -96,6 +98,17 @@ if (/\bg\(\s*["']option["']\s*\)/.test(ownerText)) {
 }
 if (!ownerText.includes("RESET_PROGRESS")) {
   violations.push(`${owner.replaceAll("\\", "/")} must expose RESET_PROGRESS event`);
+}
+if (
+  !ownerText.includes("PLAN_NEXT_BATTLE") ||
+  !(ownerText + planOwnerText).includes("deadlineMs")
+) {
+  violations.push(
+    `${owner.replaceAll("\\", "/")} must expose a timer-free next-battle deadline plan`
+  );
+}
+if (/\bsetTimeout\s*\(/.test(ownerText)) {
+  violations.push(`${owner.replaceAll("\\", "/")} must not own next-battle timers`);
 }
 if (ownerText.includes("delValue(STORAGE_KEYS.ARENA)")) {
   violations.push(
@@ -206,7 +219,7 @@ if (!entryMatch) {
       `${owner.replaceAll("\\", "/")} entry must not reintroduce an event.type if-chain`
     );
   }
-  for (const internal of ["scheduleNextBattle(", "resetProgress(", "startNextBattle("]) {
+  for (const internal of ["planNextBattle(", "resetProgress(", "startNextBattle("]) {
     if (entryBody.includes(internal)) {
       violations.push(
         `${owner.replaceAll("\\", "/")} entry must dispatch through idleArenaEventHandlers`
@@ -229,6 +242,7 @@ if (!fs.existsSync(path.join(root, ownerTest))) {
 } else {
   const ownerTestText = fs.readFileSync(path.join(root, ownerTest), "utf8");
   for (const required of [
+    "plans the next battle deadline without owning a timer",
     "rejects unknown idle arena events without starting a battle",
     "runIdleArenaAutomation(null)",
     "expect(mocks.post).not.toHaveBeenCalled()",

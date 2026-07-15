@@ -49,15 +49,13 @@ describe("UTC encounter new-day recovery", () => {
       })
     );
     mocks.gmXhr.mockImplementation(({ onload }) => onload({ responseText: DAWN_HTML }));
-    const rerun = vi.fn();
-
-    const first = await runEncounterAutomation({ type: EncounterEvent.LOBBY_TICK, rerun });
-    expect(vi.getTimerCount()).toBe(1);
-    const second = await runEncounterAutomation({ type: EncounterEvent.LOBBY_TICK, rerun });
+    const first = await runEncounterAutomation({ type: EncounterEvent.LOBBY_TICK });
+    expect(vi.getTimerCount()).toBe(0);
+    const second = await runEncounterAutomation({ type: EncounterEvent.LOBBY_TICK });
 
     expect(first).toMatchObject({
-      claimed: false,
-      scheduled: true,
+      status: "waiting",
+      reason: "cooldown",
       generation: {
         status: "newDay",
         reason: "dailyResetEvent",
@@ -66,7 +64,7 @@ describe("UTC encounter new-day recovery", () => {
         recovery: { status: "countdown", reason: "cooldown", countdownMs: 30 * 60 * 1000 + 5000 },
       },
     });
-    expect(second).toMatchObject({ claimed: false, scheduled: true });
+    expect(second).toMatchObject({ status: "waiting", reason: "cooldown" });
     expect(mocks.gmXhr).toHaveBeenCalledTimes(1);
     expect(mocks.runNavigationAutomation).not.toHaveBeenCalled();
     expect(mocks.runUserFeedbackAutomation).not.toHaveBeenCalled();
@@ -86,20 +84,20 @@ describe("UTC encounter new-day recovery", () => {
       finishRequest = () => request.onload({ responseText: MISSING_HTML });
     });
 
-    const first = runEncounterAutomation({ type: EncounterEvent.LOBBY_TICK, rerun: vi.fn() });
-    const second = runEncounterAutomation({ type: EncounterEvent.LOBBY_TICK, rerun: vi.fn() });
+    const first = runEncounterAutomation({ type: EncounterEvent.LOBBY_TICK });
+    const second = runEncounterAutomation({ type: EncounterEvent.LOBBY_TICK });
 
     expect(mocks.gmXhr).toHaveBeenCalledTimes(1);
     finishRequest();
-    await expect(first).resolves.toMatchObject({ claimed: false });
-    await expect(second).resolves.toMatchObject({ claimed: false });
+    await expect(first).resolves.toMatchObject({ status: "waiting" });
+    await expect(second).resolves.toMatchObject({ status: "waiting" });
     expect(mocks.gmXhr).toHaveBeenCalledTimes(1);
     expect(JSON.parse(localStorage.getItem(HVUT_RE_KEY))).toMatchObject({
       generationFailureCount: 1,
     });
   });
 
-  it("blocks with copy-ready evidence when the same generation attempt opens the circuit", async () => {
+  it("degrades with diagnostic evidence without a lobby popup when generation opens the circuit", async () => {
     localStorage.setItem(
       HVUT_RE_KEY,
       JSON.stringify({
@@ -116,22 +114,20 @@ describe("UTC encounter new-day recovery", () => {
 
     const outcome = await runEncounterAutomation({
       type: EncounterEvent.LOBBY_TICK,
-      rerun: vi.fn(),
     });
 
-    expect(outcome).toMatchObject({ action: "blocked", blocked: true, claimed: false });
-    expect(mocks.runNavigationAutomation).not.toHaveBeenCalled();
-    expect(mocks.runUserFeedbackAutomation).toHaveBeenCalledOnce();
-    expect(mocks.runUserFeedbackAutomation).toHaveBeenCalledWith(
-      expect.objectContaining({
-        type: "blockingError",
-        incident: "encounter-generation:2026-06-27:0::true:ready:encounterKeyMissing:lobby:3",
-        evidence: expect.objectContaining({
+    expect(outcome).toMatchObject({
+      status: "degraded",
+      reason: "encounterKeyMissing",
+      diagnostic: {
+        evidence: {
           capability: "encounterGeneration",
           reason: "encounterKeyMissing",
-        }),
-      })
-    );
+        },
+      },
+    });
+    expect(mocks.runNavigationAutomation).not.toHaveBeenCalled();
+    expect(mocks.runUserFeedbackAutomation).not.toHaveBeenCalled();
     expect(JSON.parse(localStorage.getItem(HVUT_RE_KEY))).toMatchObject({
       generationFailureCount: 3,
       generationFailureReason: "encounterKeyMissing",

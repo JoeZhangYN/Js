@@ -1,8 +1,10 @@
 import { UserFeedbackEvent, runUserFeedbackAutomation } from "../core/lang.js";
 import {
   EncounterGenerationIncidentEvent,
+  EncounterGenerationIncidentRecordMode,
   runEncounterGenerationIncident,
 } from "./encounter-generation-incident.js";
+import { createEncounterDegradedOutcome } from "./encounter-lobby-outcome.js";
 
 function buildIncident(generation, source) {
   const attemptKey = generation.state?.generationAttemptKey || "unknown";
@@ -31,21 +33,10 @@ function buildIncident(generation, source) {
 }
 
 export function showEncounterGenerationBlock(generation, source) {
-  const incident = buildIncident(generation, source);
-  const incidentPersistence = runEncounterGenerationIncident({
-    type: EncounterGenerationIncidentEvent.RECORD,
-    incident,
-    requiresShared: generation.source?.pageKind === "ehentai",
+  const diagnostic = recordEncounterGenerationDegradation(generation, source, {
+    recordMode: EncounterGenerationIncidentRecordMode.BLOCKING_FEEDBACK,
   });
-  const evidence = {
-    capability: "encounterGeneration",
-    stage: "generationResult",
-    reason: generation.reason,
-    source,
-    generation,
-    incident,
-    incidentPersistence,
-  };
+  const { incident, incidentPersistence, evidence } = diagnostic;
   if (incidentPersistence.kind === "alreadyActive") {
     evidence.feedbackDeduplicated = true;
     return { action: "blocked", blocked: true, claimed: false, handled: true, evidence };
@@ -78,4 +69,40 @@ export function showEncounterGenerationBlock(generation, source) {
     });
   }
   return { action: "blocked", blocked: true, claimed: false, handled: true, evidence };
+}
+
+// 大厅后台编排只记录可恢复诊断，不用阻塞弹窗打断闲置竞技场。
+export function recordEncounterGenerationDegradation(generation, source, options = {}) {
+  const incident = buildIncident(generation, source);
+  const incidentPersistence = runEncounterGenerationIncident({
+    type: EncounterGenerationIncidentEvent.RECORD,
+    incident,
+    mode: options.recordMode || EncounterGenerationIncidentRecordMode.DIAGNOSTIC_ONLY,
+    requiresShared: generation.source?.pageKind === "ehentai",
+  });
+  const evidence = {
+    capability: "encounterGeneration",
+    stage: "generationResult",
+    reason: generation.reason,
+    source,
+    generation,
+    incident,
+    incidentPersistence,
+  };
+  if (incidentPersistence.kind === "alreadyActive") evidence.diagnosticDeduplicated = true;
+  return { action: "degraded", handled: true, evidence, incident, incidentPersistence };
+}
+
+export function recordEncounterLobbyDegradation(generation, source, clock, nowMs, detail = {}) {
+  const diagnostic = recordEncounterGenerationDegradation(generation, source);
+  return createEncounterDegradedOutcome(
+    {
+      reason: generation.reason || "encounterDegraded",
+      state: generation.state,
+      clock,
+      diagnostic,
+      ...detail,
+    },
+    nowMs
+  );
 }

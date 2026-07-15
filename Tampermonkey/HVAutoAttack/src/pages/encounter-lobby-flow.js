@@ -1,43 +1,24 @@
 import { StaminaEvent, runStaminaAutomation } from "../state/stamina.js";
-import { showEncounterGenerationBlock } from "./encounter-generation-block.js";
+import { recordEncounterLobbyDegradation } from "./encounter-generation-block.js";
 import { blockActiveEncounterIncident } from "./encounter-lobby-active-block.js";
 import {
-  blockEncounterEntry,
   enterPlannedEncounter,
   planStoredEncounterEntry,
+  recordEncounterEntryDegradation,
 } from "./encounter-lobby-entry.js";
 import {
-  EncounterLobbyScheduleEvent,
-  runEncounterLobbySchedule,
-} from "./encounter-lobby-schedule.js";
+  createEncounterDegradedOutcome,
+  createEncounterClaimedOutcome,
+  createEncounterClockOutcome,
+  createEnteredEncounterOutcome,
+} from "./encounter-lobby-outcome.js";
 import { EncounterPolicyEvent, runEncounterPolicy } from "./encounter-policy.js";
 import { EncounterStateEvent, runEncounterStateAutomation } from "./encounter-state.js";
 
 let pendingLobbyGeneration = null;
 
-function claimLobby() {
-  runEncounterLobbySchedule({ type: EncounterLobbyScheduleEvent.CANCEL_NEXT_CHECK });
-  return { claimed: true };
-}
-
-function waitForNextCheck(state, event) {
-  const scheduled = runEncounterLobbySchedule({
-    type: EncounterLobbyScheduleEvent.SCHEDULE_NEXT_CHECK,
-    state,
-    rerun: event.rerun,
-  });
-  return { claimed: false, scheduled };
-}
-
-function scheduleBlockedOutcome(outcome, state, event) {
-  if (!state) return outcome;
-  return { ...outcome, retry: waitForNextCheck(state, event) };
-}
-
-function claimEnteredEncounter(outcome) {
-  if (outcome?.action !== "navigated" || !outcome?.state?.key) return undefined;
-  claimLobby();
-  return { ...outcome, claimed: true };
+function nowFor(event) {
+  return event.nowMs ?? Date.now();
 }
 
 function readEncounterSnapshot() {
@@ -61,24 +42,30 @@ async function loadAndEnterEncounter(plan, event) {
 }
 
 function finishLobbyGeneration(generation, event) {
-  if (generation.entry?.blocked)
-    return scheduleBlockedOutcome(
-      blockEncounterEntry(generation.entry, "lobbyEntry"),
-      generation.entry.state,
-      event
+  const nowMs = nowFor(event);
+  if (generation.entry?.blocked) {
+    const diagnostic = recordEncounterEntryDegradation(generation.entry, "lobbyEntry");
+    return createEncounterDegradedOutcome(
+      {
+        reason: generation.entry.reason,
+        state: generation.entry.state,
+        diagnostic,
+        generation,
+      },
+      nowMs
     );
-  const entered = claimEnteredEncounter(generation.entry);
+  }
+  const entered = createEnteredEncounterOutcome(generation.entry);
   if (entered) return entered;
-  if (generation.blocked)
-    return scheduleBlockedOutcome(
-      showEncounterGenerationBlock(generation, "lobby"),
-      generation.state,
-      event
-    );
-  return {
-    ...waitForNextCheck(generation.state, event),
-    generation,
-  };
+  const clock = runEncounterPolicy({
+    type: EncounterPolicyEvent.READ_CLOCK,
+    state: generation.state,
+    nowMs,
+  });
+  if (generation.blocked) {
+    return recordEncounterLobbyDegradation(generation, "lobby", clock, nowMs, { generation });
+  }
+  return createEncounterClockOutcome(clock, generation.state, { generation }, nowMs);
 }
 
 function continueAfterLoadedEncounter(event, plan) {
@@ -91,26 +78,21 @@ function continueAfterLoadedEncounter(event, plan) {
   return pendingLobbyGeneration;
 }
 
-export function runEncounterLobbyFlow(event) {
+export function runEncounterLobbyFlow(event = {}) {
+  const nowMs = nowFor(event);
   const snapshot = readEncounterSnapshot();
   if (!snapshot?.ok) {
-    return scheduleBlockedOutcome(
-      showEncounterGenerationBlock(
-        {
-          status: "persistenceFailed",
-          reason: snapshot?.reason || "encounterStateReadFailed",
-          state: snapshot?.state,
-          persistence: snapshot,
-          blocked: true,
-        },
-        "lobbyState"
-      ),
-      snapshot?.state,
-      event
-    );
+    const generation = {
+      status: "persistenceFailed",
+      reason: snapshot?.reason || "encounterStateReadFailed",
+      state: snapshot?.state,
+      persistence: snapshot,
+      blocked: true,
+    };
+    return recordEncounterLobbyDegradation(generation, "lobbyState", undefined, nowMs);
   }
   let state = snapshot.state;
-  let clock = runEncounterPolicy({ type: EncounterPolicyEvent.READ_CLOCK, state });
+  let clock = runEncounterPolicy({ type: EncounterPolicyEvent.READ_CLOCK, state, nowMs });
   const activeBlock = blockActiveEncounterIncident(clock, state, {
     persistState: (recoveryState) =>
       runEncounterStateAutomation({
@@ -119,38 +101,47 @@ export function runEncounterLobbyFlow(event) {
       }),
   });
   if (activeBlock?.status === "blocked") {
-    return scheduleBlockedOutcome(activeBlock.outcome, activeBlock.state, event);
+    return createEncounterDegradedOutcome(
+      {
+        reason: activeBlock.outcome?.evidence?.reason || "encounterIncidentActive",
+        state: activeBlock.state,
+        clock,
+        diagnostic: activeBlock.outcome,
+      },
+      nowMs
+    );
   }
   if (activeBlock?.status === "recovered") {
     state = activeBlock.state;
-    clock = runEncounterPolicy({ type: EncounterPolicyEvent.READ_CLOCK, state });
+    clock = runEncounterPolicy({ type: EncounterPolicyEvent.READ_CLOCK, state, nowMs });
   }
   if (clock.reason === "generationCircuitOpen") {
-    return scheduleBlockedOutcome(
-      showEncounterGenerationBlock(
-        {
-          status: "unavailable",
-          reason: state.generationFailureReason,
-          state,
-          recovery: clock,
-          blocked: true,
-        },
-        "lobbyResume"
-      ),
+    const generation = {
+      status: "unavailable",
+      reason: state.generationFailureReason,
       state,
-      event
-    );
+      recovery: clock,
+      blocked: true,
+    };
+    return recordEncounterLobbyDegradation(generation, "lobbyResume", clock, nowMs);
   }
-  if (clock.status === "countdown") return waitForNextCheck(state, event);
+  if (clock.status === "countdown") {
+    return createEncounterClockOutcome(clock, state, undefined, nowMs);
+  }
   const plan = planStoredEncounterEntry(state);
   const entry = enterPlannedEncounter(plan);
-  if (entry?.blocked)
-    return scheduleBlockedOutcome(blockEncounterEntry(entry, "lobbyEntry"), entry.state, event);
-  const entered = claimEnteredEncounter(entry);
+  if (entry?.blocked) {
+    const diagnostic = recordEncounterEntryDegradation(entry, "lobbyEntry");
+    return createEncounterDegradedOutcome(
+      { reason: entry.reason, state: entry.state, clock, diagnostic, entry },
+      nowMs
+    );
+  }
+  const entered = createEnteredEncounterOutcome(entry);
   if (entered) return entered;
   if (runStaminaAutomation({ type: StaminaEvent.SHOULD_RESTORE_FOR_BATTLE })) {
     runStaminaAutomation({ type: StaminaEvent.CLAIM_RECOVERY });
-    return claimLobby();
+    return createEncounterClaimedOutcome("staminaRecovery", state);
   }
   return continueAfterLoadedEncounter(event, plan);
 }

@@ -41,22 +41,30 @@ function currentUtcDateKey() {
 }
 
 describe("runIdleArenaAutomation", () => {
-  it("schedules the next battle from the option entry", () => {
+  it("plans the next battle deadline without owning a timer", () => {
     vi.useFakeTimers();
     vi.spyOn(Math, "random").mockReturnValue(0.5);
     mocks.runOptionAutomation.mockImplementation((event) =>
       event.key === "idleArenaTime" ? 10 : event.fallback
     );
 
-    runIdleArenaAutomation({ type: IdleArenaEvent.SCHEDULE_NEXT_BATTLE });
+    const plan = runIdleArenaAutomation({
+      type: IdleArenaEvent.PLAN_NEXT_BATTLE,
+      nowMs: 1000,
+    });
 
     expect(mocks.runOptionAutomation).toHaveBeenCalledWith({
       type: "readField",
       key: "idleArenaTime",
       fallback: 0,
     });
-    expect(vi.getTimerCount()).toBe(1);
-    vi.advanceTimersByTime(9999);
+    expect(plan).toEqual({
+      status: "planned",
+      reason: "idleArenaDelay",
+      delayMs: 10_000,
+      deadlineMs: 11_000,
+    });
+    expect(vi.getTimerCount()).toBe(0);
     expect(mocks.runOptionAutomation).toHaveBeenCalledTimes(1);
   });
 
@@ -78,6 +86,7 @@ describe("runIdleArenaAutomation", () => {
 
     expect(runIdleArenaAutomation({ type: "unknown" })).toBe(false);
     expect(runIdleArenaAutomation(null)).toBe(false);
+    expect(runIdleArenaAutomation()).toBe(false);
 
     expect(mocks.runOptionAutomation).not.toHaveBeenCalled();
     expect(mocks.post).not.toHaveBeenCalled();

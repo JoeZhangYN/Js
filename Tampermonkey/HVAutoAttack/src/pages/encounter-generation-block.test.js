@@ -1,6 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { DiagnosticEvidenceKey } from "../core/diagnostic-evidence-keys.js";
-import { showEncounterGenerationBlock } from "./encounter-generation-block.js";
+import {
+  recordEncounterGenerationDegradation,
+  showEncounterGenerationBlock,
+} from "./encounter-generation-block.js";
 
 const mocks = vi.hoisted(() => ({ runUserFeedbackAutomation: vi.fn() }));
 
@@ -99,6 +102,32 @@ describe("encounter generation blocking feedback", () => {
       blocked: true,
       evidence: { feedbackDeduplicated: true },
     });
+  });
+
+  it("keeps repeated lobby diagnostics at zero writes without suppressing widget feedback", () => {
+    const shared = new Map();
+    const setValue = vi.fn((key, value) => shared.set(key, value));
+    vi.stubGlobal("GM_getValue", (key, fallback) => (shared.has(key) ? shared.get(key) : fallback));
+    vi.stubGlobal("GM_setValue", setValue);
+    const generation = {
+      reason: "encounterKeyMissing",
+      state: { generationAttemptKey: "attempt-diagnostic" },
+    };
+
+    recordEncounterGenerationDegradation(generation, "lobby");
+    const repeated = recordEncounterGenerationDegradation(generation, "lobby");
+
+    expect(setValue).toHaveBeenCalledOnce();
+    expect(repeated).toMatchObject({
+      incidentPersistence: { kind: "alreadyActive" },
+      evidence: { diagnosticDeduplicated: true },
+    });
+
+    showEncounterGenerationBlock(generation, "lobby");
+    const displayedAgain = showEncounterGenerationBlock(generation, "lobby");
+
+    expect(mocks.runUserFeedbackAutomation).toHaveBeenCalledOnce();
+    expect(displayedAgain).toMatchObject({ evidence: { feedbackDeduplicated: true } });
   });
 
   it("keeps cross-site automation blocked when shared incident storage is unavailable", () => {

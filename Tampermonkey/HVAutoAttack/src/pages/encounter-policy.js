@@ -5,11 +5,7 @@ import {
   normalizeEncounterState,
   observeEncounterNewDay,
 } from "./encounter-day-state.js";
-import {
-  planNextEncounterCheck,
-  readEncounterClock,
-  readEncounterReadiness,
-} from "./encounter-clock.js";
+import { readEncounterClock, readEncounterReadiness } from "./encounter-clock.js";
 import { planEncounterEntryRoute } from "./encounter-entry-policy.js";
 import {
   applyEncounterGenerationResult,
@@ -37,7 +33,6 @@ export const EncounterPolicyEvent = Object.freeze({
   PARSE_EVENTPANE_KEY: "parseEventpaneKey",
   PARSE_SEARCH_KEY: "parseSearchKey",
   PLAN_ACTIVATION: "planActivation",
-  PLAN_NEXT_CHECK: "planNextCheck",
   READ_CLOCK: "readClock",
 });
 
@@ -67,7 +62,6 @@ const encounterPolicyEventHandlers = Object.freeze({
   parseEventpaneKey: (event) => parseEventpaneEncounterKey(event.eventpane),
   parseSearchKey: (event) => parseSearchEncounterKey(event.search),
   planActivation: (event) => planEncounterActivation(event.state, event.nowMs),
-  planNextCheck: (event) => planNextEncounterCheck(event.state, event),
   readClock: (event) => readEncounterClock(event.state, event.nowMs),
 });
 

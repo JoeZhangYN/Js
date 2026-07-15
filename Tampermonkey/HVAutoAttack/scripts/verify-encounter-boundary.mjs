@@ -46,6 +46,7 @@ const circuitResumeTest = path.normalize("src/pages/encounter-circuit-resume.tes
 const persistenceLoopTest = path.normalize("src/pages/encounter-persistence-loop-recovery.test.js");
 const widgetFailureFlowTest = path.normalize("src/pages/encounter-widget-failure-flow.test.js");
 const lobbyFlowFile = path.normalize("src/pages/encounter-lobby-flow.js");
+const lobbyOutcomeFile = path.normalize("src/pages/encounter-lobby-outcome.js");
 const lobbyActiveBlockFile = path.normalize("src/pages/encounter-lobby-active-block.js");
 const crossSiteStaleTest = path.normalize("src/pages/encounter-cross-site-stale.test.js");
 const policyFile = path.normalize("src/pages/encounter-policy.js");
@@ -69,9 +70,8 @@ const widgetMainWorldTest = path.normalize("src/pages/encounter-widget-main-worl
 const widgetGenerationRecoveryTest = path.normalize(
   "src/pages/encounter-widget-generation-recovery.test.js"
 );
-const lobbyScheduleFile = path.normalize("src/pages/encounter-lobby-schedule.js");
-const lobbyScheduleTest = path.normalize("src/pages/encounter-lobby-schedule.test.js");
 const optionGateFile = path.normalize("src/pages/encounter-option-gate.js");
+const nextBattleEncounterCheckFile = path.normalize("src/pages/next-battle-encounter-check.js");
 const dayRecordFile = path.normalize("src/state/day-record.js");
 const timeFile = path.normalize("src/core/time.js");
 const diagnosticKeys = path.normalize("src/core/diagnostic-evidence-keys.js");
@@ -247,8 +247,6 @@ function checkFile(file) {
     if (
       !policyInternalFiles.has(relative) &&
       relative !== policyTest &&
-      relative !== lobbyScheduleFile &&
-      relative !== lobbyScheduleTest &&
       /\b(defaultEncounterState|resetEncounterDay|normalizeEncounterState|msUntilEncounterReady|canEnterEncounterState|readEncounterReadiness|readEncounterClock|countdownEncounterClock|msUntilNextEncounterCheck|planNextEncounterCheck|planEncounterActivation|parseEncounterKeyFromEventpaneHtml|parseEncounterKeyFromSearch|buildEncounterUrl|markEncounterKeyAvailable|markEncounterStarted)\b/.test(
         line
       )
@@ -264,27 +262,8 @@ function checkFile(file) {
       )
     ) {
       violations.push(
-        `${where} encounter lobby retry scheduling belongs in runEncounterLobbySchedule(event)`
+        `${where} encounter capability must return a deadline instead of owning a timer`
       );
-    }
-    if (
-      relative !== owner &&
-      relative !== lobbyFlowFile &&
-      relative !== lobbyScheduleFile &&
-      relative !== lobbyScheduleTest &&
-      /from\s+["']\.\/encounter-lobby-schedule\.js["']/.test(line)
-    ) {
-      violations.push(
-        `${where} encounter lobby schedule is internal to runEncounterAutomation(event)`
-      );
-    }
-    if (
-      relative === lobbyScheduleFile &&
-      /\bexport\s+(?:function|const)\s+(?!EncounterLobbyScheduleEvent\b|runEncounterLobbySchedule\b)/.test(
-        line
-      )
-    ) {
-      violations.push(`${where} encounter lobby schedule may export only its event entry`);
     }
     if (
       relative === bridgeFile &&
@@ -359,6 +338,7 @@ const generationRequestFailureTestText = fs.readFileSync(
 const persistenceLoopTestText = fs.readFileSync(path.join(root, persistenceLoopTest), "utf8");
 const widgetFailureFlowTestText = fs.readFileSync(path.join(root, widgetFailureFlowTest), "utf8");
 const lobbyFlowText = fs.readFileSync(path.join(root, lobbyFlowFile), "utf8");
+const lobbyOutcomeText = fs.readFileSync(path.join(root, lobbyOutcomeFile), "utf8");
 const lobbyActiveBlockText = fs.readFileSync(path.join(root, lobbyActiveBlockFile), "utf8");
 const dawnLoopRecoveryTestText = fs.readFileSync(path.join(root, dawnLoopRecoveryTest), "utf8");
 const dawnIncidentExpiryTestText = fs.readFileSync(path.join(root, dawnIncidentExpiryTest), "utf8");
@@ -758,9 +738,20 @@ if (/key:\s*["']reNotification["']/.test(optionGateText)) {
   );
 }
 const lobbyText = fs.readFileSync(path.join(root, "src/pages/lobby-automation.js"), "utf8");
-if (!lobbyText.includes("isAutomaticEncounterEnabled")) {
+const nextBattleText = fs.readFileSync(
+  path.join(root, "src/pages/next-battle-arbitration.js"),
+  "utf8"
+);
+const nextBattleEncounterCheckText = fs.readFileSync(
+  path.join(root, nextBattleEncounterCheckFile),
+  "utf8"
+);
+if (
+  !nextBattleText.includes("createNextBattleEncounterCheck") ||
+  !nextBattleEncounterCheckText.includes("isAutomaticEncounterEnabled")
+) {
   violations.push(
-    "src/pages/lobby-automation.js must use encounter-option-gate for main-world encounter enablement"
+    "next-battle encounter check must use encounter-option-gate for main-world enablement"
   );
 }
 if (/isLobbyOptionEnabled\(["']encounter["']\)/.test(lobbyText)) {
@@ -932,9 +923,6 @@ if (/Date\.UTC\(.*getUTCFullYear\(\).*getUTCMonth\(\).*getUTCDate\(\)\s*\+\s*1/.
     `${policyFile.replaceAll("\\", "/")} must not duplicate UTC day rollover arithmetic`
   );
 }
-if (!/\bPLAN_NEXT_CHECK\b/.test(policyText)) {
-  violations.push(`${policyFile.replaceAll("\\", "/")} must expose one next-check plan query`);
-}
 if (
   /ISEKAI_ENCOUNTER_BASE_URL|isekaiEncounterSuppressed|hentaiverse\.org\/isekai\/\?\s*s=Battle/.test(
     ownerText + policyText + entryPolicyText
@@ -944,81 +932,21 @@ if (
     `${owner.replaceAll("\\", "/")} must not own isekai encounter orchestration; route isekai at page/lobby identity`
   );
 }
+for (const retired of [
+  "src/pages/encounter-lobby-schedule.js",
+  "src/pages/encounter-lobby-schedule.test.js",
+]) {
+  if (fs.existsSync(path.join(root, retired))) {
+    violations.push(`${retired} retired per-capability timer must stay deleted`);
+  }
+}
 if (
-  !/EncounterPolicyEvent\.PLAN_NEXT_CHECK/.test(
-    fs.readFileSync(path.join(root, lobbyScheduleFile), "utf8")
+  /\b(?:PLAN_NEXT_CHECK|planNextEncounterCheck|setTimeout|clearTimeout)\b/.test(
+    policyText + clockText + lobbyFlowText
   )
 ) {
   violations.push(
-    `${lobbyScheduleFile.replaceAll("\\", "/")} must schedule lobby checks from the encounter next-check plan`
-  );
-}
-const lobbyScheduleText = fs.readFileSync(path.join(root, lobbyScheduleFile), "utf8");
-if (!lobbyScheduleText.includes("const encounterLobbyScheduleEventHandlers")) {
-  violations.push(
-    `${lobbyScheduleFile.replaceAll("\\", "/")} must route lobby schedule events through a handler table`
-  );
-}
-for (const required of [
-  "recordEncounterStateFailure",
-  "schedule-lobby-check",
-  "cancel-lobby-check",
-]) {
-  if (!lobbyScheduleText.includes(required)) {
-    violations.push(
-      `${lobbyScheduleFile.replaceAll("\\", "/")} must record lobby timer failure ${required}`
-    );
-  }
-}
-const lobbyScheduleEntryMatch = lobbyScheduleText.match(
-  /export function runEncounterLobbySchedule[\s\S]*?\n}/
-);
-if (!lobbyScheduleEntryMatch) {
-  violations.push(
-    `${lobbyScheduleFile.replaceAll("\\", "/")} must expose runEncounterLobbySchedule(event)`
-  );
-} else {
-  const entryBody = lobbyScheduleEntryMatch[0];
-  if (entryBody.includes("event.type")) {
-    violations.push(
-      `${lobbyScheduleFile.replaceAll("\\", "/")} entry must reject null events without throwing`
-    );
-  }
-  if (!entryBody.includes("event?.type")) {
-    violations.push(
-      `${lobbyScheduleFile.replaceAll("\\", "/")} entry must fail closed for unknown or null events`
-    );
-  }
-  if (/if\s*\(\s*event\.type\s*===/.test(entryBody)) {
-    violations.push(
-      `${lobbyScheduleFile.replaceAll("\\", "/")} entry must not reintroduce an event.type if-chain`
-    );
-  }
-  for (const internal of ["scheduleNextCheck(", "cancelNextCheck("]) {
-    if (entryBody.includes(internal)) {
-      violations.push(
-        `${lobbyScheduleFile.replaceAll("\\", "/")} entry must dispatch through encounterLobbyScheduleEventHandlers`
-      );
-    }
-  }
-}
-const lobbyScheduleTestText = fs.readFileSync(path.join(root, lobbyScheduleTest), "utf8");
-if (
-  !lobbyScheduleTestText.includes(
-    "rejects unknown and null schedule events without creating a timer"
-  ) ||
-  !lobbyScheduleTestText.includes("runEncounterLobbySchedule(null)") ||
-  !lobbyScheduleTestText.includes(
-    "records schedule timer failures without claiming a scheduled check"
-  ) ||
-  !lobbyScheduleTestText.includes(
-    "records cancel timer failures and keeps the pending check retryable"
-  ) ||
-  !lobbyScheduleTestText.includes('throw new Error("timer blocked")') ||
-  !lobbyScheduleTestText.includes('throw new Error("cancel blocked")')
-) {
-  violations.push(
-    `${lobbyScheduleTest.replaceAll("\\", "/")} must cover unknown, null, and timer failure schedule events`
+    `${lobbyFlowFile.replaceAll("\\", "/")} must return resumeAtMs without a minute heartbeat`
   );
 }
 if (/\bNEXT_CHECK_DELAY\b/.test(policyText)) {
@@ -1106,7 +1034,7 @@ for (const required of [
 for (const required of [
   "records dawn once and starts cooldown without navigation, feedback, or a second request",
   "coalesces simultaneous rollover ticks into one generation request",
-  "blocks with copy-ready evidence when the same generation attempt opens the circuit",
+  "degrades with diagnostic evidence without a lobby popup when generation opens the circuit",
   "vi.getTimerCount()",
 ]) {
   if (!dawnLoopRecoveryTestText.includes(required)) {
@@ -1136,12 +1064,14 @@ if (/action:\s*["']navigate["'][^\n]+ENCOUNTER_GENERATION_URL/.test(entryPolicyT
 for (const required of [
   "pendingLobbyGeneration",
   "blockActiveEncounterIncident",
-  "blockEncounterEntry",
+  "recordEncounterEntryDegradation",
+  "EncounterLobbyStatus",
+  "resumeAtMs",
   "EncounterStateEvent.LOAD_KEY",
   'generation.status !== "available"',
   'outcome?.action !== "navigated" || !outcome?.state?.key',
 ]) {
-  if (!lobbyFlowText.includes(required)) {
+  if (!(lobbyFlowText + lobbyOutcomeText).includes(required)) {
     violations.push(`${lobbyFlowFile.replaceAll("\\", "/")} must preserve ${required}`);
   }
 }
@@ -1149,7 +1079,7 @@ for (const required of [
   "EncounterGenerationIncidentEvent.READ_ACTIVE",
   "EncounterGenerationIncidentEvent.CLEAR",
   "runEncounterGenerationIncident",
-  "showEncounterGenerationBlock",
+  "recordEncounterGenerationDegradation",
   "REPLAYABLE_PERSISTENCE_REASONS",
 ]) {
   if (!lobbyActiveBlockText.includes(required)) {
@@ -1190,9 +1120,9 @@ for (const required of [
   }
 }
 for (const required of [
-  "blocks a stale-GM second tick without issuing another generation request",
+  "degrades a stale-GM second tick without issuing another request or popup",
   "gmXhr).toHaveBeenCalledOnce()",
-  "feedbackDeduplicated: true",
+  "runUserFeedbackAutomation).not.toHaveBeenCalled()",
 ]) {
   if (!persistenceLoopTestText.includes(required)) {
     violations.push(`${persistenceLoopTest.replaceAll("\\", "/")} must cover ${required}`);

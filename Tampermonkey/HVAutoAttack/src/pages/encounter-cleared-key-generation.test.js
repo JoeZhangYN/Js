@@ -48,10 +48,13 @@ describe("cleared encounter key generation", () => {
 
     const outcome = await runEncounterAutomation({
       type: EncounterEvent.LOBBY_TICK,
-      rerun: vi.fn(),
     });
 
-    expect(outcome).toMatchObject({ claimed: true, action: "navigated", state: { key: "new=" } });
+    expect(outcome).toMatchObject({
+      status: "claimed",
+      action: "navigated",
+      state: { key: "new=" },
+    });
     expect(mocks.runNavigationAutomation).toHaveBeenCalledWith({
       type: "openUrl",
       reason: "encounterEntry",
@@ -65,11 +68,11 @@ describe("cleared encounter key generation", () => {
 
     const outcome = await runEncounterAutomation({
       type: EncounterEvent.LOBBY_TICK,
-      rerun: vi.fn(),
     });
 
     expect(outcome).toMatchObject({
-      claimed: false,
+      status: "waiting",
+      reason: "generationBackoff",
       generation: {
         status: "unavailable",
         reason: "encounterKeyAlreadyAttempted",

@@ -21,7 +21,7 @@ beforeEach(() => {
 });
 
 describe("encounter generation circuit resume", () => {
-  it("keeps a persisted open circuit blocked after page re-entry", () => {
+  it("keeps a persisted open circuit degraded after page re-entry without a popup", () => {
     localStorage.setItem(
       "hvut_re",
       JSON.stringify({
@@ -38,16 +38,14 @@ describe("encounter generation circuit resume", () => {
 
     const outcome = runEncounterAutomation({
       type: EncounterEvent.LOBBY_TICK,
-      rerun: vi.fn(),
     });
 
     expect(outcome).toMatchObject({
-      action: "blocked",
-      blocked: true,
-      claimed: false,
-      evidence: { reason: "encounterKeyMissing", source: "lobbyResume" },
+      status: "degraded",
+      reason: "encounterKeyMissing",
+      diagnostic: { evidence: { reason: "encounterKeyMissing", source: "lobbyResume" } },
     });
-    expect(mocks.runUserFeedbackAutomation).toHaveBeenCalledOnce();
+    expect(mocks.runUserFeedbackAutomation).not.toHaveBeenCalled();
     expect(mocks.gmXhr).not.toHaveBeenCalled();
   });
 
@@ -83,16 +81,15 @@ describe("encounter generation circuit resume", () => {
 
     const outcome = await runEncounterAutomation({
       type: EncounterEvent.LOBBY_TICK,
-      rerun: vi.fn(),
     });
 
     expect(outcome).toMatchObject({
-      action: "blocked",
-      evidence: {
-        incident: { recoveryEpisode: 4 },
+      status: "degraded",
+      diagnostic: {
+        evidence: { incident: { recoveryEpisode: 4 } },
       },
     });
     expect(mocks.gmXhr).toHaveBeenCalledOnce();
-    expect(mocks.runUserFeedbackAutomation).toHaveBeenCalledOnce();
+    expect(mocks.runUserFeedbackAutomation).not.toHaveBeenCalled();
   });
 });

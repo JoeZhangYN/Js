@@ -14,6 +14,7 @@ vi.mock("../core/diagnostic-console.js", () => ({
 import {
   REPAIR_BACKEND_FAILURE_KEY,
   RepairEvent,
+  RepairStatus,
   runRepairAutomation,
 } from "./repair-orchestrator.js";
 
@@ -30,20 +31,18 @@ beforeEach(() => {
 });
 
 describe("repair backend failure recovery", () => {
-  it("stops idle arena when backend fetch-state fails", () => {
+  it("returns BLOCKED when backend fetch-state fails", async () => {
     const failure = { kind: "networkError", href: "?s=Forge&ss=re", retries: 4 };
     const backend = {
       fetchState: (_cb, onFailure) => onFailure(failure),
       submitRepair: vi.fn(),
     };
-    const scheduleIdleArena = vi.fn();
-
-    runRepairAutomation(
+    const outcome = await runRepairAutomation(
       { type: RepairEvent.START },
-      { makeBackend: () => backend, scheduleIdleArena }
+      { makeBackend: () => backend }
     );
 
-    expect(scheduleIdleArena).not.toHaveBeenCalled();
+    expect(outcome).toMatchObject({ status: RepairStatus.BLOCKED, reason: "backendFailure" });
     expect(backend.submitRepair).not.toHaveBeenCalled();
     expect(document.title).toContain("维修请求失败");
     expect(REPAIR_BACKEND_FAILURE_KEY).toBe("HVAA:lastRepairBackendFailure");
@@ -64,20 +63,18 @@ describe("repair backend failure recovery", () => {
     });
   });
 
-  it("stops idle arena when backend submit-repair fails", () => {
+  it("returns BLOCKED when backend submit-repair fails", async () => {
     const failure = { kind: "httpStatus", href: "?s=Forge&ss=re", status: 500 };
     const backend = {
       fetchState: (cb) => cb({ equips: [{ id: "1", conditionPct: 20, materials: [] }] }),
       submitRepair: (_ids, _cb, onFailure) => onFailure(failure),
     };
-    const scheduleIdleArena = vi.fn();
-
-    runRepairAutomation(
+    const outcome = await runRepairAutomation(
       { type: RepairEvent.START },
-      { makeBackend: () => backend, scheduleIdleArena }
+      { makeBackend: () => backend }
     );
 
-    expect(scheduleIdleArena).not.toHaveBeenCalled();
+    expect(outcome.status).toBe(RepairStatus.BLOCKED);
     expect(document.title).toContain("维修请求失败");
     expect(JSON.parse(sessionStorage.getItem(REPAIR_BACKEND_FAILURE_KEY))).toMatchObject({
       capability: "repairBackend",
@@ -86,7 +83,7 @@ describe("repair backend failure recovery", () => {
     });
   });
 
-  it("still stops idle arena when backend failure diagnostics are blocked", () => {
+  it("still returns BLOCKED when backend failure diagnostics are blocked", async () => {
     mocks.runDiagnosticConsoleAutomation.mockImplementation(() => false);
     const originalSetItem = Storage.prototype.setItem;
     vi.spyOn(Storage.prototype, "setItem").mockImplementation(function setItem(key, value) {
@@ -97,16 +94,12 @@ describe("repair backend failure recovery", () => {
       fetchState: (_cb, onFailure) => onFailure({ kind: "networkError", href: "/repair" }),
       submitRepair: vi.fn(),
     };
-    const scheduleIdleArena = vi.fn();
+    const outcome = await runRepairAutomation(
+      { type: RepairEvent.START },
+      { makeBackend: () => backend }
+    );
 
-    expect(() =>
-      runRepairAutomation(
-        { type: RepairEvent.START },
-        { makeBackend: () => backend, scheduleIdleArena }
-      )
-    ).not.toThrow();
-
-    expect(scheduleIdleArena).not.toHaveBeenCalled();
+    expect(outcome.status).toBe(RepairStatus.BLOCKED);
     expect(document.title).toContain("维修请求失败");
   });
 });

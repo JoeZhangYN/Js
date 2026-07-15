@@ -27,7 +27,7 @@ beforeEach(() => {
 });
 
 describe("encounter persistence loop recovery", () => {
-  it("blocks a stale-GM second tick without issuing another generation request", async () => {
+  it("degrades a stale-GM second tick without issuing another request or popup", async () => {
     const shared = new Map();
     vi.stubGlobal("GM_getValue", (key, fallback) => (shared.has(key) ? shared.get(key) : fallback));
     vi.stubGlobal("GM_setValue", (key, value) => {
@@ -42,21 +42,23 @@ describe("encounter persistence loop recovery", () => {
 
     const first = await runEncounterAutomation({
       type: EncounterEvent.LOBBY_TICK,
-      rerun: vi.fn(),
     });
     const second = await runEncounterAutomation({
       type: EncounterEvent.LOBBY_TICK,
-      rerun: vi.fn(),
     });
 
-    expect(first).toMatchObject({ action: "blocked", blocked: true });
+    expect(first).toMatchObject({ status: "degraded", reason: "generationStatePersistenceFailed" });
     expect(second).toMatchObject({
-      action: "blocked",
-      blocked: true,
-      evidence: { feedbackDeduplicated: true },
+      status: "degraded",
+      diagnostic: {
+        evidence: {
+          capability: "encounterGeneration",
+          reason: "generationStatePersistenceFailed",
+        },
+      },
     });
     expect(mocks.gmXhr).toHaveBeenCalledOnce();
-    expect(mocks.runUserFeedbackAutomation).toHaveBeenCalledOnce();
+    expect(mocks.runUserFeedbackAutomation).not.toHaveBeenCalled();
     expect(mocks.runNavigationAutomation).not.toHaveBeenCalled();
     expect(shared.get("hvut_re")).toMatchObject({
       date: 0,

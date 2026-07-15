@@ -1,5 +1,5 @@
 import { executeEncounterEntry } from "./encounter-entry-execution.js";
-import { showEncounterGenerationBlock } from "./encounter-generation-block.js";
+import { recordEncounterGenerationDegradation } from "./encounter-generation-block.js";
 import { EncounterPolicyEvent, runEncounterPolicy } from "./encounter-policy.js";
 
 export function planStoredEncounterEntry(state) {
@@ -14,8 +14,8 @@ export function enterPlannedEncounter(plan) {
   return outcome?.handled || outcome?.blocked ? outcome : undefined;
 }
 
-export function blockEncounterEntry(outcome, source) {
-  return showEncounterGenerationBlock(
+export function recordEncounterEntryDegradation(outcome, source) {
+  return recordEncounterGenerationDegradation(
     {
       status: "persistenceFailed",
       reason: outcome.reason,

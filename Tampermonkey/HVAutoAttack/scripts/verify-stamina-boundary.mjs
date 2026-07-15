@@ -118,7 +118,7 @@ if (!ownerEntry.includes("event?.type")) {
 for (const internal of [
   "readStaminaValue(",
   "shouldRestoreForBattle(",
-  "shouldStopLobby(",
+  "shouldStopAutomaticBattle(",
   "shouldRestoreForIdleArena(",
   "claimStaminaRecovery(",
 ]) {

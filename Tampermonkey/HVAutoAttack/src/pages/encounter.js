@@ -43,6 +43,8 @@ export const EncounterEvent = Object.freeze({
   WIDGET_GENERATION_FAILED: EVENT_WIDGET_GENERATION_FAILED,
 });
 
+export { EncounterLobbyStatus } from "./encounter-lobby-outcome.js";
+
 function executeWidgetEvent(event) {
   const outcome = executeEncounterEntry(planEncounterWidgetEvent(event));
   if (!outcome?.blocked) return outcome;

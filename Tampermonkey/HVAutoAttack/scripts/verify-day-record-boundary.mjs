@@ -41,16 +41,7 @@ walk(srcDir);
 
 const ownerText = fs.readFileSync(path.join(root, owner), "utf8");
 const ownerTestText = fs.readFileSync(path.join(root, ownerTest), "utf8");
-for (const required of [
-  "DayRecordEvent",
-  "runDayRecordAutomation",
-  "TimeEvent.UTC_DATE_KEY",
-  "TimeEvent.MS_UNTIL_NEXT_UTC_DAY",
-  "REFRESH_AND_SCHEDULE_NEXT_UTC_DAY",
-  "UTC_DAY_ROLLOVER_GRACE_MS",
-  "handleUtcDayRollover",
-  "TimeEvent.EPOCH_MS",
-]) {
+for (const required of ["DayRecordEvent", "runDayRecordAutomation", "TimeEvent.UTC_DATE_KEY"]) {
   if (!ownerText.includes(required)) {
     violations.push(`${owner.replaceAll("\\", "/")} must own ${required}`);
   }
@@ -76,7 +67,7 @@ if (/\bevent\.type\b/.test(ownerEntry) || !/\bevent\?\.type\b/.test(ownerEntry))
     `${owner.replaceAll("\\", "/")} entry must fail closed for null day-record events`
   );
 }
-for (const internal of ["syncUtcDate(", "refreshAndScheduleNextUtcDay("]) {
+for (const internal of ["syncUtcDate("]) {
   if (ownerEntry.includes(internal)) {
     violations.push(
       `${owner.replaceAll("\\", "/")} entry must dispatch through dayRecordEventHandlers`
@@ -86,32 +77,18 @@ for (const internal of ["syncUtcDate(", "refreshAndScheduleNextUtcDay("]) {
 if (!/runDayRecordAutomation\(null\)/.test(ownerTestText)) {
   violations.push(`${ownerTest.replaceAll("\\", "/")} must cover null day-record events`);
 }
-if (!ownerTestText.includes("schedule).toHaveBeenCalledTimes(2)")) {
-  violations.push(
-    `${ownerTest.replaceAll("\\", "/")} must prove rollover reschedules before lobby rerun`
-  );
+if (/\b(?:setTimeout|setInterval)\s*\(/.test(ownerText)) {
+  violations.push(`${owner.replaceAll("\\", "/")} must not own next-battle wake timers`);
 }
 
 const lobbyText = fs.readFileSync(path.join(root, lobby), "utf8");
-if (!lobbyText.includes("DayRecordEvent.REFRESH_AND_SCHEDULE_NEXT_UTC_DAY")) {
+if (!lobbyText.includes("DayRecordEvent.SYNC_UTC_DATE")) {
   violations.push(
-    `${lobby.replaceAll("\\", "/")} must refresh and schedule daily records through day-record`
+    `${lobby.replaceAll("\\", "/")} must sync daily records through the day-record entry`
   );
 }
-if (
-  !/function rerun\(\) \{\s*return capability\.run\(\{ type: EVENT_PAGE_READY \}\);\s*\}/.test(
-    lobbyText
-  ) ||
-  !/rerun:\s*context\.rerun/.test(lobbyText)
-) {
-  violations.push(
-    `${lobby.replaceAll("\\", "/")} must let the UTC day rollover rerun the lobby page-ready workflow`
-  );
-}
-if (/DayRecordEvent\.SYNC_UTC_DATE/.test(lobbyText)) {
-  violations.push(
-    `${lobby.replaceAll("\\", "/")} must not bypass the daily record rollover scheduler`
-  );
+if (/REFRESH_AND_SCHEDULE_NEXT_UTC_DAY|\brerun\b/.test(ownerText + lobbyText)) {
+  violations.push("day-record and lobby must not reintroduce the retired duplicate UTC wake");
 }
 
 const idleArenaText = fs.readFileSync(path.join(root, idleArena), "utf8");

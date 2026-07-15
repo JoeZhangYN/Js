@@ -32,23 +32,18 @@ requireText(
 );
 requireText(
   lobbyText,
-  "const steps = randomEncounter ? LOBBY_READY_FLOW_STEPS : ISEKAI_LOBBY_READY_FLOW_STEPS",
-  "the factory must select the reachable stage graph at composition time"
+  "createNextBattleArbitrationCapability({ randomEncounter })",
+  "the factory must bind next-battle world availability once at composition"
 );
 requireText(
   lobbyText,
-  "await runEncounterAutomation(",
-  "encounter-enabled lobby flow must await encounter completion"
+  "await context.nextBattle.run({ type: NextBattleArbitrationEvent.PLAN })",
+  "lobby must delegate the complete next-battle decision through one entry"
 );
 requireText(
   lobbyText,
-  "encounterOutcome?.claimed === true",
-  "lobby must stop only for an explicit encounter claim"
-);
-requireText(
-  lobbyText,
-  "encounterOutcome?.blocked === true",
-  "lobby must stop for explicit encounter recovery blocks"
+  "DayRecordEvent.SYNC_UTC_DATE",
+  "lobby must sync the current UTC date without owning a duplicate wake"
 );
 requireText(lobbyText, "pendingFlows", "each lobby capability must singleflight its complete flow");
 requireText(
@@ -67,7 +62,19 @@ requireText(
   "page automation must call one lobby event shape"
 );
 
-for (const forbidden of ["isIsekai", "ISEKAI_PAGE_READY", "isekaiPageReady", "event.world"]) {
+for (const forbidden of [
+  "isIsekai",
+  "ISEKAI_PAGE_READY",
+  "isekaiPageReady",
+  "event.world",
+  "runEncounterAutomation",
+  "runRepairAutomation",
+  "runIdleArenaAutomation",
+  "runStaminaAutomation",
+  "REFRESH_AND_SCHEDULE_NEXT_UTC_DAY",
+  "rerun",
+  "OptionEvent",
+]) {
   if (lobbyText.includes(forbidden) || pageText.includes(forbidden)) {
     violations.push(`lobby/page orchestration must not propagate raw world context: ${forbidden}`);
   }
@@ -75,11 +82,12 @@ for (const forbidden of ["isIsekai", "ISEKAI_PAGE_READY", "isekaiPageReady", "ev
 
 for (const requiredTest of [
   "rejects invalid lobby events without running lobby flow",
-  "coalesces concurrent UTC wakeups across the complete lobby workflow",
+  "coalesces concurrent page-ready calls across the complete lobby workflow",
   "releases the lobby singleflight after a rejected workflow",
   "Isekai-bound lobby capability",
-  "runs the shared lobby call without encounter orchestration",
-  "runEncounterAutomation).not.toHaveBeenCalled()",
+  "binds encounter unavailability once and keeps the shared lobby call",
+  "createNextBattleArbitrationCapability",
+  "leaves encounter, repair, and idle decisions inside the next-battle entry",
 ]) {
   requireText(testText, requiredTest, `lobby tests must cover: ${requiredTest}`);
 }

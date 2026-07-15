@@ -87,9 +87,9 @@ describe("stamina entry", () => {
     document.body.innerHTML =
       '<div id="stamina_readout"><div class="fc4 far"><div>25</div></div></div>';
     mockOptions({ restoreStamina: false, staminaLow: 30 });
-    expect(runStaminaAutomation({ type: StaminaEvent.SHOULD_STOP_LOBBY })).toBe(true);
+    expect(runStaminaAutomation({ type: StaminaEvent.SHOULD_STOP_AUTOMATIC_BATTLE })).toBe(true);
     mockOptions({ restoreStamina: true, staminaLow: 30 });
-    expect(runStaminaAutomation({ type: StaminaEvent.SHOULD_STOP_LOBBY })).toBe(false);
+    expect(runStaminaAutomation({ type: StaminaEvent.SHOULD_STOP_AUTOMATIC_BATTLE })).toBe(false);
   });
 
   it("keeps idle arena restore below both configured low and hard 85 caps", () => {

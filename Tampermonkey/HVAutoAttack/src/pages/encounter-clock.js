@@ -81,12 +81,3 @@ export function readEncounterClock(state, nowMs = Date.now()) {
     attemptKey: buildGenerationAttemptKey(readiness.state, nowMs, status),
   };
 }
-
-export function planNextEncounterCheck(state, event = {}) {
-  const nowMs = event.nowMs ?? Date.now();
-  const clock = readEncounterClock(state, nowMs);
-  const jitter = Math.max(0, Math.min(1, event.jitter ?? Math.random()));
-  const minute = 60 * 1000 * (0.95 + jitter * 0.1);
-  const delayMs = Math.min(minute, clock.countdownMs || 5000, msUntilNextUtcDay(nowMs) + 5000);
-  return { delayMs, reason: clock.reason, status: clock.status, clock };
-}

@@ -173,6 +173,7 @@ const commands = [
   "node scripts/verify-incoming-burst-learner-boundary.mjs",
   "node scripts/verify-imperil-safety.mjs",
   "node scripts/verify-encounter-boundary.mjs",
+  "node scripts/verify-next-battle-arbitration.mjs",
   "node scripts/verify-idle-arena-boundary.mjs",
   "node scripts/verify-lobby-boundary.mjs",
   "node scripts/verify-quick-site-boundary.mjs",

@@ -17,7 +17,7 @@ import { OptionEvent, runOptionAutomation } from "./option.js";
 
 const EVENT_READ_VALUE = "readValue";
 const EVENT_SHOULD_RESTORE_FOR_BATTLE = "shouldRestoreForBattle";
-const EVENT_SHOULD_STOP_LOBBY = "shouldStopLobby";
+const EVENT_SHOULD_STOP_AUTOMATIC_BATTLE = "shouldStopAutomaticBattle";
 const EVENT_SHOULD_RESTORE_FOR_IDLE_ARENA = "shouldRestoreForIdleArena";
 const EVENT_CLAIM_RECOVERY = "claimRecovery";
 const STAMINA_RECOVERY_POST_BODY = "recover=stamina";
@@ -26,7 +26,7 @@ export const STAMINA_RECOVERY_FAILURE_KEY = "HVAA:lastStaminaRecoveryFailure";
 export const StaminaEvent = Object.freeze({
   READ_VALUE: EVENT_READ_VALUE,
   SHOULD_RESTORE_FOR_BATTLE: EVENT_SHOULD_RESTORE_FOR_BATTLE,
-  SHOULD_STOP_LOBBY: EVENT_SHOULD_STOP_LOBBY,
+  SHOULD_STOP_AUTOMATIC_BATTLE: EVENT_SHOULD_STOP_AUTOMATIC_BATTLE,
   SHOULD_RESTORE_FOR_IDLE_ARENA: EVENT_SHOULD_RESTORE_FOR_IDLE_ARENA,
   CLAIM_RECOVERY: EVENT_CLAIM_RECOVERY,
 });
@@ -61,7 +61,7 @@ function shouldRestoreForBattle() {
   return !!opt.restoreStamina && readStaminaValue() <= opt.staminaLow;
 }
 
-function shouldStopLobby() {
+function shouldStopAutomaticBattle() {
   const opt = readStaminaOptions();
   return !opt.restoreStamina && readStaminaValue() <= opt.staminaLow;
 }
@@ -111,7 +111,7 @@ function claimStaminaRecovery() {
 const staminaEventHandlers = Object.freeze({
   [EVENT_READ_VALUE]: () => readStaminaValue(),
   [EVENT_SHOULD_RESTORE_FOR_BATTLE]: () => shouldRestoreForBattle(),
-  [EVENT_SHOULD_STOP_LOBBY]: () => shouldStopLobby(),
+  [EVENT_SHOULD_STOP_AUTOMATIC_BATTLE]: () => shouldStopAutomaticBattle(),
   [EVENT_SHOULD_RESTORE_FOR_IDLE_ARENA]: () => shouldRestoreForIdleArena(),
   [EVENT_CLAIM_RECOVERY]: () => claimStaminaRecovery(),
 });

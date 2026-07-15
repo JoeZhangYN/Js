@@ -14,6 +14,11 @@ export const EncounterGenerationIncidentEvent = Object.freeze({
   CLEAR: EVENT_CLEAR,
 });
 
+export const EncounterGenerationIncidentRecordMode = Object.freeze({
+  DIAGNOSTIC_ONLY: "diagnosticOnly",
+  BLOCKING_FEEDBACK: "blockingFeedback",
+});
+
 function errorText(error) {
   return error?.message || String(error);
 }
@@ -99,25 +104,30 @@ function persistIncident(incident, authority) {
   }
 }
 
+function alreadyActiveResult(event, authority, previous) {
+  const sharedUnavailable = event.requiresShared && authority.scope !== "crossOrigin";
+  return {
+    ok: !sharedUnavailable,
+    kind: sharedUnavailable ? "recordFailed" : "alreadyActive",
+    ...authority,
+    ...(sharedUnavailable ? { reason: "sharedAuthorityUnavailable" } : {}),
+    incident: previous || event.incident,
+  };
+}
+
 function recordIncident(event) {
   const { incident } = event;
   const authority = selectAuthority();
   const previous = readStoredIncident(authority);
-  if (
-    displayedIncidentIds.has(incident.id) ||
-    (previous?.id === incident.id && previous.display?.status === "shown")
-  ) {
-    if (event.requiresShared && authority.scope !== "crossOrigin") {
-      return {
-        ok: false,
-        kind: "recordFailed",
-        ...authority,
-        reason: "sharedAuthorityUnavailable",
-        incident: previous || incident,
-      };
-    }
+  const sameIncident = previous?.id === incident.id;
+  const diagnosticAlreadyRecorded =
+    event.mode === EncounterGenerationIncidentRecordMode.DIAGNOSTIC_ONLY && sameIncident;
+  const blockingFeedbackAlreadyShown =
+    displayedIncidentIds.has(incident.id) || (sameIncident && previous.display?.status === "shown");
+  if (diagnosticAlreadyRecorded) return alreadyActiveResult(event, authority, previous);
+  if (blockingFeedbackAlreadyShown) {
     displayedIncidentIds.add(incident.id);
-    return { ok: true, kind: "alreadyActive", ...authority, incident: previous || incident };
+    return alreadyActiveResult(event, authority, previous);
   }
   const persistence = persistIncident(incident, authority);
   const sharedAccepted = !event.requiresShared || persistence.scope === "crossOrigin";

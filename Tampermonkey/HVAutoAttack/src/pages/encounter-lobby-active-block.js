@@ -1,4 +1,4 @@
-import { showEncounterGenerationBlock } from "./encounter-generation-block.js";
+import { recordEncounterGenerationDegradation } from "./encounter-generation-block.js";
 import {
   EncounterGenerationIncidentEvent,
   runEncounterGenerationIncident,
@@ -44,7 +44,7 @@ export function blockActiveEncounterIncident(clock, state, deps = {}) {
   if (!replay && !["generationBackoff", "generationCircuitOpen"].includes(recoveryClock.reason)) {
     return { status: "cleared", state, incidentClear: clearIncident(incident) };
   }
-  const outcome = showEncounterGenerationBlock(
+  const outcome = recordEncounterGenerationDegradation(
     {
       status: "persistenceFailed",
       reason: incident.reason,

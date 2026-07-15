@@ -42,11 +42,10 @@ describe("encounter stale entry recovery", () => {
       })
     );
 
-    await runEncounterAutomation({ type: EncounterEvent.LOBBY_TICK, rerun: vi.fn() });
+    await runEncounterAutomation({ type: EncounterEvent.LOBBY_TICK });
     mocks.runNavigationAutomation.mockClear();
     const second = await runEncounterAutomation({
       type: EncounterEvent.LOBBY_TICK,
-      rerun: vi.fn(),
     });
 
     expect(second.action).not.toBe("navigated");
@@ -74,11 +73,11 @@ describe("encounter stale entry recovery", () => {
 
     const outcome = await runEncounterAutomation({
       type: EncounterEvent.LOBBY_TICK,
-      rerun: vi.fn(),
     });
 
     expect(outcome).toMatchObject({
-      claimed: false,
+      status: "waiting",
+      reason: "generationBackoff",
       generation: {
         status: "unavailable",
         reason: "encounterKeyMissing",

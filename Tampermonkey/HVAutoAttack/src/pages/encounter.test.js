@@ -30,8 +30,7 @@ afterEach(() => {
 });
 
 describe("runEncounterAutomation", () => {
-  it("owns the next lobby check timer from the same readiness query", async () => {
-    const rerun = vi.fn();
+  it("returns the exact next deadline without owning a lobby timer", async () => {
     localStorage.setItem(
       HVUT_RE_KEY,
       JSON.stringify({
@@ -44,13 +43,14 @@ describe("runEncounterAutomation", () => {
 
     const outcome = await runEncounterAutomation({
       type: EncounterEvent.LOBBY_TICK,
-      rerun,
     });
 
-    expect(outcome.claimed).toBe(false);
-    expect(vi.getTimerCount()).toBe(1);
-    await vi.runOnlyPendingTimersAsync();
-    expect(rerun).toHaveBeenCalledTimes(1);
+    expect(outcome).toMatchObject({
+      status: "waiting",
+      reason: "newDayBoundary",
+      resumeAtMs: Date.now() + 10_000,
+    });
+    expect(vi.getTimerCount()).toBe(0);
   });
 
   it("routes lobby auto-entry through the same encounter entry executor", async () => {
@@ -66,14 +66,14 @@ describe("runEncounterAutomation", () => {
 
     const outcome = await runEncounterAutomation({
       type: EncounterEvent.LOBBY_TICK,
-      rerun: vi.fn(),
     });
 
     expect(outcome).toMatchObject({
       action: "navigated",
       href: "?s=Battle&ss=ba&encounter=abc123=",
-      handled: true,
-      claimed: true,
+      status: "claimed",
+      reason: "encounterEntered",
+      entry: { handled: true },
       state: { key: "abc123=", clear: true },
     });
     expect(mocks.runNavigationAutomation).toHaveBeenCalledWith({

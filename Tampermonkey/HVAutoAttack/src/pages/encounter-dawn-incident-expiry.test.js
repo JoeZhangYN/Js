@@ -54,16 +54,14 @@ describe("UTC dawn cooldown", () => {
             '<div id="eventpane"><a href="?s=Battle&amp;ss=ba&amp;encounter=recovered=">RE</a></div>',
         })
       );
-    const rerun = vi.fn();
-
-    await runEncounterAutomation({ type: EncounterEvent.LOBBY_TICK, rerun });
+    await runEncounterAutomation({ type: EncounterEvent.LOBBY_TICK });
     vi.setSystemTime(new Date("2026-06-27T00:30:11.000Z"));
-    const recovered = await runEncounterAutomation({ type: EncounterEvent.LOBBY_TICK, rerun });
+    const recovered = await runEncounterAutomation({ type: EncounterEvent.LOBBY_TICK });
 
     expect(recovered).toMatchObject({
+      status: "claimed",
       action: "navigated",
       href: "?s=Battle&ss=ba&encounter=recovered=",
-      claimed: true,
     });
     expect(mocks.gmXhr).toHaveBeenCalledTimes(2);
     expect(mocks.runNavigationAutomation).toHaveBeenCalledOnce();
