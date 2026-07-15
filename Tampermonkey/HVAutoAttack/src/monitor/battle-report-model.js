@@ -21,8 +21,8 @@ function withCurrentRecord(history, current, currentName) {
   return rows.reverse();
 }
 
-function readReportSource(type, normalizeCurrent = (record) => record) {
-  const { currentName, currentRaw, history } = runBattleRecordArchiveAutomation({ type });
+async function readReportSource(type, normalizeCurrent = (record) => record) {
+  const { currentName, currentRaw, history } = await runBattleRecordArchiveAutomation({ type });
   let current = normalizeCurrent(currentRaw || {});
   if (history.length === 0 || (history.length === 1 && !currentRaw)) {
     if (history.length === 1) current = history[0];
@@ -31,8 +31,11 @@ function readReportSource(type, normalizeCurrent = (record) => record) {
   return { mode: "history", records: withCurrentRecord(history, current, currentName) };
 }
 
-function readDropReportModel() {
-  const reportSource = readReportSource(BattleRecordArchiveEvent.READ_DROP_REPORT_SOURCE, objSort);
+async function readDropReportModel() {
+  const reportSource = await readReportSource(
+    BattleRecordArchiveEvent.READ_DROP_REPORT_SOURCE,
+    objSort
+  );
   if (reportSource.mode === "single") {
     return {
       mode: "single",
@@ -51,8 +54,8 @@ function readDropReportModel() {
   };
 }
 
-function readUsageReportModel() {
-  const reportSource = readReportSource(BattleRecordArchiveEvent.READ_USAGE_REPORT_SOURCE);
+async function readUsageReportModel() {
+  const reportSource = await readReportSource(BattleRecordArchiveEvent.READ_USAGE_REPORT_SOURCE);
   if (reportSource.mode === "single") {
     return {
       mode: "single",

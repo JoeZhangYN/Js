@@ -1,6 +1,12 @@
 // Tests historically read diagnostics through sessionStorage. Production hot-path diagnostics are now
 // memory-first, so this test-only facade exposes the unified read view without creating disk writes.
 import { diagnosticEvidenceMemoryStorage } from "../src/core/diagnostic-evidence-journal.js";
+import { beforeEach } from "vitest";
+import { createTestIndexedDb } from "./fake-indexeddb.js";
+
+const testIndexedDb = createTestIndexedDb();
+globalThis.indexedDB = testIndexedDb;
+beforeEach(() => testIndexedDb.clearAll());
 
 const nativeSessionStorage = window.sessionStorage;
 const diagnosticSessionFacade = {

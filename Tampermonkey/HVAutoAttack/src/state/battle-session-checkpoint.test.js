@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import {
   BattleSessionCheckpointEvent,
+  BattleSessionCheckpointSlice,
   createBattleSessionCheckpointCapability,
 } from "./battle-session-checkpoint.js";
 import { StorageIdentity, StorageWriteOutcome } from "./storage-io-policy.js";
@@ -25,11 +26,22 @@ describe("battle session checkpoint", () => {
 
     for (let globalTurn = 1; globalTurn <= 100; globalTurn += 1) {
       checkpoint.run({
+        type: BattleSessionCheckpointEvent.UPDATE_SLICE,
+        slice: BattleSessionCheckpointSlice.BATTLE_REPORT,
+        value: { version: 1, usage: { self: { _turn: globalTurn } } },
+      });
+      checkpoint.run({
         type: BattleSessionCheckpointEvent.CHECKPOINT,
         checkpoint: { version: 1, globalTurn, skillLastUsed: {} },
       });
     }
     expect(sessionStorage.setItem).toHaveBeenCalledTimes(5);
+    expect(JSON.parse(sessionStorage.setItem.mock.calls.at(-1)[1])).toMatchObject({
+      slices: {
+        cdRuntime: { globalTurn: 100 },
+        battleReport: { usage: { self: { _turn: 100 } } },
+      },
+    });
     expect(recordIo).toHaveBeenLastCalledWith(
       expect.objectContaining({
         identity: StorageIdentity.SESSION_RUNTIME_CHECKPOINT,

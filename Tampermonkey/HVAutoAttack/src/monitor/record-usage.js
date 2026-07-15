@@ -15,34 +15,38 @@ export const BattleUsageEvent = Object.freeze({
   RECORD_COMPLETED_USAGE: EVENT_RECORD_COMPLETED_USAGE,
 });
 
-function readCurrentUsageStats() {
-  return runBattleRecordArchiveAutomation({
-    type: BattleRecordArchiveEvent.READ_OR_CREATE_USAGE_STATS,
-  });
+function readCurrentUsageStats(deps) {
+  return runBattleRecordArchiveAutomation(
+    { type: BattleRecordArchiveEvent.READ_OR_CREATE_USAGE_STATS },
+    deps
+  );
 }
 
-function storeCurrentUsageStats(stats) {
-  return runBattleRecordArchiveAutomation({
-    type: BattleRecordArchiveEvent.STORE_USAGE_STATS,
-    record: stats,
-  });
+function storeCurrentUsageStats(stats, deps) {
+  return runBattleRecordArchiveAutomation(
+    { type: BattleRecordArchiveEvent.STORE_USAGE_STATS, record: stats },
+    deps
+  );
 }
 
-function recordActionUsage(parm) {
-  const stats = readCurrentUsageStats();
-  const context = runBattleMonitorRuntime({ type: BattleMonitorRuntimeEvent.USAGE_ACTION_CONTEXT });
+function recordActionUsage(parm, deps) {
+  const stats = readCurrentUsageStats(deps);
+  const context = (
+    deps.readActionContext ||
+    (() => runBattleMonitorRuntime({ type: BattleMonitorRuntimeEvent.USAGE_ACTION_CONTEXT }))
+  )();
   applyBattleActionUsageStats(stats, parm, context);
-  const archiveResult = storeCurrentUsageStats(stats);
+  const archiveResult = storeCurrentUsageStats(stats, deps);
   if (archiveResult === false) return { kind: "failed", reason: "usageArchiveFailed" };
   return { kind: "recorded", archive: archiveResult };
 }
 
 const usageEventHandlers = Object.freeze({
-  [EVENT_RECORD_ACTION_USAGE]: (event) => recordActionUsage(event.usage),
-  [EVENT_RECORD_COMPLETED_USAGE]: () => recordCompletedUsage(),
+  [EVENT_RECORD_ACTION_USAGE]: (event, deps) => recordActionUsage(event.usage, deps),
+  [EVENT_RECORD_COMPLETED_USAGE]: (_event, deps) => recordCompletedUsage(deps),
 });
 
-export function runBattleUsageAutomation(event) {
+export function runBattleUsageAutomation(event, deps = {}) {
   const handler = usageEventHandlers[event?.type];
-  return handler ? handler(event) : undefined;
+  return handler ? handler(event, deps) : undefined;
 }

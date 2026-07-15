@@ -1,6 +1,8 @@
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 import { STORAGE_KEYS } from "../state/persist-keys.js";
+import { StorageWriteOutcome } from "../state/storage-io-policy.js";
 import { BATTLE_RECORD_ARCHIVE_FAILURE_KEY } from "./battle-record-archive-failure.js";
+import { createBattleRecordArchiveTestDeps } from "./battle-record-archive-test-fixture.js";
 import { BattleDropEvent, runBattleDropAutomation } from "./drop-monitor.js";
 
 function logLine(text, item) {
@@ -17,14 +19,9 @@ function logLine(text, item) {
 }
 
 function deps({ rows, values = {}, option = {}, roundNow = 1, roundAll = 2 }) {
-  const setValue = vi.fn((key, value) => {
-    values[key] = value;
-  });
-  const delValue = vi.fn((key) => {
-    delete values[key];
-  });
+  const archive = createBattleRecordArchiveTestDeps(values);
   return {
-    delValue,
+    ...archive,
     g: (key) => {
       if (key === "option") return option;
       if (key === "roundNow") return roundNow;
@@ -35,11 +32,8 @@ function deps({ rows, values = {}, option = {}, roundNow = 1, roundAll = 2 }) {
       if (rootOrAll === "all") return rows;
       return rootOrAll.querySelector(selector);
     },
-    getValue: (key) => values[key],
     readOptionField: (key, fallback) => (option[key] !== undefined ? option[key] : fallback),
-    setValue,
     readLocalTimestampLabel: () => "now",
-    values,
   };
 }
 
@@ -49,9 +43,11 @@ describe("runBattleDropAutomation", () => {
       option: { dropMonitor: true, dropQuality: 0, recordEach: false },
       rows: [logLine("You gain 12 EXP")],
     });
-    runtime.setValue.mockImplementation(() => {
-      throw new Error("drop write blocked");
-    });
+    const baseRun = runtime.runCheckpoint;
+    runtime.runCheckpoint = (event) =>
+      event.type === "checkpointSlice"
+        ? { outcome: StorageWriteOutcome.FAILED, error: new Error("drop checkpoint blocked") }
+        : baseRun(event);
 
     expect(runBattleDropAutomation({ type: BattleDropEvent.RECORD_BATTLE_DROPS }, runtime)).toEqual(
       { kind: "failed", reason: "dropArchiveFailed" }
@@ -60,9 +56,9 @@ describe("runBattleDropAutomation", () => {
     expect(runtime.values[STORAGE_KEYS.DROP]).toBeUndefined();
     expect(JSON.parse(sessionStorage.getItem(BATTLE_RECORD_ARCHIVE_FAILURE_KEY))).toMatchObject({
       capability: "battleRecordArchive",
-      stage: "store-current",
-      key: STORAGE_KEYS.DROP,
-      failure: { kind: "storageWrite", error: "drop write blocked" },
+      stage: "runtime-checkpoint",
+      key: "battleReport",
+      failure: { kind: "storageWrite", error: "drop checkpoint blocked" },
     });
   });
 
@@ -76,7 +72,7 @@ describe("runBattleDropAutomation", () => {
     expect(runBattleDropAutomation(null, runtime)).toBe(false);
 
     expect(runtime.values[STORAGE_KEYS.DROP]).toBeUndefined();
-    expect(runtime.setValue).not.toHaveBeenCalled();
+    expect(runtime.readRuntime()).toEqual({ kind: "absent" });
   });
 
   it("does not record drops when the drop monitor option is disabled", () => {
@@ -105,7 +101,7 @@ describe("runBattleDropAutomation", () => {
       { kind: "recorded", archive: { archived: false } }
     );
 
-    expect(runtime.values[STORAGE_KEYS.DROP]).toMatchObject({
+    expect(runtime.readRuntime().checkpoint.drop).toMatchObject({
       "#Credit": 34,
       "#EXP": 12,
       "Crystal of Vigor": 2,
@@ -113,7 +109,7 @@ describe("runBattleDropAutomation", () => {
     });
   });
 
-  it("archives the active drop record at the final round", () => {
+  it("archives the active drop record at the final round", async () => {
     const values = {
       [STORAGE_KEYS.BATTLE_CODE]: "AR-10",
       [STORAGE_KEYS.DROP]: { "#Credit": 5, "#EXP": 0, "#startTime": "old" },
@@ -126,10 +122,11 @@ describe("runBattleDropAutomation", () => {
       values,
     });
 
-    runBattleDropAutomation({ type: BattleDropEvent.RECORD_BATTLE_DROPS }, runtime);
+    const result = runBattleDropAutomation({ type: BattleDropEvent.RECORD_BATTLE_DROPS }, runtime);
 
     expect(values[STORAGE_KEYS.DROP]).toBeUndefined();
-    expect(values[STORAGE_KEYS.DROP_OLD]).toEqual([
+    expect(await result.archive.completion).toBe(true);
+    expect(runtime.histories.get("drop").map(({ record }) => record)).toEqual([
       {
         "#Credit": 6,
         "#EXP": 0,

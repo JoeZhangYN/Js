@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { StaminaLossLogEvent, runStaminaLossLogAutomation } from "./stamina-loss-log.js";
-import { getValue } from "./storage.js";
+import { getValue, setValue } from "./storage.js";
 import { STORAGE_KEYS } from "./persist-keys.js";
 
 beforeEach(() => {
@@ -8,46 +8,46 @@ beforeEach(() => {
 });
 
 describe("stamina loss log entry", () => {
-  it("records stamina loss by timestamp", () => {
-    runStaminaLossLogAutomation({
+  it("records stamina loss by timestamp without rewriting the legacy aggregate", async () => {
+    await runStaminaLossLogAutomation({
       type: StaminaLossLogEvent.RECORD,
       amount: 7,
       stamp: "2026/6/27 00:00:05",
     });
 
-    expect(runStaminaLossLogAutomation({ type: StaminaLossLogEvent.READ })).toEqual({
+    expect(await runStaminaLossLogAutomation({ type: StaminaLossLogEvent.READ })).toEqual({
       "2026/6/27 00:00:05": 7,
     });
-    expect(getValue(STORAGE_KEYS.STAMINA_LOST_LOG, true)).toEqual({
-      "2026/6/27 00:00:05": 7,
-    });
+    expect(getValue(STORAGE_KEYS.STAMINA_LOST_LOG, true)).toBeNull();
   });
 
-  it("clears stamina loss log", () => {
-    runStaminaLossLogAutomation({
+  it("clears incremental and legacy stamina loss logs", async () => {
+    setValue(STORAGE_KEYS.STAMINA_LOST_LOG, { legacy: 2 });
+    await runStaminaLossLogAutomation({
       type: StaminaLossLogEvent.RECORD,
       amount: 3,
       stamp: "t1",
     });
 
-    runStaminaLossLogAutomation({ type: StaminaLossLogEvent.CLEAR });
+    await runStaminaLossLogAutomation({ type: StaminaLossLogEvent.CLEAR });
 
-    expect(runStaminaLossLogAutomation({ type: StaminaLossLogEvent.READ })).toEqual({});
+    expect(await runStaminaLossLogAutomation({ type: StaminaLossLogEvent.READ })).toEqual({});
+    expect(getValue(STORAGE_KEYS.STAMINA_LOST_LOG, true)).toBeNull();
   });
 
-  it("renders the clear confirmation message newest first", () => {
-    runStaminaLossLogAutomation({
+  it("renders the clear confirmation message newest first", async () => {
+    await runStaminaLossLogAutomation({
       type: StaminaLossLogEvent.RECORD,
       amount: 3,
       stamp: "old",
     });
-    runStaminaLossLogAutomation({
+    await runStaminaLossLogAutomation({
       type: StaminaLossLogEvent.RECORD,
       amount: 5,
       stamp: "new",
     });
 
-    const message = runStaminaLossLogAutomation({
+    const message = await runStaminaLossLogAutomation({
       type: StaminaLossLogEvent.CLEAR_CONFIRMATION_MESSAGE,
     });
 
@@ -56,8 +56,8 @@ describe("stamina loss log entry", () => {
     expect(message).toContain("是否重置 (Whether to reset)?");
   });
 
-  it("ignores invalid stamina loss log events without changing stored logs", () => {
-    runStaminaLossLogAutomation({
+  it("ignores invalid stamina loss log events without changing stored logs", async () => {
+    await runStaminaLossLogAutomation({
       type: StaminaLossLogEvent.RECORD,
       amount: 4,
       stamp: "kept",
@@ -65,6 +65,8 @@ describe("stamina loss log entry", () => {
 
     expect(runStaminaLossLogAutomation({ type: "unknown" })).toBeUndefined();
     expect(runStaminaLossLogAutomation(null)).toBeUndefined();
-    expect(getValue(STORAGE_KEYS.STAMINA_LOST_LOG, true)).toEqual({ kept: 4 });
+    expect(await runStaminaLossLogAutomation({ type: StaminaLossLogEvent.READ })).toEqual({
+      kept: 4,
+    });
   });
 });

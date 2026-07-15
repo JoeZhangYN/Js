@@ -69,6 +69,8 @@ for (const required of [
   "storageIoPolicyOf",
   "RIDDLE_SAMPLE",
   "SESSION_RUNTIME_CHECKPOINT",
+  "BATTLE_REPORT",
+  "STAMINA_LOSS",
   "DIAGNOSTIC_EVIDENCE",
 ]) {
   if (!policy.includes(required)) violations.push(`storage-io-policy.js must own ${required}`);
@@ -132,6 +134,37 @@ for (const retired of [
   "setValue(STORAGE_KEYS.SKILL_LAST_USED",
 ]) {
   if (cdTracker.includes(retired)) violations.push(`cd-tracker.js must retire ${retired}`);
+}
+
+const retiredBattleAggregates =
+  /\bsetValue\(\s*STORAGE_KEYS\.(?:BATTLE_CODE|DROP|DROP_OLD|STATS|STATS_OLD|STAMINA_LOST_LOG)\b/;
+for (const file of productionFiles(srcRoot)) {
+  const text = fs.readFileSync(file, "utf8");
+  if (retiredBattleAggregates.test(text)) {
+    violations.push(
+      `${path.relative(root, file).replaceAll("\\", "/")} must not rewrite retired battle/stamina GM aggregates`
+    );
+  }
+}
+
+const battleHistory = fs.readFileSync(
+  path.join(srcRoot, "monitor", "battle-report-history-indexeddb.js"),
+  "utf8"
+);
+for (const required of ["budget.compactAt", "budget.rows", "store.put(envelope, envelope.id)"]) {
+  if (!battleHistory.includes(required)) {
+    violations.push(`battle-report-history-indexeddb.js must own ${required}`);
+  }
+}
+
+const staminaHistory = fs.readFileSync(
+  path.join(srcRoot, "state", "stamina-loss-store-indexeddb.js"),
+  "utf8"
+);
+for (const required of ["budget.days", "budget.compactAt", "budget.rows"]) {
+  if (!staminaHistory.includes(required)) {
+    violations.push(`stamina-loss-store-indexeddb.js must own ${required}`);
+  }
 }
 
 const riddleDataset = fs.readFileSync(path.join(srcRoot, "state", "riddle-dataset.js"), "utf8");

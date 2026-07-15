@@ -7,6 +7,9 @@ const owner = path.normalize("src/state/stamina-loss-log.js");
 const failureOwner = path.normalize("src/state/stamina-loss-log-failure.js");
 const ownerTest = path.normalize("src/state/stamina-loss-log.test.js");
 const failureTest = path.normalize("src/state/stamina-loss-log-failure.test.js");
+const storeOwner = path.normalize("src/state/stamina-loss-store.js");
+const adapterOwner = path.normalize("src/state/stamina-loss-store-indexeddb.js");
+const adapterTest = path.normalize("src/state/stamina-loss-store-indexeddb.test.js");
 const persistKeys = path.normalize("src/state/persist-keys.js");
 const settingsRender = path.normalize("src/settings/render.js");
 const settingsCommand = path.normalize("src/settings/stamina-loss-log-command.js");
@@ -71,7 +74,9 @@ for (const required of [
   "StaminaLossLogEvent",
   "STORAGE_KEYS.STAMINA_LOST_LOG",
   "CLEAR_CONFIRMATION_MESSAGE",
-  "persistStaminaLossLog",
+  "StaminaLossStoreEvent.APPEND",
+  "StaminaLossStoreEvent.LIST",
+  "StaminaLossStoreEvent.CLEAR",
 ]) {
   if (!ownerText.includes(required)) {
     violations.push(`${owner.replaceAll("\\", "/")} must own ${required}`);
@@ -159,22 +164,12 @@ if (/\bsetValue\(/.test(ownerText)) {
     `${owner.replaceAll("\\", "/")} must not write stamina loss log storage directly`
   );
 }
-if (
-  !/function persistStaminaLossLog\(log,\s*stage\) \{[\s\S]*setValue\(STORAGE_KEYS\.STAMINA_LOST_LOG,\s*log\);[\s\S]*return true;[\s\S]*catch\s*\(error\)\s*{[\s\S]*recordStaminaLossLogFailure\(stage,\s*error\);[\s\S]*return false;/.test(
-    failureOwnerText
-  )
-) {
-  violations.push(
-    `${failureOwner.replaceAll("\\", "/")} must classify stamina loss log storage write failures`
-  );
-}
 for (const required of [
   "STAMINA_LOSS_LOG_FAILURE_KEY",
   "HVAA:lastStaminaLossLogFailure",
   "recordStaminaLossLogFailure",
   "staminaLossLog",
-  "persistStaminaLossLog",
-  "STORAGE_KEYS.STAMINA_LOST_LOG",
+  "storageWrite",
 ]) {
   if (!failureOwnerText.includes(required)) {
     violations.push(`${failureOwner.replaceAll("\\", "/")} must own ${required}`);
@@ -182,12 +177,46 @@ for (const required of [
 }
 for (const required of [
   "STAMINA_LOSS_LOG_FAILURE_KEY",
-  "stamina loss log write blocked",
-  "stamina loss log clear blocked",
-  "storageWrite",
+  "stamina append blocked",
+  "stamina clear blocked",
+  "StorageWriteOutcome.FAILED",
 ]) {
   if (!failureTestText.includes(required)) {
     violations.push(`${failureTest.replaceAll("\\", "/")} must cover ${required}`);
+  }
+}
+
+const storeText = fs.readFileSync(path.join(root, storeOwner), "utf8");
+for (const required of [
+  "StorageIdentity.STAMINA_LOSS",
+  "createStaminaLossIndexedDbAdapter",
+  "CURRENT_WORLD_POLICY.staminaLoss",
+  "StorageWriteOutcome.FAILED",
+]) {
+  if (!storeText.includes(required)) {
+    violations.push(`${storeOwner.replaceAll("\\", "/")} must own ${required}`);
+  }
+}
+
+const adapterText = fs.readFileSync(path.join(root, adapterOwner), "utf8");
+for (const required of [
+  "budget.days * DAY_MILLISECONDS",
+  "retained.length >= budget.compactAt",
+  "retained.slice(0, -budget.rows)",
+]) {
+  if (!adapterText.includes(required)) {
+    violations.push(`${adapterOwner.replaceAll("\\", "/")} must enforce ${required}`);
+  }
+}
+
+const adapterTestText = fs.readFileSync(path.join(root, adapterTest), "utf8");
+for (const required of [
+  "expires records older than 365 days during append",
+  "compacts at 1100 records and retains the newest 1000",
+  "isolates histories by world database name",
+]) {
+  if (!adapterTestText.includes(required)) {
+    violations.push(`${adapterTest.replaceAll("\\", "/")} must cover ${required}`);
   }
 }
 

@@ -541,7 +541,7 @@ function checkUsageImplementation() {
   if (
     !text.includes('return { kind: "failed", reason: "usageArchiveFailed" };') ||
     !text.includes('return { kind: "recorded", archive: archiveResult };') ||
-    !/const handler = usageEventHandlers\[event\?\.type\];[\s\S]*return handler \? handler\(event\) : undefined;/.test(
+    !/const handler = usageEventHandlers\[event\?\.type\];[\s\S]*return handler \? handler\(event, deps\) : undefined;/.test(
       text
     )
   ) {
@@ -707,10 +707,8 @@ function checkUsageImplementation() {
     );
   }
   if (
-    !usageTestText.includes(
-      "does not report completion usage success when archive persistence fails"
-    ) ||
-    !usageTestText.includes("BATTLE_RECORD_ARCHIVE_FAILURE_KEY")
+    !usageTestText.includes("exposes asynchronous archive persistence failure") ||
+    !usageTestText.includes("result.archive.completion")
   ) {
     violations.push(
       `${rel(usageFile)} tests must cover completion usage archive failure propagation`
@@ -760,6 +758,16 @@ function checkRecordArchiveEntry() {
     "src/monitor/battle-record-archive-drop-records.js"
   );
   const archiveStoreFile = path.join(root, "src/monitor/battle-record-archive-store.js");
+  const reportRuntimeFile = path.join(root, "src/monitor/battle-report-runtime-store.js");
+  const reportHistoryFile = path.join(root, "src/monitor/battle-report-history.js");
+  const reportHistoryAdapterFile = path.join(
+    root,
+    "src/monitor/battle-report-history-indexeddb.js"
+  );
+  const reportHistoryAdapterTestFile = path.join(
+    root,
+    "src/monitor/battle-report-history-indexeddb.test.js"
+  );
   const archiveFailureFile = path.join(root, "src/monitor/battle-record-archive-failure.js");
   const archiveFailureTestFile = path.join(
     root,
@@ -774,6 +782,10 @@ function checkRecordArchiveEntry() {
   const archiveText = fs.readFileSync(archiveFile, "utf8");
   const archiveDropRecordsText = fs.readFileSync(archiveDropRecordsFile, "utf8");
   const archiveStoreText = fs.readFileSync(archiveStoreFile, "utf8");
+  const reportRuntimeText = fs.readFileSync(reportRuntimeFile, "utf8");
+  const reportHistoryText = fs.readFileSync(reportHistoryFile, "utf8");
+  const reportHistoryAdapterText = fs.readFileSync(reportHistoryAdapterFile, "utf8");
+  const reportHistoryAdapterTestText = fs.readFileSync(reportHistoryAdapterTestFile, "utf8");
   const archiveFailureText = fs.readFileSync(archiveFailureFile, "utf8");
   const archiveFailureTestText = fs.readFileSync(archiveFailureTestFile, "utf8");
   const dropDefaultRecordText = fs.readFileSync(dropDefaultRecordFile, "utf8");
@@ -810,9 +822,7 @@ function checkRecordArchiveEntry() {
     "utf8"
   );
   if (
-    !archiveTestText.includes(
-      "rejects unknown and null archive events without reading or writing records"
-    ) ||
+    !archiveTestText.includes("rejects unknown and null archive events without changing records") ||
     !archiveTestText.includes("runBattleRecordArchiveAutomation(null")
   ) {
     violations.push(`${rel(archiveFile)} tests must cover unknown and null archive events`);
@@ -847,14 +857,12 @@ function checkRecordArchiveEntry() {
     violations.push(`${rel(archiveStoreFile)} must expose one archive record store factory`);
   }
   for (const required of [
-    "./battle-record-archive-failure.js",
-    "persistBattleRecordArchiveStep",
-    "start-recording",
-    "store-current",
-    "archive-history",
-    "archive-clear-current",
-    "clear-current",
-    "clear-history",
+    "./battle-report-runtime-store.js",
+    "BattleReportHistoryEvent.APPEND",
+    "BattleReportHistoryEvent.LIST",
+    "BattleReportHistoryEvent.CLEAR",
+    "completion",
+    "clear-legacy-history",
   ]) {
     if (!archiveStoreText.includes(required)) {
       violations.push(
@@ -862,30 +870,45 @@ function checkRecordArchiveEntry() {
       );
     }
   }
-  if (
-    !/if \(\s*!persistBattleRecordArchiveStep\("store-current"[\s\S]*return false;/.test(
-      archiveStoreText
-    )
-  ) {
-    violations.push(
-      `${rel(archiveStoreFile)} must fail closed when current record persistence fails`
-    );
+  if (!archiveStoreText.includes("StorageWriteOutcome.FAILED")) {
+    violations.push(`${rel(archiveStoreFile)} must fail closed on typed storage failures`);
   }
-  if (
-    !/if \(\s*!persistBattleRecordArchiveStep\("archive-history"[\s\S]*return false;/.test(
-      archiveStoreText
-    )
-  ) {
-    violations.push(
-      `${rel(archiveStoreFile)} must fail closed when archive history persistence fails`
-    );
+  for (const required of [
+    "BattleSessionCheckpointSlice.BATTLE_REPORT",
+    'MEMORY_ONLY: "memoryOnly"',
+    'ROUND_BOUNDARY: "roundBoundary"',
+    "retire-legacy-runtime",
+  ]) {
+    if (!reportRuntimeText.includes(required)) {
+      violations.push(`${rel(reportRuntimeFile)} must own ${required}`);
+    }
   }
-  if (
-    !/if \(\s*!persistBattleRecordArchiveStep\("archive-clear-current"[\s\S]*return false;/.test(
-      archiveStoreText
-    )
-  ) {
-    violations.push(`${rel(archiveStoreFile)} must fail closed when archive current clear fails`);
+  for (const required of [
+    "StorageIdentity.BATTLE_REPORT",
+    "createBattleReportHistoryIndexedDbAdapter",
+    "StorageWriteOutcome.FAILED",
+  ]) {
+    if (!reportHistoryText.includes(required)) {
+      violations.push(`${rel(reportHistoryFile)} must own ${required}`);
+    }
+  }
+  for (const required of [
+    "records.length >= budget.compactAt",
+    "records.slice(0, -budget.rows)",
+    "record.id === envelope.id",
+  ]) {
+    if (!reportHistoryAdapterText.includes(required)) {
+      violations.push(`${rel(reportHistoryAdapterFile)} must enforce ${required}`);
+    }
+  }
+  for (const required of [
+    "compacts exactly at 225 records and retains the newest 200",
+    "repeated archive identity as exactly-once completion",
+    "isolates persistent and isekai histories",
+  ]) {
+    if (!reportHistoryAdapterTestText.includes(required)) {
+      violations.push(`${rel(reportHistoryAdapterTestFile)} must cover ${required}`);
+    }
   }
   for (const required of [
     "BATTLE_RECORD_ARCHIVE_FAILURE_KEY",
@@ -909,14 +932,11 @@ function checkRecordArchiveEntry() {
     );
   }
   for (const required of [
-    "does not report battle report recording success when code persistence fails",
-    "does not report current record success when current persistence fails",
-    "does not report archive success when clearing the current record fails",
-    "does not report clear success when history deletion fails",
-    "does not throw when archive failure evidence and diagnostic console both fail",
+    "does not report report-start success when the session checkpoint fails",
+    "exposes asynchronous archive failure through completion",
+    "does not report clear success when legacy deletion fails",
     "BATTLE_RECORD_ARCHIVE_FAILURE_KEY",
     "runDiagnosticConsoleAutomation",
-    "mockImplementation(() => false)",
     "storageWrite",
   ]) {
     if (!archiveFailureTestText.includes(required)) {
@@ -925,8 +945,8 @@ function checkRecordArchiveEntry() {
   }
   for (const required of [
     "REPORT_RECORD_NAME_FIELD",
-    "readCurrentBattleReportName",
-    "nameArchivedBattleReportRecord",
+    "runtime.readCode()",
+    "runtime.archiveIdentity(event.family)",
   ]) {
     if (!archiveStoreText.includes(required)) {
       violations.push(
@@ -1083,9 +1103,15 @@ function checkRecordArchiveEntry() {
   walkImportUsers(srcDir, "battle-record-archive-drop-records.js", archiveRecordImports);
   walkImportUsers(srcDir, "battle-record-archive-store.js", archiveRecordImports);
   walkImportUsers(srcDir, "battle-record-archive-usage-records.js", archiveRecordImports);
-  const allowedImport = path.normalize("src/monitor/battle-record-archive.js");
+  const allowedImports = new Set(
+    [
+      "src/monitor/battle-record-archive.js",
+      "src/monitor/battle-record-archive-drop-records.js",
+      "src/monitor/battle-record-archive-usage-records.js",
+    ].map((value) => path.normalize(value))
+  );
   for (const user of archiveRecordImports) {
-    if (user !== allowedImport) {
+    if (!allowedImports.has(user)) {
       violations.push(
         `${user.replaceAll("\\", "/")} must not import battle-record-archive family helpers directly`
       );

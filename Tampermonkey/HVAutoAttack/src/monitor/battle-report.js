@@ -47,7 +47,7 @@ function recordBattleReportStarted(deps) {
 }
 
 function clearReport(type) {
-  runBattleRecordArchiveAutomation({
+  return runBattleRecordArchiveAutomation({
     type,
   });
 }
@@ -58,15 +58,15 @@ function renderReportTableBody(type, report) {
 
 const reportEventHandlers = Object.freeze({
   [BattleReportEvent.BATTLE_STARTED]: (_event, deps) => recordBattleReportStarted(deps),
-  [BattleReportEvent.RENDER_DROP_REPORT_TABLE_BODY]: () =>
+  [BattleReportEvent.RENDER_DROP_REPORT_TABLE_BODY]: async () =>
     renderReportTableBody(
       BattleReportViewEvent.RENDER_DROP_TABLE_BODY,
-      runBattleReportModel({ type: BattleReportModelEvent.READ_DROP_REPORT_MODEL })
+      await runBattleReportModel({ type: BattleReportModelEvent.READ_DROP_REPORT_MODEL })
     ),
-  [BattleReportEvent.RENDER_USAGE_REPORT_TABLE_BODY]: () =>
+  [BattleReportEvent.RENDER_USAGE_REPORT_TABLE_BODY]: async () =>
     renderReportTableBody(
       BattleReportViewEvent.RENDER_USAGE_TABLE_BODY,
-      runBattleReportModel({ type: BattleReportModelEvent.READ_USAGE_REPORT_MODEL })
+      await runBattleReportModel({ type: BattleReportModelEvent.READ_USAGE_REPORT_MODEL })
     ),
   [BattleReportEvent.CLEAR_DROP_REPORT]: () =>
     clearReport(BattleRecordArchiveEvent.CLEAR_DROP_REPORT),

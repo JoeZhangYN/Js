@@ -53,7 +53,7 @@ function handleRoundLogReady(text, deps) {
   const lostStamina = parseLostStamina(text);
   if (!lostStamina) return { lostStamina: 0, paused: false };
 
-  runStaminaLossLogAutomation({ type: StaminaLossLogEvent.RECORD, amount: lostStamina });
+  void runStaminaLossLogAutomation({ type: StaminaLossLogEvent.RECORD, amount: lostStamina });
   if (!shouldPauseForLoss(lostStamina)) return { lostStamina, paused: false };
 
   deps.triggerAlarm("Error");

@@ -14,6 +14,8 @@ const WORLD_POLICIES = Object.freeze({
       dbName: "hvAA_monsterdb",
       dataUrl: "https://hv-monsterdb-data.skk.moe/persistent.json",
     }),
+    battleReport: Object.freeze({ dbName: "hvAA_battle_reports" }),
+    staminaLoss: Object.freeze({ dbName: "hvAA_stamina_loss" }),
     routes: Object.freeze({
       rootUrl: MAIN_ROOT,
       encounterGenerationUrl: "https://e-hentai.org/news.php?encounter",
@@ -31,6 +33,8 @@ const WORLD_POLICIES = Object.freeze({
       dbName: "hvAA_monsterdb_isekai",
       dataUrl: "https://hv-monsterdb-data.skk.moe/isekai.json",
     }),
+    battleReport: Object.freeze({ dbName: "hvAA_battle_reports_isekai" }),
+    staminaLoss: Object.freeze({ dbName: "hvAA_stamina_loss_isekai" }),
     routes: Object.freeze({ rootUrl: ISEKAI_ROOT, encounterGenerationUrl: null }),
     features: Object.freeze({ randomEncounter: false }),
     hvut: Object.freeze({ namespace: "hvuti" }),

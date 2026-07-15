@@ -3,11 +3,16 @@ import { CdRuntimeEvent, runCdRuntimeAutomation } from "./cd-tracker.js";
 import { getValue, setValue } from "./storage.js";
 import { STORAGE_KEYS } from "./persist-keys.js";
 import { g } from "./store.js";
-import { BATTLE_SESSION_CHECKPOINT_KEY } from "./battle-session-checkpoint.js";
+import {
+  BATTLE_SESSION_CHECKPOINT_KEY,
+  BattleSessionCheckpointEvent,
+  runBattleSessionCheckpointAutomation,
+} from "./battle-session-checkpoint.js";
 
 beforeEach(() => {
   localStorage.clear();
   sessionStorage.clear();
+  runBattleSessionCheckpointAutomation({ type: BattleSessionCheckpointEvent.CLEAR });
   g("globalTurn", 0);
   g("skillLastUsed", {});
 });
@@ -22,8 +27,8 @@ describe("cd tracker runtime persistence", () => {
     expect(g("globalTurn")).toBe(12);
     expect(g("skillLastUsed")).toEqual({ OFC: 7 });
     expect(JSON.parse(sessionStorage.getItem(BATTLE_SESSION_CHECKPOINT_KEY))).toMatchObject({
-      globalTurn: 12,
-      skillLastUsed: { OFC: 7 },
+      version: 2,
+      slices: { cdRuntime: { globalTurn: 12, skillLastUsed: { OFC: 7 } } },
     });
     expect(getValue(STORAGE_KEYS.GLOBAL_TURN, true)).toBeNull();
     expect(getValue(STORAGE_KEYS.SKILL_LAST_USED, true)).toBeNull();
@@ -37,8 +42,8 @@ describe("cd tracker runtime persistence", () => {
     expect(runCdRuntimeAutomation({ type: CdRuntimeEvent.PERSIST })).toBe(true);
 
     expect(JSON.parse(sessionStorage.getItem(BATTLE_SESSION_CHECKPOINT_KEY))).toMatchObject({
-      globalTurn: 20,
-      skillLastUsed: { OFC: 20 },
+      version: 2,
+      slices: { cdRuntime: { globalTurn: 20, skillLastUsed: { OFC: 20 } } },
     });
   });
 
@@ -65,8 +70,8 @@ describe("cd tracker runtime persistence", () => {
 
     runCdRuntimeAutomation({ type: CdRuntimeEvent.PERSIST });
     expect(JSON.parse(sessionStorage.getItem(BATTLE_SESSION_CHECKPOINT_KEY))).toMatchObject({
-      globalTurn: 20,
-      skillLastUsed: { FRD: 25 },
+      version: 2,
+      slices: { cdRuntime: { globalTurn: 20, skillLastUsed: { FRD: 25 } } },
     });
   });
 

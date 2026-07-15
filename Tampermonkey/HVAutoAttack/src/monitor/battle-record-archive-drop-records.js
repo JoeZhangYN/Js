@@ -1,9 +1,10 @@
-import { STORAGE_KEYS } from "../state/persist-keys.js";
 import { createDefaultDropRecord } from "./drop-default-record.js";
+import { BattleReportCheckpointMode } from "./battle-record-archive-store.js";
+import { BattleReportFamily } from "./battle-report-history.js";
 
 function readOrCreateDropRecord(recordStore) {
   return recordStore.readOrCreateCurrentRecord({
-    currentKey: STORAGE_KEYS.DROP,
+    family: BattleReportFamily.DROP,
     defaultRecord: createDefaultDropRecord(),
     startTimeField: "#startTime",
   });
@@ -11,27 +12,25 @@ function readOrCreateDropRecord(recordStore) {
 
 function storeOrArchiveDropRecord(event, recordStore) {
   return recordStore.storeOrArchiveRecord({
-    currentKey: STORAGE_KEYS.DROP,
-    historyKey: STORAGE_KEYS.DROP_OLD,
+    family: BattleReportFamily.DROP,
     record: event.record,
     endTimeField: "#endTime",
     recordEach: event.recordEach,
     roundNow: event.roundNow,
     roundAll: event.roundAll,
+    checkpointMode: BattleReportCheckpointMode.ROUND_BOUNDARY,
   });
 }
 
 function readDropReportSource(recordStore) {
   return recordStore.readRecordSet({
-    currentKey: STORAGE_KEYS.DROP,
-    historyKey: STORAGE_KEYS.DROP_OLD,
+    family: BattleReportFamily.DROP,
   });
 }
 
 function clearDropReportRecordSet(recordStore) {
   return recordStore.clearRecordSet({
-    currentKey: STORAGE_KEYS.DROP,
-    historyKey: STORAGE_KEYS.DROP_OLD,
+    family: BattleReportFamily.DROP,
   });
 }
 

@@ -2,12 +2,18 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { setValue, getValue } from "../state/storage.js";
 import { STORAGE_KEYS } from "../state/persist-keys.js";
 import { OptionEvent, runOptionAutomation } from "../state/option.js";
+import {
+  BattleSessionCheckpointEvent,
+  BattleSessionCheckpointSlice,
+  runBattleSessionCheckpointAutomation,
+} from "../state/battle-session-checkpoint.js";
 import { BattleRoundEvent, runBattleRoundAutomation } from "../battle/battle-round.js";
 import { BattleMonitorEvent, runBattleMonitorAutomation } from "./battle-monitor-automation.js";
 import { BattleReportEvent, runBattleReportAutomation } from "./battle-report.js";
 
 beforeEach(() => {
   localStorage.clear();
+  runBattleSessionCheckpointAutomation({ type: BattleSessionCheckpointEvent.CLEAR });
   vi.useFakeTimers();
   vi.setSystemTime(new Date("2026-06-27T12:00:00.000Z"));
 });
@@ -20,6 +26,13 @@ function setRoundContext(roundType, roundNow, roundAll) {
   runBattleRoundAutomation({ type: BattleRoundEvent.RECORD_TYPE, roundType });
   runBattleRoundAutomation({ type: BattleRoundEvent.RECORD_COUNT, roundNow, roundAll });
   runBattleRoundAutomation({ type: BattleRoundEvent.SYNC_RUNTIME });
+}
+
+function readReportRuntime() {
+  return runBattleSessionCheckpointAutomation({
+    type: BattleSessionCheckpointEvent.READ_SLICE,
+    slice: BattleSessionCheckpointSlice.BATTLE_REPORT,
+  });
 }
 
 describe("battle report query", () => {
@@ -46,12 +59,12 @@ describe("battle report query", () => {
     setRoundContext("ar", 1, 5);
 
     runBattleMonitorAutomation({ type: BattleMonitorEvent.BATTLE_STARTED });
-    expect(getValue(STORAGE_KEYS.BATTLE_CODE)).toMatch(/: AR-5$/);
+    expect(readReportRuntime().checkpoint.code).toMatch(/: AR-5$/);
 
-    const firstCode = getValue(STORAGE_KEYS.BATTLE_CODE);
+    const firstCode = readReportRuntime().checkpoint.code;
     setRoundContext("rb", 1, 1);
     runBattleMonitorAutomation({ type: BattleMonitorEvent.BATTLE_STARTED });
-    expect(getValue(STORAGE_KEYS.BATTLE_CODE)).toBe(firstCode);
+    expect(readReportRuntime().checkpoint.code).toBe(firstCode);
   });
 
   it("reads battle-start context inside the battle report entry", () => {
@@ -68,7 +81,7 @@ describe("battle report query", () => {
 
     runBattleMonitorAutomation({ type: BattleMonitorEvent.BATTLE_STARTED });
 
-    expect(getValue(STORAGE_KEYS.BATTLE_CODE)).toBe("6/27: AR-5");
+    expect(readReportRuntime().checkpoint.code).toBe("6/27: AR-5");
   });
 
   it("owns the battle report date label format", () => {
@@ -77,7 +90,7 @@ describe("battle report query", () => {
 
     runBattleMonitorAutomation({ type: BattleMonitorEvent.BATTLE_STARTED });
 
-    expect(getValue(STORAGE_KEYS.BATTLE_CODE)).toBe("6/27: AR-5");
+    expect(readReportRuntime().checkpoint.code).toBe("6/27: AR-5");
   });
 
   it("does not abort battle startup when round context is not ready", () => {
@@ -90,37 +103,37 @@ describe("battle report query", () => {
         }
       )
     ).not.toThrow();
-    expect(getValue(STORAGE_KEYS.BATTLE_CODE)).toBe("6/27: UNKNOWN-?");
+    expect(readReportRuntime().checkpoint.code).toBe("6/27: UNKNOWN-?");
   });
 
-  it("renders a single drop report from the active record", () => {
+  it("renders a single drop report from the active record", async () => {
     setValue(STORAGE_KEYS.DROP, { "#Credit": 12, "Health Potion": 1 });
 
     expect(
-      runBattleMonitorAutomation({ type: BattleMonitorEvent.RENDER_DROP_REPORT_TABLE_BODY })
+      await runBattleMonitorAutomation({ type: BattleMonitorEvent.RENDER_DROP_REPORT_TABLE_BODY })
     ).toBe(
       '<tbody><tr class="hvAATh"><td></td><td><l0>数量</l0><l1>數量</l1><l2>Amount</l2></td></tr><tr><td>#Credit</td><td>12</td></tr><tr><td>Health Potion</td><td>1</td></tr></tbody>'
     );
   });
 
-  it("renders archived and active drop records for history view", () => {
+  it("renders archived and active drop records for history view", async () => {
     setValue(STORAGE_KEYS.BATTLE_CODE, "now");
     setValue(STORAGE_KEYS.DROP, { "#Credit": 12 });
     setValue(STORAGE_KEYS.DROP_OLD, [{ __name: "old", "#EXP": 20 }]);
 
     expect(
-      runBattleMonitorAutomation({ type: BattleMonitorEvent.RENDER_DROP_REPORT_TABLE_BODY })
+      await runBattleMonitorAutomation({ type: BattleMonitorEvent.RENDER_DROP_REPORT_TABLE_BODY })
     ).toBe(
       '<tbody><tr class="hvAATh"><td class="selectTable"></td><td>now</td><td>old</td></tr><tr><td>#Credit</td><td>12</td><td></td></tr><tr><td>#EXP</td><td></td><td>20</td></tr></tbody>'
     );
   });
 
-  it("renders usage sections and tolerates missing sections", () => {
+  it("renders usage sections and tolerates missing sections", async () => {
     setValue(STORAGE_KEYS.BATTLE_CODE, "now");
     setValue(STORAGE_KEYS.STATS, { self: { _turn: 3 }, magic: { Fireball: 2 } });
     setValue(STORAGE_KEYS.STATS_OLD, [{ __name: "old", self: { _turn: 1 } }]);
 
-    const html = runBattleMonitorAutomation({
+    const html = await runBattleMonitorAutomation({
       type: BattleMonitorEvent.RENDER_USAGE_REPORT_TABLE_BODY,
     });
 
@@ -130,14 +143,14 @@ describe("battle report query", () => {
     expect(html).toContain("<tr><td>Fireball</td><td>2</td><td></td></tr>");
   });
 
-  it("clears battle report storage through monitor-owned commands", () => {
+  it("clears battle report storage through monitor-owned commands", async () => {
     setValue(STORAGE_KEYS.DROP, { a: 1 });
     setValue(STORAGE_KEYS.DROP_OLD, [{ a: 2 }]);
     setValue(STORAGE_KEYS.STATS, { self: {} });
     setValue(STORAGE_KEYS.STATS_OLD, [{ self: {} }]);
 
-    runBattleMonitorAutomation({ type: BattleMonitorEvent.CLEAR_DROP_REPORT });
-    runBattleMonitorAutomation({ type: BattleMonitorEvent.CLEAR_USAGE_REPORT });
+    await runBattleMonitorAutomation({ type: BattleMonitorEvent.CLEAR_DROP_REPORT });
+    await runBattleMonitorAutomation({ type: BattleMonitorEvent.CLEAR_USAGE_REPORT });
 
     expect(getValue(STORAGE_KEYS.DROP, true)).toBeNull();
     expect(getValue(STORAGE_KEYS.DROP_OLD, true)).toBeNull();

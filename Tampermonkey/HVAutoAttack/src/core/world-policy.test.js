@@ -25,12 +25,16 @@ describe("ingress identity and world policy", () => {
     expect(selectWorldPolicy(GameWorld.PERSISTENT)).toMatchObject({
       storage: { prefix: "hvAA_" },
       monsterKnowledge: { dbName: "hvAA_monsterdb" },
+      battleReport: { dbName: "hvAA_battle_reports" },
+      staminaLoss: { dbName: "hvAA_stamina_loss" },
       features: { randomEncounter: true },
       hvut: { namespace: "hvut" },
     });
     expect(selectWorldPolicy(GameWorld.ISEKAI)).toMatchObject({
       storage: { prefix: "hvAA_isekai_" },
       monsterKnowledge: { dbName: "hvAA_monsterdb_isekai" },
+      battleReport: { dbName: "hvAA_battle_reports_isekai" },
+      staminaLoss: { dbName: "hvAA_stamina_loss_isekai" },
       features: { randomEncounter: false },
       hvut: { namespace: "hvuti" },
     });

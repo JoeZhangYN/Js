@@ -10,14 +10,14 @@ beforeEach(() => {
 });
 
 describe("settings stamina loss log command entry", () => {
-  it("renders the clear confirmation message through one settings command", () => {
-    runStaminaLossLogAutomation({
+  it("renders the clear confirmation message through one settings command", async () => {
+    await runStaminaLossLogAutomation({
       type: StaminaLossLogEvent.RECORD,
       amount: 3,
       stamp: "old",
     });
 
-    const message = runSettingsStaminaLossLogCommand({
+    const message = await runSettingsStaminaLossLogCommand({
       type: SettingsStaminaLossLogCommandEvent.CLEAR_CONFIRMATION_MESSAGE,
     });
 
@@ -25,18 +25,18 @@ describe("settings stamina loss log command entry", () => {
     expect(message).toContain("old: 3");
   });
 
-  it("clears stamina loss logs as a typed settings command", () => {
-    runStaminaLossLogAutomation({
+  it("clears stamina loss logs as a typed settings command", async () => {
+    await runStaminaLossLogAutomation({
       type: StaminaLossLogEvent.RECORD,
       amount: 5,
       stamp: "gone",
     });
 
     expect(
-      runSettingsStaminaLossLogCommand({ type: SettingsStaminaLossLogCommandEvent.CLEAR })
+      await runSettingsStaminaLossLogCommand({ type: SettingsStaminaLossLogCommandEvent.CLEAR })
     ).toEqual({ ok: true, type: SettingsStaminaLossLogCommandEvent.CLEAR });
     expect(
-      runSettingsStaminaLossLogCommand({
+      await runSettingsStaminaLossLogCommand({
         type: SettingsStaminaLossLogCommandEvent.CLEAR_CONFIRMATION_MESSAGE,
       })
     ).toContain("总共0条记录");

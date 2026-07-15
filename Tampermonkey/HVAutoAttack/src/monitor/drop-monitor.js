@@ -20,6 +20,9 @@ function makeDeps(deps) {
     delValue: deps.delValue || delValue,
     gE: deps.gE || gE,
     getValue: deps.getValue || getValue,
+    randomId: deps.randomId,
+    runCheckpoint: deps.runCheckpoint,
+    runHistory: deps.runHistory,
     readDropCompletionContext:
       deps.readDropCompletionContext ||
       (() =>

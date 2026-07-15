@@ -1,87 +1,63 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-
-const mocks = vi.hoisted(() => ({
-  setValue: vi.fn(),
-}));
-
-vi.mock("./storage.js", async () => {
-  const actual = await vi.importActual("./storage.js");
-  return { ...actual, setValue: mocks.setValue };
-});
-
-import { StaminaLossLogEvent, runStaminaLossLogAutomation } from "./stamina-loss-log.js";
+import { StorageWriteOutcome } from "./storage-io-policy.js";
 import { STAMINA_LOSS_LOG_FAILURE_KEY } from "./stamina-loss-log-failure.js";
+import { createStaminaLossStoreCapability, StaminaLossStoreEvent } from "./stamina-loss-store.js";
 
 beforeEach(() => {
-  window.localStorage.clear();
-  window.sessionStorage.clear();
-  vi.restoreAllMocks();
-  mocks.setValue.mockReset();
+  sessionStorage.clear();
 });
 
+function failingCapability(method, message) {
+  const adapter = {
+    append: async () => ({ outcome: StorageWriteOutcome.WRITTEN }),
+    list: async () => [],
+    clear: async () => ({ outcome: StorageWriteOutcome.DELETED }),
+  };
+  adapter[method] = async () => {
+    throw new Error(message);
+  };
+  return createStaminaLossStoreCapability(
+    { dbName: "failure-test", sourceIdentity: "test:stamina" },
+    { adapter, recordIo: () => undefined, now: () => 1 }
+  );
+}
+
 describe("stamina loss log persistence failures", () => {
-  it("does not report stamina loss record success when storage write fails", () => {
-    vi.spyOn(console, "warn").mockImplementation(() => {});
-    mocks.setValue.mockImplementation(() => {
-      throw new Error("stamina loss log write blocked");
-    });
+  it("returns a failed outcome and evidence when append fails", async () => {
+    const capability = failingCapability("append", "stamina append blocked");
 
     expect(
-      runStaminaLossLogAutomation({
-        type: StaminaLossLogEvent.RECORD,
-        amount: 7,
-        stamp: "blocked",
-      })
-    ).toBe(false);
-
-    expect(JSON.parse(window.sessionStorage.getItem(STAMINA_LOSS_LOG_FAILURE_KEY))).toMatchObject({
+      await capability.run({ type: StaminaLossStoreEvent.APPEND, amount: 7, stamp: "blocked" })
+    ).toMatchObject({ outcome: StorageWriteOutcome.FAILED });
+    expect(JSON.parse(sessionStorage.getItem(STAMINA_LOSS_LOG_FAILURE_KEY))).toMatchObject({
       capability: "staminaLossLog",
-      stage: "record",
-      failure: { kind: "storageWrite", error: "stamina loss log write blocked" },
+      stage: "append",
+      failure: { kind: "storageWrite", error: "stamina append blocked" },
     });
   });
 
-  it("does not report stamina loss clear success when storage write fails", () => {
-    vi.spyOn(console, "warn").mockImplementation(() => {});
-    mocks.setValue.mockImplementation(() => {
-      throw new Error("stamina loss log clear blocked");
+  it("returns a failed outcome and evidence when clear fails", async () => {
+    const capability = failingCapability("clear", "stamina clear blocked");
+
+    expect(await capability.run({ type: StaminaLossStoreEvent.CLEAR })).toMatchObject({
+      outcome: StorageWriteOutcome.FAILED,
     });
-
-    expect(runStaminaLossLogAutomation({ type: StaminaLossLogEvent.CLEAR })).toBe(false);
-
-    expect(JSON.parse(window.sessionStorage.getItem(STAMINA_LOSS_LOG_FAILURE_KEY))).toMatchObject({
-      capability: "staminaLossLog",
+    expect(JSON.parse(sessionStorage.getItem(STAMINA_LOSS_LOG_FAILURE_KEY))).toMatchObject({
       stage: "clear",
-      failure: { kind: "storageWrite", error: "stamina loss log clear blocked" },
+      failure: { error: "stamina clear blocked" },
     });
   });
 
-  it("does not throw when stamina loss log failure evidence and warning both fail", () => {
+  it("does not throw when diagnostic session storage is unavailable", async () => {
     const originalSetItem = Storage.prototype.setItem;
     vi.spyOn(Storage.prototype, "setItem").mockImplementation(function setItem(key, value) {
       if (key === STAMINA_LOSS_LOG_FAILURE_KEY) throw new Error("session blocked");
       return Reflect.apply(originalSetItem, this, [key, value]);
     });
-    vi.spyOn(console, "warn").mockImplementation(() => {
-      throw new Error("console blocked");
-    });
-    mocks.setValue.mockImplementation(() => {
-      throw new Error("stamina loss log write blocked");
-    });
+    const capability = failingCapability("append", "stamina append blocked");
 
-    expect(() =>
-      runStaminaLossLogAutomation({
-        type: StaminaLossLogEvent.RECORD,
-        amount: 7,
-        stamp: "blocked",
-      })
-    ).not.toThrow();
-    expect(
-      runStaminaLossLogAutomation({
-        type: StaminaLossLogEvent.RECORD,
-        amount: 7,
-        stamp: "blocked",
-      })
-    ).toBe(false);
+    await expect(
+      capability.run({ type: StaminaLossStoreEvent.APPEND, amount: 7, stamp: "blocked" })
+    ).resolves.toMatchObject({ outcome: StorageWriteOutcome.FAILED });
   });
 });

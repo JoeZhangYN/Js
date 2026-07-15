@@ -15,9 +15,9 @@ export const SettingsBattleReportCommandEvent = Object.freeze({
   CLEAR_USAGE_REPORT: EVENT_CLEAR_USAGE_REPORT,
 });
 
-function clearReport(event, monitorType) {
-  runBattleMonitorAutomation({ type: monitorType });
-  return { ok: true, type: event.type };
+async function clearReport(event, monitorType) {
+  const result = await runBattleMonitorAutomation({ type: monitorType });
+  return { ok: result !== false, type: event.type };
 }
 
 const settingsBattleReportCommandHandlers = Object.freeze({

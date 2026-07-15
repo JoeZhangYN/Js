@@ -26,7 +26,7 @@ function deps(confirm = () => true) {
 }
 
 describe("runBattleStaminaAutomation", () => {
-  it("ignores logs without stamina loss", () => {
+  it("ignores logs without stamina loss", async () => {
     const d = deps();
 
     expect(
@@ -35,11 +35,11 @@ describe("runBattleStaminaAutomation", () => {
         d
       )
     ).toEqual({ lostStamina: 0, paused: false });
-    expect(runStaminaLossLogAutomation({ type: StaminaLossLogEvent.READ })).toEqual({});
+    expect(await runStaminaLossLogAutomation({ type: StaminaLossLogEvent.READ })).toEqual({});
     expect(d.triggerAlarm).not.toHaveBeenCalled();
   });
 
-  it("records stamina loss below the pause threshold", () => {
+  it("records stamina loss below the pause threshold", async () => {
     const d = deps();
 
     const result = runBattleStaminaAutomation(
@@ -48,9 +48,11 @@ describe("runBattleStaminaAutomation", () => {
     );
 
     expect(result).toEqual({ lostStamina: 3, paused: false });
-    expect(Object.values(runStaminaLossLogAutomation({ type: StaminaLossLogEvent.READ }))).toEqual([
-      3,
-    ]);
+    await vi.waitFor(async () => {
+      expect(
+        Object.values(await runStaminaLossLogAutomation({ type: StaminaLossLogEvent.READ }))
+      ).toEqual([3]);
+    });
     expect(mocks.runOptionAutomation).toHaveBeenCalledWith({
       type: "readField",
       key: "staminaLose",
@@ -59,7 +61,7 @@ describe("runBattleStaminaAutomation", () => {
     expect(d.triggerAlarm).not.toHaveBeenCalled();
   });
 
-  it("alerts and pauses when stamina loss exceeds threshold and user declines", () => {
+  it("alerts and pauses when stamina loss exceeds threshold and user declines", async () => {
     const d = deps(() => false);
 
     const result = runBattleStaminaAutomation(
@@ -78,9 +80,14 @@ describe("runBattleStaminaAutomation", () => {
       },
     });
     expect(d.pause).toHaveBeenCalledWith({ lostStamina: 7 });
+    await vi.waitFor(async () => {
+      expect(
+        Object.values(await runStaminaLossLogAutomation({ type: StaminaLossLogEvent.READ }))
+      ).toEqual([7]);
+    });
   });
 
-  it("keeps missing or invalid thresholds from pausing by default", () => {
+  it("keeps missing or invalid thresholds from pausing by default", async () => {
     mocks.runOptionAutomation.mockReturnValue(undefined);
     const d = deps(() => false);
 
@@ -91,9 +98,14 @@ describe("runBattleStaminaAutomation", () => {
 
     expect(result).toEqual({ lostStamina: 99, paused: false });
     expect(d.triggerAlarm).not.toHaveBeenCalled();
+    await vi.waitFor(async () => {
+      expect(
+        Object.values(await runStaminaLossLogAutomation({ type: StaminaLossLogEvent.READ }))
+      ).toEqual([99]);
+    });
   });
 
-  it("rejects invalid battle stamina events without side effects", () => {
+  it("rejects invalid battle stamina events without side effects", async () => {
     const d = deps(() => false);
 
     expect(runBattleStaminaAutomation({ type: "unknown", text: "You lose 7 Stamina" }, d)).toEqual({
@@ -102,7 +114,7 @@ describe("runBattleStaminaAutomation", () => {
     });
     expect(runBattleStaminaAutomation(null, d)).toEqual({ lostStamina: 0, paused: false });
 
-    expect(runStaminaLossLogAutomation({ type: StaminaLossLogEvent.READ })).toEqual({});
+    expect(await runStaminaLossLogAutomation({ type: StaminaLossLogEvent.READ })).toEqual({});
     expect(mocks.runOptionAutomation).not.toHaveBeenCalled();
     expect(d.triggerAlarm).not.toHaveBeenCalled();
     expect(d.confirm).not.toHaveBeenCalled();

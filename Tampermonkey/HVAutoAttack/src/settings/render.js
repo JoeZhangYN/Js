@@ -1188,21 +1188,20 @@ export function optionBox() {
   if (openHVUT)
     openHVUT.onclick = () =>
       runSettingsHvutConfigCommand({ type: SettingsHvutConfigCommandEvent.OPEN_PANEL });
-  gE(".hvAATabmenu", optionBox).onclick = function (e) {
+  gE(".hvAATabmenu", optionBox).onclick = async function (e) {
     // 标签页事件
     if (e.target.tagName === "INPUT") return;
     e.preventDefault();
     const name = readSettingsTabClickName(e.target);
     if (!name) return;
-    let _html;
     if (name === "Drop") {
       // 掉落监测
-      gE("#hvAATab-Drop>table").innerHTML = runSettingsBattleReportCommand({
+      gE("#hvAATab-Drop>table").innerHTML = await runSettingsBattleReportCommand({
         type: SettingsBattleReportCommandEvent.RENDER_DROP_TABLE_BODY,
       });
     } else if (name === "Usage") {
       // 数据记录
-      gE("#hvAATab-Usage>table").innerHTML = runSettingsBattleReportCommand({
+      gE("#hvAATab-Usage>table").innerHTML = await runSettingsBattleReportCommand({
         type: SettingsBattleReportCommandEvent.RENDER_USAGE_TABLE_BODY,
       });
     } else if (name === "Riddle") {
@@ -1301,18 +1300,17 @@ export function optionBox() {
     );
     runRiddleAutomation({ type: RiddleEvent.TEST_POPUP_PRETREAT });
   };
-  gE(".staminaLostLog", optionBox).onclick = function () {
+  gE(".staminaLostLog", optionBox).onclick = async function () {
+    const message = await runSettingsStaminaLossLogCommand({
+      type: SettingsStaminaLossLogCommandEvent.CLEAR_CONFIRMATION_MESSAGE,
+    });
     if (
       runUserFeedbackAutomation({
         type: UserFeedbackEvent.CONFIRM,
-        copy: {
-          l0: runSettingsStaminaLossLogCommand({
-            type: SettingsStaminaLossLogCommandEvent.CLEAR_CONFIRMATION_MESSAGE,
-          }),
-        },
+        copy: { l0: message },
       })
     )
-      runSettingsStaminaLossLogCommand({ type: SettingsStaminaLossLogCommandEvent.CLEAR });
+      await runSettingsStaminaLossLogCommand({ type: SettingsStaminaLossLogCommandEvent.CLEAR });
   };
   gE(".idleArenaReset", optionBox).onclick = function () {
     if (_alert(1, "是否重置", "是否重置", "Whether to reset")) {
@@ -1377,15 +1375,17 @@ export function optionBox() {
     if (preview?.message) _alert(0, preview.message.l0, preview.message.l1, preview.message.l2);
   };
   // 标签页-掉落监测
-  gE(".reDropMonitor", optionBox).onclick = function () {
+  gE(".reDropMonitor", optionBox).onclick = async function () {
     if (_alert(1, "是否重置", "是否重置", "Whether to reset")) {
-      runSettingsBattleReportCommand({ type: SettingsBattleReportCommandEvent.CLEAR_DROP_REPORT });
+      await runSettingsBattleReportCommand({
+        type: SettingsBattleReportCommandEvent.CLEAR_DROP_REPORT,
+      });
     }
   };
   // 标签页-数据记录
-  gE(".reRecordUsage", optionBox).onclick = function () {
+  gE(".reRecordUsage", optionBox).onclick = async function () {
     if (_alert(1, "是否重置", "是否重置", "Whether to reset")) {
-      runSettingsBattleReportCommand({
+      await runSettingsBattleReportCommand({
         type: SettingsBattleReportCommandEvent.CLEAR_USAGE_REPORT,
       });
     }

@@ -1,7 +1,9 @@
-import { getValue } from "./storage.js";
-import { STORAGE_KEYS } from "./persist-keys.js";
 import { TimeEvent, runTimeAutomation } from "../core/time.js";
-import { persistStaminaLossLog } from "./stamina-loss-log-failure.js";
+import { STORAGE_KEYS } from "./persist-keys.js";
+import { delValue, getValue } from "./storage.js";
+import { StorageWriteOutcome } from "./storage-io-policy.js";
+import { recordStaminaLossLogFailure } from "./stamina-loss-log-failure.js";
+import { StaminaLossStoreEvent, runStaminaLossStoreAutomation } from "./stamina-loss-store.js";
 
 const EVENT_READ = "read";
 const EVENT_RECORD = "record";
@@ -15,27 +17,46 @@ export const StaminaLossLogEvent = Object.freeze({
   CLEAR_CONFIRMATION_MESSAGE: EVENT_CLEAR_CONFIRMATION_MESSAGE,
 });
 
-function readStaminaLossLog() {
+function readLegacyLog() {
   return getValue(STORAGE_KEYS.STAMINA_LOST_LOG, true) || {};
 }
 
-function recordStaminaLoss(
+async function readStaminaLossLog() {
+  const rows = await runStaminaLossStoreAutomation({ type: StaminaLossStoreEvent.LIST });
+  return Object.assign(
+    {},
+    readLegacyLog(),
+    Object.fromEntries((rows || []).map(({ stamp, amount }) => [stamp, amount]))
+  );
+}
+
+async function recordStaminaLoss(
   amount,
   stamp = runTimeAutomation({ type: TimeEvent.LOCAL_TIMESTAMP_LABEL })
 ) {
-  const log = readStaminaLossLog();
-  log[stamp] = Number(amount) || 0;
-  if (!persistStaminaLossLog(log, "record")) return false;
-  return log;
-}
-
-function clearStaminaLossLog() {
-  if (!persistStaminaLossLog({}, "clear")) return false;
+  const result = await runStaminaLossStoreAutomation({
+    type: StaminaLossStoreEvent.APPEND,
+    amount,
+    stamp,
+  });
+  if (result?.outcome === StorageWriteOutcome.FAILED) return false;
   return readStaminaLossLog();
 }
 
-function staminaLossClearConfirmationMessage() {
-  const log = readStaminaLossLog();
+async function clearStaminaLossLog() {
+  const result = await runStaminaLossStoreAutomation({ type: StaminaLossStoreEvent.CLEAR });
+  if (result?.outcome === StorageWriteOutcome.FAILED) return false;
+  try {
+    delValue(STORAGE_KEYS.STAMINA_LOST_LOG);
+  } catch (error) {
+    recordStaminaLossLogFailure("retire-legacy", error);
+    return false;
+  }
+  return {};
+}
+
+async function staminaLossClearConfirmationMessage() {
+  const log = await readStaminaLossLog();
   const rows = Object.entries(log)
     .map(([stamp, amount]) => `${stamp}: ${amount}`)
     .reverse();

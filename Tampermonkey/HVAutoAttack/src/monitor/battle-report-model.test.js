@@ -1,10 +1,15 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { STORAGE_KEYS } from "../state/persist-keys.js";
 import { getValue, setValue } from "../state/storage.js";
+import {
+  BattleSessionCheckpointEvent,
+  runBattleSessionCheckpointAutomation,
+} from "../state/battle-session-checkpoint.js";
 import { BattleReportModelEvent, runBattleReportModel } from "./battle-report-model.js";
 
 beforeEach(() => {
   localStorage.clear();
+  runBattleSessionCheckpointAutomation({ type: BattleSessionCheckpointEvent.CLEAR });
 });
 
 describe("runBattleReportModel", () => {
@@ -19,12 +24,11 @@ describe("runBattleReportModel", () => {
     expect(getValue(STORAGE_KEYS.DROP_OLD, true)).toEqual([{ "#EXP": 20 }]);
   });
 
-  it("builds a single drop report model from the active record", () => {
+  it("builds a single drop report model from the active record", async () => {
     setValue(STORAGE_KEYS.DROP, { "#Credit": 12 });
 
-    expect(runBattleReportModel({ type: BattleReportModelEvent.READ_DROP_REPORT_MODEL })).toEqual({
-      mode: "single",
-      rows: [{ key: "#Credit", value: 12 }],
-    });
+    expect(
+      await runBattleReportModel({ type: BattleReportModelEvent.READ_DROP_REPORT_MODEL })
+    ).toEqual({ mode: "single", rows: [{ key: "#Credit", value: 12 }] });
   });
 });

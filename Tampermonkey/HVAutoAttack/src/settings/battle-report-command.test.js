@@ -2,44 +2,49 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { STORAGE_KEYS } from "../state/persist-keys.js";
 import { getValue, setValue } from "../state/storage.js";
 import {
+  BattleSessionCheckpointEvent,
+  runBattleSessionCheckpointAutomation,
+} from "../state/battle-session-checkpoint.js";
+import {
   SettingsBattleReportCommandEvent,
   runSettingsBattleReportCommand,
 } from "./battle-report-command.js";
 
 beforeEach(() => {
   localStorage.clear();
+  runBattleSessionCheckpointAutomation({ type: BattleSessionCheckpointEvent.CLEAR });
 });
 
 describe("settings battle report command entry", () => {
-  it("renders drop and usage report table bodies through one settings command entry", () => {
+  it("renders drop and usage report table bodies through one settings command entry", async () => {
     setValue(STORAGE_KEYS.DROP, { "#Credit": 12 });
     setValue(STORAGE_KEYS.STATS, { self: { _turn: 3 } });
 
     expect(
-      runSettingsBattleReportCommand({
+      await runSettingsBattleReportCommand({
         type: SettingsBattleReportCommandEvent.RENDER_DROP_TABLE_BODY,
       })
     ).toContain("#Credit");
     expect(
-      runSettingsBattleReportCommand({
+      await runSettingsBattleReportCommand({
         type: SettingsBattleReportCommandEvent.RENDER_USAGE_TABLE_BODY,
       })
     ).toContain("_turn");
   });
 
-  it("clears drop and usage reports as settings report commands", () => {
+  it("clears drop and usage reports as settings report commands", async () => {
     setValue(STORAGE_KEYS.DROP, { a: 1 });
     setValue(STORAGE_KEYS.DROP_OLD, [{ a: 2 }]);
     setValue(STORAGE_KEYS.STATS, { self: {} });
     setValue(STORAGE_KEYS.STATS_OLD, [{ self: {} }]);
 
     expect(
-      runSettingsBattleReportCommand({
+      await runSettingsBattleReportCommand({
         type: SettingsBattleReportCommandEvent.CLEAR_DROP_REPORT,
       })
     ).toEqual({ ok: true, type: SettingsBattleReportCommandEvent.CLEAR_DROP_REPORT });
     expect(
-      runSettingsBattleReportCommand({
+      await runSettingsBattleReportCommand({
         type: SettingsBattleReportCommandEvent.CLEAR_USAGE_REPORT,
       })
     ).toEqual({ ok: true, type: SettingsBattleReportCommandEvent.CLEAR_USAGE_REPORT });

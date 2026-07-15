@@ -1,112 +1,72 @@
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 import { STORAGE_KEYS } from "../state/persist-keys.js";
 import {
   BattleRecordArchiveEvent,
   runBattleRecordArchiveAutomation,
 } from "./battle-record-archive.js";
-
-function deps(values = {}) {
-  const setValue = vi.fn((key, value) => {
-    values[key] = value;
-  });
-  return {
-    getValue: (key) => values[key],
-    setValue,
-    readLocalTimestampLabel: () => "finished",
-    values,
-  };
-}
+import { createBattleRecordArchiveTestDeps } from "./battle-record-archive-test-fixture.js";
 
 describe("battle record archive reads", () => {
   it("creates current records with a start timestamp when none exists", () => {
     expect(
       runBattleRecordArchiveAutomation(
-        {
-          type: BattleRecordArchiveEvent.READ_OR_CREATE_USAGE_STATS,
-        },
-        deps()
+        { type: BattleRecordArchiveEvent.READ_OR_CREATE_USAGE_STATS },
+        createBattleRecordArchiveTestDeps()
       )
     ).toMatchObject({ self: { _startTime: "finished", _turn: 0 } });
   });
 
-  it("reads current records without rewriting their start timestamp", () => {
+  it("migrates legacy current records into the session checkpoint", () => {
     const current = { "#Credit": 5, "#startTime": "old" };
+    const runtime = createBattleRecordArchiveTestDeps({ [STORAGE_KEYS.DROP]: current });
 
     expect(
       runBattleRecordArchiveAutomation(
-        {
-          type: BattleRecordArchiveEvent.READ_OR_CREATE_DROP_RECORD,
-        },
-        deps({ [STORAGE_KEYS.DROP]: current })
+        { type: BattleRecordArchiveEvent.READ_OR_CREATE_DROP_RECORD },
+        runtime
       )
-    ).toBe(current);
+    ).toEqual(current);
+    expect(runtime.values[STORAGE_KEYS.DROP]).toBeUndefined();
+    expect(runtime.readRuntime()).toMatchObject({ kind: "loaded", checkpoint: { drop: current } });
   });
 
-  it("reads existing current records without creating a default record", () => {
-    const current = { self: { _turn: 3 } };
-
+  it("returns null when no current usage record exists", () => {
     expect(
       runBattleRecordArchiveAutomation(
-        {
-          type: BattleRecordArchiveEvent.READ_USAGE_STATS,
-        },
-        deps({ [STORAGE_KEYS.STATS]: current })
-      )
-    ).toBe(current);
-  });
-
-  it("returns null when no current record exists", () => {
-    expect(
-      runBattleRecordArchiveAutomation(
-        {
-          type: BattleRecordArchiveEvent.READ_USAGE_STATS,
-        },
-        deps()
+        { type: BattleRecordArchiveEvent.READ_USAGE_STATS },
+        createBattleRecordArchiveTestDeps()
       )
     ).toBeNull();
   });
 
-  it("reads the current/history record set with current battle name", () => {
+  it("combines legacy and incremental histories with the current name", async () => {
+    const runtime = createBattleRecordArchiveTestDeps({
+      [STORAGE_KEYS.BATTLE_CODE]: "now",
+      [STORAGE_KEYS.DROP]: { "#Credit": 5 },
+      [STORAGE_KEYS.DROP_OLD]: [{ __name: "old", "#EXP": 20 }],
+    });
+    runtime.histories.get("drop").push({
+      id: "new",
+      record: { __name: "new", "#Credit": 8 },
+    });
+
     expect(
-      runBattleRecordArchiveAutomation(
-        {
-          type: BattleRecordArchiveEvent.READ_DROP_REPORT_SOURCE,
-        },
-        deps({
-          [STORAGE_KEYS.BATTLE_CODE]: "now",
-          [STORAGE_KEYS.DROP]: { "#Credit": 5 },
-          [STORAGE_KEYS.DROP_OLD]: [{ __name: "old", "#EXP": 20 }],
-        })
+      await runBattleRecordArchiveAutomation(
+        { type: BattleRecordArchiveEvent.READ_DROP_REPORT_SOURCE },
+        runtime
       )
     ).toEqual({
       currentName: "now",
       currentRaw: { "#Credit": 5 },
-      history: [{ __name: "old", "#EXP": 20 }],
+      history: [
+        { __name: "old", "#EXP": 20 },
+        { __name: "new", "#Credit": 8 },
+      ],
     });
   });
 
-  it("reads usage report record sets with current battle name", () => {
-    expect(
-      runBattleRecordArchiveAutomation(
-        {
-          type: BattleRecordArchiveEvent.READ_USAGE_REPORT_SOURCE,
-        },
-        deps({
-          [STORAGE_KEYS.BATTLE_CODE]: "now",
-          [STORAGE_KEYS.STATS]: { self: { _turn: 3 } },
-          [STORAGE_KEYS.STATS_OLD]: [{ __name: "old", self: { _turn: 1 } }],
-        })
-      )
-    ).toEqual({
-      currentName: "now",
-      currentRaw: { self: { _turn: 3 } },
-      history: [{ __name: "old", self: { _turn: 1 } }],
-    });
-  });
-
-  it("starts record naming once when recording is enabled", () => {
-    const runtime = deps();
-
+  it("starts report naming once in the bound runtime", () => {
+    const runtime = createBattleRecordArchiveTestDeps();
     expect(
       runBattleRecordArchiveAutomation(
         {
@@ -117,8 +77,6 @@ describe("battle record archive reads", () => {
         runtime
       )
     ).toBe(true);
-    expect(runtime.values[STORAGE_KEYS.BATTLE_CODE]).toBe("6/27: AR-5");
-
     expect(
       runBattleRecordArchiveAutomation(
         {
@@ -129,12 +87,14 @@ describe("battle record archive reads", () => {
         runtime
       )
     ).toBe(false);
-    expect(runtime.values[STORAGE_KEYS.BATTLE_CODE]).toBe("6/27: AR-5");
+    expect(runtime.readRuntime()).toMatchObject({
+      kind: "loaded",
+      checkpoint: { code: "6/27: AR-5" },
+    });
   });
 
-  it("does not start record naming when recording is disabled", () => {
-    const runtime = deps();
-
+  it("does not start report naming when recording is disabled", () => {
+    const runtime = createBattleRecordArchiveTestDeps();
     expect(
       runBattleRecordArchiveAutomation(
         {
@@ -145,6 +105,6 @@ describe("battle record archive reads", () => {
         runtime
       )
     ).toBe(false);
-    expect(runtime.values[STORAGE_KEYS.BATTLE_CODE]).toBeUndefined();
+    expect(runtime.readRuntime()).toEqual({ kind: "absent" });
   });
 });

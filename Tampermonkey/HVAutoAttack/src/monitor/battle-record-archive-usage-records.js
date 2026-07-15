@@ -1,50 +1,49 @@
-import { STORAGE_KEYS } from "../state/persist-keys.js";
 import { createDefaultUsageStats } from "./record-usage-default-stats.js";
+import { BattleReportCheckpointMode } from "./battle-record-archive-store.js";
+import { BattleReportFamily } from "./battle-report-history.js";
 
 function readOrCreateUsageStats(recordStore) {
   return recordStore.readOrCreateCurrentRecord({
-    currentKey: STORAGE_KEYS.STATS,
+    family: BattleReportFamily.USAGE,
     defaultRecord: createDefaultUsageStats(),
     startTimeField: "self._startTime",
   });
 }
 
 function readUsageStats(recordStore) {
-  return recordStore.readCurrentRecord({ currentKey: STORAGE_KEYS.STATS });
+  return recordStore.readCurrentRecord({ family: BattleReportFamily.USAGE });
 }
 
 function storeUsageStats(event, recordStore) {
   return recordStore.storeOrArchiveRecord({
-    currentKey: STORAGE_KEYS.STATS,
-    historyKey: STORAGE_KEYS.STATS_OLD,
+    family: BattleReportFamily.USAGE,
     record: event.record,
     recordEach: false,
+    checkpointMode: BattleReportCheckpointMode.MEMORY_ONLY,
   });
 }
 
 function storeOrArchiveUsageStats(event, recordStore) {
   return recordStore.storeOrArchiveRecord({
-    currentKey: STORAGE_KEYS.STATS,
-    historyKey: STORAGE_KEYS.STATS_OLD,
+    family: BattleReportFamily.USAGE,
     record: event.record,
     endTimeField: "self._endTime",
     recordEach: event.recordEach,
     roundNow: event.roundNow,
     roundAll: event.roundAll,
+    checkpointMode: BattleReportCheckpointMode.ROUND_BOUNDARY,
   });
 }
 
 function readUsageReportSource(recordStore) {
   return recordStore.readRecordSet({
-    currentKey: STORAGE_KEYS.STATS,
-    historyKey: STORAGE_KEYS.STATS_OLD,
+    family: BattleReportFamily.USAGE,
   });
 }
 
 function clearUsageReportRecordSet(recordStore) {
   return recordStore.clearRecordSet({
-    currentKey: STORAGE_KEYS.STATS,
-    historyKey: STORAGE_KEYS.STATS_OLD,
+    family: BattleReportFamily.USAGE,
   });
 }
 

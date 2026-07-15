@@ -1,9 +1,10 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 import { g } from "../state/store.js";
 import { STORAGE_KEYS } from "../state/persist-keys.js";
 import { getValue, setValue } from "../state/storage.js";
 import { OptionEvent, runOptionAutomation } from "../state/option.js";
-import { BATTLE_RECORD_ARCHIVE_FAILURE_KEY } from "./battle-record-archive-failure.js";
+import { StorageWriteOutcome } from "../state/storage-io-policy.js";
+import { createBattleRecordArchiveTestDeps } from "./battle-record-archive-test-fixture.js";
 import { BattleUsageEvent, runBattleUsageAutomation } from "./record-usage.js";
 
 beforeEach(() => {
@@ -18,9 +19,17 @@ beforeEach(() => {
   g("bossAll", 1);
 });
 
-afterEach(() => {
-  vi.unstubAllGlobals();
-});
+function completionContext(overrides = {}) {
+  return {
+    recordUsage: true,
+    recordEach: true,
+    roundNow: 1,
+    roundAll: 1,
+    monsterAll: 3,
+    bossAll: 1,
+    ...overrides,
+  };
+}
 
 describe("runBattleUsageAutomation", () => {
   it("rejects unknown and null usage events without changing usage records", () => {
@@ -28,36 +37,39 @@ describe("runBattleUsageAutomation", () => {
 
     expect(runBattleUsageAutomation({ type: "unknown" })).toBeUndefined();
     expect(runBattleUsageAutomation(null)).toBeUndefined();
-
     expect(getValue(STORAGE_KEYS.STATS, true)).toEqual({ self: { _monster: 2, _boss: 1 } });
-    expect(getValue(STORAGE_KEYS.STATS_OLD, true)).toBeNull();
   });
 
   it("does not archive completion usage when record usage is disabled", () => {
-    setValue(STORAGE_KEYS.STATS, { self: { _monster: 0, _boss: 0 } });
-
-    expect(runBattleUsageAutomation({ type: BattleUsageEvent.RECORD_COMPLETED_USAGE })).toEqual({
-      kind: "skipped",
-      reason: "recordUsageDisabled",
+    const runtime = createBattleRecordArchiveTestDeps({
+      [STORAGE_KEYS.STATS]: { self: { _monster: 0, _boss: 0 } },
     });
+    runtime.readCompletionContext = () => completionContext({ recordUsage: false });
 
-    expect(getValue(STORAGE_KEYS.STATS, true)).toEqual({ self: { _monster: 0, _boss: 0 } });
-    expect(getValue(STORAGE_KEYS.STATS_OLD, true)).toBeNull();
+    expect(
+      runBattleUsageAutomation({ type: BattleUsageEvent.RECORD_COMPLETED_USAGE }, runtime)
+    ).toEqual({ kind: "skipped", reason: "recordUsageDisabled" });
+    expect(runtime.values[STORAGE_KEYS.STATS]).toEqual({ self: { _monster: 0, _boss: 0 } });
   });
 
-  it("archives completion usage through the usage entry when enabled", () => {
-    runOptionAutomation({ type: OptionEvent.WRITE_FIELD, key: "recordUsage", value: true });
-    runOptionAutomation({ type: OptionEvent.WRITE_FIELD, key: "recordEach", value: true });
-    setValue(STORAGE_KEYS.BATTLE_CODE, "AR-1");
-    setValue(STORAGE_KEYS.STATS, { self: { _monster: 0, _boss: 0 } });
-
-    expect(runBattleUsageAutomation({ type: BattleUsageEvent.RECORD_COMPLETED_USAGE })).toEqual({
-      kind: "recorded",
-      archive: { archived: true, record: expect.objectContaining({ __name: "AR-1" }) },
+  it("archives completion usage through the incremental history entry", async () => {
+    const runtime = createBattleRecordArchiveTestDeps({
+      [STORAGE_KEYS.BATTLE_CODE]: "AR-1",
+      [STORAGE_KEYS.STATS]: { self: { _monster: 0, _boss: 0 } },
     });
+    runtime.readCompletionContext = () => completionContext();
 
-    expect(getValue(STORAGE_KEYS.STATS, true)).toBeNull();
-    expect(getValue(STORAGE_KEYS.STATS_OLD, true)).toEqual([
+    const result = runBattleUsageAutomation(
+      { type: BattleUsageEvent.RECORD_COMPLETED_USAGE },
+      runtime
+    );
+
+    expect(result).toMatchObject({
+      kind: "recorded",
+      archive: { archived: true, record: { __name: "AR-1" } },
+    });
+    expect(await result.archive.completion).toBe(true);
+    expect(runtime.histories.get("usage").map(({ record }) => record)).toEqual([
       {
         __name: "AR-1",
         self: {
@@ -69,25 +81,23 @@ describe("runBattleUsageAutomation", () => {
     ]);
   });
 
-  it("does not report completion usage success when archive persistence fails", () => {
-    runOptionAutomation({ type: OptionEvent.WRITE_FIELD, key: "recordUsage", value: true });
-    runOptionAutomation({ type: OptionEvent.WRITE_FIELD, key: "recordEach", value: true });
-    setValue(STORAGE_KEYS.BATTLE_CODE, "AR-1");
-    setValue(STORAGE_KEYS.STATS, { self: { _monster: 0, _boss: 0 } });
-    vi.stubGlobal("GM_setValue", () => {
-      throw new Error("usage archive blocked");
+  it("exposes asynchronous archive persistence failure", async () => {
+    const runtime = createBattleRecordArchiveTestDeps({
+      [STORAGE_KEYS.BATTLE_CODE]: "AR-1",
+      [STORAGE_KEYS.STATS]: { self: { _monster: 0, _boss: 0 } },
+    });
+    runtime.readCompletionContext = () => completionContext();
+    runtime.runHistory = async () => ({
+      outcome: StorageWriteOutcome.FAILED,
+      error: new Error("usage archive blocked"),
     });
 
-    expect(runBattleUsageAutomation({ type: BattleUsageEvent.RECORD_COMPLETED_USAGE })).toEqual({
-      kind: "failed",
-      reason: "usageArchiveFailed",
-    });
+    const result = runBattleUsageAutomation(
+      { type: BattleUsageEvent.RECORD_COMPLETED_USAGE },
+      runtime
+    );
 
-    expect(JSON.parse(sessionStorage.getItem(BATTLE_RECORD_ARCHIVE_FAILURE_KEY))).toMatchObject({
-      capability: "battleRecordArchive",
-      stage: "archive-history",
-      key: STORAGE_KEYS.STATS_OLD,
-      failure: { kind: "storageWrite", error: "usage archive blocked" },
-    });
+    expect(result.kind).toBe("recorded");
+    expect(await result.archive.completion).toBe(false);
   });
 });

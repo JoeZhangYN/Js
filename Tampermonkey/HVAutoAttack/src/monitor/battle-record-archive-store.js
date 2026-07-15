@@ -1,20 +1,17 @@
 import { TimeEvent, runTimeAutomation } from "../core/time.js";
-import { getValue, setValue, delValue } from "../state/storage.js";
-import { STORAGE_KEYS } from "../state/persist-keys.js";
+import { StorageWriteOutcome } from "../state/storage-io-policy.js";
+import { createBattleRecordLegacyAdapter } from "./battle-record-legacy-adapter.js";
 import { persistBattleRecordArchiveStep } from "./battle-record-archive-failure.js";
+import {
+  BattleReportHistoryEvent,
+  runBattleReportHistoryAutomation,
+} from "./battle-report-history.js";
+import {
+  BattleReportCheckpointMode,
+  createBattleReportRuntimeStore,
+} from "./battle-report-runtime-store.js";
 
 const REPORT_RECORD_NAME_FIELD = "__name";
-
-function makeDeps(deps) {
-  return {
-    delValue: deps.delValue || delValue,
-    getValue: deps.getValue || getValue,
-    setValue: deps.setValue || setValue,
-    readLocalTimestampLabel:
-      deps.readLocalTimestampLabel ||
-      (() => runTimeAutomation({ type: TimeEvent.LOCAL_TIMESTAMP_LABEL })),
-  };
-}
 
 function shouldArchive({ recordEach, roundNow, roundAll }) {
   return Boolean(recordEach && roundNow === roundAll);
@@ -30,107 +27,82 @@ function writePath(record, path, value) {
   target[parts.at(-1)] = value;
 }
 
-function cloneRecord(record) {
+function clone(record) {
   return JSON.parse(JSON.stringify(record || {}));
 }
 
-function readCurrentBattleReportName(deps) {
-  return deps.getValue(STORAGE_KEYS.BATTLE_CODE);
-}
+export function createBattleRecordArchiveStore(deps = {}) {
+  const runtime = deps.runtime || createBattleReportRuntimeStore(deps);
+  const legacy = deps.legacy || createBattleRecordLegacyAdapter(deps);
+  const runHistory = deps.runHistory || runBattleReportHistoryAutomation;
+  const timestamp =
+    deps.readLocalTimestampLabel ||
+    (() => runTimeAutomation({ type: TimeEvent.LOCAL_TIMESTAMP_LABEL }));
 
-function readOrCreateCurrentRecord(event, deps) {
-  const current = deps.getValue(event.currentKey, true);
-  if (current) return current;
-  const record = cloneRecord(event.defaultRecord);
-  if (event.startTimeField) writePath(record, event.startTimeField, deps.readLocalTimestampLabel());
-  return record;
-}
+  function readOrCreateCurrentRecord(event) {
+    const existing = runtime.readCurrent(event.family);
+    if (existing) return existing;
+    const record = clone(event.defaultRecord);
+    if (event.startTimeField) writePath(record, event.startTimeField, timestamp());
+    return record;
+  }
 
-function readCurrentRecord(event, deps) {
-  return deps.getValue(event.currentKey, true) || null;
-}
+  async function readRecordSet(event) {
+    const currentName = runtime.readCode();
+    const currentRaw = runtime.readCurrent(event.family);
+    const incremental = await runHistory({
+      type: BattleReportHistoryEvent.LIST,
+      family: event.family,
+    });
+    return {
+      currentName,
+      currentRaw,
+      history: [...legacy.readHistory(event.family), ...(incremental || [])],
+    };
+  }
 
-function readRecordSet(event, deps) {
-  return {
-    currentName: readCurrentBattleReportName(deps),
-    currentRaw: deps.getValue(event.currentKey, true),
-    history: deps.getValue(event.historyKey, true) || [],
-  };
-}
+  function storeOrArchiveRecord(event) {
+    if (!shouldArchive(event)) {
+      const result = runtime.store(event.family, event.record, event.checkpointMode);
+      return result.outcome === StorageWriteOutcome.FAILED ? false : { archived: false };
+    }
+    const archived = { ...clone(event.record), [REPORT_RECORD_NAME_FIELD]: runtime.readCode() };
+    if (event.endTimeField) writePath(archived, event.endTimeField, timestamp());
+    const identity = runtime.archiveIdentity(event.family);
+    const completion = Promise.resolve(
+      runHistory({
+        type: BattleReportHistoryEvent.APPEND,
+        family: event.family,
+        envelope: { ...identity, record: archived },
+      })
+    ).then((result) => {
+      if (result?.outcome === StorageWriteOutcome.FAILED) return false;
+      return runtime.clearFamily(event.family).outcome !== StorageWriteOutcome.FAILED;
+    });
+    return { archived: true, record: archived, completion };
+  }
 
-function startBattleReportRecording(event, deps) {
-  if (!event.enabled || readCurrentBattleReportName(deps)) return false;
-  return persistBattleRecordArchiveStep("start-recording", STORAGE_KEYS.BATTLE_CODE, () =>
-    deps.setValue(STORAGE_KEYS.BATTLE_CODE, event.code)
-  );
-}
-
-function nameArchivedBattleReportRecord(record, deps) {
-  return {
-    ...record,
-    [REPORT_RECORD_NAME_FIELD]: readCurrentBattleReportName(deps),
-  };
-}
-
-function storeOrArchiveRecord(event, deps) {
-  if (!shouldArchive(event)) {
+  async function clearRecordSet(event) {
+    const result = await runHistory({ type: BattleReportHistoryEvent.CLEAR, family: event.family });
+    if (result?.outcome === StorageWriteOutcome.FAILED) return false;
     if (
-      !persistBattleRecordArchiveStep("store-current", event.currentKey, () =>
-        deps.setValue(event.currentKey, event.record)
+      !persistBattleRecordArchiveStep("clear-legacy-history", event.family, () =>
+        legacy.clearHistory(event.family)
       )
     ) {
       return false;
     }
-    return { archived: false };
+    return runtime.clearFamily(event.family).outcome !== StorageWriteOutcome.FAILED;
   }
 
-  const history = deps.getValue(event.historyKey, true) || [];
-  const archived = nameArchivedBattleReportRecord(event.record, deps);
-  if (event.endTimeField) writePath(archived, event.endTimeField, deps.readLocalTimestampLabel());
-  history.push(archived);
-  if (
-    !persistBattleRecordArchiveStep("archive-history", event.historyKey, () =>
-      deps.setValue(event.historyKey, history)
-    )
-  ) {
-    return false;
-  }
-  if (
-    !persistBattleRecordArchiveStep("archive-clear-current", event.currentKey, () =>
-      deps.delValue(event.currentKey)
-    )
-  ) {
-    return false;
-  }
-  return { archived: true, record: archived };
+  return Object.freeze({
+    clearRecordSet,
+    readCurrentRecord: (event) => runtime.readCurrent(event.family),
+    readOrCreateCurrentRecord,
+    readRecordSet,
+    startBattleReportRecording: (event) => runtime.start(event),
+    storeOrArchiveRecord,
+  });
 }
 
-function clearRecordSet(event, deps) {
-  if (
-    !persistBattleRecordArchiveStep("clear-current", event.currentKey, () =>
-      deps.delValue(event.currentKey)
-    )
-  ) {
-    return false;
-  }
-  if (
-    !persistBattleRecordArchiveStep("clear-history", event.historyKey, () =>
-      deps.delValue(event.historyKey)
-    )
-  ) {
-    return false;
-  }
-  return true;
-}
-
-export function createBattleRecordArchiveStore(deps = {}) {
-  const fullDeps = makeDeps(deps);
-  return {
-    clearRecordSet: (event) => clearRecordSet(event, fullDeps),
-    readCurrentRecord: (event) => readCurrentRecord(event, fullDeps),
-    readOrCreateCurrentRecord: (event) => readOrCreateCurrentRecord(event, fullDeps),
-    readRecordSet: (event) => readRecordSet(event, fullDeps),
-    startBattleReportRecording: (event) => startBattleReportRecording(event, fullDeps),
-    storeOrArchiveRecord: (event) => storeOrArchiveRecord(event, fullDeps),
-  };
-}
+export { BattleReportCheckpointMode };

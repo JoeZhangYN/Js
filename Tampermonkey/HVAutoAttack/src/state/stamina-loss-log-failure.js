@@ -1,5 +1,3 @@
-import { STORAGE_KEYS } from "./persist-keys.js";
-import { setValue } from "./storage.js";
 import {
   DiagnosticConsoleEvent,
   runDiagnosticConsoleAutomation,
@@ -23,14 +21,4 @@ export function recordStaminaLossLogFailure(stage, error) {
     args: ["[HVAA] stamina loss log persistence failed", evidence],
   });
   return evidence;
-}
-
-export function persistStaminaLossLog(log, stage) {
-  try {
-    setValue(STORAGE_KEYS.STAMINA_LOST_LOG, log);
-    return true;
-  } catch (error) {
-    recordStaminaLossLogFailure(stage, error);
-    return false;
-  }
 }

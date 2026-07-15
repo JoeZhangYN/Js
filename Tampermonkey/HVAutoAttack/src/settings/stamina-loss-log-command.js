@@ -11,8 +11,8 @@ export const SettingsStaminaLossLogCommandEvent = Object.freeze({
 const settingsStaminaLossLogCommandHandlers = Object.freeze({
   [EVENT_CLEAR_CONFIRMATION_MESSAGE]: () =>
     runStaminaLossLogAutomation({ type: StaminaLossLogEvent.CLEAR_CONFIRMATION_MESSAGE }),
-  [EVENT_CLEAR]: () => ({
-    ok: runStaminaLossLogAutomation({ type: StaminaLossLogEvent.CLEAR }) !== false,
+  [EVENT_CLEAR]: async () => ({
+    ok: (await runStaminaLossLogAutomation({ type: StaminaLossLogEvent.CLEAR })) !== false,
     type: EVENT_CLEAR,
   }),
 });

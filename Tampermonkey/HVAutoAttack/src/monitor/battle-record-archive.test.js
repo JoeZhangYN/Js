@@ -1,57 +1,47 @@
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 import { STORAGE_KEYS } from "../state/persist-keys.js";
 import {
   BattleRecordArchiveEvent,
   runBattleRecordArchiveAutomation,
 } from "./battle-record-archive.js";
-
-function deps(values = {}) {
-  const setValue = vi.fn((key, value) => {
-    values[key] = value;
-  });
-  const delValue = vi.fn((key) => {
-    delete values[key];
-  });
-  return {
-    delValue,
-    getValue: (key) => values[key],
-    setValue,
-    readLocalTimestampLabel: () => "finished",
-    values,
-  };
-}
+import { createBattleRecordArchiveTestDeps } from "./battle-record-archive-test-fixture.js";
 
 describe("runBattleRecordArchiveAutomation", () => {
-  it("rejects unknown and null archive events without reading or writing records", () => {
-    const runtime = deps({ [STORAGE_KEYS.DROP]: { "#Credit": 5 } });
+  it("rejects unknown and null archive events without changing records", () => {
+    const runtime = createBattleRecordArchiveTestDeps({
+      [STORAGE_KEYS.DROP]: { "#Credit": 5 },
+    });
 
     expect(runBattleRecordArchiveAutomation({ type: "unknown" }, runtime)).toBeUndefined();
     expect(runBattleRecordArchiveAutomation(null, runtime)).toBeUndefined();
-
-    expect(runtime.setValue).not.toHaveBeenCalled();
-    expect(runtime.delValue).not.toHaveBeenCalled();
-  });
-
-  it("stores the current battle record before the final round", () => {
-    const runtime = deps();
-
-    const outcome = runBattleRecordArchiveAutomation(
-      {
-        type: BattleRecordArchiveEvent.STORE_OR_ARCHIVE_DROP_RECORD,
-        record: { "#Credit": 5 },
-        recordEach: true,
-        roundNow: 1,
-        roundAll: 2,
-      },
-      runtime
-    );
-
-    expect(outcome).toEqual({ archived: false });
     expect(runtime.values[STORAGE_KEYS.DROP]).toEqual({ "#Credit": 5 });
   });
 
-  it("archives final-round records with battle code and nested end time", () => {
-    const runtime = deps({ [STORAGE_KEYS.BATTLE_CODE]: "AR-10" });
+  it("keeps per-action current records in memory before the round boundary", () => {
+    const runtime = createBattleRecordArchiveTestDeps();
+
+    let outcome;
+    for (let turn = 1; turn <= 100; turn += 1) {
+      outcome = runBattleRecordArchiveAutomation(
+        {
+          type: BattleRecordArchiveEvent.STORE_USAGE_STATS,
+          record: { self: { _turn: turn } },
+        },
+        runtime
+      );
+    }
+
+    expect(outcome).toEqual({ archived: false });
+    expect(runtime.readRuntime()).toMatchObject({
+      kind: "loaded",
+      checkpoint: { usage: { self: { _turn: 100 } } },
+    });
+    expect(runtime.values[STORAGE_KEYS.STATS]).toBeUndefined();
+    expect(runtime.sessionWriteCount()).toBe(0);
+  });
+
+  it("archives final-round records as an incremental record", async () => {
+    const runtime = createBattleRecordArchiveTestDeps({ [STORAGE_KEYS.BATTLE_CODE]: "AR-10" });
 
     const outcome = runBattleRecordArchiveAutomation(
       {
@@ -65,46 +55,71 @@ describe("runBattleRecordArchiveAutomation", () => {
     );
 
     expect(outcome.archived).toBe(true);
-    expect(runtime.values[STORAGE_KEYS.STATS]).toBeUndefined();
-    expect(runtime.values[STORAGE_KEYS.STATS_OLD]).toEqual([
+    expect(await outcome.completion).toBe(true);
+    expect(runtime.histories.get("usage").map(({ record }) => record)).toEqual([
       { __name: "AR-10", self: { _endTime: "finished", _turn: 3 } },
     ]);
+    expect(runtime.values[STORAGE_KEYS.STATS_OLD]).toBeUndefined();
   });
 
-  it("clears a drop report through the same lifecycle entry", () => {
-    const runtime = deps({
+  it("converges concurrent drop and usage completion clears on the latest checkpoint", async () => {
+    const runtime = createBattleRecordArchiveTestDeps({ [STORAGE_KEYS.BATTLE_CODE]: "AR-10" });
+    const drop = runBattleRecordArchiveAutomation(
+      {
+        type: BattleRecordArchiveEvent.STORE_OR_ARCHIVE_DROP_RECORD,
+        record: { "#Credit": 5 },
+        recordEach: true,
+        roundNow: 2,
+        roundAll: 2,
+      },
+      runtime
+    );
+    const usage = runBattleRecordArchiveAutomation(
+      {
+        type: BattleRecordArchiveEvent.STORE_OR_ARCHIVE_USAGE_STATS,
+        record: { self: { _turn: 3 } },
+        recordEach: true,
+        roundNow: 2,
+        roundAll: 2,
+      },
+      runtime
+    );
+
+    expect(await Promise.all([drop.completion, usage.completion])).toEqual([true, true]);
+    expect(runtime.readRuntime()).toMatchObject({
+      kind: "loaded",
+      checkpoint: { code: null, drop: null, usage: null },
+    });
+  });
+
+  it("clears a drop report through the same lifecycle entry", async () => {
+    const runtime = createBattleRecordArchiveTestDeps({
       [STORAGE_KEYS.DROP]: { "#Credit": 1 },
       [STORAGE_KEYS.DROP_OLD]: [{ "#Credit": 2 }],
     });
 
     expect(
-      runBattleRecordArchiveAutomation(
-        {
-          type: BattleRecordArchiveEvent.CLEAR_DROP_REPORT,
-        },
+      await runBattleRecordArchiveAutomation(
+        { type: BattleRecordArchiveEvent.CLEAR_DROP_REPORT },
         runtime
       )
     ).toBe(true);
-
     expect(runtime.values[STORAGE_KEYS.DROP]).toBeUndefined();
     expect(runtime.values[STORAGE_KEYS.DROP_OLD]).toBeUndefined();
   });
 
-  it("clears usage report records through usage report archive commands", () => {
-    const runtime = deps({
+  it("clears usage report records through the usage command", async () => {
+    const runtime = createBattleRecordArchiveTestDeps({
       [STORAGE_KEYS.STATS]: { self: {} },
       [STORAGE_KEYS.STATS_OLD]: [{ self: {} }],
     });
 
     expect(
-      runBattleRecordArchiveAutomation(
-        {
-          type: BattleRecordArchiveEvent.CLEAR_USAGE_REPORT,
-        },
+      await runBattleRecordArchiveAutomation(
+        { type: BattleRecordArchiveEvent.CLEAR_USAGE_REPORT },
         runtime
       )
     ).toBe(true);
-
     expect(runtime.values[STORAGE_KEYS.STATS]).toBeUndefined();
     expect(runtime.values[STORAGE_KEYS.STATS_OLD]).toBeUndefined();
   });
