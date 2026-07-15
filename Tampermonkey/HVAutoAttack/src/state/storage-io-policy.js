@@ -10,6 +10,7 @@ export const StorageIdentity = Object.freeze({
   MONSTER_KNOWLEDGE: "monsterKnowledge",
   HVUT_CONFIG: "hvutConfig",
   HVUT_DERIVED_RECORD: "hvutDerivedRecord",
+  ENCOUNTER_STATE: "encounterState",
   DIAGNOSTIC_EVIDENCE: "diagnosticEvidence",
 });
 
@@ -37,17 +38,16 @@ export const StorageWriteOutcome = Object.freeze({
   FAILED: "failed",
 });
 
+const gmWriteIfChanged = (worldBound) => ({
+  authority: StorageAuthority.GM,
+  writeMode: StorageWriteMode.WRITE_IF_CHANGED,
+  worldBound,
+  budget: null,
+});
+
 const policies = new Map(
   [
-    [
-      StorageIdentity.WORLD_SMALL_VALUE,
-      {
-        authority: StorageAuthority.GM,
-        writeMode: StorageWriteMode.WRITE_IF_CHANGED,
-        worldBound: true,
-        budget: null,
-      },
-    ],
+    [StorageIdentity.WORLD_SMALL_VALUE, gmWriteIfChanged(true)],
     [
       StorageIdentity.SESSION_RUNTIME_CHECKPOINT,
       {
@@ -111,15 +111,7 @@ const policies = new Map(
         budget: null,
       },
     ],
-    [
-      StorageIdentity.HVUT_CONFIG,
-      {
-        authority: StorageAuthority.GM,
-        writeMode: StorageWriteMode.WRITE_IF_CHANGED,
-        worldBound: true,
-        budget: null,
-      },
-    ],
+    [StorageIdentity.HVUT_CONFIG, gmWriteIfChanged(true)],
     [
       StorageIdentity.HVUT_DERIVED_RECORD,
       {
@@ -129,6 +121,7 @@ const policies = new Map(
         budget: null,
       },
     ],
+    [StorageIdentity.ENCOUNTER_STATE, gmWriteIfChanged(false)],
     [
       StorageIdentity.DIAGNOSTIC_EVIDENCE,
       {

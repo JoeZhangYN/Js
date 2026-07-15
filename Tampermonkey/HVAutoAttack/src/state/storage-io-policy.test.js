@@ -21,6 +21,11 @@ describe("storage IO policy", () => {
       authority: StorageAuthority.SESSION,
       budget: { everyTurns: 20, lifecycleBoundaries: true },
     });
+    expect(storageIoPolicyOf(StorageIdentity.ENCOUNTER_STATE)).toMatchObject({
+      authority: StorageAuthority.GM,
+      writeMode: StorageWriteMode.WRITE_IF_CHANGED,
+      worldBound: false,
+    });
   });
 
   it("locks the declared retention budgets", () => {

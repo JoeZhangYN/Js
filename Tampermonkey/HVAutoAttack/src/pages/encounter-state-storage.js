@@ -1,4 +1,11 @@
 import { EncounterPolicyEvent, runEncounterPolicy } from "./encounter-policy.js";
+import {
+  measureStorageLogicalBytes,
+  runStorageIoMetricsAutomation,
+  StorageIoMetricsEvent,
+} from "../state/storage-io-metrics.js";
+import { StorageIdentity, StorageWriteOutcome } from "../state/storage-io-policy.js";
+import { writeCanonicalStorageValue } from "../state/storage-write-adapter.js";
 
 const HVUT_RE_KEY = "hvut_re";
 const EVENT_READ = "read";
@@ -73,11 +80,37 @@ function writeState(event, deps) {
     deps.warn("write-authority", { key: HVUT_RE_KEY, reason: authority.reason });
     return reject(authority, authority.reason, undefined, event.state);
   }
+  const recordIo = deps.recordIo || runStorageIoMetricsAutomation;
+  const logicalBytes = measureStorageLogicalBytes(HVUT_RE_KEY, event.state);
+  const observe = (outcome) =>
+    recordIo({
+      type: StorageIoMetricsEvent.RECORD,
+      identity: StorageIdentity.ENCOUNTER_STATE,
+      outcome,
+      logicalBytes,
+      sourceIdentity: "hvut_re",
+    });
   try {
-    if (authority.authority === "gm") deps.setValue(HVUT_RE_KEY, event.state);
-    else deps.localStorage.setItem(HVUT_RE_KEY, JSON.stringify(event.state));
-    return { ok: true, status: "persisted", ...authority, state: event.state };
+    const write = writeCanonicalStorageValue({
+      key: HVUT_RE_KEY,
+      value: event.state,
+      gmGet: authority.authority === "gm" ? deps.getValue : undefined,
+      gmSet: authority.authority === "gm" ? deps.setValue : undefined,
+      localStorage: authority.authority === "local" ? deps.localStorage : undefined,
+      onReadFailure: (stage, error) =>
+        deps.warn(stage, { key: HVUT_RE_KEY, error: errorText(error) }),
+    });
+    observe(write.outcome);
+    return {
+      ok: true,
+      status:
+        write.outcome === StorageWriteOutcome.SKIPPED_UNCHANGED ? "skippedUnchanged" : "persisted",
+      outcome: write.outcome,
+      ...authority,
+      state: write.canonicalValue,
+    };
   } catch (error) {
+    observe(StorageWriteOutcome.FAILED);
     const stage = authority.authority === "gm" ? "write-gm" : "write-local";
     deps.warn(stage, { key: HVUT_RE_KEY, state: event.state, error: errorText(error) });
     return reject(authority, `${authority.authority}WriteFailed`, error, event.state);

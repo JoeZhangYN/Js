@@ -72,6 +72,7 @@ for (const required of [
   "STAMINA_LOSS",
   "LEARNED_MONSTER_IDENTITY",
   "MONSTER_KNOWLEDGE",
+  "ENCOUNTER_STATE",
   "DIAGNOSTIC_EVIDENCE",
 ]) {
   if (!policy.includes(required)) violations.push(`storage-io-policy.js must own ${required}`);
@@ -99,10 +100,29 @@ for (const required of [
   "storageValueFingerprint",
   "StorageWriteOutcome.WRITTEN",
   "StorageWriteOutcome.SKIPPED_UNCHANGED",
+  "storage.setItem(key, serialized)",
 ]) {
   if (!writeAdapter.includes(required)) {
     violations.push(`storage-write-adapter.js must own ${required}`);
   }
+}
+
+const encounterStateStorage = fs.readFileSync(
+  path.join(srcRoot, "pages", "encounter-state-storage.js"),
+  "utf8"
+);
+for (const required of [
+  "StorageIdentity.ENCOUNTER_STATE",
+  "writeCanonicalStorageValue",
+  "StorageWriteOutcome.SKIPPED_UNCHANGED",
+  "runStorageIoMetricsAutomation",
+]) {
+  if (!encounterStateStorage.includes(required)) {
+    violations.push(`encounter-state-storage.js must consume ${required}`);
+  }
+}
+if (/\bdeps\.setValue\s*\(/.test(encounterStateStorage)) {
+  violations.push("encounter-state-storage.js must not bypass content-aware write authority");
 }
 
 const checkpoint = fs.readFileSync(
