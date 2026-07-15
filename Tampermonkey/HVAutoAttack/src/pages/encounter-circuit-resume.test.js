@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { ENCOUNTER_COOLDOWN_MS } from "./encounter-day-state.js";
 import { EncounterEvent, runEncounterAutomation } from "./encounter.js";
 
 const mocks = vi.hoisted(() => ({
@@ -21,7 +22,7 @@ beforeEach(() => {
 });
 
 describe("encounter generation circuit resume", () => {
-  it("keeps a persisted open circuit degraded after page re-entry without a popup", () => {
+  it("migrates a persisted missing-key circuit into the 30:05 probe deadline", () => {
     localStorage.setItem(
       "hvut_re",
       JSON.stringify({
@@ -32,7 +33,7 @@ describe("encounter generation circuit resume", () => {
         generationAttemptKey: "2026-06-27:0::true:ready",
         generationFailureCount: 3,
         generationFailureReason: "encounterKeyMissing",
-        generationCircuitOpenUntil: Date.now() + 1000,
+        generationCircuitOpenUntil: Date.now() + 60 * 60 * 1000,
       })
     );
 
@@ -41,15 +42,15 @@ describe("encounter generation circuit resume", () => {
     });
 
     expect(outcome).toMatchObject({
-      status: "degraded",
-      reason: "encounterKeyMissing",
-      diagnostic: { evidence: { reason: "encounterKeyMissing", source: "lobbyResume" } },
+      status: "waiting",
+      reason: "probeCycle",
+      clock: { countdownMs: ENCOUNTER_COOLDOWN_MS },
     });
     expect(mocks.runUserFeedbackAutomation).not.toHaveBeenCalled();
     expect(mocks.gmXhr).not.toHaveBeenCalled();
   });
 
-  it("clears an expired displayed circuit incident and starts a new recovery episode", async () => {
+  it("rechecks an expired legacy missing-key circuit and starts a full probe cycle", async () => {
     const attemptKey = "2026-06-27:0::true:ready";
     localStorage.setItem(
       "hvut_re",
@@ -61,18 +62,7 @@ describe("encounter generation circuit resume", () => {
         generationAttemptKey: attemptKey,
         generationFailureCount: 3,
         generationFailureReason: "encounterKeyMissing",
-        generationCircuitOpenUntil: Date.now() - 1,
-      })
-    );
-    sessionStorage.setItem(
-      "HVAA:lastEncounterGenerationIncident",
-      JSON.stringify({
-        id: `encounter-generation:${attemptKey}:encounterKeyMissing:lobby:3`,
-        attemptKey,
-        reason: "encounterKeyMissing",
-        recoveryEpisode: 3,
-        sourceIdentity: "lobby",
-        display: { status: "shown" },
+        generationCircuitOpenUntil: Date.now() + 20 * 60 * 1000,
       })
     );
     mocks.gmXhr.mockImplementation(({ onload }) =>
@@ -84,10 +74,9 @@ describe("encounter generation circuit resume", () => {
     });
 
     expect(outcome).toMatchObject({
-      status: "degraded",
-      diagnostic: {
-        evidence: { incident: { recoveryEpisode: 4 } },
-      },
+      status: "waiting",
+      reason: "probeCycle",
+      clock: { countdownMs: ENCOUNTER_COOLDOWN_MS },
     });
     expect(mocks.gmXhr).toHaveBeenCalledOnce();
     expect(mocks.runUserFeedbackAutomation).not.toHaveBeenCalled();

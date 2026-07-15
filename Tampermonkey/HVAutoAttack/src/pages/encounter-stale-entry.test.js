@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { ENCOUNTER_COOLDOWN_MS } from "./encounter-day-state.js";
 import { EncounterEvent, runEncounterAutomation } from "./encounter.js";
 
 const mocks = vi.hoisted(() => ({
@@ -57,6 +58,7 @@ describe("encounter stale entry recovery", () => {
   });
 
   it("loads generation without cross-site navigation when the ready window has no stored key", async () => {
+    vi.setSystemTime(new Date("2026-06-27T12:00:00.000Z"));
     localStorage.setItem(
       HVUT_RE_KEY,
       JSON.stringify({
@@ -77,11 +79,11 @@ describe("encounter stale entry recovery", () => {
 
     expect(outcome).toMatchObject({
       status: "waiting",
-      reason: "generationBackoff",
+      reason: "probeCycle",
       generation: {
         status: "unavailable",
         reason: "encounterKeyMissing",
-        recovery: { reason: "generationBackoff" },
+        recovery: { reason: "probeCycle", countdownMs: ENCOUNTER_COOLDOWN_MS },
       },
     });
     expect(mocks.gmXhr).toHaveBeenCalledWith(

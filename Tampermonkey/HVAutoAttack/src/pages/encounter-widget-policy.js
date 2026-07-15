@@ -85,6 +85,7 @@ function planWidgetTimerElapsed(event) {
 
 function planWidgetNewsLoaded(event) {
   if (event.pageType === "is") return suppressIsekaiNavigation(readWidgetState(event.state));
+  const current = readWidgetState(event.state);
   const generationResult = classifyEncounterGenerationResult({
     eventpane: event.eventpane,
     dawn: event.dawn,
@@ -96,6 +97,7 @@ function planWidgetNewsLoaded(event) {
     state: event.state,
     result: generationResult,
     nowMs: event.nowMs,
+    attemptKey: current.attemptKey,
   });
   if (application.application === EncounterGenerationApplication.AVAILABLE) {
     const state = application.state;
@@ -116,16 +118,23 @@ function planWidgetNewsLoaded(event) {
       unavailableReason: generationResult.reason,
     };
   }
+  if (application.application === EncounterGenerationApplication.PROBE_EMPTY) {
+    return {
+      ...readWidgetState(application.state),
+      action: "unavailable",
+      unavailableReason: generationResult.reason,
+    };
+  }
   const unavailableReason = application.result.reason;
-  const current = readWidgetState(application.state);
+  const failureState = readWidgetState(application.state);
   const state = event.engage
     ? runEncounterPolicy({
-        type: EncounterPolicyEvent.MARK_GENERATION_ATTEMPTED,
-        state: current.state,
-        attemptKey: current.attemptKey,
+        type: EncounterPolicyEvent.MARK_GENERATION_FAILED,
+        state: failureState.state,
+        attemptKey: failureState.attemptKey,
         reason: unavailableReason,
       })
-    : current.state;
+    : failureState.state;
   return { ...readWidgetState(state), action: "unavailable", unavailableReason };
 }
 

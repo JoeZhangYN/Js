@@ -1,4 +1,4 @@
-import { clearGenerationRecovery } from "./encounter-generation-recovery.js";
+import { clearEncounterGenerationSchedule } from "./encounter-generation-recovery.js";
 import {
   EncounterGenerationFailureReason,
   EncounterGenerationResultStatus,
@@ -6,6 +6,7 @@ import {
 import {
   EncounterDayPhase,
   markEncounterLimitProbeEmpty,
+  markEncounterProbeEmpty,
   normalizeEncounterState,
   observeEncounterNewDay,
 } from "./encounter-day-state.js";
@@ -15,6 +16,7 @@ export const EncounterGenerationApplication = Object.freeze({
   FAILURE: "failure",
   LIMIT_PROBE_EMPTY: "limitProbeEmpty",
   NEW_DAY: "newDay",
+  PROBE_EMPTY: "probeEmpty",
 });
 
 export function markEncounterKeyAvailable(state, key, nowMs = Date.now()) {
@@ -23,7 +25,7 @@ export function markEncounterKeyAvailable(state, key, nowMs = Date.now()) {
   if (next.key === key) return next;
   next.key = key;
   next.clear = false;
-  return clearGenerationRecovery(next);
+  return clearEncounterGenerationSchedule(next);
 }
 
 export function markEncounterAttempted(state, key, nowMs = Date.now()) {
@@ -42,7 +44,7 @@ export function markEncounterEntryStarted(state, event = {}) {
   return next;
 }
 
-export function applyEncounterGenerationResult(state, result, nowMs = Date.now()) {
+export function applyEncounterGenerationResult(state, result, nowMs = Date.now(), attemptKey) {
   if (result.status === EncounterGenerationResultStatus.NEW_DAY) {
     return {
       application: EncounterGenerationApplication.NEW_DAY,
@@ -74,6 +76,16 @@ export function applyEncounterGenerationResult(state, result, nowMs = Date.now()
       application: EncounterGenerationApplication.LIMIT_PROBE_EMPTY,
       result,
       state: markEncounterLimitProbeEmpty(current, nowMs),
+    };
+  }
+  if (
+    result.reason === EncounterGenerationFailureReason.ENCOUNTER_KEY_MISSING ||
+    result.reason === EncounterGenerationFailureReason.ENCOUNTER_KEY_ALREADY_ATTEMPTED
+  ) {
+    return {
+      application: EncounterGenerationApplication.PROBE_EMPTY,
+      result,
+      state: markEncounterProbeEmpty(current, result.reason, nowMs, attemptKey),
     };
   }
   return { application: EncounterGenerationApplication.FAILURE, result, state: current };

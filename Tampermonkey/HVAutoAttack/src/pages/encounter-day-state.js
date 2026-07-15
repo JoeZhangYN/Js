@@ -1,7 +1,9 @@
 import {
-  carryGenerationRecovery,
+  carryGenerationSchedule,
+  clearEncounterGenerationSchedule,
   clearGenerationRecovery,
 } from "./encounter-generation-recovery.js";
+import { EncounterGenerationFailureReason } from "./encounter-generation-result.js";
 
 export const ENCOUNTER_DAILY_LIMIT = 24;
 export const ENCOUNTER_COOLDOWN_MS = 30 * 60 * 1000 + 5000;
@@ -22,6 +24,10 @@ export const EncounterAnchorReason = Object.freeze({
 
 const validPhases = new Set(Object.values(EncounterDayPhase));
 const validAnchors = new Set(Object.values(EncounterAnchorReason));
+const validProbeReasons = new Set([
+  EncounterGenerationFailureReason.ENCOUNTER_KEY_MISSING,
+  EncounterGenerationFailureReason.ENCOUNTER_KEY_ALREADY_ATTEMPTED,
+]);
 const utcDayKey = (stamp) => new Date(stamp).toISOString().slice(0, 10);
 
 export function defaultEncounterState(nowMs = Date.now()) {
@@ -81,7 +87,7 @@ export function normalizeEncounterState(state, nowMs = Date.now()) {
         ? Math.min(ENCOUNTER_LIMIT_EMPTY_CYCLES, Math.max(0, Number(source.invalidCycleCount) || 0))
         : 0,
   };
-  return carryGenerationRecovery(normalized, source, nowMs);
+  return carryGenerationSchedule(normalized, source, nowMs, ENCOUNTER_COOLDOWN_MS);
 }
 
 export function observeEncounterNewDay(state, nowMs = Date.now()) {
@@ -109,7 +115,19 @@ export function markEncounterCompleted(state, nowMs = Date.now()) {
       : EncounterDayPhase.ACTIVE;
   next.anchorReason = EncounterAnchorReason.ENCOUNTER_COMPLETED;
   next.invalidCycleCount = 0;
-  return clearGenerationRecovery(next);
+  return clearEncounterGenerationSchedule(next);
+}
+
+export function markEncounterProbeEmpty(state, reason, nowMs = Date.now(), attemptKey) {
+  const next = normalizeEncounterState(state, nowMs);
+  if (next.dayPhase === EncounterDayPhase.STOPPED_FOR_DAY) return next;
+  clearGenerationRecovery(next);
+  next.nextProbeAt = nowMs + ENCOUNTER_COOLDOWN_MS;
+  next.probeReason = validProbeReasons.has(reason)
+    ? reason
+    : EncounterGenerationFailureReason.ENCOUNTER_KEY_MISSING;
+  if (attemptKey) next.probeAttemptKey = String(attemptKey);
+  return next;
 }
 
 export function markEncounterLimitProbeEmpty(state, nowMs = Date.now()) {
@@ -123,5 +141,5 @@ export function markEncounterLimitProbeEmpty(state, nowMs = Date.now()) {
   if (next.invalidCycleCount >= ENCOUNTER_LIMIT_EMPTY_CYCLES) {
     next.dayPhase = EncounterDayPhase.STOPPED_FOR_DAY;
   }
-  return clearGenerationRecovery(next);
+  return clearEncounterGenerationSchedule(next);
 }

@@ -627,7 +627,7 @@ for (const required of [
 }
 for (const required of [
   "generates and enters a different key after the old key cooldown",
-  "backs off when generation returns the same already attempted key",
+  "waits a full probe cycle when generation returns the same already attempted key",
   "encounterKeyAlreadyAttempted",
 ]) {
   const text = fs.readFileSync(path.join(root, clearedKeyGenerationTest), "utf8");
@@ -782,10 +782,22 @@ if (!/\bMARK_ATTEMPTED\b/.test(policyText)) {
     `${policyFile.replaceAll("\\", "/")} must expose attempted encounter entry state`
   );
 }
-if (!/\bMARK_GENERATION_ATTEMPTED\b/.test(policyText)) {
+if (!/\bMARK_GENERATION_FAILED\b/.test(policyText)) {
   violations.push(
-    `${policyFile.replaceAll("\\", "/")} must expose missing-key generation attempt state`
+    `${policyFile.replaceAll("\\", "/")} must expose typed generation fault recovery`
   );
+}
+for (const required of [
+  'PROBE_EMPTY: "probeEmpty"',
+  "markEncounterProbeEmpty(current, result.reason, nowMs, attemptKey)",
+  "EncounterGenerationFailureReason.ENCOUNTER_KEY_MISSING",
+  "EncounterGenerationFailureReason.ENCOUNTER_KEY_ALREADY_ATTEMPTED",
+]) {
+  if (!entryStateText.includes(required)) {
+    violations.push(
+      `${entryStateFile.replaceAll("\\", "/")} must classify authoritative no-key as probe cadence: ${required}`
+    );
+  }
 }
 for (const required of [
   "schemaVersion: 2",
@@ -898,7 +910,7 @@ if (!policyEntryMatch) {
     "markEncounterKeyAvailable(",
     "markEncounterStarted(",
     "markEncounterAttempted(",
-    "markEncounterGenerationAttempted(",
+    "markEncounterGenerationFailed(",
   ]) {
     if (entryBody.includes(internal)) {
       violations.push(
@@ -1007,34 +1019,32 @@ if (
   );
 }
 for (const required of [
-  "EncounterPolicyEvent.MARK_GENERATION_ATTEMPTED",
-  "generationAttemptKey",
-  "generationFailureCount",
-  "generationNextAttemptAt",
-  "generationCircuitOpenUntil",
-  'reason: "generationBackoff"',
-  'reason: "generationCircuitOpen"',
+  "EncounterPolicyEvent.MARK_GENERATION_FAILED",
+  'reason: "probeCycle"',
+  "nextProbeAt",
+  "probeReason",
+  "probeAttemptKey",
   "classifyEncounterGenerationResult",
   'reason: "dailyResetEvent"',
   'action: "dailyResetEvent"',
   'unavailableReason: "dailyResetEvent"',
-  "backs off ready-window generation after a main-world news load returns no encounter key",
-  "backs off repeated main-world news generation inside the same ready window",
-  "opens the circuit after repeated same-window generation failures",
+  "schedules a full encounter probe cycle when main-world news has no encounter key",
+  "keeps repeated main-world checks inside the same full probe cycle",
+  "never opens the fault circuit for repeated authoritative no-key results",
   "treats the UTC dawn response as the non-counting new-day cooldown anchor",
   "keeps manual ready-window clicks able to load the encounter check",
   'action: "load"',
 ]) {
   if (!widgetPolicyText.includes(required) && !widgetPolicyTestText.includes(required)) {
     violations.push(
-      `${widgetPolicyFile.replaceAll("\\", "/")} must preserve missing-key generation readiness evidence: ${required}`
+      `${widgetPolicyFile.replaceAll("\\", "/")} must separate no-key probe cadence from fault recovery: ${required}`
     );
   }
 }
 for (const required of [
   "records dawn once and starts cooldown without navigation, feedback, or a second request",
   "coalesces simultaneous rollover ticks into one generation request",
-  "degrades with diagnostic evidence without a lobby popup when generation opens the circuit",
+  "turns a legacy missing-key circuit into a normal full probe cycle",
   "vi.getTimerCount()",
 ]) {
   if (!dawnLoopRecoveryTestText.includes(required)) {
@@ -1054,6 +1064,22 @@ for (const required of [
 ]) {
   if (!entryPolicyText.includes(required)) {
     violations.push(`${entryPolicyFile.replaceAll("\\", "/")} must plan ${required}`);
+  }
+}
+if (/reason\s*=\s*["']encounterKeyMissing["']/.test(generationRecoveryText)) {
+  violations.push(
+    `${generationRecoveryFile.replaceAll("\\", "/")} must not default fault recovery to authoritative no-key`
+  );
+}
+for (const required of [
+  "legacyProbeDeadline",
+  "clearEncounterProbeSchedule",
+  "markEncounterGenerationFailed",
+]) {
+  if (!generationRecoveryText.includes(required)) {
+    violations.push(
+      `${generationRecoveryFile.replaceAll("\\", "/")} must preserve no-key migration and typed fault separation: ${required}`
+    );
   }
 }
 if (/action:\s*["']navigate["'][^\n]+ENCOUNTER_GENERATION_URL/.test(entryPolicyText)) {

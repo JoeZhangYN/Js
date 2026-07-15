@@ -17,7 +17,7 @@ import {
   parseEventpaneEncounterKey,
   parseSearchEncounterKey,
 } from "./encounter-generation-result.js";
-import { markEncounterGenerationAttempted } from "./encounter-generation-recovery.js";
+import { markEncounterGenerationFailed } from "./encounter-generation-recovery.js";
 
 export const EncounterPolicyEvent = Object.freeze({
   APPLY_GENERATION_RESULT: "applyGenerationResult",
@@ -25,7 +25,7 @@ export const EncounterPolicyEvent = Object.freeze({
   DEFAULT_STATE: "defaultState",
   MARK_COMPLETED: "markCompleted",
   MARK_ENTRY_STARTED: "markEntryStarted",
-  MARK_GENERATION_ATTEMPTED: "markGenerationAttempted",
+  MARK_GENERATION_FAILED: "markGenerationFailed",
   MARK_KEY_AVAILABLE: "markKeyAvailable",
   MARK_ATTEMPTED: "markAttempted",
   NORMALIZE: "normalize",
@@ -42,14 +42,14 @@ function planEncounterActivation(state, nowMs = Date.now()) {
 
 const encounterPolicyEventHandlers = Object.freeze({
   applyGenerationResult: (event) =>
-    applyEncounterGenerationResult(event.state, event.result, event.nowMs),
+    applyEncounterGenerationResult(event.state, event.result, event.nowMs, event.attemptKey),
   beginNewDay: (event) => beginEncounterDay(event.nowMs),
   defaultState: (event) => defaultEncounterState(event.nowMs),
   markCompleted: (event) => markEncounterCompleted(event.state, event.nowMs),
   markEntryStarted: (event) =>
     markEncounterEntryStarted(event.state, { ...event, parseKey: parseSearchEncounterKey }),
-  markGenerationAttempted: (event) =>
-    markEncounterGenerationAttempted(
+  markGenerationFailed: (event) =>
+    markEncounterGenerationFailed(
       normalizeEncounterState(event.state, event.nowMs),
       event.attemptKey,
       event.nowMs,

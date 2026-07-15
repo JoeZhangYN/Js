@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { ENCOUNTER_COOLDOWN_MS } from "./encounter-day-state.js";
 import { EncounterEvent, runEncounterAutomation } from "./encounter.js";
 
 const mocks = vi.hoisted(() => ({
@@ -62,7 +63,7 @@ describe("cleared encounter key generation", () => {
     });
   });
 
-  it("backs off when generation returns the same already attempted key", async () => {
+  it("waits a full probe cycle when generation returns the same already attempted key", async () => {
     storeAttemptedKey();
     mocks.gmXhr.mockImplementation(({ onload }) => onload({ responseText: encounterHtml("old=") }));
 
@@ -72,11 +73,11 @@ describe("cleared encounter key generation", () => {
 
     expect(outcome).toMatchObject({
       status: "waiting",
-      reason: "generationBackoff",
+      reason: "probeCycle",
       generation: {
         status: "unavailable",
         reason: "encounterKeyAlreadyAttempted",
-        recovery: { reason: "generationBackoff" },
+        recovery: { reason: "probeCycle", countdownMs: ENCOUNTER_COOLDOWN_MS },
       },
     });
     expect(mocks.runNavigationAutomation).not.toHaveBeenCalled();

@@ -93,11 +93,12 @@ describe("UTC encounter new-day recovery", () => {
     await expect(second).resolves.toMatchObject({ status: "waiting" });
     expect(mocks.gmXhr).toHaveBeenCalledTimes(1);
     expect(JSON.parse(localStorage.getItem(HVUT_RE_KEY))).toMatchObject({
-      generationFailureCount: 1,
+      nextProbeAt: Date.now() + 30 * 60 * 1000 + 5000,
+      probeReason: "encounterKeyMissing",
     });
   });
 
-  it("degrades with diagnostic evidence without a lobby popup when generation opens the circuit", async () => {
+  it("turns a legacy missing-key circuit into a normal full probe cycle", async () => {
     localStorage.setItem(
       HVUT_RE_KEY,
       JSON.stringify({
@@ -117,21 +118,15 @@ describe("UTC encounter new-day recovery", () => {
     });
 
     expect(outcome).toMatchObject({
-      status: "degraded",
-      reason: "encounterKeyMissing",
-      diagnostic: {
-        evidence: {
-          capability: "encounterGeneration",
-          reason: "encounterKeyMissing",
-        },
-      },
+      status: "waiting",
+      reason: "probeCycle",
+      clock: { countdownMs: 30 * 60 * 1000 + 5000 },
     });
     expect(mocks.runNavigationAutomation).not.toHaveBeenCalled();
     expect(mocks.runUserFeedbackAutomation).not.toHaveBeenCalled();
     expect(JSON.parse(localStorage.getItem(HVUT_RE_KEY))).toMatchObject({
-      generationFailureCount: 3,
-      generationFailureReason: "encounterKeyMissing",
-      generationCircuitOpenUntil: Date.now() + 60 * 60 * 1000,
+      nextProbeAt: Date.now() + 30 * 60 * 1000 + 5000,
+      probeReason: "encounterKeyMissing",
     });
   });
 });

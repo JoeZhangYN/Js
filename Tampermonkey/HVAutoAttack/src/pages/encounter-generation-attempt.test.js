@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { ENCOUNTER_COOLDOWN_MS } from "./encounter-day-state.js";
 import { EncounterPolicyEvent, runEncounterPolicy } from "./encounter-policy.js";
 
 beforeEach(() => {
@@ -11,29 +12,37 @@ afterEach(() => {
 });
 
 describe("encounter generation attempt evidence", () => {
-  it("does not start encounter cooldown or count when generation returns no encounter key", () => {
+  it("starts a full probe cycle without moving the completion-owned cooldown or count", () => {
     const state = { date: Date.now() - 31 * 60 * 1000, key: "", count: 7, clear: true };
 
-    const next = runEncounterPolicy({
-      type: EncounterPolicyEvent.MARK_GENERATION_ATTEMPTED,
+    const application = runEncounterPolicy({
+      type: EncounterPolicyEvent.APPLY_GENERATION_RESULT,
       state,
       nowMs: Date.now(),
+      result: { status: "unavailable", reason: "encounterKeyMissing" },
     });
 
-    expect(next).toMatchObject({
-      date: state.date,
-      key: "",
-      count: 7,
-      clear: true,
-      generationFailureCount: 1,
-      generationFailureReason: "encounterKeyMissing",
+    expect(application).toMatchObject({
+      application: "probeEmpty",
+      state: {
+        date: state.date,
+        key: "",
+        count: 7,
+        clear: true,
+        nextProbeAt: Date.now() + ENCOUNTER_COOLDOWN_MS,
+        probeReason: "encounterKeyMissing",
+      },
     });
     expect(
       runEncounterPolicy({
         type: EncounterPolicyEvent.READ_CLOCK,
-        state: next,
+        state: application.state,
         nowMs: Date.now() + 1000,
       })
-    ).toMatchObject({ status: "countdown", reason: "generationBackoff", countdownMs: 299000 });
+    ).toMatchObject({
+      status: "countdown",
+      reason: "probeCycle",
+      countdownMs: ENCOUNTER_COOLDOWN_MS - 1000,
+    });
   });
 });

@@ -62,6 +62,18 @@ export function readEncounterClock(state, nowMs = Date.now()) {
     }
     return countdown(readiness, readiness.remainingMs, "cooldown", nowMs);
   }
+  if (readiness.state.nextProbeAt > nowMs) {
+    const probeCountdownMs = readiness.state.nextProbeAt - nowMs;
+    if (newDayBoundaryMs < probeCountdownMs) {
+      return countdown(readiness, newDayBoundaryMs, "newDayBoundary", nowMs);
+    }
+    return {
+      ...countdown(readiness, probeCountdownMs, "probeCycle", nowMs),
+      attemptKey:
+        readiness.state.probeAttemptKey ||
+        buildGenerationAttemptKey(readiness.state, nowMs, "countdown"),
+    };
+  }
   const recovery = readGenerationRecovery(readiness.state, nowMs);
   if (recovery) {
     return { ...readiness, ...recovery, attemptKey: readiness.state.generationAttemptKey };

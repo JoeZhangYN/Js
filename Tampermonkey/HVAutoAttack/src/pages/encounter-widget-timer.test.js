@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { ENCOUNTER_COOLDOWN_MS } from "./encounter-day-state.js";
 import { EncounterEvent, runEncounterAutomation } from "./encounter.js";
 
 const mocks = vi.hoisted(() => ({
@@ -64,7 +65,8 @@ describe("encounter widget timer expiry", () => {
     });
   });
 
-  it("backs off ready-window generation after a news load returns no key", () => {
+  it("starts a full probe cycle after a news load returns no key", () => {
+    vi.setSystemTime(new Date("2026-06-27T12:00:00.000Z"));
     const state = { date: Date.now() - 31 * 60 * 1000, key: "", count: 1, clear: true };
 
     const first = runEncounterAutomation({
@@ -94,11 +96,14 @@ describe("encounter widget timer expiry", () => {
     expect(loaded).toMatchObject({
       action: "unavailable",
       unavailableReason: "encounterKeyMissing",
-      state: { generationFailureCount: 1 },
+      state: {
+        nextProbeAt: Date.now() + ENCOUNTER_COOLDOWN_MS,
+        probeReason: "encounterKeyMissing",
+      },
     });
     expect(backedOff).toMatchObject({
       status: "countdown",
-      reason: "generationBackoff",
+      reason: "probeCycle",
       attemptKey: first.attemptKey,
     });
     expect(mocks.runNavigationAutomation).not.toHaveBeenCalled();

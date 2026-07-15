@@ -30,24 +30,25 @@ function recordResult(event, deps) {
     };
   }
   const current = snapshot.state;
+  const attemptClock = runEncounterPolicy({
+    type: EncounterPolicyEvent.READ_CLOCK,
+    state: current,
+    nowMs,
+  });
   const application = runEncounterPolicy({
     type: EncounterPolicyEvent.APPLY_GENERATION_RESULT,
     state: current,
     result: event.result,
     nowMs,
+    attemptKey: attemptClock.attemptKey,
   });
   const { result } = application;
   let { state } = application;
   if (application.application === EncounterGenerationApplication.FAILURE) {
-    const clock = runEncounterPolicy({
-      type: EncounterPolicyEvent.READ_CLOCK,
-      state,
-      nowMs,
-    });
     state = runEncounterPolicy({
-      type: EncounterPolicyEvent.MARK_GENERATION_ATTEMPTED,
-      state: clock.state,
-      attemptKey: clock.attemptKey,
+      type: EncounterPolicyEvent.MARK_GENERATION_FAILED,
+      state,
+      attemptKey: attemptClock.attemptKey,
       reason: result.reason,
       nowMs,
     });
