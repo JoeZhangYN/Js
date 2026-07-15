@@ -16,7 +16,7 @@ beforeEach(() => {
 });
 
 describe("encounter state dawn recovery", () => {
-  it("backs off news loading when the daily CST 8 dawn event is not an encounter", async () => {
+  it("persists dawn as the non-counting UTC day anchor", async () => {
     localStorage.setItem(HVUT_RE_KEY, JSON.stringify({ date: 0, key: "", count: 0, clear: true }));
     mocks.gmXhr.mockImplementation(({ onload }) => {
       onload({
@@ -30,20 +30,21 @@ describe("encounter state dawn recovery", () => {
     });
 
     expect(result).toMatchObject({
-      status: "unavailable",
+      status: "newDay",
       reason: "dailyResetEvent",
       persisted: true,
-      blocked: true,
-      recovery: { status: "countdown", reason: "generationBackoff" },
+      blocked: false,
+      application: "newDay",
+      recovery: { status: "countdown", reason: "cooldown" },
     });
     expect(JSON.parse(localStorage.getItem(HVUT_RE_KEY))).toMatchObject({
-      date: 0,
+      date: Date.now(),
       key: "",
       count: 0,
       clear: true,
-      generationFailureCount: 1,
-      generationNextAttemptAt: Date.now() + 5 * 60 * 1000,
-      generationFailureReason: "dailyResetEvent",
+      dayPhase: "active",
+      anchorReason: "newDay",
+      invalidCycleCount: 0,
     });
   });
 });

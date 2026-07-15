@@ -91,7 +91,8 @@ describe("encounter widget generation recovery", () => {
     });
   });
 
-  it("treats the CST 8 daily dawn event as a distinct generation failure with backoff", () => {
+  it("treats the UTC dawn response as the non-counting new-day cooldown anchor", () => {
+    vi.setSystemTime(new Date("2026-06-28T00:00:05.000Z"));
     const outcome = planEncounterWidgetEvent({
       type: "widgetNewsLoaded",
       state: { date: 0, key: "", count: 0, clear: true },
@@ -104,15 +105,15 @@ describe("encounter widget generation recovery", () => {
       action: "dailyResetEvent",
       unavailableReason: "dailyResetEvent",
       status: "countdown",
-      reason: "generationBackoff",
-      remainingMs: 5 * 60 * 1000,
+      reason: "cooldown",
+      remainingMs: 30 * 60 * 1000 + 5000,
       state: {
-        date: 0,
+        date: Date.now(),
         key: "",
         count: 0,
         clear: true,
-        generationFailureCount: 1,
-        generationFailureReason: "dailyResetEvent",
+        dayPhase: "active",
+        anchorReason: "newDay",
       },
     });
   });

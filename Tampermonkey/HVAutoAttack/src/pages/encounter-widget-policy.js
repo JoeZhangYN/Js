@@ -1,8 +1,6 @@
 import { EncounterPolicyEvent, runEncounterPolicy } from "./encounter-policy.js";
-import {
-  classifyEncounterGenerationResult,
-  EncounterGenerationFailureReason,
-} from "./encounter-generation-result.js";
+import { EncounterGenerationApplication } from "./encounter-entry-state.js";
+import { classifyEncounterGenerationResult } from "./encounter-generation-result.js";
 import { readEncounterWidgetState as readWidgetState } from "./encounter-widget-state.js";
 
 function suppressIsekaiNavigation(current) {
@@ -37,9 +35,12 @@ function runWidgetStartedEncounter(event) {
   if (!key) return readWidgetState(event.state);
   return readWidgetState(
     runEncounterPolicy({
-      type: EncounterPolicyEvent.MARK_STARTED,
+      type: EncounterPolicyEvent.MARK_ENTRY_STARTED,
       state: event.state,
       key,
+      search: event.search,
+      source: "encounterWidget",
+      nowMs: event.nowMs,
     })
   );
 }
@@ -90,34 +91,33 @@ function planWidgetNewsLoaded(event) {
     key: event.key,
     search: event.search,
   });
-  const key = generationResult.key;
-  if (key) {
-    const state = runEncounterPolicy({
-      type: EncounterPolicyEvent.MARK_KEY_AVAILABLE,
-      state: event.state,
-      key,
-    });
+  const application = runEncounterPolicy({
+    type: EncounterPolicyEvent.APPLY_GENERATION_RESULT,
+    state: event.state,
+    result: generationResult,
+    nowMs: event.nowMs,
+  });
+  if (application.application === EncounterGenerationApplication.AVAILABLE) {
+    const state = application.state;
     if (event.engage) return planWidgetEngage({ ...event, state });
     return { ...readWidgetState(state), action: "ready" };
   }
-  if (generationResult.reason === EncounterGenerationFailureReason.DAILY_RESET_EVENT) {
-    const current = readWidgetState(event.state);
-    const state = event.engage
-      ? runEncounterPolicy({
-          type: EncounterPolicyEvent.MARK_GENERATION_ATTEMPTED,
-          state: current.state,
-          attemptKey: current.attemptKey,
-          reason: "dailyResetEvent",
-        })
-      : runEncounterPolicy({ type: EncounterPolicyEvent.RESET_DAY });
+  if (application.application === EncounterGenerationApplication.NEW_DAY) {
     return {
-      ...readWidgetState(state),
+      ...readWidgetState(application.state),
       action: "dailyResetEvent",
       unavailableReason: "dailyResetEvent",
     };
   }
-  const unavailableReason = generationResult.reason;
-  const current = readWidgetState(event.state);
+  if (application.application === EncounterGenerationApplication.LIMIT_PROBE_EMPTY) {
+    return {
+      ...readWidgetState(application.state),
+      action: "limitProbeEmpty",
+      unavailableReason: generationResult.reason,
+    };
+  }
+  const unavailableReason = application.result.reason;
+  const current = readWidgetState(application.state);
   const state = event.engage
     ? runEncounterPolicy({
         type: EncounterPolicyEvent.MARK_GENERATION_ATTEMPTED,
@@ -155,7 +155,7 @@ const encounterWidgetPolicyEventHandlers = Object.freeze({
   widgetLinkFound: runWidgetLinkFound,
   widgetStartedEncounter: runWidgetStartedEncounter,
   widgetResetDay: () =>
-    readWidgetState(runEncounterPolicy({ type: EncounterPolicyEvent.RESET_DAY })),
+    readWidgetState(runEncounterPolicy({ type: EncounterPolicyEvent.BEGIN_NEW_DAY })),
   widgetClicked: planWidgetClick,
   widgetTimerElapsed: planWidgetTimerElapsed,
   widgetNewsLoaded: planWidgetNewsLoaded,

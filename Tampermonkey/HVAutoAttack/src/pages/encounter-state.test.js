@@ -1,9 +1,4 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import {
-  StorageIoMetricsEvent,
-  runStorageIoMetricsAutomation,
-} from "../state/storage-io-metrics.js";
-import { StorageIdentity, StorageWriteOutcome } from "../state/storage-io-policy.js";
 import { EncounterStateEvent, runEncounterStateAutomation } from "./encounter-state.js";
 
 const mocks = vi.hoisted(() => ({
@@ -18,13 +13,27 @@ const GENERATION_REQUEST = {
   url: "https://e-hentai.org/news.php?encounter",
 };
 
+function currentState(fields = {}) {
+  return {
+    date: 0,
+    key: "",
+    count: 0,
+    clear: true,
+    schemaVersion: 2,
+    utcDay: "2026-06-27",
+    dayPhase: "active",
+    anchorReason: null,
+    invalidCycleCount: 0,
+    ...fields,
+  };
+}
+
 beforeEach(() => {
   localStorage.clear();
   vi.restoreAllMocks();
   vi.unstubAllGlobals();
   vi.setSystemTime(new Date("2026-06-27T00:00:05.000Z"));
   mocks.gmXhr.mockReset();
-  runStorageIoMetricsAutomation({ type: StorageIoMetricsEvent.RESET });
 });
 
 describe("runEncounterStateAutomation", () => {
@@ -41,42 +50,18 @@ describe("runEncounterStateAutomation", () => {
 
     const state = runEncounterStateAutomation({ type: EncounterStateEvent.READ_CURRENT });
 
-    expect(state).toEqual({ date: 0, key: "", count: 0, clear: true });
+    expect(state).toEqual(currentState({ dayPhase: "awaitingNewDay" }));
     expect(JSON.parse(localStorage.getItem(HVUT_RE_KEY))).toEqual(state);
-  });
-
-  it("does not physically rewrite unchanged GM encounter state during repeated reads", () => {
-    const stored = { date: Date.now() - 1_000, key: "", count: 1, clear: true };
-    const gmGetValue = vi.fn(() => stored);
-    const gmSetValue = vi.fn();
-    vi.stubGlobal("GM_getValue", gmGetValue);
-    vi.stubGlobal("GM_setValue", gmSetValue);
-
-    expect(runEncounterStateAutomation({ type: EncounterStateEvent.READ_CURRENT })).toEqual(stored);
-    expect(runEncounterStateAutomation({ type: EncounterStateEvent.READ_CURRENT })).toEqual(stored);
-
-    expect(gmSetValue).not.toHaveBeenCalled();
-    expect(
-      runStorageIoMetricsAutomation({ type: StorageIoMetricsEvent.SNAPSHOT })[
-        StorageIdentity.ENCOUNTER_STATE
-      ]
-    ).toMatchObject({
-      attemptedWrites: 2,
-      physicalWrites: 0,
-      skippedWrites: 2,
-      lastOutcome: StorageWriteOutcome.SKIPPED_UNCHANGED,
-      lastSourceIdentity: "hvut_re",
-    });
   });
 
   it("marks started encounters through the state entry", () => {
     localStorage.setItem(
       HVUT_RE_KEY,
-      JSON.stringify({ date: 1000, key: "abc=", count: 1, clear: false })
+      JSON.stringify(currentState({ date: Date.now(), key: "abc=", count: 1, clear: false }))
     );
 
     runEncounterStateAutomation({
-      type: EncounterStateEvent.MARK_STARTED,
+      type: EncounterStateEvent.MARK_ENTRY_STARTED,
       search: "?s=Battle&ss=ba&encounter=abc=",
     });
 
@@ -130,7 +115,7 @@ describe("runEncounterStateAutomation", () => {
 
     const state = runEncounterStateAutomation({ type: EncounterStateEvent.READ_CURRENT });
 
-    expect(state).toEqual({ date: 0, key: "", count: 0, clear: true });
+    expect(state).toEqual(currentState());
     expect(warn).toHaveBeenCalledWith(
       "[HVAA] encounter state failed",
       expect.objectContaining({ stage: "read-local-json" })

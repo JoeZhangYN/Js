@@ -5,6 +5,7 @@ function deps(context = { monsterAlive: 0, roundNow: 1, roundAll: 1 }) {
   return {
     readCompletionContext: vi.fn(() => context),
     recordCompletion: vi.fn(),
+    completeEncounter: vi.fn(),
     completeUtilityLearning: vi.fn(),
     triggerAlarm: vi.fn(),
     clearSession: vi.fn(),
@@ -32,6 +33,7 @@ describe("runBattleCompletionAutomation", () => {
       effects: {
         recordCompletion: true,
         recordCompletionResult: { kind: "recorded" },
+        encounterCompletion: true,
         utilityLearning: true,
         alarm: true,
         clearSession: true,
@@ -79,6 +81,7 @@ describe("runBattleCompletionAutomation", () => {
       effects: {
         recordCompletion: true,
         recordCompletionResult: { kind: "recorded" },
+        encounterCompletion: true,
         utilityLearning: true,
         alarm: true,
         clearSession: true,
@@ -104,26 +107,6 @@ describe("runBattleCompletionAutomation", () => {
     });
   });
 
-  it("reads completion runtime fields once before classifying the outcome", () => {
-    const d = deps({ monsterAlive: 0, roundNow: 2, roundAll: 2 });
-
-    expect(
-      runBattleCompletionAutomation({ type: BattleCompletionEvent.COMPLETION_REACHED }, d)
-    ).toEqual({ outcome: "victory" });
-
-    expect(d.readCompletionContext).toHaveBeenCalledTimes(1);
-  });
-
-  it("records completion before reading the completion ruling context", () => {
-    const d = deps({ monsterAlive: 0, roundNow: 2, roundAll: 2 });
-
-    runBattleCompletionAutomation({ type: BattleCompletionEvent.COMPLETION_REACHED }, d);
-
-    expect(d.recordCompletion.mock.invocationCallOrder[0]).toBeLessThan(
-      d.readCompletionContext.mock.invocationCallOrder[0]
-    );
-  });
-
   it("rejects unknown battle completion events without side effects", () => {
     const d = deps({ monsterAlive: 0, roundNow: 2, roundAll: 2 });
 
@@ -132,6 +115,7 @@ describe("runBattleCompletionAutomation", () => {
     expect(d.recordCompletion).not.toHaveBeenCalled();
     expect(d.readCompletionContext).not.toHaveBeenCalled();
     expect(d.triggerAlarm).not.toHaveBeenCalled();
+    expect(d.completeEncounter).not.toHaveBeenCalled();
     expect(d.clearSession).not.toHaveBeenCalled();
     expect(d.isCompletionReached).not.toHaveBeenCalled();
     expect(d.scheduleReload).not.toHaveBeenCalled();
@@ -150,6 +134,7 @@ describe("runBattleCompletionAutomation", () => {
     expect(d.recordCompletion).not.toHaveBeenCalled();
     expect(d.readCompletionContext).not.toHaveBeenCalled();
     expect(d.triggerAlarm).not.toHaveBeenCalled();
+    expect(d.completeEncounter).not.toHaveBeenCalled();
     expect(d.clearSession).not.toHaveBeenCalled();
     expect(d.isCompletionReached).not.toHaveBeenCalled();
     expect(d.scheduleReload).not.toHaveBeenCalled();

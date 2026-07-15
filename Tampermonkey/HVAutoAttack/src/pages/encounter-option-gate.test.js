@@ -1,5 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { isAutomaticEncounterEnabled } from "./encounter-option-gate.js";
+import {
+  createAutomaticEncounterGate,
+  isAutomaticEncounterEnabled,
+} from "./encounter-option-gate.js";
 
 const mocks = vi.hoisted(() => ({
   runOptionAutomation: vi.fn(),
@@ -49,5 +52,14 @@ describe("isAutomaticEncounterEnabled", () => {
     setOptions({ encounter: false, reNotification: false });
 
     expect(isAutomaticEncounterEnabled()).toBe(false);
+  });
+
+  it("keeps the isekai capability unavailable without reading main-world options", () => {
+    const gate = createAutomaticEncounterGate(false, {
+      readOption: mocks.runOptionAutomation,
+    });
+
+    expect(gate.enabled()).toBe(false);
+    expect(mocks.runOptionAutomation).not.toHaveBeenCalled();
   });
 });

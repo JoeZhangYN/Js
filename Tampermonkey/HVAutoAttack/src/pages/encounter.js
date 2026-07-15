@@ -1,5 +1,9 @@
 // 自动遭遇战业务能力：唯一入口 runEncounterAutomation(event)。
 import { executeEncounterEntry } from "./encounter-entry-execution.js";
+import {
+  completeRandomEncounter,
+  recognizeRandomEncounterStarted,
+} from "./encounter-battle-lifecycle.js";
 import { showEncounterGenerationBlock } from "./encounter-generation-block.js";
 import {
   classifyEncounterGenerationResult,
@@ -7,13 +11,13 @@ import {
   isBlockingEncounterGenerationResult,
 } from "./encounter-generation-result.js";
 import { runEncounterLobbyFlow } from "./encounter-lobby-flow.js";
-import { isAutomaticEncounterEnabled } from "./encounter-option-gate.js";
 import { rejectUnknownEncounterEvent } from "./encounter-rejection.js";
 import { EncounterStateEvent, runEncounterStateAutomation } from "./encounter-state.js";
 import { planEncounterWidgetEvent } from "./encounter-widget-policy.js";
 
 const EVENT_LOBBY_TICK = "lobbyTick";
 const EVENT_RANDOM_ENCOUNTER_STARTED = "randomEncounterStarted";
+const EVENT_RANDOM_ENCOUNTER_COMPLETED = "randomEncounterCompleted";
 const EVENT_GENERATION_PAGE_READY = "generationPageReady";
 const EVENT_WIDGET_TICK = "widgetTick";
 const EVENT_WIDGET_LINK_FOUND = "widgetLinkFound";
@@ -27,6 +31,7 @@ const EVENT_WIDGET_GENERATION_FAILED = "widgetGenerationFailed";
 export const EncounterEvent = Object.freeze({
   LOBBY_TICK: EVENT_LOBBY_TICK,
   RANDOM_ENCOUNTER_STARTED: EVENT_RANDOM_ENCOUNTER_STARTED,
+  RANDOM_ENCOUNTER_COMPLETED: EVENT_RANDOM_ENCOUNTER_COMPLETED,
   GENERATION_PAGE_READY: EVENT_GENERATION_PAGE_READY,
   WIDGET_TICK: EVENT_WIDGET_TICK,
   WIDGET_LINK_FOUND: EVENT_WIDGET_LINK_FOUND,
@@ -116,30 +121,10 @@ function handleWidgetGenerationFailed(event) {
   );
 }
 
-function markRandomEncounterStarted(event) {
-  if (!isAutomaticEncounterEnabled()) return { claimed: false, skipped: true };
-  const persistence = runEncounterStateAutomation({
-    type: EncounterStateEvent.MARK_STARTED,
-    search: event.search,
-    source: event.source,
-  });
-  if (!persistence?.ok) {
-    return showEncounterGenerationBlock(
-      {
-        status: "persistenceFailed",
-        reason: "encounterStartPersistenceFailed",
-        persistence,
-        blocked: true,
-      },
-      "battleStart"
-    );
-  }
-  return { claimed: false };
-}
-
 const encounterEventHandlers = Object.freeze({
   [EVENT_LOBBY_TICK]: runEncounterLobbyFlow,
-  [EVENT_RANDOM_ENCOUNTER_STARTED]: markRandomEncounterStarted,
+  [EVENT_RANDOM_ENCOUNTER_STARTED]: recognizeRandomEncounterStarted,
+  [EVENT_RANDOM_ENCOUNTER_COMPLETED]: completeRandomEncounter,
   [EVENT_GENERATION_PAGE_READY]: handleGenerationPageReady,
   [EVENT_WIDGET_TICK]: executeWidgetEvent,
   [EVENT_WIDGET_LINK_FOUND]: executeWidgetEvent,

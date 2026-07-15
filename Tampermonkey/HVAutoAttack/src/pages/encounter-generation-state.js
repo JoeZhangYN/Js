@@ -1,9 +1,6 @@
 import { executeEncounterGenerationRequest } from "./encounter-generation-request.js";
-import {
-  EncounterGenerationFailureReason,
-  EncounterGenerationResultStatus,
-  isBlockingEncounterGenerationResult,
-} from "./encounter-generation-result.js";
+import { EncounterGenerationApplication } from "./encounter-entry-state.js";
+import { isBlockingEncounterGenerationResult } from "./encounter-generation-result.js";
 import { EncounterPolicyEvent, runEncounterPolicy } from "./encounter-policy.js";
 
 const EVENT_RECORD_RESULT = "recordResult";
@@ -33,24 +30,15 @@ function recordResult(event, deps) {
     };
   }
   const current = snapshot.state;
-  let result = event.result;
-  let state = current;
-  if (result.status === EncounterGenerationResultStatus.AVAILABLE) {
-    state = runEncounterPolicy({
-      type: EncounterPolicyEvent.MARK_KEY_AVAILABLE,
-      state: current,
-      key: result.key,
-      nowMs,
-    });
-    if (state.clear) {
-      result = {
-        status: EncounterGenerationResultStatus.UNAVAILABLE,
-        reason: EncounterGenerationFailureReason.ENCOUNTER_KEY_ALREADY_ATTEMPTED,
-        key: result.key,
-      };
-    }
-  }
-  if (result.status !== EncounterGenerationResultStatus.AVAILABLE) {
+  const application = runEncounterPolicy({
+    type: EncounterPolicyEvent.APPLY_GENERATION_RESULT,
+    state: current,
+    result: event.result,
+    nowMs,
+  });
+  const { result } = application;
+  let { state } = application;
+  if (application.application === EncounterGenerationApplication.FAILURE) {
     const clock = runEncounterPolicy({
       type: EncounterPolicyEvent.READ_CLOCK,
       state,
@@ -87,6 +75,7 @@ function recordResult(event, deps) {
       !persisted ||
       isBlockingEncounterGenerationResult(result) ||
       recovery.reason === "generationCircuitOpen",
+    application: application.application,
   };
 }
 

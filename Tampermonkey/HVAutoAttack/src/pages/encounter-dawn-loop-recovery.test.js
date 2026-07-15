@@ -37,8 +37,8 @@ afterEach(() => {
   vi.useRealTimers();
 });
 
-describe("CST 8 encounter generation recovery", () => {
-  it("blocks a dawn response without cross-site navigation or a second generation request", async () => {
+describe("UTC encounter new-day recovery", () => {
+  it("records dawn once and starts cooldown without navigation, feedback, or a second request", async () => {
     localStorage.setItem(
       HVUT_RE_KEY,
       JSON.stringify({
@@ -56,30 +56,26 @@ describe("CST 8 encounter generation recovery", () => {
     const second = await runEncounterAutomation({ type: EncounterEvent.LOBBY_TICK, rerun });
 
     expect(first).toMatchObject({
-      action: "blocked",
-      blocked: true,
-      evidence: {
-        generation: {
-          status: "unavailable",
-          reason: "dailyResetEvent",
-          recovery: { status: "countdown", reason: "generationBackoff" },
-        },
+      claimed: false,
+      scheduled: true,
+      generation: {
+        status: "newDay",
+        reason: "dailyResetEvent",
+        application: "newDay",
+        blocked: false,
+        recovery: { status: "countdown", reason: "cooldown", countdownMs: 30 * 60 * 1000 + 5000 },
       },
     });
-    expect(second).toMatchObject({
-      action: "blocked",
-      blocked: true,
-      evidence: { feedbackDeduplicated: true },
-    });
+    expect(second).toMatchObject({ claimed: false, scheduled: true });
     expect(mocks.gmXhr).toHaveBeenCalledTimes(1);
     expect(mocks.runNavigationAutomation).not.toHaveBeenCalled();
-    expect(mocks.runUserFeedbackAutomation).toHaveBeenCalledOnce();
+    expect(mocks.runUserFeedbackAutomation).not.toHaveBeenCalled();
     expect(JSON.parse(localStorage.getItem(HVUT_RE_KEY))).toMatchObject({
-      date: 0,
+      date: Date.now(),
       count: 0,
-      generationFailureCount: 1,
-      generationFailureReason: "dailyResetEvent",
-      generationNextAttemptAt: Date.now() + 5 * 60 * 1000,
+      dayPhase: "active",
+      anchorReason: "newDay",
+      invalidCycleCount: 0,
     });
   });
 

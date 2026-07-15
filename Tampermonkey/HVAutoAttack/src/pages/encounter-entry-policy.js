@@ -10,7 +10,7 @@ export function planEncounterEntryRoute(readiness) {
       state: readiness.state,
     };
   }
-  if (!readiness.dailyLimitReached && readiness.remainingMs === 0) {
+  if (readiness.generationDue) {
     return {
       action: "generate",
       request: { method: "GET", url: ENCOUNTER_GENERATION_URL },

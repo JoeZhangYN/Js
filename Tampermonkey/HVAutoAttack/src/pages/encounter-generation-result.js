@@ -4,6 +4,7 @@ const DAWN_EVENTPANE_TEXT = "It is the dawn of a new day";
 
 export const EncounterGenerationResultStatus = Object.freeze({
   AVAILABLE: "available",
+  NEW_DAY: "newDay",
   UNAVAILABLE: "unavailable",
   TRANSPORT_FAILURE: "transportFailure",
 });
@@ -25,10 +26,7 @@ export const parseSearchEncounterKey = (search = "") =>
   /\?s=Battle&ss=ba&encounter=([A-Za-z0-9=]+)/.exec(search)?.[1];
 
 export function isBlockingEncounterGenerationResult(result) {
-  return [
-    EncounterGenerationFailureReason.DAILY_RESET_EVENT,
-    EncounterGenerationFailureReason.EQUIPMENT_INVENTORY_FULL,
-  ].includes(result?.reason);
+  return result?.reason === EncounterGenerationFailureReason.EQUIPMENT_INVENTORY_FULL;
 }
 
 export function classifyEncounterGenerationResult(event = {}) {
@@ -45,7 +43,7 @@ export function classifyEncounterGenerationResult(event = {}) {
   if (key) return { status: EncounterGenerationResultStatus.AVAILABLE, key };
   if (eventpane.includes(DAWN_EVENTPANE_TEXT) || event.dawn) {
     return {
-      status: EncounterGenerationResultStatus.UNAVAILABLE,
+      status: EncounterGenerationResultStatus.NEW_DAY,
       reason: EncounterGenerationFailureReason.DAILY_RESET_EVENT,
     };
   }

@@ -1,163 +1,97 @@
 import { describe, expect, it } from "vitest";
 import { EncounterPolicyEvent, runEncounterPolicy } from "./encounter-policy.js";
 
-const ENCOUNTER_INTERVAL_MS = 30 * 60 * 1000;
-const ENCOUNTER_MIDNIGHT_GRACE_MS = 5000;
+const COOLDOWN_MS = 30 * 60 * 1000 + 5000;
+const DAY = Date.UTC(2026, 5, 27, 0, 0, 5);
 
-describe("runEncounterPolicy time contract", () => {
+function policy(type, state, fields = {}) {
+  return runEncounterPolicy({ type, state, ...fields });
+}
+
+describe("runEncounterPolicy encounter day contract", () => {
   it("rejects unknown and null policy events without deriving a decision", () => {
-    expect(
-      runEncounterPolicy({ type: "unknown", state: { key: "abc", clear: false } })
-    ).toBeUndefined();
+    expect(runEncounterPolicy({ type: "unknown", state: {} })).toBeUndefined();
     expect(runEncounterPolicy(null)).toBeUndefined();
   });
 
-  it("resets stored random encounter state across UTC days", () => {
-    const state = { date: Date.UTC(2026, 5, 26, 23, 59), key: "abc", count: 7, clear: false };
+  it("moves a previous UTC day into one awaiting-new-day phase", () => {
+    const state = { date: DAY - 60_000, key: "old", count: 24, clear: false };
+    const normalized = policy(EncounterPolicyEvent.NORMALIZE, state, { nowMs: DAY });
 
-    expect(
-      runEncounterPolicy({
-        type: EncounterPolicyEvent.NORMALIZE,
-        state,
-        nowMs: Date.UTC(2026, 5, 27, 0, 0, 5),
-      })
-    ).toEqual({
+    expect(normalized).toMatchObject({
       date: 0,
       key: "",
       count: 0,
       clear: true,
+      utcDay: "2026-06-27",
+      dayPhase: "awaitingNewDay",
+      anchorReason: null,
+      invalidCycleCount: 0,
     });
-  });
-
-  it("makes the next UTC day immediately ready for the same encounter check flow", () => {
-    const state = { date: Date.UTC(2026, 5, 26, 23, 59), key: "", count: 24, clear: true };
-    const nowMs = Date.UTC(2026, 5, 27, 0, 0, 5);
-
-    expect(
-      runEncounterPolicy({
-        type: EncounterPolicyEvent.READ_CLOCK,
-        state,
-        nowMs,
-      })
-    ).toMatchObject({
-      remainingMs: 0,
-      canEnter: false,
-      dailyLimitReached: false,
-    });
-    expect(
-      runEncounterPolicy({
-        type: EncounterPolicyEvent.PLAN_NEXT_CHECK,
-        state,
-        nowMs,
-        jitter: 1,
-      })
-    ).toMatchObject({
-      delayMs: ENCOUNTER_MIDNIGHT_GRACE_MS,
-      reason: "readyWindow",
+    expect(policy(EncounterPolicyEvent.READ_CLOCK, normalized, { nowMs: DAY })).toMatchObject({
       status: "ready",
+      reason: "awaitingNewDay",
+      generationDue: true,
     });
   });
 
-  it("uses one thirty-minute readiness window", () => {
-    const state = { date: 1000, key: "", count: 1, clear: true };
+  it("observes dawn once, does not count it, and anchors a 30 minute 5 second cooldown", () => {
+    const awaiting = policy(EncounterPolicyEvent.BEGIN_NEW_DAY, {}, { nowMs: DAY });
+    const observed = policy(EncounterPolicyEvent.OBSERVE_NEW_DAY, awaiting, { nowMs: DAY });
+    const duplicate = policy(EncounterPolicyEvent.OBSERVE_NEW_DAY, observed, {
+      nowMs: DAY + 1000,
+    });
 
+    expect(observed).toMatchObject({
+      date: DAY,
+      count: 0,
+      dayPhase: "active",
+      anchorReason: "newDay",
+    });
+    expect(duplicate.date).toBe(DAY);
+    expect(policy(EncounterPolicyEvent.READ_CLOCK, observed, { nowMs: DAY })).toMatchObject({
+      status: "countdown",
+      countdownMs: COOLDOWN_MS,
+      reason: "cooldown",
+    });
+  });
+
+  it("starts cooldown only when an encounter reaches a terminal completion", () => {
+    const state = policy(EncounterPolicyEvent.DEFAULT_STATE, undefined, { nowMs: DAY });
+    const started = policy(EncounterPolicyEvent.MARK_ENTRY_STARTED, state, {
+      source: "battleRoundStart",
+      nowMs: DAY,
+    });
+    const completed = policy(EncounterPolicyEvent.MARK_COMPLETED, started, { nowMs: DAY });
+
+    expect(started).toMatchObject({ date: 0, count: 0 });
+    expect(completed).toMatchObject({
+      date: DAY,
+      count: 1,
+      anchorReason: "encounterCompleted",
+    });
     expect(
-      runEncounterPolicy({
-        type: EncounterPolicyEvent.READ_CLOCK,
-        state,
-        nowMs: 1000 + ENCOUNTER_INTERVAL_MS / 3,
+      policy(EncounterPolicyEvent.READ_CLOCK, completed, {
+        nowMs: DAY + 30 * 60 * 1000,
       }).remainingMs
-    ).toBe((ENCOUNTER_INTERVAL_MS * 2) / 3);
+    ).toBe(5000);
     expect(
-      runEncounterPolicy({
-        type: EncounterPolicyEvent.READ_CLOCK,
-        state,
-        nowMs: 1000 + ENCOUNTER_INTERVAL_MS,
-      }).remainingMs
+      policy(EncounterPolicyEvent.READ_CLOCK, completed, { nowMs: DAY + COOLDOWN_MS }).remainingMs
     ).toBe(0);
   });
 
   it("treats an available encounter key as ready instead of counting another cooldown", () => {
-    const state = { date: 1000, key: "abc123=", count: 1, clear: false };
+    const clock = policy(
+      EncounterPolicyEvent.READ_CLOCK,
+      { date: DAY, key: "abc=", count: 7, clear: false },
+      { nowMs: DAY + 1000 }
+    );
 
-    expect(
-      runEncounterPolicy({
-        type: EncounterPolicyEvent.READ_CLOCK,
-        state,
-        nowMs: 1000 + ENCOUNTER_INTERVAL_MS / 3,
-      })
-    ).toMatchObject({
-      canEnter: true,
+    expect(clock).toMatchObject({
       status: "ready",
-      countdownMs: 0,
       reason: "keyAvailable",
-    });
-    expect(
-      runEncounterPolicy({
-        type: EncounterPolicyEvent.PLAN_ACTIVATION,
-        state,
-        nowMs: 1000 + ENCOUNTER_INTERVAL_MS / 3,
-      })
-    ).toMatchObject({
-      action: "enter",
-      href: "?s=Battle&ss=ba&encounter=abc123=",
-    });
-  });
-
-  it("uses one query for countdown, daily limit, and scheduled checks", () => {
-    const state = {
-      date: Date.UTC(2026, 5, 26, 23, 45),
-      key: "",
-      count: 24,
-      clear: true,
-    };
-
-    expect(
-      runEncounterPolicy({
-        type: EncounterPolicyEvent.READ_CLOCK,
-        state,
-        nowMs: Date.UTC(2026, 5, 26, 23, 59, 59),
-      })
-    ).toMatchObject({
-      remainingMs: 901000,
-      canEnter: false,
-      dailyLimitReached: true,
-      status: "countdown",
-      countdownMs: 1000 + ENCOUNTER_MIDNIGHT_GRACE_MS,
-    });
-    expect(
-      runEncounterPolicy({
-        type: EncounterPolicyEvent.PLAN_NEXT_CHECK,
-        state,
-        nowMs: Date.UTC(2026, 5, 26, 23, 59, 59),
-        jitter: 1,
-      })
-    ).toMatchObject({
-      delayMs: 1000 + ENCOUNTER_MIDNIGHT_GRACE_MS,
-      reason: "dailyReset",
-      status: "countdown",
-    });
-  });
-
-  it("reports the daily reset as the countdown deadline at the daily limit", () => {
-    const state = {
-      date: Date.UTC(2026, 5, 26, 23, 45),
-      key: "",
-      count: 24,
-      clear: true,
-    };
-
-    expect(
-      runEncounterPolicy({
-        type: EncounterPolicyEvent.READ_CLOCK,
-        state,
-        nowMs: Date.UTC(2026, 5, 26, 23, 59, 55),
-      })
-    ).toMatchObject({
-      status: "countdown",
-      countdownMs: 10000,
-      reason: "dailyReset",
-      dailyLimitReached: true,
+      countdownMs: 0,
+      state: { count: 7 },
     });
   });
 });

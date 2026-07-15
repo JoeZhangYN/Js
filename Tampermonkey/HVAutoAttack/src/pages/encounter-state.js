@@ -9,7 +9,8 @@ import { EncounterStateStorageEvent, runEncounterStateStorage } from "./encounte
 
 const EVENT_READ_CURRENT = "readCurrent";
 const EVENT_READ_SNAPSHOT = "readSnapshot";
-const EVENT_MARK_STARTED = "markStarted";
+const EVENT_MARK_ENTRY_STARTED = "markEntryStarted";
+const EVENT_MARK_COMPLETED = "markCompleted";
 const EVENT_MARK_ATTEMPTED = "markAttempted";
 const EVENT_RESTORE_ENTRY = "restoreEntry";
 const EVENT_RECORD_GENERATION_RESULT = "recordGenerationResult";
@@ -18,7 +19,8 @@ const EVENT_LOAD_KEY = "loadKey";
 export const EncounterStateEvent = Object.freeze({
   READ_CURRENT: EVENT_READ_CURRENT,
   READ_SNAPSHOT: EVENT_READ_SNAPSHOT,
-  MARK_STARTED: EVENT_MARK_STARTED,
+  MARK_ENTRY_STARTED: EVENT_MARK_ENTRY_STARTED,
+  MARK_COMPLETED: EVENT_MARK_COMPLETED,
   MARK_ATTEMPTED: EVENT_MARK_ATTEMPTED,
   RESTORE_ENTRY: EVENT_RESTORE_ENTRY,
   RECORD_GENERATION_RESULT: EVENT_RECORD_GENERATION_RESULT,
@@ -68,10 +70,21 @@ function markRandomEncounterStarted(event = {}) {
   const snapshot = readCurrentSnapshot();
   if (!snapshot.ok) return snapshot;
   const state = runEncounterPolicy({
-    type: EncounterPolicyEvent.MARK_STARTED,
+    type: EncounterPolicyEvent.MARK_ENTRY_STARTED,
     state: snapshot.state,
     search: event.search,
     source: event.source,
+  });
+  return writeReState(state);
+}
+
+function markRandomEncounterCompleted(event = {}) {
+  const snapshot = readCurrentSnapshot();
+  if (!snapshot.ok) return snapshot;
+  const state = runEncounterPolicy({
+    type: EncounterPolicyEvent.MARK_COMPLETED,
+    state: snapshot.state,
+    nowMs: event.nowMs,
   });
   return writeReState(state);
 }
@@ -109,7 +122,8 @@ function runGenerationState(event, type) {
 const encounterStateEventHandlers = Object.freeze({
   [EVENT_READ_CURRENT]: () => readCurrentReState(),
   [EVENT_READ_SNAPSHOT]: () => readCurrentSnapshot(),
-  [EVENT_MARK_STARTED]: (event) => markRandomEncounterStarted(event),
+  [EVENT_MARK_ENTRY_STARTED]: (event) => markRandomEncounterStarted(event),
+  [EVENT_MARK_COMPLETED]: (event) => markRandomEncounterCompleted(event),
   [EVENT_MARK_ATTEMPTED]: (event) => markEncounterAttempted(event.key, event.state),
   [EVENT_RESTORE_ENTRY]: (event) => restoreEncounterEntry(event.state),
   [EVENT_RECORD_GENERATION_RESULT]: (event) =>

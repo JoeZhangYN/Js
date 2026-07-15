@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { EncounterEvent, runEncounterAutomation } from "./encounter.js";
 
 const mocks = vi.hoisted(() => ({
@@ -23,7 +23,11 @@ beforeEach(() => {
   mocks.runOptionAutomation.mockReset();
   mocks.runOptionAutomation.mockReturnValue(true);
   mocks.runUserFeedbackAutomation.mockReset();
+  vi.useFakeTimers();
+  vi.setSystemTime(new Date("2026-06-27T12:00:00.000Z"));
 });
+
+afterEach(() => vi.useRealTimers());
 
 describe("runEncounterAutomation random encounter start", () => {
   it("gates random encounter state updates through the encounter option", () => {
@@ -43,45 +47,87 @@ describe("runEncounterAutomation random encounter start", () => {
     expect(localStorage.getItem(HVUT_RE_KEY)).toBeNull();
   });
 
-  it("records random encounter starts when encounter automation is enabled", () => {
-    runEncounterAutomation({
-      type: EncounterEvent.RANDOM_ENCOUNTER_STARTED,
-      search: "?s=Battle&ss=ba&encounter=abc123=",
+  it("recognizes random encounter starts without starting cooldown or counting", () => {
+    expect(
+      runEncounterAutomation({
+        type: EncounterEvent.RANDOM_ENCOUNTER_STARTED,
+        search: "?s=Battle&ss=ba&encounter=abc123=",
+      })
+    ).toEqual({ claimed: false, recognized: true });
+
+    expect(localStorage.getItem(HVUT_RE_KEY)).toBeNull();
+  });
+
+  it("counts victory and defeat only when the random encounter reaches a terminal result", () => {
+    const victory = runEncounterAutomation({
+      type: EncounterEvent.RANDOM_ENCOUNTER_COMPLETED,
+      outcome: "victory",
+      roundType: "ba",
+    });
+    vi.setSystemTime(new Date("2026-06-27T12:31:00.000Z"));
+    const defeat = runEncounterAutomation({
+      type: EncounterEvent.RANDOM_ENCOUNTER_COMPLETED,
+      outcome: "defeat",
+      roundType: "ba",
     });
 
-    expect(JSON.parse(localStorage.getItem(HVUT_RE_KEY))).toMatchObject({
-      key: "abc123=",
-      clear: true,
+    expect(victory).toMatchObject({ completed: true, state: { count: 1 } });
+    expect(defeat).toMatchObject({
+      completed: true,
+      state: {
+        date: Date.now(),
+        count: 2,
+        anchorReason: "encounterCompleted",
+        dayPhase: "active",
+      },
     });
   });
 
-  it("records battle-start random encounters without relying on root-page search keys", () => {
-    runEncounterAutomation({
-      type: EncounterEvent.RANDOM_ENCOUNTER_STARTED,
-      source: "battleRoundStart",
-    });
-
-    expect(JSON.parse(localStorage.getItem(HVUT_RE_KEY))).toMatchObject({
-      count: 1,
-      clear: true,
-    });
+  it("ignores terminal battles outside the main-world random encounter identity", () => {
+    expect(
+      runEncounterAutomation({
+        type: EncounterEvent.RANDOM_ENCOUNTER_COMPLETED,
+        outcome: "victory",
+        roundType: "ar",
+      })
+    ).toEqual({ claimed: false, skipped: true });
+    expect(localStorage.getItem(HVUT_RE_KEY)).toBeNull();
   });
 
-  it("ignores root-page random encounter start events without key or battle evidence", () => {
-    runEncounterAutomation({
-      type: EncounterEvent.RANDOM_ENCOUNTER_STARTED,
-      search: "",
-    });
-
-    expect(JSON.parse(localStorage.getItem(HVUT_RE_KEY))).toMatchObject({
-      date: 0,
-      key: "",
-      count: 0,
-      clear: true,
-    });
+  it("does not count a non-terminal event even when it claims random-encounter identity", () => {
+    expect(
+      runEncounterAutomation({
+        type: EncounterEvent.RANDOM_ENCOUNTER_COMPLETED,
+        outcome: "ongoing",
+        roundType: "ba",
+      })
+    ).toEqual({ claimed: false, skipped: true });
+    expect(localStorage.getItem(HVUT_RE_KEY)).toBeNull();
   });
 
-  it("blocks battle-start continuation when encounter state persistence fails", () => {
+  it("recognizes battle-start evidence without mutating encounter state", () => {
+    expect(
+      runEncounterAutomation({
+        type: EncounterEvent.RANDOM_ENCOUNTER_STARTED,
+        source: "battleRoundStart",
+      })
+    ).toEqual({ claimed: false, recognized: true });
+
+    expect(localStorage.getItem(HVUT_RE_KEY)).toBeNull();
+  });
+
+  it("does not recognize root-page start events without key or battle evidence", () => {
+    expect(
+      runEncounterAutomation({
+        type: EncounterEvent.RANDOM_ENCOUNTER_STARTED,
+        search: "",
+      })
+    ).toEqual({ claimed: false, recognized: false });
+    expect(localStorage.getItem(HVUT_RE_KEY)).toBeNull();
+  });
+
+  it("records completion persistence failures as diagnostics without blocking battle completion", () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
     vi.stubGlobal("GM_getValue", (_key, fallback) => fallback);
     vi.stubGlobal("GM_setValue", () => {
       throw new Error("GM write blocked");
@@ -89,14 +135,12 @@ describe("runEncounterAutomation random encounter start", () => {
 
     expect(
       runEncounterAutomation({
-        type: EncounterEvent.RANDOM_ENCOUNTER_STARTED,
-        source: "battleRoundStart",
+        type: EncounterEvent.RANDOM_ENCOUNTER_COMPLETED,
+        outcome: "defeat",
+        roundType: "ba",
       })
-    ).toMatchObject({
-      action: "blocked",
-      blocked: true,
-      evidence: { reason: "encounterStartPersistenceFailed" },
-    });
-    expect(mocks.runUserFeedbackAutomation).toHaveBeenCalledOnce();
+    ).toMatchObject({ claimed: false, completed: false, persistence: { ok: false } });
+    expect(warn).toHaveBeenCalled();
+    expect(mocks.runUserFeedbackAutomation).not.toHaveBeenCalled();
   });
 });

@@ -4,12 +4,14 @@ import path from "node:path";
 const root = process.cwd();
 const srcDir = path.join(root, "src");
 const owner = path.normalize("src/pages/encounter.js");
+const battleLifecycleFile = path.normalize("src/pages/encounter-battle-lifecycle.js");
 const entryExecutionFile = path.normalize("src/pages/encounter-entry-execution.js");
 const entryExecutionFailureTest = path.normalize(
   "src/pages/encounter-entry-execution-failure.test.js"
 );
 const stateHelper = path.normalize("src/pages/encounter-state.js");
 const stateTest = path.normalize("src/pages/encounter-state.test.js");
+const stateIoTest = path.normalize("src/pages/encounter-state-io.test.js");
 const stateDawnRecoveryTest = path.normalize("src/pages/encounter-state-dawn-recovery.test.js");
 const stateGenerationFile = path.normalize("src/pages/encounter-generation-state.js");
 const generationRequestFile = path.normalize("src/pages/encounter-generation-request.js");
@@ -47,7 +49,12 @@ const lobbyFlowFile = path.normalize("src/pages/encounter-lobby-flow.js");
 const lobbyActiveBlockFile = path.normalize("src/pages/encounter-lobby-active-block.js");
 const crossSiteStaleTest = path.normalize("src/pages/encounter-cross-site-stale.test.js");
 const policyFile = path.normalize("src/pages/encounter-policy.js");
+const dayStateFile = path.normalize("src/pages/encounter-day-state.js");
+const entryStateFile = path.normalize("src/pages/encounter-entry-state.js");
+const clockFile = path.normalize("src/pages/encounter-clock.js");
 const policyTest = path.normalize("src/pages/encounter-policy.test.js");
+const limitPolicyTest = path.normalize("src/pages/encounter-limit-policy.test.js");
+const limitConfirmationTest = path.normalize("src/pages/encounter-limit-confirmation.test.js");
 const policyRouteTest = path.normalize("src/pages/encounter-policy-route.test.js");
 const policyCorruptStateTest = path.normalize("src/pages/encounter-policy-corrupt-state.test.js");
 const routingTest = path.normalize("src/pages/encounter-routing.test.js");
@@ -70,6 +77,7 @@ const timeFile = path.normalize("src/core/time.js");
 const diagnosticKeys = path.normalize("src/core/diagnostic-evidence-keys.js");
 const diagnosticTest = path.normalize("src/core/diagnostic-evidence.test.js");
 const violations = [];
+const policyInternalFiles = new Set([policyFile, dayStateFile, entryStateFile, clockFile]);
 
 function walk(dir) {
   for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
@@ -106,10 +114,12 @@ function checkFile(file) {
     }
     if (
       relative !== owner &&
+      relative !== battleLifecycleFile &&
       relative !== stateHelper &&
       relative !== stateStorageFile &&
       relative !== stateStorageTest &&
       relative !== stateTest &&
+      relative !== stateIoTest &&
       relative !== stateDawnRecoveryTest &&
       relative !== stateGenerationFailureTest &&
       relative !== dawnLoopRecoveryTest &&
@@ -127,9 +137,11 @@ function checkFile(file) {
     }
     if (
       relative !== owner &&
+      relative !== battleLifecycleFile &&
       relative !== entryExecutionFile &&
       relative !== lobbyFlowFile &&
       relative !== stateTest &&
+      relative !== stateIoTest &&
       relative !== stateDawnRecoveryTest &&
       relative !== stateGenerationFailureTest &&
       relative !== generationRequestFailureTest &&
@@ -181,8 +193,12 @@ function checkFile(file) {
       violations.push(`${where} legacy lastEncounter cache/UI is forbidden; use hvut_re countdown`);
     }
     if (
-      relative !== policyFile &&
+      !policyInternalFiles.has(relative) &&
       relative !== policyTest &&
+      relative !== limitPolicyTest &&
+      relative !== dawnLoopRecoveryTest &&
+      relative !== widgetGenerationRecoveryTest &&
+      relative !== limitConfirmationTest &&
       /\b1800000\b|30\s*\*\s*60\s*\*\s*1000/.test(line)
     ) {
       violations.push(`${where} encounter interval belongs in encounter-policy.js`);
@@ -229,7 +245,7 @@ function checkFile(file) {
       );
     }
     if (
-      relative !== policyFile &&
+      !policyInternalFiles.has(relative) &&
       relative !== policyTest &&
       relative !== lobbyScheduleFile &&
       relative !== lobbyScheduleTest &&
@@ -311,6 +327,7 @@ function checkFile(file) {
 walk(srcDir);
 
 const ownerText = fs.readFileSync(path.join(root, owner), "utf8");
+const battleLifecycleText = fs.readFileSync(path.join(root, battleLifecycleFile), "utf8");
 const entryExecutionText = fs.readFileSync(path.join(root, entryExecutionFile), "utf8");
 const stateHelperText = fs.readFileSync(path.join(root, stateHelper), "utf8");
 const stateGenerationText = fs.readFileSync(path.join(root, stateGenerationFile), "utf8");
@@ -322,6 +339,9 @@ const stateEvidenceTestText = fs.readFileSync(path.join(root, stateEvidenceTest)
 const diagnosticKeysText = fs.readFileSync(path.join(root, diagnosticKeys), "utf8");
 const diagnosticTestText = fs.readFileSync(path.join(root, diagnosticTest), "utf8");
 const policyText = fs.readFileSync(path.join(root, policyFile), "utf8");
+const dayStateText = fs.readFileSync(path.join(root, dayStateFile), "utf8");
+const entryStateText = fs.readFileSync(path.join(root, entryStateFile), "utf8");
+const clockText = fs.readFileSync(path.join(root, clockFile), "utf8");
 const entryPolicyText = fs.readFileSync(path.join(root, entryPolicyFile), "utf8");
 const generationRecoveryText = fs.readFileSync(path.join(root, generationRecoveryFile), "utf8");
 const generationResultText = fs.readFileSync(path.join(root, generationResultFile), "utf8");
@@ -393,10 +413,12 @@ for (const required of [
 }
 if (
   !dawnIncidentExpiryTestText.includes(
-    "retries a displayed dawn incident after its recovery window expires"
+    "checks for an encounter only after the dawn-owned cooldown expires"
   )
 ) {
-  violations.push(`${dawnIncidentExpiryTest.replaceAll("\\", "/")} must cover incident expiry`);
+  violations.push(
+    `${dawnIncidentExpiryTest.replaceAll("\\", "/")} must cover dawn cooldown expiry`
+  );
 }
 const prepareIndex = entryExecutionText.indexOf("const prepared = prepareEntry(outcome)");
 const navigationIndex = entryExecutionText.indexOf("const navigated = runNavigationAutomation");
@@ -410,15 +432,19 @@ for (const required of ["statePersistenceFailed", "restoreEncounterEntry", "roll
     violations.push(`${entryExecutionFile.replaceAll("\\", "/")} must preserve ${required}`);
   }
 }
-for (const required of ["isAutomaticEncounterEnabled", "EVENT_RANDOM_ENCOUNTER_STARTED"]) {
+for (const required of [
+  "isAutomaticEncounterEnabled",
+  "EncounterStateEvent.MARK_COMPLETED",
+  "encounterCompletionPersistenceFailed",
+]) {
+  if (!battleLifecycleText.includes(required)) {
+    violations.push(`${battleLifecycleFile.replaceAll("\\", "/")} must own ${required}`);
+  }
+}
+for (const required of ["EVENT_RANDOM_ENCOUNTER_STARTED", "EVENT_RANDOM_ENCOUNTER_COMPLETED"]) {
   if (!ownerText.includes(required)) {
     violations.push(`${owner.replaceAll("\\", "/")} must own ${required}`);
   }
-}
-if (!ownerText.includes("source: event.source")) {
-  violations.push(
-    `${owner.replaceAll("\\", "/")} must pass typed random-encounter start authority into encounter state`
-  );
 }
 if (
   !fs
@@ -429,12 +455,9 @@ if (
     "src/battle/battle-round-start.js must mark random encounters with battleRoundStart evidence"
   );
 }
-if (
-  !policyText.includes('source === "battleRoundStart"') ||
-  !policyText.includes("if (!key && !hasBattleStartEvidence) return next")
-) {
+if (!entryStateText.includes('event.source === "battleRoundStart"')) {
   violations.push(
-    `${policyFile.replaceAll("\\", "/")} must require an encounter key or battle-start evidence before starting cooldown/count`
+    `${entryStateFile.replaceAll("\\", "/")} must recognize battle-start identity without owning completion count`
   );
 }
 for (const required of ["EncounterStateEvent.MARK_ATTEMPTED", "markEncounterAttempted"]) {
@@ -547,6 +570,7 @@ if (!stateEntryMatch) {
 }
 const stateTestText = [
   stateTest,
+  stateIoTest,
   stateDawnRecoveryTest,
   stateGenerationFailureTest,
   generationRequestFailureTest,
@@ -718,6 +742,8 @@ for (const required of [
   "HVUT_RE_NOTIFICATION_OPTION_KEY",
   "OptionEvent.READ_FIELD",
   "readOptionFlag(HVUT_RE_NOTIFICATION_OPTION_KEY, true)",
+  "createAutomaticEncounterGate",
+  "CURRENT_WORLD_POLICY.features.randomEncounter",
 ]) {
   if (!optionGateText.includes(required)) {
     violations.push(`${optionGateFile.replaceAll("\\", "/")} must own ${required}`);
@@ -770,19 +796,47 @@ if (!/\bMARK_GENERATION_ATTEMPTED\b/.test(policyText)) {
     `${policyFile.replaceAll("\\", "/")} must expose missing-key generation attempt state`
   );
 }
+for (const required of [
+  "schemaVersion: 2",
+  "utcDay",
+  "EncounterDayPhase.AWAITING_NEW_DAY",
+  "EncounterDayPhase.CONFIRMING_LIMIT",
+  "EncounterDayPhase.STOPPED_FOR_DAY",
+  "EncounterAnchorReason.NEW_DAY",
+  "EncounterAnchorReason.ENCOUNTER_COMPLETED",
+  "EncounterAnchorReason.LIMIT_PROBE",
+  "ENCOUNTER_DAILY_LIMIT = 24",
+  "ENCOUNTER_LIMIT_EMPTY_CYCLES = 3",
+  "ENCOUNTER_COOLDOWN_MS = 30 * 60 * 1000 + 5000",
+]) {
+  if (!dayStateText.includes(required)) {
+    violations.push(`${dayStateFile.replaceAll("\\", "/")} must own ${required}`);
+  }
+}
+const limitConfirmationTestText = fs.readFileSync(path.join(root, limitConfirmationTest), "utf8");
+for (const required of [
+  "stops after three persisted authoritative no-key cycles",
+  "keeps transport and persistence Unknown outside the empty-cycle count",
+  'application: "limitProbeEmpty"',
+  'dayPhase).toBe("stoppedForDay")',
+]) {
+  if (!limitConfirmationTestText.includes(required)) {
+    violations.push(`${limitConfirmationTest.replaceAll("\\", "/")} must cover ${required}`);
+  }
+}
 if (/\bREADINESS\b/.test(policyText)) {
   violations.push(
     `${policyFile.replaceAll("\\", "/")} must not expose a parallel readiness query; use READ_CLOCK`
   );
 }
-const clockBody = policyText.match(/function readEncounterClock[\s\S]*?\n}/)?.[0] || "";
+const clockBody = clockText.match(/function readEncounterClock[\s\S]*?\n}/)?.[0] || "";
 if (!clockBody.includes("if (readiness.canEnter)")) {
   violations.push(
-    `${policyFile.replaceAll("\\", "/")} must let available encounter keys bypass cooldown countdown`
+    `${clockFile.replaceAll("\\", "/")} must let available encounter keys bypass cooldown countdown`
   );
 }
 if (clockBody.indexOf("if (readiness.canEnter)") > clockBody.indexOf("readiness.remainingMs > 0")) {
-  violations.push(`${policyFile.replaceAll("\\", "/")} must check keyAvailable before cooldown`);
+  violations.push(`${clockFile.replaceAll("\\", "/")} must check keyAvailable before cooldown`);
 }
 for (const required of [
   "treats an available encounter key as ready instead of counting another cooldown",
@@ -794,21 +848,21 @@ for (const required of [
   }
 }
 for (const required of [
-  "recovers missing-timestamp daily limit state instead of waiting forever",
-  "recovers impossible over-limit daily count instead of waiting until midnight",
-  "dailyLimitReached: false",
-  'reason: "readyWindow"',
+  "migrates a missing-timestamp limit state into confirmation instead of stopping",
+  "caps an impossible over-limit count while retaining its cooldown anchor",
+  "dailyLimitReached: true",
+  'dayPhase: "confirmingLimit"',
 ]) {
   if (!policyCorruptStateTestText.includes(required)) {
     violations.push(`${policyCorruptStateTest.replaceAll("\\", "/")} must cover ${required}`);
   }
 }
 for (const required of [
-  "normalized.count > ENCOUNTER_DAILY_LIMIT",
-  "starts a fresh cooldown from battle-start evidence after a stale over-limit counter",
-  'state: { date: Date.now(), key: "abc", count: 1, clear: true }',
+  "Math.min(ENCOUNTER_DAILY_LIMIT",
+  "marks entry attempted without counting or moving the completion-owned cooldown",
+  'state: { date, key: "abc", count: 24, clear: true }',
 ]) {
-  if (!policyText.includes(required) && !widgetPolicyTestText.includes(required)) {
+  if (!dayStateText.includes(required) && !widgetPolicyTestText.includes(required)) {
     violations.push(
       `${policyFile.replaceAll("\\", "/")} must recover stale over-limit encounter state: ${required}`
     );
@@ -868,7 +922,7 @@ if (
 ) {
   violations.push(`${policyTest.replaceAll("\\", "/")} must cover unknown and null policy events`);
 }
-if (!/TimeEvent\.MS_UNTIL_NEXT_UTC_DAY/.test(policyText)) {
+if (!/TimeEvent\.MS_UNTIL_NEXT_UTC_DAY/.test(clockText)) {
   violations.push(
     `${policyFile.replaceAll("\\", "/")} must read UTC day rollover timing through time entry`
   );
@@ -1039,7 +1093,7 @@ for (const required of [
   "backs off ready-window generation after a main-world news load returns no encounter key",
   "backs off repeated main-world news generation inside the same ready window",
   "opens the circuit after repeated same-window generation failures",
-  "treats the CST 8 daily dawn event as a distinct generation failure with backoff",
+  "treats the UTC dawn response as the non-counting new-day cooldown anchor",
   "keeps manual ready-window clicks able to load the encounter check",
   'action: "load"',
 ]) {
@@ -1050,7 +1104,7 @@ for (const required of [
   }
 }
 for (const required of [
-  "blocks a dawn response without cross-site navigation or a second generation request",
+  "records dawn once and starts cooldown without navigation, feedback, or a second request",
   "coalesces simultaneous rollover ticks into one generation request",
   "blocks with copy-ready evidence when the same generation attempt opens the circuit",
   "vi.getTimerCount()",
@@ -1168,9 +1222,9 @@ for (const required of [
   }
 }
 for (const required of [
-  "backs off news loading when the daily CST 8 dawn event is not an encounter",
+  "persists dawn as the non-counting UTC day anchor",
   "dailyResetEvent",
-  "generationNextAttemptAt",
+  'anchorReason: "newDay"',
 ]) {
   if (!stateTestText.includes(required) && !stateHelperText.includes(required)) {
     violations.push(
@@ -1193,7 +1247,7 @@ for (const required of [
   }
 }
 for (const required of [
-  "blocks the widget on the first dawn response and stops its ready loop",
+  "starts the widget cooldown from dawn without reporting a generation failure",
   "backs off a widget fetch failure before its timer can request again",
   'reason: "generationBackoff"',
 ]) {

@@ -6,6 +6,7 @@ import {
   runNavigationAutomation,
 } from "../core/navigate.js";
 import { gE } from "../dom/query.js";
+import { EncounterEvent, runEncounterAutomation } from "../pages/encounter.js";
 import {
   BattleMonitorEvent,
   runBattleMonitorAutomation,
@@ -49,6 +50,7 @@ function readCompletionContext() {
     monsterAlive: progress.monsterAlive,
     roundNow: progress.roundNow,
     roundAll: progress.roundAll,
+    roundType: progress.roundType,
   };
 }
 
@@ -68,9 +70,15 @@ function effectOk(result) {
   return result !== false;
 }
 
+function encounterCompletionOk(result) {
+  if (result?.completed === false) return false;
+  return effectOk(result);
+}
+
 function handleTerminalCompletion(outcome, context, deps) {
   const alarmKind = outcome === BattleCompletionOutcome.DEFEAT ? "Defeat" : "Victory";
   const effects = {
+    encounterCompletion: encounterCompletionOk(deps.completeEncounter(outcome, context)),
     utilityLearning: effectOk(deps.completeUtilityLearning(outcome)),
     alarm: effectOk(deps.triggerAlarm(alarmKind)),
     clearSession: effectOk(deps.clearSession()),
@@ -119,6 +127,13 @@ export function runBattleCompletionAutomation(
       runUtilityWeightLearning({
         type: UtilityWeightLearningEvent.BATTLE_COMPLETED,
         outcome,
+      }),
+    completeEncounter: (outcome, context) =>
+      runEncounterAutomation({
+        type: EncounterEvent.RANDOM_ENCOUNTER_COMPLETED,
+        outcome,
+        roundType: context.roundType,
+        source: "battleCompletion",
       }),
     clearSession: () => runBattleRuntimeAutomation({ type: BattleRuntimeEvent.CLEAR_SESSION }),
     isCompletionReached: () => !!gE("#btcp"),

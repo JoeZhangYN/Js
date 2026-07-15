@@ -38,7 +38,7 @@ describe("encounter widget timer expiry", () => {
     ).toMatchObject({
       status: "countdown",
       remainingMs: 10000,
-      reason: "dailyReset",
+      reason: "newDayBoundary",
     });
   });
 

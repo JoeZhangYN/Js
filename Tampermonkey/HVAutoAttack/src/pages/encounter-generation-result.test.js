@@ -14,7 +14,7 @@ describe("encounter generation result classifier", () => {
     ).toEqual({ status: "available", key: "abc=" });
     expect(
       classifyEncounterGenerationResult({ eventpane: "It is the dawn of a new day!" })
-    ).toEqual({ status: "unavailable", reason: "dailyResetEvent" });
+    ).toEqual({ status: "newDay", reason: "dailyResetEvent" });
     expect(classifyEncounterGenerationResult({ eventpane: "No encounter" })).toEqual({
       status: "unavailable",
       reason: "encounterKeyMissing",
@@ -46,8 +46,8 @@ describe("encounter generation result classifier", () => {
     ).toBe("encounterKeyMissing");
   });
 
-  it("blocks content failures that need user-visible recovery but not retryable results", () => {
-    expect(isBlockingEncounterGenerationResult({ reason: "dailyResetEvent" })).toBe(true);
+  it("blocks equipment recovery but treats dawn as an ordinary business event", () => {
+    expect(isBlockingEncounterGenerationResult({ reason: "dailyResetEvent" })).toBe(false);
     expect(isBlockingEncounterGenerationResult({ reason: "equipmentInventoryFull" })).toBe(true);
     expect(isBlockingEncounterGenerationResult({ reason: "encounterKeyMissing" })).toBe(false);
     expect(isBlockingEncounterGenerationResult({ reason: "generationRequestTimeout" })).toBe(false);

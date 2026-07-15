@@ -33,8 +33,8 @@ afterEach(() => {
   vi.useRealTimers();
 });
 
-describe("CST 8 encounter incident expiry", () => {
-  it("retries a displayed dawn incident after its recovery window expires", async () => {
+describe("UTC dawn cooldown", () => {
+  it("checks for an encounter only after the dawn-owned cooldown expires", async () => {
     localStorage.setItem(
       "hvut_re",
       JSON.stringify({
@@ -57,7 +57,7 @@ describe("CST 8 encounter incident expiry", () => {
     const rerun = vi.fn();
 
     await runEncounterAutomation({ type: EncounterEvent.LOBBY_TICK, rerun });
-    vi.setSystemTime(new Date("2026-06-27T00:05:06.000Z"));
+    vi.setSystemTime(new Date("2026-06-27T00:30:11.000Z"));
     const recovered = await runEncounterAutomation({ type: EncounterEvent.LOBBY_TICK, rerun });
 
     expect(recovered).toMatchObject({

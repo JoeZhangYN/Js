@@ -24,7 +24,7 @@ beforeEach(() => {
 });
 
 describe("encounter widget generation recovery", () => {
-  it("blocks the widget on the first dawn response and stops its ready loop", () => {
+  it("starts the widget cooldown from dawn without reporting a generation failure", () => {
     const outcome = runEncounterAutomation({
       type: EncounterEvent.WIDGET_NEWS_LOADED,
       state: { date: 0, key: "", count: 0, clear: true },
@@ -35,19 +35,17 @@ describe("encounter widget generation recovery", () => {
     });
 
     expect(outcome).toMatchObject({
-      action: "blocked",
-      blocked: true,
-      handled: true,
-      state: { generationFailureCount: 1, generationFailureReason: "dailyResetEvent" },
+      action: "dailyResetEvent",
+      state: { date: Date.now(), count: 0, anchorReason: "newDay", dayPhase: "active" },
     });
-    expect(mocks.runUserFeedbackAutomation).toHaveBeenCalledOnce();
+    expect(mocks.runUserFeedbackAutomation).not.toHaveBeenCalled();
     expect(
       runEncounterAutomation({
         type: EncounterEvent.WIDGET_TIMER_ELAPSED,
         state: outcome.state,
         pageType: "hv",
       })
-    ).toMatchObject({ status: "countdown", reason: "generationBackoff" });
+    ).toMatchObject({ status: "countdown", reason: "cooldown" });
     expect(mocks.runNavigationAutomation).not.toHaveBeenCalled();
   });
 

@@ -58,6 +58,12 @@ describe("encounter persistence loop recovery", () => {
     expect(mocks.gmXhr).toHaveBeenCalledOnce();
     expect(mocks.runUserFeedbackAutomation).toHaveBeenCalledOnce();
     expect(mocks.runNavigationAutomation).not.toHaveBeenCalled();
-    expect(shared.get("hvut_re")).toEqual({ date: 0, key: "", count: 0, clear: true });
+    expect(shared.get("hvut_re")).toMatchObject({
+      date: 0,
+      key: "",
+      count: 0,
+      clear: true,
+      schemaVersion: 2,
+    });
   });
 });

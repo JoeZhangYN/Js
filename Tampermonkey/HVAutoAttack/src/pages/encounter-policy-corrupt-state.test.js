@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { EncounterPolicyEvent, runEncounterPolicy } from "./encounter-policy.js";
 
-describe("runEncounterPolicy corrupted state recovery", () => {
-  it("recovers missing-timestamp daily limit state instead of waiting forever", () => {
+describe("runEncounterPolicy legacy state recovery", () => {
+  it("migrates a missing-timestamp limit state into confirmation instead of stopping", () => {
     const state = { date: 0, key: "", count: 24, clear: true };
 
     expect(
@@ -12,14 +12,14 @@ describe("runEncounterPolicy corrupted state recovery", () => {
         nowMs: Date.UTC(2026, 5, 27, 12, 0),
       })
     ).toMatchObject({
-      state: { date: 0, key: "", count: 0, clear: true },
-      dailyLimitReached: false,
+      state: { date: 0, key: "", count: 24, clear: true, dayPhase: "confirmingLimit" },
+      dailyLimitReached: true,
       status: "ready",
-      reason: "readyWindow",
+      reason: "limitProbe",
     });
   });
 
-  it("recovers impossible over-limit daily count instead of waiting until midnight", () => {
+  it("caps an impossible over-limit count while retaining its cooldown anchor", () => {
     const state = { date: Date.UTC(2026, 5, 27, 23, 0), key: "", count: 40, clear: true };
 
     expect(
@@ -29,10 +29,16 @@ describe("runEncounterPolicy corrupted state recovery", () => {
         nowMs: Date.UTC(2026, 5, 27, 23, 9, 28),
       })
     ).toMatchObject({
-      state: { date: 0, key: "", count: 0, clear: true },
-      dailyLimitReached: false,
-      status: "ready",
-      reason: "readyWindow",
+      state: {
+        date: Date.UTC(2026, 5, 27, 23, 0),
+        key: "",
+        count: 24,
+        clear: true,
+        dayPhase: "confirmingLimit",
+      },
+      dailyLimitReached: true,
+      status: "countdown",
+      reason: "cooldown",
     });
   });
 });

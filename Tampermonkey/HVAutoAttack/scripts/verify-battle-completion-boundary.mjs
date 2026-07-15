@@ -4,6 +4,7 @@ import path from "node:path";
 const root = process.cwd();
 const owner = path.normalize("src/battle/battle-completion.js");
 const ownerTest = path.normalize("src/battle/battle-completion.test.js");
+const encounterTest = path.normalize("src/battle/battle-completion-encounter.test.js");
 const monitorResultTest = path.normalize("src/battle/battle-completion-monitor-result.test.js");
 const evidence = path.normalize("src/battle/battle-completion-evidence.js");
 const evidenceTest = path.normalize("src/battle/battle-completion-evidence.test.js");
@@ -61,6 +62,9 @@ function checkOwner() {
     "BattleMonitorEvent.COMPLETION_REACHED",
     "runBattleMonitorAutomation",
     "BattleProgressEvent.READ_CONTEXT",
+    "EncounterEvent.RANDOM_ENCOUNTER_COMPLETED",
+    "deps.completeEncounter(outcome, context)",
+    "roundType: progress.roundType",
   ]) {
     if (!text.includes(required)) {
       violations.push(`${owner.replaceAll("\\", "/")} must own ${required}`);
@@ -127,6 +131,13 @@ function checkOwner() {
       `${owner.replaceAll("\\", "/")} terminal completion cleanup must have one side-effect point`
     );
   }
+  const encounterIndex = text.indexOf("deps.completeEncounter(outcome, context)");
+  const clearIndex = text.indexOf("deps.clearSession()");
+  if (encounterIndex < 0 || clearIndex < 0 || encounterIndex > clearIndex) {
+    violations.push(
+      `${owner.replaceAll("\\", "/")} must record random-encounter completion before clearing round identity`
+    );
+  }
   const entryBody =
     text.match(/export function runBattleCompletionAutomation\([^)]*\)[\s\S]*?\n\}/)?.[0] || "";
   if (!/Object\.freeze\(\{[\s\S]*\[EVENT_COMPLETION_REACHED\]/.test(text)) {
@@ -159,6 +170,18 @@ function checkOwner() {
     if (!testText.includes('source: "battleCompletion"')) {
       violations.push(`${ownerTest.replaceAll("\\", "/")} must cover victory reload detail`);
     }
+  }
+  const encounterTestText = fs.existsSync(path.join(root, encounterTest))
+    ? fs.readFileSync(path.join(root, encounterTest), "utf8")
+    : "";
+  if (
+    !encounterTestText.includes(
+      "records a random encounter terminal result before clearing its battle identity"
+    )
+  ) {
+    violations.push(
+      `${encounterTest.replaceAll("\\", "/")} must cover encounter completion before session clear`
+    );
   }
   if (!fs.existsSync(path.join(root, monitorResultTest))) {
     violations.push(

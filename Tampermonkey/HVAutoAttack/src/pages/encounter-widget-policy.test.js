@@ -114,19 +114,20 @@ describe("planEncounterWidgetEvent", () => {
     });
   });
 
-  it("starts a fresh cooldown from battle-start evidence after a stale over-limit counter", () => {
+  it("marks entry attempted without counting or moving the completion-owned cooldown", () => {
+    const date = Date.now() - 10 * 60 * 1000;
     const outcome = planEncounterWidgetEvent({
       type: "widgetStartedEncounter",
-      state: { date: Date.now() - 10 * 60 * 1000, key: "abc", count: 40, clear: false },
+      state: { date, key: "abc", count: 40, clear: false },
       search: "?s=Battle&ss=ba&encounter=abc",
       pageType: "ba",
     });
 
     expect(outcome).toMatchObject({
       status: "countdown",
-      reason: "cooldown",
-      count: 1,
-      state: { date: Date.now(), key: "abc", count: 1, clear: true },
+      reason: "newDayBoundary",
+      count: 24,
+      state: { date, key: "abc", count: 24, clear: true },
     });
     expect(outcome.remainingMs).toBeGreaterThan(0);
   });

@@ -125,7 +125,13 @@ describe("encounter generation transport recovery", () => {
       state: { generationFailureCount: 1 },
     });
     expect(mocks.gmXhr).toHaveBeenCalledOnce();
-    expect(sharedState).toEqual({ date: 0, key: "", count: 0, clear: true });
+    expect(sharedState).toMatchObject({
+      date: 0,
+      key: "",
+      count: 0,
+      clear: true,
+      schemaVersion: 2,
+    });
     expect(localStorage.getItem("hvut_re")).toBeNull();
   });
 });

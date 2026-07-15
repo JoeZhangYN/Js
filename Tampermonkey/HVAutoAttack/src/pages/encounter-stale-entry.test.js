@@ -116,7 +116,8 @@ describe("encounter stale entry recovery", () => {
     });
 
     expect(outcome).toMatchObject({
-      action: "none",
+      action: "unavailable",
+      unavailableReason: "encounterKeyAlreadyAttempted",
       state: { key: "xyz=", count: 1, clear: true },
     });
     expect(mocks.runNavigationAutomation).not.toHaveBeenCalled();
