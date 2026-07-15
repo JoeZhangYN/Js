@@ -48,11 +48,11 @@
     "reason": "formatted baseline snapshot test verbosity"
   },
   "core/diagnostic-evidence-keys.js": {
-    "maxSloc": 205,
+    "maxSloc": 207,
     "reason": "diagnostic evidence registry data surface"
   },
   "core/diagnostic-evidence.test.js": {
-    "maxSloc": 446,
+    "maxSloc": 456,
     "reason": "diagnostic evidence registry fixture"
   },
   "core/navigate.js": {

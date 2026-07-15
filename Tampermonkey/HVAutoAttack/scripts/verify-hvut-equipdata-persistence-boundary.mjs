@@ -11,7 +11,7 @@ function requirePart(label, body, part) {
 }
 
 const saveBody =
-  /save: function \(\) \{[\s\S]*?\n      \},\n      load: function/.exec(text)?.[0] || "";
+  /save: async function \(\) \{[\s\S]*?\n      \},\n      load: function/.exec(text)?.[0] || "";
 
 if (!saveBody) violations.push(`${target} must keep Armory equipcode save entry visible`);
 
@@ -19,7 +19,7 @@ for (const part of [
   "let nextEquipdata = JSON.parse(JSON.stringify($armory.equipdata || { version: 1 }));",
   "nextEquipdata = { version: $armory.equipdata.version };",
   "nextEquipdata[eq.info.eid] = { checked: eq.node.check.checked, ...data };",
-  "if (!$config.set('equipdata', nextEquipdata)) {",
+  "if (!(await $config.set_derived('equipdata', nextEquipdata))) {",
   "show_hvut_generic_error();",
   "return false;",
   "$armory.equipdata = nextEquipdata;",
@@ -32,6 +32,7 @@ for (const forbidden of [
   "$armory.equipdata = { version: $armory.equipdata.version };",
   "$armory.equipdata[eq.info.eid] = { checked: eq.node.check.checked, ...data };",
   "$config.set('equipdata', $armory.equipdata);",
+  "$config.set('equipdata', nextEquipdata);",
 ]) {
   if (saveBody.includes(forbidden)) {
     violations.push(

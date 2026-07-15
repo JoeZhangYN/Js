@@ -18,14 +18,15 @@ function requireCount(label, part, expected) {
 }
 
 const abilityLifecycle =
-  /var run_hvut_ability_page = function \(context\) \{[\s\S]*?\n  \};\n  var record_hvut_training_notification_failure/.exec(
+  /var run_hvut_ability_page = async function \(context\) \{[\s\S]*?\n  \};\n  var record_hvut_training_notification_failure/.exec(
     text
   )?.[0] || "";
 const trainingInit =
-  /_tr\.init = function \(\) \{[\s\S]*?\n  \};\n\n  _tr\.parse_table/.exec(text)?.[0] || "";
+  /_tr\.init = async function \(\) \{[\s\S]*?\n  \};\n\n  _tr\.parse_table/.exec(text)?.[0] || "";
 const trainingParse =
-  /_tr\.parse_table = function \(\) \{[\s\S]*?\n  \};\n\n  _tr\.parse_progress/.exec(text)?.[0] ||
-  "";
+  /_tr\.parse_table = async function \(\) \{[\s\S]*?\n  \};\n\n  _tr\.parse_progress/.exec(
+    text
+  )?.[0] || "";
 const legacyTraining =
   /\$element\('tr', \$id\('train_table'\)[\s\S]*?\n\} else\n\/\/ \[END 4\] Character - Training/.exec(
     text
@@ -37,8 +38,16 @@ if (!trainingParse) violations.push(`${target} must keep training parse_table en
 if (!legacyTraining) violations.push(`${target} must keep legacy training cache region visible`);
 
 for (const [label, body, part] of [
-  ["training parse_table", trainingParse, "if (!$config.set('tr_level', _tr.level)) {"],
-  ["legacy training cache", legacyTraining, "if (!$config.set('tr_level', _tr.level)) {"],
+  [
+    "training parse_table",
+    trainingParse,
+    "if (!(await $config.set_derived('tr_level', _tr.level))) {",
+  ],
+  [
+    "legacy training cache",
+    legacyTraining,
+    "if (!(await $config.set_derived('tr_level', _tr.level))) {",
+  ],
 ]) {
   requirePart(label, body, part);
   requirePart(label, body, "show_hvut_generic_error();");
@@ -46,7 +55,7 @@ for (const [label, body, part] of [
 }
 
 for (const required of [
-  "if (!page.config.set('ab_level', page.levels)) {",
+  "if (!(await page.config.set_derived('ab_level', page.levels))) {",
   "record_hvut_ability_parse_failure('abilityLevelPersistence', { reason: 'configWriteRejected' })",
   "return rejectPage(",
 ]) {
@@ -54,20 +63,29 @@ for (const required of [
 }
 
 for (const part of [
-  "if (_tr.parse_table() === false) return false;",
+  "if ((await _tr.parse_table()) === false) return false;",
   "if (_tr.parse_progress() === false) return false;",
   "return true;",
 ]) {
   requirePart("training init", trainingInit, part);
 }
 
-requireCount("ability derived cache guard", "if (!page.config.set('ab_level', page.levels)) {", 1);
-requireCount("training derived cache guard", "if (!$config.set('tr_level', _tr.level)) {", 2);
+requireCount(
+  "ability derived cache guard",
+  "if (!(await page.config.set_derived('ab_level', page.levels))) {",
+  1
+);
+requireCount(
+  "training derived cache guard",
+  "if (!(await $config.set_derived('tr_level', _tr.level))) {",
+  2
+);
 
 for (const forbidden of [
   "$config.set('ab_level', _ab.level);",
   "if (!$config.set('ab_level', _ab.level)) {",
   "$config.set('tr_level', _tr.level);",
+  "$config.set('ab_level', page.levels);",
   "_tr.parse_table();\n    _tr.parse_progress();",
 ]) {
   if (text.includes(forbidden)) {

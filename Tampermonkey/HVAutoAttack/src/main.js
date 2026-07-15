@@ -11,19 +11,39 @@ import "./i18n/shrine-offer-message-bridge.js"; // hv-utils sloppy-mode 不能 i
 import "./i18n/shrine-offer-reservation-bridge.js"; // hv-utils sloppy-mode 不能 import；Shrine offer reservation 经桥复用纯函数。
 import "./i18n/hvut-config-migration-bridge.js"; // hv-utils sloppy-mode 不能 import；配置迁移 segment 差异经桥选择。
 import "./i18n/hvut-config-field-bridge.js"; // hv-utils sloppy-mode 不能 import；配置字段适用性经桥统一裁决。
+import { initializeHvutStorageBridge } from "./i18n/hvut-storage-bridge.js"; // 小配置写时去重；派生聚合先装载世界隔离 IDB。
 import "./core/async-task-layout-bridge.js"; // hv-utils 批处理按 typed parallel/sequential/grouped 拓扑排布。
 import "./i18n/hvut-armory-integration-bridge.js"; // hv-utils Armory 聚合经能力工厂执行同源读取/原子提交。
 import "./core/navigation-bridge.js"; // hv-utils sloppy-mode 不能 import；重定向能力经全局导航桥统一收口。
-import "./i18n/hv-utils.js"; // 副作用 import：HV Utils 统一汉化（sssss2）自执行，整页汉化。
 import { init } from "./pages/init.js";
 import { g } from "./state/store.js";
 import { setLang } from "./i18n/core/restore-controller.js";
+import { DiagnosticEvidenceKey } from "./core/diagnostic-evidence-keys.js";
+import { writeDiagnosticSessionSnapshot } from "./core/diagnostic-evidence-journal.js";
+import {
+  DiagnosticConsoleEvent,
+  runDiagnosticConsoleAutomation,
+} from "./core/diagnostic-console.js";
 
-// 汉化执行：equip/interface 翻 HV 原生英文文本（装备名/角色页/界面），与 sssss2 功能 UI 区域不同、无覆盖。
-// 注：vite 提升 import，hv-utils 副作用在 import 阶段先跑；下方显式调用 indefined 两套汉化 + 主逻辑。
-initEquipTranslate();
-initInterfaceTranslate();
-init();
-// 首次翻译在 lang 就绪前已出简体；按持久化 lang 修正显示态（1 转繁 / 2 还原英文原文；0 简体已正确）
-const _lang = String(g("lang"));
-if (_lang === "1" || _lang === "2") setLang(_lang);
+async function startApplication() {
+  await initializeHvutStorageBridge();
+  await import("./i18n/hv-utils.js");
+  initEquipTranslate();
+  initInterfaceTranslate();
+  init();
+  const lang = String(g("lang"));
+  if (lang === "1" || lang === "2") setLang(lang);
+}
+
+startApplication().catch((error) => {
+  const evidence = {
+    capability: "appStartup",
+    stage: "hydrateHvutStorage",
+    error: error?.message || String(error),
+  };
+  writeDiagnosticSessionSnapshot(DiagnosticEvidenceKey.APP_STARTUP_FAILURE, evidence);
+  runDiagnosticConsoleAutomation({
+    type: DiagnosticConsoleEvent.ERROR,
+    args: ["[HVAA] application bootstrap failed", evidence],
+  });
+});

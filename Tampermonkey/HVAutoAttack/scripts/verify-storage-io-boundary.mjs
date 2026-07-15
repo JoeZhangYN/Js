@@ -9,7 +9,6 @@ const violations = [];
 const transitionalRawWrites = new Map([
   ["src/pages/encounter-generation-incident.js", { count: 1, retire: "#2045" }],
   ["src/pages/encounter-generation-incident-clear.js", { count: 1, retire: "#2045" }],
-  ["src/i18n/hv-utils.js", { count: 2, retire: "#2049" }],
 ]);
 
 const memoryFirstBattleEvidence = [
@@ -176,6 +175,26 @@ const monsterContentDiff = fs.readFileSync(
 for (const required of ["selectChangedMonsterProfiles", "storageValueFingerprint"]) {
   if (!monsterContentDiff.includes(required)) {
     violations.push(`monster-db-content-diff.js must own ${required}`);
+  }
+}
+
+const hvutRuntime = fs.readFileSync(path.join(srcRoot, "i18n", "hv-utils.js"), "utf8");
+for (const retired of ["GM_setValue(", "GM_deleteValue(", "localStorage.setItem("]) {
+  if (hvutRuntime.includes(retired)) {
+    violations.push(`hv-utils.js must retire raw aggregate/mirror write: ${retired}`);
+  }
+}
+for (const required of ["get_derived", "set_derived", "del_derived", "HVAA_hvutStorage"]) {
+  if (!hvutRuntime.includes(required)) violations.push(`hv-utils.js must consume ${required}`);
+}
+
+const hvutDerivedStore = fs.readFileSync(
+  path.join(srcRoot, "state", "hvut-derived-store-indexeddb.js"),
+  "utf8"
+);
+for (const required of ["splitHvutDerivedValue", "storageValueFingerprint", "recordStore.put"]) {
+  if (!hvutDerivedStore.includes(required)) {
+    violations.push(`hvut-derived-store-indexeddb.js must own ${required}`);
   }
 }
 

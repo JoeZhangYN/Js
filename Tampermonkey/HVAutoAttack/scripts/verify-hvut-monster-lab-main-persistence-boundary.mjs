@@ -11,7 +11,7 @@ function requirePart(label, value, part) {
 }
 
 const parseBody =
-  /parse: function \(\) \{[\s\S]*?\n      \},\n      sort: function/.exec(text)?.[0] || "";
+  /parse: async function \(\) \{[\s\S]*?\n      \},\n      sort: function/.exec(text)?.[0] || "";
 const initTail = /_ml\.main\.init\(\);[\s\S]*?_ml\.main\.make_summary\(\);/.exec(text)?.[0] || "";
 const inlineInit =
   /\/\/ Initializing List[\s\S]*?\n    \/\/ Monster Upgrader/.exec(text)?.[0] || "";
@@ -27,7 +27,7 @@ for (const part of [
   "if (surface === null) {",
   "parseFailed = true;",
   "if (parseFailed) return false;",
-  "if (!$config.set('ml_log', _ml.log)) {",
+  "if (!(await $config.set_derived('ml_log', _ml.log))) {",
   "show_hvut_config_storage_failure_report('monsterLabUpgradeLogSave', { key: 'ml_log' });",
   "return false;",
   "return true;",
@@ -36,7 +36,7 @@ for (const part of [
 }
 
 for (const part of [
-  "if (_ml.main.parse() === false) {",
+  "if ((await _ml.main.parse()) === false) {",
   "return false;",
   "_ml.main.make_summary();",
 ]) {
@@ -49,7 +49,7 @@ for (const part of [
   "if (surface === null) {",
   "parseFailed = true;",
   "if (parseFailed) {",
-  "if (!$config.set('ml_log', _ml.log)) {",
+  "if (!(await $config.set_derived('ml_log', _ml.log))) {",
   "show_hvut_config_storage_failure_report('monsterLabUpgradeLogSave', { key: 'ml_log' });",
   "return false;",
   "$id('monster_list').addEventListener('click', _ml.main.click, true);",
@@ -62,7 +62,7 @@ for (const [label, value] of [
   ["main parse", parseBody],
   ["inline main initialization", inlineInit],
 ]) {
-  if (/\$config\.set\('ml_log', _ml\.log\);\n\s*(?:\}|(?:\$id\('monster_list'\)))/.test(value)) {
+  if (/\$config\.set\('ml_log', _ml\.log\)/.test(value)) {
     violations.push(`${target} ${label} must not continue after unchecked ml_log write`);
   }
   if (

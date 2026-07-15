@@ -1,4 +1,4 @@
-const COMMON_CARRY_KEYS = Object.freeze(["equipset", "ch_style", "se_settings", "ss_log", "ml_log"]);
+const COMMON_CARRY_KEYS = Object.freeze(["equipset", "ch_style", "se_settings"]);
 const PERSISTENT_CARRY_KEYS = Object.freeze(["equipnames", ...COMMON_CARRY_KEYS]);
 
 function cloneConfigValue(value) {

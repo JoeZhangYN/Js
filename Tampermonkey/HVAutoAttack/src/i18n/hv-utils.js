@@ -210,6 +210,19 @@ try {
     var evidence = read_hvut_session_evidence('HVAA:lastHvutConfigStorageFailure') || record_hvut_config_storage_failure(stage, detail);
     show_hvut_failure_report('Config storage failed', evidence);
   };
+  var run_hvut_storage_bridge = function (method, args, stage, detail, fallback) {
+    var bridge = typeof window !== 'undefined' ? window.HVAA_hvutStorage : undefined;
+    if (!bridge || typeof bridge[method] !== 'function') {
+      record_hvut_config_storage_failure(stage, { ...(detail || {}), reason: 'storageBridgeMissing' });
+      return fallback;
+    }
+    try {
+      return bridge[method](...(args || []));
+    } catch (error) {
+      record_hvut_config_storage_failure(stage, { ...(detail || {}), error: error?.message || String(error) });
+      return fallback;
+    }
+  };
   var create_hvut_config_parse_evidence = function (stage, detail) {
     var evidence = { capability: 'hvutConfigParse', stage: stage, detail: detail || {} };
     try {
@@ -352,12 +365,6 @@ try {
     var isIsekai = segment.isIsekai;
     if (config.settings.version) return { kind: 'accepted' };
     config.reset();
-    const in_equipdata = config.ls_get('in_equipdata');
-    const in_json = config.ls_get('in_json');
-    const equipdata = build_hvut_legacy_equipdata(in_equipdata, in_json);
-    if (equipdata) {
-      if (!config.set('equipdata', equipdata)) return reject_hvut_config_legacy_migration('legacyEquipdataWriteFailed', { isIsekai: isIsekai });
-    }
     const in_equipcode = config.ls_get('in_equipcode');
     if (in_equipcode) {
       const equipCode = normalize_hvut_legacy_equip_code(in_equipcode);
@@ -390,13 +397,6 @@ try {
       config.settings.equipmentShopBazaarFilters = es_bazaar;
     }
 
-    const ml_log = config.ls_get('ml_log');
-    const migrated_ml_log = migrate_hvut_monster_lab_log(ml_log);
-    if (migrated_ml_log) {
-      if (!config.set('ml_log', migrated_ml_log)) return reject_hvut_config_legacy_migration('legacyMonsterLabLogWriteFailed', { isIsekai: isIsekai });
-      if (!config.ls_del('ml_log')) return reject_hvut_config_legacy_migration('legacyMonsterLabLogDeleteFailed', { isIsekai: isIsekai });
-    }
-
     const ls_list = get_hvut_config_carry_keys(segment);
     if (!ls_list) return reject_hvut_config_legacy_migration('legacyCarryKeysMissing', { isIsekai: isIsekai });
     for (const key of ls_list) {
@@ -409,6 +409,7 @@ try {
     for (let i = localStorage.length - 1; i >= 0; i--) {
       const key = localStorage.key(i);
       if (key.startsWith(config.prefix)) {
+        if (['in_equipdata', 'in_json', 'ml_log', 'ss_log'].includes(key.slice(config.prefix.length))) continue;
         if (!config.ls_del(key.slice(config.prefix.length))) return reject_hvut_config_legacy_migration('legacyStorageKeyDeleteFailed', { isIsekai: isIsekai, key: key });
       }
     }
@@ -419,13 +420,6 @@ try {
     if (legacyMigration.kind === 'rejected') return legacyMigration;
     if (options?.dropEquipmentShopAutoProtect && config.settings.version < 4.2) {
       delete config.settings.equipmentShopAutoProtect;
-    }
-    if (options?.cleanShrineLog) {
-      const ss_log = config.get('ss_log', {});
-      Object.values(ss_log).forEach((list) => {
-        delete list['1x'];
-      });
-      if (!config.set('ss_log', ss_log)) return reject_hvut_config_legacy_migration('settingsMigrationShrineLogWriteFailed', { isIsekai: !!context?.isIsekai });
     }
     const normalizedSettings = normalize_hvut_config_settings(config.settings, config.default);
     if (!normalizedSettings) return reject_hvut_config_legacy_migration('settingsMigrationNormalizeFailed', { isIsekai: !!context?.isIsekai });
@@ -1114,7 +1108,7 @@ try {
       .hvut-ab-noab > span { color: var(--color-font-invalid); }
     `);
   };
-  var run_hvut_ability_page = function (context) {
+  var run_hvut_ability_page = async function (context) {
     var definition = context?.definition;
     if (!definition || definition.kind !== 'accepted') {
       var compositionEvidence = record_hvut_ability_parse_failure('abilityCatalogCompose', { reason: definition?.reason || 'abilityPageDefinitionMissing' });
@@ -1129,7 +1123,7 @@ try {
     page.points = parse_hvut_ability_points_from_top($id('ability_top'), 'abilityPointsNode');
     if (page.points === null) return rejectPage();
     if (parse_hvut_ability_slotbar(page) === false) return rejectPage();
-    if (!page.config.set('ab_level', page.levels)) {
+    if (!(await page.config.set_derived('ab_level', page.levels))) {
       return rejectPage(record_hvut_ability_parse_failure('abilityLevelPersistence', { reason: 'configWriteRejected' }));
     }
     if (render_hvut_ability_tree(page) === false) {
@@ -3126,46 +3120,38 @@ const render_supply_li = function (parent, name, count) {
   return li;
 };
 
-// $config 配置体系内核(两 IIFE 18 方法 byte-identical/表层漂移收口一处; 铁律1e 应抽尽抽 / 铁律4 抽象即反退化)。
+// $config 配置体系内核(两 IIFE 的配置/派生存储和面板方法收口一处; 铁律1e 应抽尽抽 / 铁律4 抽象即反退化)。
 // 留各 IIFE 字面量(机制分叉, 见设计要点4 + dup-probe 留置裁定): 数据属性 version/ls_savelist/data/text/desc/validator
 //   + init(ns hvut/hvuti·season wiring) + migration legacy carry flow + create panel skeleton/field row
 //     (版本史 4.2≠2 的 Isekai 清理与 CSS/set_panel/set_input 段差异留各 IIFE)
 //   + create(面板 CSS var↔硬编 / checkbox $input 3槽↔2槽 / textarea 恢复默认按钮) + set_panel·set_input(设值流分叉; 主世界无独立 set_input 内联于 set_panel)。
 // ctx.skipField(o): 面板字段适用谓词分叉 —— isekai 按 HV server(o.server!==_server.name) / 主世界按 持久区·isekai(o.disabled)。
 // validate 错误头归一中文 '校验错误'(isekai 原 'Validation Error' 漏翻; 汉化脚本统一中文)。
-// 反退化: scripts/verify-no-iife-dup.mjs PARTIAL_OBJECTS['$config'] 锁这 18 方法名不在 IIFE 字面量回潮。
+// 反退化: scripts/verify-no-iife-dup.mjs 锁定配置与派生数据入口不在 IIFE 字面量回潮。
 const bindConfig = function (config, ctx) {
   config.reset = function () {
     config.settings = JSON.parse(JSON.stringify(config.default));
   };
   config.get = function (key, dvalue, prefix = config.prefix) {
-    try {
-      return GM_getValue(prefix + key, dvalue);
-    } catch (error) {
-      record_hvut_config_storage_failure('get', { key: prefix + key, error: error?.message || String(error) });
-      return dvalue;
-    }
+    const scope = prefix === 'hvut_' ? 'persistent' : 'world';
+    return run_hvut_storage_bridge('configGet', [key, dvalue, scope], 'get', { key: prefix + key }, dvalue);
   };
   config.set = function (key, value, prefix = config.prefix) {
-    try {
-      GM_setValue(prefix + key, value);
-      if (config.ls_savelist.includes(key) && !config.ls_set(key, value, prefix)) {
-        return false;
-      }
-      return true;
-    } catch (error) {
-      record_hvut_config_storage_failure('set', { key: prefix + key, error: error?.message || String(error) });
-      return false;
-    }
+    const scope = prefix === 'hvut_' ? 'persistent' : 'world';
+    return run_hvut_storage_bridge('configSet', [key, value, scope], 'set', { key: prefix + key }, false);
   };
   config.del = function (key, prefix = config.prefix) {
-    try {
-      GM_deleteValue(prefix + key);
-      return true;
-    } catch (error) {
-      record_hvut_config_storage_failure('delete', { key: prefix + key, error: error?.message || String(error) });
-      return false;
-    }
+    const scope = prefix === 'hvut_' ? 'persistent' : 'world';
+    return run_hvut_storage_bridge('configDelete', [key, scope], 'delete', { key: prefix + key }, false);
+  };
+  config.get_derived = function (key, dvalue) {
+    return run_hvut_storage_bridge('derivedGet', [key, dvalue], 'derivedGet', { key: key }, dvalue);
+  };
+  config.set_derived = async function (key, value) {
+    return await run_hvut_storage_bridge('derivedSet', [key, value], 'derivedSet', { key: key }, Promise.resolve(false));
+  };
+  config.del_derived = async function (key, dvalue) {
+    return await run_hvut_storage_bridge('derivedDelete', [key, dvalue], 'derivedDelete', { key: key }, Promise.resolve(false));
   };
   config.ls_get = function (key, dvalue, prefix = config.prefix) {
     try {
@@ -3174,15 +3160,6 @@ const bindConfig = function (config, ctx) {
     } catch (error) {
       record_hvut_config_storage_failure('localStorageGet', { key: prefix + key, error: error?.message || String(error) });
       return dvalue;
-    }
-  };
-  config.ls_set = function (key, value, prefix = config.prefix) {
-    try {
-      localStorage.setItem(prefix + key, JSON.stringify(value));
-      return true;
-    } catch (error) {
-      record_hvut_config_storage_failure('localStorageSet', { key: prefix + key, error: error?.message || String(error) });
-      return false;
     }
   };
   config.ls_del = function (key, prefix = config.prefix) {
@@ -6018,7 +5995,7 @@ const bindArmory = function (armory, ctx) {
     core_type: { 'One-handed Weapon': 'Weapon', 'Two-handed Weapon': 'Weapon', 'Staff': 'Staff', 'Shield': 'Armor', 'Cloth Armor': 'Armor', 'Light Armor': 'Armor', 'Heavy Armor': 'Armor' },
     rares: ['Force Shield', 'Phase', 'Shade', 'Power', 'Reactive'],
     equiplist: [],
-    equipdata: $config.get('equipdata', { version: 1 }),
+    equipdata: $config.get_derived('equipdata', { version: 1 }),
     eqitems: {},
     itemdata: {},
     prices: $price.get('Materials'),
@@ -6179,7 +6156,7 @@ const bindArmory = function (armory, ctx) {
         'select_invert': { text: '反选', click: () => { $armory.select.call('invert'); } },
         'code_popup': { text: '生成装备代码', click: () => { $armory.equipcode.list(); } },
         'code_edit': { text: '编辑格式', click: () => { $config.open('equipCode'); } },
-        'code_save': { text: '保存', click: () => { $armory.equipcode.save(); } },
+        'code_save': { text: '保存', click: async () => { await $armory.equipcode.save(); } },
         'code_revert': { text: '恢复', click: () => { $armory.equipcode.load(); } },
 
         'select_purchase': {},
@@ -7013,7 +6990,7 @@ const bindArmory = function (armory, ctx) {
     },
 
     equipcode: {
-      save: function () {
+      save: async function () {
         let nextEquipdata = JSON.parse(JSON.stringify($armory.equipdata || { version: 1 }));
         if ($armory.pageContext.filter === 'all') {
           nextEquipdata = { version: $armory.equipdata.version };
@@ -7022,7 +6999,7 @@ const bindArmory = function (armory, ctx) {
           const data = $armory.equipcode.parse(eq.node.note.value);
           nextEquipdata[eq.info.eid] = { checked: eq.node.check.checked, ...data };
         });
-        if (!$config.set('equipdata', nextEquipdata)) {
+        if (!(await $config.set_derived('equipdata', nextEquipdata))) {
           show_hvut_generic_error();
           return false;
         }
@@ -7238,10 +7215,15 @@ const bindArmory = function (armory, ctx) {
   //document.addEventListener('keydown', (e) => { if (e.target.nodeName === 'INPUT' || e.target.nodeName === 'TEXTAREA') { e.stopPropagation(); } }, true);
 };
 
+var handle_hvut_async_runtime_failure = function (error) {
+  var evidence = record_hvut_runtime_failure(error, 'executeHvUtils', { source: 'asyncWorldEntry' });
+  show_hvut_runtime_failure_report(render_hvut_runtime_failure_log(evidence));
+};
+
 if (HVUT_ENTRY_MODE === 'active') {
 if (HVUT_RUNTIME_POLICY.profile.identity === 'isekai') {
   // [ISEKAI 分支] 原 "HV Utils Isekai 汉化" → 迁移至英文 4.2.0
-  (function () {
+  (async function () {
 
 const settings = {
 
@@ -7415,7 +7397,6 @@ const settings = {
 // CONFIGURATION
 const $config = {
   version: 4.2,
-  ls_savelist: ['ch_style', 'persona', 'prices', 'equipset'],
   data: [
     /*
     { tag: 'h1', text: '战斗设置' },
@@ -7548,10 +7529,10 @@ const $config = {
   },
   init: create_hvut_config_init_entry(settings, HVUT_WORLD),
   migration: function () {
-    const migration = run_hvut_config_settings_migration($config, $price, HVUT_WORLD, { dropEquipmentShopAutoProtect: true, cleanShrineLog: true });
+    const migration = run_hvut_config_settings_migration($config, $price, HVUT_WORLD, { dropEquipmentShopAutoProtect: true });
     return migration.kind === 'accepted';
   },
-  // reset/get/set/del/ls_get/ls_set/ls_del: 收口 bindConfig(L1)
+  // reset/get/set/del/ls_get/ls_del 与派生数据入口: 收口 bindConfig(L1)
   create: function () {
     inject_hvut_config_panel_style(HVUT_WORLD);
 
@@ -7594,7 +7575,7 @@ const $config = {
   },
   // get_panel/validate_panel/validate/load/save/text2obj/obj2text/text2array/array2text: 收口 bindConfig(L1)
 };
-bindConfig($config, { skipField: (o) => is_hvut_config_field_disabled(o, HVUT_WORLD) }); // 18 方法收口共享内核(L1); ctx 注入面板字段门控谓词(isekai 按 HV server)
+bindConfig($config, { skipField: (o) => is_hvut_config_field_disabled(o, HVUT_WORLD) }); // 配置与派生数据入口收口共享内核(L1); ctx 注入面板字段门控谓词(isekai 按 HV server)
 $config.init();
 //$config.settings = settings;
 
@@ -8048,7 +8029,7 @@ if (characterPage.isCharacter) {
         $element('td', tr);
       });
       _ch.exp.node.level = $input(['number', null, 'Level', 'before'], _ch.exp.node.div, { value: _player.level, min: 1, max: 600, style: 'width: 50px;' });
-      const ass = $config.get('tr_level', {})['Assimilator'] || 0;
+      const ass = $config.get_derived('tr_level', {})['Assimilator'] || 0;
       _ch.exp.node.ass = $input(['number', null, 'Training: Assimilator', 'before'], _ch.exp.node.div, { value: ass, min: 0, max: 25, style: 'width: 30px;' });
       _ch.exp.calc();
     },
@@ -8286,7 +8267,7 @@ if (characterPage.isEquipment) {
 //* [3] Character - Abilities
 if (characterPage.isAbilities) {
   const abilityPageDefinition = create_hvut_ability_page_definition('isekai', 'abilityCatalogCompose');
-  if (run_hvut_ability_page({ state: _ab, config: $config, player: _player, definition: abilityPageDefinition }) === false) return;
+  if ((await run_hvut_ability_page({ state: _ab, config: $config, player: _player, definition: abilityPageDefinition })) === false) return;
 } else
 // [END 3] Character - Abilities */
 
@@ -8314,7 +8295,7 @@ if (characterPage.isTraining) {
     'Set Collector': { id: 96, b: 12500, l: 12500, e: 0 },
   };
 
-  _tr.init = function () {
+  _tr.init = async function () {
     _tr.node.div = $element('div', [$id('train_outer'), 'afterbegin'], ['!margin: 5px;' + ($config.settings.trainingNotification ? '' : ' display: none;')]);
     _tr.node.select = $input(['select', [':Plan Training...']], _tr.node.div, null, { change: () => { _tr.change(_tr.node.select.value); } });
     _tr.node.level = $input('number', _tr.node.div, { disabled: true, style: 'width: 30px; text-align: right;' }, { input: () => { _tr.calc(); } });
@@ -8328,12 +8309,12 @@ if (characterPage.isTraining) {
 
     $id('train_table').addEventListener('click', _tr.click);
 
-    if (_tr.parse_table() === false) return false;
+    if ((await _tr.parse_table()) === false) return false;
     if (_tr.parse_progress() === false) return false;
     return true;
   };
 
-  _tr.parse_table = function () {
+  _tr.parse_table = async function () {
     let total_spent = 0;
     let parseFailed = false;
     Array.from($id('train_table').rows).forEach((tr, i) => {
@@ -8373,7 +8354,7 @@ if (characterPage.isTraining) {
     });
     if (parseFailed) return false;
     $element('tr', $id('train_table').tBodies[0], [`/<td colspan="9"><div class="fc4 far fcb"><div>Total ${total_spent.toLocaleString()}</div></div></td>`]);
-    if (!$config.set('tr_level', _tr.level)) {
+    if (!(await $config.set_derived('tr_level', _tr.level))) {
       show_hvut_generic_error();
       return false;
     }
@@ -8419,7 +8400,7 @@ if (characterPage.isTraining) {
   `);
 
   bindTr(_tr, { config: $config }); // _tr 5 方法收口公共区 bindTr($config 依赖注入); version-diff 留本 IIFE
-  _tr.init();
+  await _tr.init();
 } else
 // [END 4] Character - Training */
 
@@ -8631,7 +8612,7 @@ if (get_hvut_bazaar_page_context().isShrine) {
     toggle_button($input('button', _ss.node.side), '过滤: 开', '过滤: 关', $id('inv_item'), 'hvut-none-cont', 'on');
     $input(['button', '祭坛收获'], _ss.node.side, null, () => { _ss.offer.toggle(); });
     $input(['button', '祭坛日志'], _ss.node.side, null, () => { _ss.log.toggle(); });
-    $input(['button', '重置日志'], _ss.node.side, null, () => { _ss.log.reset(); });
+    $input(['button', '重置日志'], _ss.node.side, null, async () => { await _ss.log.reset(); });
     $input(['button', '过滤规则'], _ss.node.side, null, () => { $config.open('shrineHideItems'); });
 
     _ss.node.log = $element('div', $id('shrine_outer'), ['.hvut-ss-log hvut-none']);
@@ -8969,7 +8950,7 @@ if (get_hvut_bazaar_page_context().isShrine) {
       }
 
       if (item.total % 10 === 0 || item.total === item.requests || _ss.error) {
-        if (_ss.log.save() === false) return false;
+        if ((await _ss.log.save()) === false) return false;
       }
       return true;
     },
@@ -8979,7 +8960,7 @@ if (get_hvut_bazaar_page_context().isShrine) {
   };
 
   _ss.log = {
-    json: $config.get('ss_log', {}),
+    json: $config.get_derived('ss_log', {}),
     items: {},
     sort: function () {
       const json = _ss.log.json;
@@ -9040,16 +9021,16 @@ if (get_hvut_bazaar_page_context().isShrine) {
         _ss.node.log.innerHTML = '';
       }
     },
-    save: function () {
-      if (!$config.set('ss_log', _ss.log.json)) {
+    save: async function () {
+      if (!(await $config.set_derived('ss_log', _ss.log.json))) {
         show_hvut_config_storage_failure_report('shrineLogSave', { key: 'ss_log' });
         return false;
       }
       return true;
     },
-    reset: function () {
+    reset: async function () {
       if (confirm('此浏览器中的当前赛季的邮件记录将被删除.\nAre you sure?')) {
-        if (!$config.del('ss_log')) {
+        if (!(await $config.del_derived('ss_log', {}))) {
           show_hvut_config_storage_failure_report('shrineLogReset', { key: 'ss_log' });
           return false;
         }
@@ -9368,7 +9349,7 @@ if (get_hvut_monster_lab_page_context().isMonsterLab && $config.settings.monster
 
     _ml.materials = ['Low-Grade Cloth', 'Mid-Grade Cloth', 'High-Grade Cloth', 'Low-Grade Leather', 'Mid-Grade Leather', 'High-Grade Leather', 'Low-Grade Metals', 'Mid-Grade Metals', 'High-Grade Metals', 'Low-Grade Wood', 'Mid-Grade Wood', 'High-Grade Wood', 'Crystallized Phazon', 'Shade Fragment', 'Repurposed Actuator', 'Defense Matrix Modulator', 'Binding of Slaughter', 'Binding of Balance', 'Binding of Isaac', 'Binding of Destruction', 'Binding of Focus', 'Binding of Friendship', 'Binding of Protection', 'Binding of Warding', 'Binding of the Fleet', 'Binding of the Barrier', 'Binding of the Nimble', 'Binding of Negation', 'Binding of the Elementalist', 'Binding of the Heaven-sent', 'Binding of the Demon-fiend', 'Binding of the Curse-weaver', 'Binding of the Earth-walker', 'Binding of Surtr', 'Binding of Niflheim', 'Binding of Mjolnir', 'Binding of Freyr', 'Binding of Heimdall', 'Binding of Fenrir', 'Binding of Dampening', 'Binding of Stoneskin', 'Binding of Deflection', 'Binding of the Fire-eater', 'Binding of the Frost-born', 'Binding of the Thunder-child', 'Binding of the Wind-waker', 'Binding of the Thrice-blessed', 'Binding of the Spirit-ward', 'Binding of the Ox', 'Binding of the Raccoon', 'Binding of the Cheetah', 'Binding of the Turtle', 'Binding of the Fox', 'Binding of the Owl'];
     _ml.mobs = [];
-    _ml.log = $config.get('ml_log', [{ version: 1 }]);
+    _ml.log = $config.get_derived('ml_log', [{ version: 1 }]);
 
     _ml.parse = function (mob, doc) {
       mob.pl = parseInt($qs('.msl > div:nth-child(3)', doc).textContent.slice(4));
@@ -9400,9 +9381,6 @@ if (get_hvut_monster_lab_page_context().isMonsterLab && $config.settings.monster
         mob.log.ct[i][2] = mob.ct[i].max;
       });
 
-      if (!$config.set('ml_log', _ml.log)) {
-        return false;
-      }
       return true;
     };
 
@@ -9453,7 +9431,7 @@ if (get_hvut_monster_lab_page_context().isMonsterLab && $config.settings.monster
         const side_div = $element('div', $id('monster_outer'), ['.hvut-side hvut-ml-side']);
         $input(['button', '礼物清单'], side_div, null, () => { _ml.main.toggle_summary(); });
         $input(['button', '日志'], side_div, null, () => { _ml.main.toggle_log(-1); });
-        $input(['button', '重置日志'], side_div, null, () => { _ml.main.reset_log(); });
+        $input(['button', '重置日志'], side_div, null, async () => { await _ml.main.reset_log(); });
         $input(['button', '物品价格'], side_div, ['.hvut-side-margin'], () => { $price.edit('Materials', 'ma', _ml.main.edit_price); });
         $input(['button', '更新击杀与胜场'], side_div, null, () => { _ml.main.feedall(); });
         $input(['button', '怪物升级器'], side_div, { id: 'hvut-ml-up-button' }, () => { _ml.upgrade.toggle(); });
@@ -9502,7 +9480,7 @@ if (get_hvut_monster_lab_page_context().isMonsterLab && $config.settings.monster
           _ml.main.hide_log(index);
         }
       },
-      parse: function () {
+      parse: async function () {
         const now = Date.now();
         let parseFailed = false;
         _ml.mobs[-1] = { log: { date: now, gifts: (new Array(54)).fill(0) }, node: {} };
@@ -9606,7 +9584,7 @@ if (get_hvut_monster_lab_page_context().isMonsterLab && $config.settings.monster
         });
         if (parseFailed) return false;
 
-        if (!$config.set('ml_log', _ml.log)) {
+        if (!(await $config.set_derived('ml_log', _ml.log))) {
           show_hvut_config_storage_failure_report('monsterLabUpgradeLogSave', { key: 'ml_log' });
           return false;
         }
@@ -9644,19 +9622,20 @@ if (get_hvut_monster_lab_page_context().isMonsterLab && $config.settings.monster
         mob.node.wins.textContent = '...';
         const html = await $ajax.fetch(create_hvut_monster_lab_slot_url(mob), food ? `food_action=${food}` : '');
         const doc = $doc(html);
-        _ml.main.onsuccess(index, doc);
+        await _ml.main.onsuccess(index, doc);
         //_ml.main.onerror(index);
       },
       feedall: function (stat, value, food) {
         return run_hvut_async_task_layout('PARALLEL', _ml.mobs, (mob) => _ml.main.feed(mob.index, (!value || value >= mob[stat]) ? food : null));
       },
-      onsuccess: function (index, doc) {
+      onsuccess: async function (index, doc) {
         const mob = _ml.mobs[index];
         if (_ml.parse(mob, doc) === false) {
           show_hvut_generic_error();
           _ml.main.onerror(index);
           return false;
         }
+        if (!(await $config.set_derived('ml_log', _ml.log))) return false;
         mob.status = 1;
         mob.node.wins.dataset.update = new Date(mob.log.update).toLocaleDateString();
         mob.node.wins.classList.remove('hvut-ml-outdated');
@@ -9778,9 +9757,9 @@ if (get_hvut_monster_lab_page_context().isMonsterLab && $config.settings.monster
           $element('li', null, `- Daily: ${Math.round(count / days * 10) / 10} gift(s), ${_ml.price2str(income / days)} credits`)
         );
       },
-      reset_log: function () {
+      reset_log: async function () {
         if (confirm('本浏览器中的怪物实验室日志将被删除。\n确定吗？')) {
-          if (!$config.del('ml_log')) {
+          if (!(await $config.del_derived('ml_log', [{ version: 1 }]))) {
             show_hvut_config_storage_failure_report('monsterLabLogReset', { key: 'ml_log' });
             return false;
           }
@@ -9790,7 +9769,7 @@ if (get_hvut_monster_lab_page_context().isMonsterLab && $config.settings.monster
     };
 
     _ml.main.init();
-    if (_ml.main.parse() === false) {
+    if ((await _ml.main.parse()) === false) {
       return false;
     }
     _ml.main.make_summary();
@@ -9894,9 +9873,9 @@ if (get_hvut_monster_lab_page_context().isMonsterLab && $config.settings.monster
         _ml.upgrade.ct.ul = $element('ul', bottom, ['.hvut-ml-up-token']);
 
         const buttons = $element('div', bottom, ['.hvut-ml-up-buttons']);
-        $input(['button', '保存'], buttons, null, () => { _ml.upgrade.save(); });
+        $input(['button', '保存'], buttons, null, async () => { await _ml.upgrade.save(); });
         $input(['button', '恢复'], buttons, null, () => { _ml.upgrade.load(); });
-        _ml.upgrade.node.update = $input(['button', '更新数据'], buttons, null, () => { _ml.upgrade.force_update(); });
+        _ml.upgrade.node.update = $input(['button', '更新数据'], buttons, null, async () => { await _ml.upgrade.force_update(); });
         _ml.upgrade.node.run = $input(['button', '执行升级'], buttons, null, () => { _ml.upgrade.run(); });
         $input(['button', '关闭'], buttons, null, () => { _ml.upgrade.toggle(); });
 
@@ -10024,7 +10003,7 @@ if (get_hvut_monster_lab_page_context().isMonsterLab && $config.settings.monster
           done++;
           mob.update_needed = false;
           if (_ml.parse(mob, doc) === false) {
-            throw new Error('ml_log persistence failed');
+            throw new Error('monster lab parse failed');
           }
           _ml.upgrade.node.button.value = `Updating... (${done}/${total})`;
           if (_ml.upgrade.node.run) {
@@ -10047,7 +10026,7 @@ if (get_hvut_monster_lab_page_context().isMonsterLab && $config.settings.monster
           return false;
         }
 
-        if (!$config.set('ml_log', _ml.log)) {
+        if (!(await $config.set_derived('ml_log', _ml.log))) {
           show_hvut_config_storage_failure_report('monsterLabUpgradeLogSave', { key: 'ml_log' });
           _ml.upgrade.node.button.disabled = false;
           _ml.upgrade.node.button.value = '怪物升级器';
@@ -10064,11 +10043,11 @@ if (get_hvut_monster_lab_page_context().isMonsterLab && $config.settings.monster
         }
         return true;
       },
-      force_update: function () {
+      force_update: async function () {
         _ml.mobs.forEach((mob) => {
           mob.log.pl = -1;
         });
-        if (!$config.set('ml_log', _ml.log)) {
+        if (!(await $config.set_derived('ml_log', _ml.log))) {
           show_hvut_config_storage_failure_report('monsterLabForceUpdate', { key: 'ml_log' });
           return false;
         }
@@ -10310,7 +10289,7 @@ if (get_hvut_monster_lab_page_context().isMonsterLab && $config.settings.monster
         if (total === 0) {
           return;
         }
-        if (!$config.set('ml_log', _ml.log)) {
+        if (!(await $config.set_derived('ml_log', _ml.log))) {
           show_hvut_config_storage_failure_report('monsterLabUpgradeLogSave', { key: 'ml_log' });
           return false;
         }
@@ -10340,7 +10319,7 @@ if (get_hvut_monster_lab_page_context().isMonsterLab && $config.settings.monster
         }
         return _ml.upgrade.update();
       },
-      save: function () {
+      save: async function () {
         _ml.mobs.forEach((mob) => {
           mob.log.pa.forEach((e, i) => {
             e[1] = mob.pa[i].to;
@@ -10353,7 +10332,7 @@ if (get_hvut_monster_lab_page_context().isMonsterLab && $config.settings.monster
           });
         });
 
-        if (!$config.set('ml_log', _ml.log)) {
+        if (!(await $config.set_derived('ml_log', _ml.log))) {
           show_hvut_config_storage_failure_report('monsterLabUpgradeLogSave', { key: 'ml_log' });
           return false;
         }
@@ -11203,7 +11182,7 @@ if (get_hvut_mail_page_context().isMoogleMail && $config.settings.moogleMail) {
         _mm.equip.node.list = $qs('.equiplist') || $element('div', null, ['.equiplist nosel']);
         _mm.equip.node.attach.appendChild(_mm.equip.node.list);
 
-        _mm.equip.data = $config.get('equipdata', {});
+        _mm.equip.data = $config.get_derived('equipdata', {});
         _mm.equip.list = $equip.list.div(_mm.equip.node.list);
         _mm.equip.list.forEach((eq) => {
           eq.visible = true;
@@ -12321,11 +12300,11 @@ if (get_hvut_armory_page_context($config).isArmory && get_hvut_armory_page_conte
 
 /* END */
 
-  })();
+  })().catch(handle_hvut_async_runtime_failure);
 } else {
   // [主世界分支] 原 "HV Utils 汉化" → 迁移至英文 4.0.0
   // GM_setValue 前缀: 外层世界组合根已选中永久区分支, 此处恒 hvut_
-  (function () {
+  (async function () {
 
 const settings = {
 
@@ -12490,7 +12469,6 @@ function toggle_button(e,s,h,t,c,d) {function f(){if(t.classList.contains(c)){t.
 const $config = {
 
   version: 2, // v2 = 能量模型旧装备体系退化接新(2026-06-10): equipCode object 化 + 死键清理 + armory 新键, 经 migration 幂等迁移
-  ls_savelist: ['ch_style'],
   data: [
     { tag: 'h1', text: 'Random Encounter' },
     { key: 'reNotification', type: 'boolean', label: '启用随机遭遇战通知。' },
@@ -12629,7 +12607,7 @@ const $config = {
     const migration = run_hvut_config_settings_migration($config, $price, HVUT_WORLD, {});
     return migration.kind === 'accepted';
   },
-  // reset/get/set/del/ls_get/ls_set/ls_del: 收口 bindConfig(L1)
+  // reset/get/set/del/ls_get/ls_del 与派生数据入口: 收口 bindConfig(L1)
   create: function () {
     inject_hvut_config_panel_style(HVUT_WORLD);
 
@@ -12664,7 +12642,7 @@ const $config = {
   },
   // get_panel/validate_panel/validate/load/save/text2obj/obj2text/text2array/array2text: 收口 bindConfig(L1)
 };
-bindConfig($config, { skipField: (o) => is_hvut_config_field_disabled(o, HVUT_WORLD) }); // 18 方法收口共享内核(L1); ctx 注入面板字段门控谓词(主世界按 持久区·isekai)
+bindConfig($config, { skipField: (o) => is_hvut_config_field_disabled(o, HVUT_WORLD) }); // 配置与派生数据入口收口共享内核(L1); ctx 注入面板字段门控谓词(主世界按 持久区·isekai)
 $config.init();
 //$config.settings = settings;
 
@@ -13432,7 +13410,7 @@ if (characterPage.isCharacter) {
         $element('td', tr);
       });
       _ch.node.level = $input(['number', 'Level', 'before'], _ch.node.div, { value: _player.level, min: 1, max: 600, style: 'width: 50px;' });
-      const ass = $config.get('tr_level', {})['Assimilator'] || 0;
+      const ass = $config.get_derived('tr_level', {})['Assimilator'] || 0;
       _ch.node.ass = $input(['number', 'Training: Assimilator', 'before'], _ch.node.div, { value: ass, min: 0, max: 25, style: 'width: 30px;' });
       _ch.exp.calc();
     },
@@ -13991,7 +13969,7 @@ if (characterPage.isEquipment) {
 //* [3] Character - Abilities
 if (characterPage.isAbilities) {
   const abilityPageDefinition = create_hvut_ability_page_definition('persistent', 'abilityCatalogCompose');
-  if (run_hvut_ability_page({ state: _ab, config: $config, player: _player, definition: abilityPageDefinition }) === false) return;
+  if ((await run_hvut_ability_page({ state: _ab, config: $config, player: _player, definition: abilityPageDefinition })) === false) return;
 } else
 // [END 3] Character - Abilities */
 
@@ -14082,7 +14060,7 @@ if (characterPage.isTraining) {
   if (parseFailed) return false;
   $element('tr', $id('train_table').tBodies[0], [`/<td colspan="9"><div class="fc4 far fcb"><div>累计花费 ${_tr.spent.toLocaleString()}</div></div></td>`]);
 
-  if (!$config.set('tr_level', _tr.level)) {
+  if (!(await $config.set_derived('tr_level', _tr.level))) {
     show_hvut_generic_error();
     return false;
   }
@@ -14260,7 +14238,7 @@ if (get_hvut_bazaar_page_context().isItemShop) {
 
 //* [10] Bazaar - The Shrine
 if (get_hvut_bazaar_page_context().isShrine) {
-  _ss.log = $config.get('ss_log', {});
+  _ss.log = $config.get_derived('ss_log', {});
   _ss.node = {};
   _ss.equip = { capacity: null, current: null, requests: 0, received: 0, sold: 0, salvaged: 0, total: null };
   _ss.items = {};
@@ -14454,7 +14432,7 @@ if (get_hvut_bazaar_page_context().isShrine) {
     });
 
     if (item.recieved % 10 === 0 || item.recieved === item.requests || _ss.error) {
-      if (!$config.set('ss_log', _ss.log)) {
+      if (!(await $config.set_derived('ss_log', _ss.log))) {
         show_hvut_config_storage_failure_report('legacyShrineLogSave', { key: 'ss_log' });
         return false;
       }
@@ -14902,7 +14880,7 @@ if (get_hvut_monster_lab_page_context().isMonsterLab && $config.settings.monster
     _ml.materials = ['Low-Grade Cloth', 'Mid-Grade Cloth', 'High-Grade Cloth', 'Low-Grade Leather', 'Mid-Grade Leather', 'High-Grade Leather', 'Low-Grade Metals', 'Mid-Grade Metals', 'High-Grade Metals', 'Low-Grade Wood', 'Mid-Grade Wood', 'High-Grade Wood', 'Crystallized Phazon', 'Shade Fragment', 'Repurposed Actuator', 'Defense Matrix Modulator', 'Binding of Slaughter', 'Binding of Balance', 'Binding of Isaac', 'Binding of Destruction', 'Binding of Focus', 'Binding of Friendship', 'Binding of Protection', 'Binding of Warding', 'Binding of the Fleet', 'Binding of the Barrier', 'Binding of the Nimble', 'Binding of Negation', 'Binding of the Elementalist', 'Binding of the Heaven-sent', 'Binding of the Demon-fiend', 'Binding of the Curse-weaver', 'Binding of the Earth-walker', 'Binding of Surtr', 'Binding of Niflheim', 'Binding of Mjolnir', 'Binding of Freyr', 'Binding of Heimdall', 'Binding of Fenrir', 'Binding of Dampening', 'Binding of Stoneskin', 'Binding of Deflection', 'Binding of the Fire-eater', 'Binding of the Frost-born', 'Binding of the Thunder-child', 'Binding of the Wind-waker', 'Binding of the Thrice-blessed', 'Binding of the Spirit-ward', 'Binding of the Ox', 'Binding of the Raccoon', 'Binding of the Cheetah', 'Binding of the Turtle', 'Binding of the Fox', 'Binding of the Owl'];
     _ml.mobs = [];
     _ml.now = Date.now();
-    _ml.log = $config.get('ml_log', [{ version: 1 }]);
+    _ml.log = $config.get_derived('ml_log', [{ version: 1 }]);
 
     _ml.parse = function (mob, doc) {
       mob.pl = parseInt($qs('.msl > div:nth-child(3)', doc).textContent.slice(4));
@@ -14934,9 +14912,6 @@ if (get_hvut_monster_lab_page_context().isMonsterLab && $config.settings.monster
         mob.log.ct[i][2] = mob.ct[i].max;
       });
 
-      if (!$config.set('ml_log', _ml.log)) {
-        return false;
-      }
       return true;
     };
 
@@ -15029,19 +15004,20 @@ if (get_hvut_monster_lab_page_context().isMonsterLab && $config.settings.monster
         mob.node.wins.textContent = '...';
         const html = await $ajax.fetch(create_hvut_monster_lab_slot_url(mob), food ? 'food_action=' + food : '');
         const doc = $doc(html);
-        _ml.main.onsuccess(index, doc);
+        await _ml.main.onsuccess(index, doc);
         //_ml.main.onerror(index);
       },
       feedall: function (stat, value, food) {
         return run_hvut_async_task_layout('PARALLEL', _ml.mobs, (mob) => _ml.main.feed(mob.index, !value || value >= mob[stat] ? food : null));
       },
-      onsuccess: function (index, doc) {
+      onsuccess: async function (index, doc) {
         const mob = _ml.mobs[index];
         if (_ml.parse(mob, doc) === false) {
           show_hvut_generic_error();
           _ml.main.onerror(index);
           return false;
         }
+        if (!(await $config.set_derived('ml_log', _ml.log))) return false;
         mob.status = 1;
         mob.node.wins.dataset.update = new Date(mob.log.update).toLocaleDateString();
         mob.node.wins.classList.remove('hvut-ml-outdated');
@@ -15274,7 +15250,7 @@ if (get_hvut_monster_lab_page_context().isMonsterLab && $config.settings.monster
     return false;
   }
 
-  if (!$config.set('ml_log', _ml.log)) {
+  if (!(await $config.set_derived('ml_log', _ml.log))) {
       show_hvut_config_storage_failure_report('monsterLabUpgradeLogSave', { key: 'ml_log' });
       return false;
     }
@@ -15437,9 +15413,9 @@ if (get_hvut_monster_lab_page_context().isMonsterLab && $config.settings.monster
         _ml.upgrade.ct.ul = $element('ul', bottom, ['.hvut-ml-up-token']);
 
         const buttons = $element('div', bottom, ['.hvut-ml-up-buttons']);
-        $input(['button', '保存'], buttons, null, () => { _ml.upgrade.save(); });
+        $input(['button', '保存'], buttons, null, async () => { await _ml.upgrade.save(); });
         $input(['button', '恢复'], buttons, null, () => { _ml.upgrade.load(); });
-        _ml.upgrade.node.update = $input(['button', '更新数据'], buttons, null, () => { _ml.upgrade.force_update(); });
+        _ml.upgrade.node.update = $input(['button', '更新数据'], buttons, null, async () => { await _ml.upgrade.force_update(); });
         _ml.upgrade.node.run = $input(['button', '执行升级'], buttons, null, () => { _ml.upgrade.run(); });
         $input(['button', '关闭'], buttons, null, () => { _ml.upgrade.toggle(); });
 
@@ -15550,7 +15526,7 @@ if (get_hvut_monster_lab_page_context().isMonsterLab && $config.settings.monster
           done++;
           mob.update_needed = false;
           if (_ml.parse(mob, doc) === false) {
-            throw new Error('ml_log persistence failed');
+            throw new Error('monster lab parse failed');
           }
           _ml.upgrade.node.button.value = `更新中... (${done}/${total})`;
           if (_ml.upgrade.node.run) {
@@ -15573,7 +15549,7 @@ if (get_hvut_monster_lab_page_context().isMonsterLab && $config.settings.monster
           return false;
         }
 
-        if (!$config.set('ml_log', _ml.log)) {
+        if (!(await $config.set_derived('ml_log', _ml.log))) {
           show_hvut_config_storage_failure_report('monsterLabUpgradeLogSave', { key: 'ml_log' });
           _ml.upgrade.node.button.disabled = false;
           _ml.upgrade.node.button.value = '怪物升级器';
@@ -15591,11 +15567,11 @@ if (get_hvut_monster_lab_page_context().isMonsterLab && $config.settings.monster
         return true;
       },
 
-      force_update: function () {
+      force_update: async function () {
         _ml.mobs.forEach((mob) => {
           mob.log.pl = -1;
         });
-        if (!$config.set('ml_log', _ml.log)) {
+        if (!(await $config.set_derived('ml_log', _ml.log))) {
           show_hvut_config_storage_failure_report('monsterLabForceUpdate', { key: 'ml_log' });
           return false;
         }
@@ -15843,7 +15819,7 @@ if (get_hvut_monster_lab_page_context().isMonsterLab && $config.settings.monster
         if (total === 0) {
           return;
         }
-        if (!$config.set('ml_log', _ml.log)) {
+        if (!(await $config.set_derived('ml_log', _ml.log))) {
           show_hvut_config_storage_failure_report('monsterLabUpgradeLogSave', { key: 'ml_log' });
           return false;
         }
@@ -15874,7 +15850,7 @@ if (get_hvut_monster_lab_page_context().isMonsterLab && $config.settings.monster
         return _ml.upgrade.update();
       },
 
-      save: function () {
+      save: async function () {
         _ml.mobs.forEach((mob) => {
           mob.log.pa.forEach((e, i) => {
             e[1] = mob.pa[i].to;
@@ -15887,7 +15863,7 @@ if (get_hvut_monster_lab_page_context().isMonsterLab && $config.settings.monster
           });
         });
 
-        if (!$config.set('ml_log', _ml.log)) {
+        if (!(await $config.set_derived('ml_log', _ml.log))) {
           show_hvut_config_storage_failure_report('monsterLabUpgradeLogSave', { key: 'ml_log' });
           return false;
         }
@@ -16770,7 +16746,7 @@ if (get_hvut_mail_page_context().isMoogleMail && $config.settings.moogleMail) {
     _mm.node.equip_list = $qs('.equiplist') || $element('div', null, ['.equiplist nosel']);
     _mm.node.equip_attach.appendChild(_mm.node.equip_list);
 
-    _mm.equip_data = $config.get('equipdata', {});
+    _mm.equip_data = $config.get_derived('equipdata', {});
     _mm.equip_list = $equip.list.div(_mm.node.equip_list);
     _mm.equip_list.forEach((eq) => {
       eq.visible = true;
@@ -17962,7 +17938,7 @@ if (get_hvut_armory_page_context($config).isArmory && get_hvut_armory_page_conte
 
 /* END */
 
-  })();
+  })().catch(handle_hvut_async_runtime_failure);
 }
 
 // ===== 原文结束 =====

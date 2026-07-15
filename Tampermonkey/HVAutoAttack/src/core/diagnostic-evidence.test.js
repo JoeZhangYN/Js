@@ -161,6 +161,11 @@ describe("readRecentDiagnosticEvidence", () => {
         stage: "topConfigIcon",
       },
       "HVAA:lastHvutConfigStorageFailure": { capability: "hvutConfigStorage", stage: "set" },
+      "HVAA:lastHvutDerivedStoreFailure": {
+        capability: "hvutDerivedStore",
+        stage: "write",
+        family: "ml_log",
+      },
       "HVAA:lastHvutConfigParseFailure": { capability: "hvutConfigParse", stage: "configSeason" },
       "HVAA:lastHvutItemShopParseFailure": {
         capability: "hvutItemShopParse",
@@ -356,6 +361,11 @@ describe("readRecentDiagnosticEvidence", () => {
       hvutNavigationBridgeFailure: { capability: "hvutNavigationBridge", stage: "reloadBlocked" },
       hvutHvaaConfigBridgeFailure: { capability: "hvutHvaaConfigBridge", stage: "topConfigIcon" },
       hvutConfigStorageFailure: { capability: "hvutConfigStorage", stage: "set" },
+      hvutDerivedStoreFailure: {
+        capability: "hvutDerivedStore",
+        stage: "write",
+        family: "ml_log",
+      },
       hvutTopLevelParseFailure: { capability: "hvutTopLevelParse", stage: "topLevelDetails" },
       hvutRepairLoadFailure: {
         capability: "hvutRepairLoad",

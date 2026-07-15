@@ -37,7 +37,7 @@ const offerRequest =
     text
   )?.[0] || "";
 const logSave =
-  /save: function \(\) \{[\s\S]*?\n    \},\n    reset: function/.exec(text)?.[0] || "";
+  /save: async function \(\) \{[\s\S]*?\n    \},\n    reset: async function/.exec(text)?.[0] || "";
 const legacyOffer =
   /_ss\.offer = async function \(iid, count\) \{[\s\S]*?\n  \};\n\n  _ss\.request = async function/.exec(
     text
@@ -102,7 +102,7 @@ for (const part of [
   "_ss.equip.received += offerSummary.equips.length;",
   "_ss.equip.sold += offerSummary.sold;",
   "_ss.equip.salvaged += offerSummary.salvaged;",
-  "if (_ss.log.save() === false) return false;",
+  "if ((await _ss.log.save()) === false) return false;",
   "return true;",
 ]) {
   requirePart("Shrine offer load", offerLoad, part);
@@ -121,7 +121,7 @@ for (const part of [
 }
 
 for (const part of [
-  "if (!$config.set('ss_log', _ss.log.json)) {",
+  "if (!(await $config.set_derived('ss_log', _ss.log.json))) {",
   "show_hvut_config_storage_failure_report('shrineLogSave', { key: 'ss_log' });",
   "return false;",
   "return true;",
@@ -147,7 +147,7 @@ for (const part of [
   "rewards.push(...offerSummary.equips, ...offerSummary.rewards);",
   "_ss.equip.sold += offerSummary.sold;",
   "_ss.equip.salvaged += offerSummary.salvaged;",
-  "if (!$config.set('ss_log', _ss.log)) {",
+  "if (!(await $config.set_derived('ss_log', _ss.log))) {",
   "show_hvut_config_storage_failure_report('legacyShrineLogSave', { key: 'ss_log' });",
   "return false;",
   "return true;",

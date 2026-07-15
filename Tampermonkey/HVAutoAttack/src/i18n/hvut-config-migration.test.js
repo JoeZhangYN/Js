@@ -15,8 +15,6 @@ describe("HVUT config migration", () => {
       "equipset",
       "ch_style",
       "se_settings",
-      "ss_log",
-      "ml_log",
     ]);
   });
 
@@ -25,8 +23,6 @@ describe("HVUT config migration", () => {
       "equipset",
       "ch_style",
       "se_settings",
-      "ss_log",
-      "ml_log",
     ]);
   });
 

@@ -17,7 +17,7 @@ const helperRegion =
     text
   )?.[0] || "";
 const modernTable =
-  /_tr\.parse_table = function \(\) \{[\s\S]*?\n  \};\n\n  _tr\.parse_progress/.exec(text)?.[0] ||
+  /_tr\.parse_table = async function \(\) \{[\s\S]*?\n  \};\n\n  _tr\.parse_progress/.exec(text)?.[0] ||
   "";
 const modernProgress =
   /_tr\.parse_progress = function \(\) \{[\s\S]*?\n  \};\n\n  GM_addStyle/.exec(text)?.[0] || "";

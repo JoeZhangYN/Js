@@ -20,16 +20,22 @@ function requirePart(label, body, part) {
 
 const migrationBodies = [
   ...text.matchAll(
-    /migration: function \(\) \{[\s\S]*?\n  \},\n  \/\/ reset\/get\/set\/del\/ls_get\/ls_set\/ls_del/g
+    /migration: function \(\) \{[\s\S]*?\n  \},\n  \/\/ reset\/get\/set\/del\/ls_get\/ls_del 与派生数据入口/g
   ),
 ].map((match) => match[0]);
+const automaticLegacyMigration =
+  /var run_hvut_config_legacy_migration = function[\s\S]*?\n  var run_hvut_config_settings_migration/.exec(
+    text
+  )?.[0] || "";
 
 if (migrationBodies.length !== 2)
   violations.push(`${target} must keep both config migration entries visible`);
+if (!automaticLegacyMigration)
+  violations.push(`${target} must keep the small-config legacy migration entry visible`);
 if (
   migrationBodies[0] &&
   !migrationBodies[0].includes(
-    "run_hvut_config_settings_migration($config, $price, HVUT_WORLD, { dropEquipmentShopAutoProtect: true, cleanShrineLog: true });"
+    "run_hvut_config_settings_migration($config, $price, HVUT_WORLD, { dropEquipmentShopAutoProtect: true });"
   )
 ) {
   violations.push(
@@ -145,6 +151,22 @@ for (const [index, body] of migrationBodies.entries()) {
 }
 
 for (const forbidden of [
+  "config.ls_get('in_equipdata')",
+  "config.ls_get('in_json')",
+  "config.ls_get('ml_log')",
+  "config.ls_get('ss_log')",
+  "config.set('equipdata'",
+  "config.set('ml_log'",
+  "config.set('ss_log'",
+]) {
+  if (automaticLegacyMigration.includes(forbidden)) {
+    violations.push(
+      `${target} automatic config migration must leave large family ${forbidden} for confirmed maintenance`
+    );
+  }
+}
+
+for (const forbidden of [
   "$config.set('equipdata', equipdata);",
   "$config.set('ml_log', ml_log);\n        $config.ls_del('ml_log');",
   "ls_list.forEach((key) =>",
@@ -202,19 +224,12 @@ for (const required of [
   "var isIsekai = segment.isIsekai;",
   "if (config.settings.version) return { kind: 'accepted' };",
   "config.reset();",
-  "const in_equipdata = config.ls_get('in_equipdata');",
-  "const in_json = config.ls_get('in_json');",
-  "const equipdata = build_hvut_legacy_equipdata(in_equipdata, in_json);",
-  "if (!config.set('equipdata', equipdata)) return reject_hvut_config_legacy_migration('legacyEquipdataWriteFailed'",
   "const equipCode = normalize_hvut_legacy_equip_code(in_equipcode);",
   "return reject_hvut_config_legacy_migration('legacyEquipCodeInvalid'",
   "config.settings.equipCode = equipCode;",
   "const normalizedPrices = normalize_hvut_legacy_prices(prices);",
   "return reject_hvut_config_legacy_migration('legacyPricesInvalid'",
   "price.set(normalizedPrices);",
-  "const migrated_ml_log = migrate_hvut_monster_lab_log(ml_log);",
-  "if (!config.set('ml_log', migrated_ml_log)) return reject_hvut_config_legacy_migration('legacyMonsterLabLogWriteFailed'",
-  "if (!config.ls_del('ml_log')) return reject_hvut_config_legacy_migration('legacyMonsterLabLogDeleteFailed'",
   "const ls_list = get_hvut_config_carry_keys(segment);",
   "if (!ls_list) return reject_hvut_config_legacy_migration('legacyCarryKeysMissing'",
   "for (const key of ls_list) {",
@@ -225,8 +240,6 @@ for (const required of [
   "var legacyMigration = run_hvut_config_legacy_migration(config, price, context);",
   "if (legacyMigration.kind === 'rejected') return legacyMigration;",
   "if (options?.dropEquipmentShopAutoProtect && config.settings.version < 4.2) {",
-  "if (options?.cleanShrineLog) {",
-  "if (!config.set('ss_log', ss_log)) return reject_hvut_config_legacy_migration('settingsMigrationShrineLogWriteFailed'",
   "const normalizedSettings = normalize_hvut_config_settings(config.settings, config.default);",
   "if (!normalizedSettings) return reject_hvut_config_legacy_migration('settingsMigrationNormalizeFailed'",
   "config.settings = normalizedSettings;",
@@ -238,7 +251,7 @@ for (const required of [
 }
 
 for (const required of [
-  'const COMMON_CARRY_KEYS = Object.freeze(["equipset", "ch_style", "se_settings", "ss_log", "ml_log"]);',
+  'const COMMON_CARRY_KEYS = Object.freeze(["equipset", "ch_style", "se_settings"]);',
   'const PERSISTENT_CARRY_KEYS = Object.freeze(["equipnames", ...COMMON_CARRY_KEYS]);',
   "export function getHvutConfigCarryKeys(segment) {",
   "return segment?.isIsekai ? [...COMMON_CARRY_KEYS] : [...PERSISTENT_CARRY_KEYS];",

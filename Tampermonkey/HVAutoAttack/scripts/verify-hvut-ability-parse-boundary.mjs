@@ -118,10 +118,10 @@ for (const required of [
   "var create_hvut_ability_calculator = function (page) {",
   "calculator.preset('Current Set')",
   "var inject_hvut_ability_page_style = function () {",
-  "var run_hvut_ability_page = function (context) {",
+  "var run_hvut_ability_page = async function (context) {",
   "page.points = parse_hvut_ability_points_from_top($id('ability_top'), 'abilityPointsNode')",
   "parse_hvut_ability_slotbar(page) === false",
-  "!page.config.set('ab_level', page.levels)",
+  "!(await page.config.set_derived('ab_level', page.levels))",
   "render_hvut_ability_tree(page) === false",
   "page.state.unlock = (name, to) => unlock_hvut_ability_ranks(page, name, to)",
 ]) {

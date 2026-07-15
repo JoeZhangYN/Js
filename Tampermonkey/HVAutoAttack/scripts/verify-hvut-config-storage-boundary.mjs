@@ -4,6 +4,8 @@ import path from "node:path";
 const root = process.cwd();
 const target = path.normalize("src/i18n/hv-utils.js");
 const text = fs.readFileSync(path.join(root, target), "utf8");
+const bridgeText = fs.readFileSync(path.join(root, "src/i18n/hvut-storage-bridge.js"), "utf8");
+const configStoreText = fs.readFileSync(path.join(root, "src/state/hvut-config-store.js"), "utf8");
 const violations = [];
 
 function requireIncludes(body, label, parts) {
@@ -25,8 +27,7 @@ requireIncludes(text, "config storage failure recorder", [
 const setMatch = /config\.set = function \(key, value[\s\S]*?\n  \};\n  config\.del/.exec(text);
 const getMatch = /config\.get = function \(key[\s\S]*?\n  \};\n  config\.set/.exec(text);
 const delMatch = /config\.del = function \(key[\s\S]*?\n  \};\n  config\.ls_get/.exec(text);
-const lsGetMatch = /config\.ls_get = function \(key[\s\S]*?\n  \};\n  config\.ls_set/.exec(text);
-const lsSetMatch = /config\.ls_set = function \(key[\s\S]*?\n  \};\n  config\.ls_del/.exec(text);
+const lsGetMatch = /config\.ls_get = function \(key[\s\S]*?\n  \};\n  config\.ls_del/.exec(text);
 const lsDelMatch = /config\.ls_del = function \(key[\s\S]*?\n  \};\n  config\.open/.exec(text);
 const saveMatch = /config\.save = function \(panel\) \{[\s\S]*?\n  \};\n  config\.text2obj/.exec(
   text
@@ -35,32 +36,27 @@ const saveMatch = /config\.save = function \(panel\) \{[\s\S]*?\n  \};\n  config
 if (!getMatch) violations.push(`${target} config.get entry must stay visible`);
 else {
   requireIncludes(getMatch[0], "config.get", [
-    "try {",
-    "return GM_getValue(prefix + key, dvalue);",
-    "record_hvut_config_storage_failure('get'",
-    "return dvalue;",
+    "run_hvut_storage_bridge('configGet'",
+    "scope",
+    "prefix + key",
   ]);
 }
 
 if (!setMatch) violations.push(`${target} config.set entry must stay visible`);
 else {
   requireIncludes(setMatch[0], "config.set", [
-    "try {",
-    "GM_setValue(prefix + key, value);",
-    "return true;",
-    "record_hvut_config_storage_failure('set'",
-    "return false;",
+    "run_hvut_storage_bridge('configSet'",
+    "scope",
+    "prefix + key",
   ]);
 }
 
 if (!delMatch) violations.push(`${target} config.del entry must stay visible`);
 else {
   requireIncludes(delMatch[0], "config.del", [
-    "try {",
-    "GM_deleteValue(prefix + key);",
-    "return true;",
-    "record_hvut_config_storage_failure('delete'",
-    "return false;",
+    "run_hvut_storage_bridge('configDelete'",
+    "scope",
+    "prefix + key",
   ]);
 }
 
@@ -72,17 +68,6 @@ else {
     "return value === null ? dvalue : JSON.parse(value);",
     "record_hvut_config_storage_failure('localStorageGet'",
     "return dvalue;",
-  ]);
-}
-
-if (!lsSetMatch) violations.push(`${target} config.ls_set entry must stay visible`);
-else {
-  requireIncludes(lsSetMatch[0], "config.ls_set", [
-    "try {",
-    "localStorage.setItem(prefix + key, JSON.stringify(value));",
-    "return true;",
-    "record_hvut_config_storage_failure('localStorageSet'",
-    "return false;",
   ]);
 }
 
@@ -132,6 +117,21 @@ for (const [label, stage] of [
 ]) {
   if (!text.includes(`show_hvut_config_storage_failure_report('${stage}'`)) {
     violations.push(`${target} ${label} storage failure must show copyable diagnostics`);
+  }
+}
+
+for (const required of [
+  "writeCanonicalStorageValue",
+  "StorageIdentity.HVUT_CONFIG",
+  "return result.outcome;",
+]) {
+  if (!configStoreText.includes(required)) {
+    violations.push(`src/state/hvut-config-store.js must own ${required}`);
+  }
+}
+for (const required of ["configGet", "configSet", "configDelete", "persistentConfig"]) {
+  if (!bridgeText.includes(required)) {
+    violations.push(`src/i18n/hvut-storage-bridge.js must own ${required}`);
   }
 }
 

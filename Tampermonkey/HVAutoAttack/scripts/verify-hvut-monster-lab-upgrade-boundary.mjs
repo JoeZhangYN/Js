@@ -21,11 +21,13 @@ const parseBodies = [
   ...text.matchAll(/_ml\.parse = function \(mob, doc\) \{[\s\S]*?\n    \};/g),
 ].map((match) => match[0]);
 const onsuccessBodies = [
-  ...text.matchAll(/onsuccess: function \(index, doc\) \{[\s\S]*?\n      \},\n      onerror:/g),
+  ...text.matchAll(
+    /onsuccess: async function \(index, doc\) \{[\s\S]*?\n      \},\n      onerror:/g
+  ),
 ].map((match) => match[0]);
 const saveBodies = [
   ...text.matchAll(
-    /save: function \(\) \{\n        _ml\.mobs\.forEach[\s\S]*?\n      \},\n      load:/g
+    /save: async function \(\) \{\n        _ml\.mobs\.forEach[\s\S]*?\n      \},\n      load:/g
   ),
 ].map((match) => match[0]);
 
@@ -76,18 +78,13 @@ if (!diagnosticTestText.includes("HVAA:lastHvutMonsterLabUpgradeFailure")) {
 }
 
 for (const [index, body] of parseBodies.entries()) {
-  for (const required of [
-    "if (!$config.set('ml_log', _ml.log)) {\n        return false;",
-    "return true;",
-  ]) {
+  for (const required of ["return true;"]) {
     if (!body.includes(required)) {
-      violations.push(
-        `${target} Monster Lab parse[${index}] must guard persistence with ${required}`
-      );
+      violations.push(`${target} Monster Lab parse[${index}] must complete with ${required}`);
     }
   }
-  if (/\$config\.set\('ml_log', _ml\.log\);\n\s*\};/.test(body)) {
-    violations.push(`${target} Monster Lab parse[${index}] must not ignore ml_log write result`);
+  if (body.includes("$config.set('ml_log'") || body.includes("$config.set_derived('ml_log'")) {
+    violations.push(`${target} Monster Lab parse[${index}] must remain persistence-free`);
   }
 }
 
@@ -97,10 +94,11 @@ for (const [index, body] of onsuccessBodies.entries()) {
     "show_hvut_generic_error();",
     "_ml.main.onerror(index);",
     "return false;",
+    "if (!(await $config.set_derived('ml_log', _ml.log))) return false;",
   ]) {
     if (!body.includes(required)) {
       violations.push(
-        `${target} Monster Lab onsuccess[${index}] must guard parse persistence with ${required}`
+        `${target} Monster Lab onsuccess[${index}] must guard parse and own persistence with ${required}`
       );
     }
   }
@@ -120,9 +118,9 @@ for (const [index, body] of updateBodies.entries()) {
     "_ml.upgrade.node.run.disabled = false;",
     "_ml.upgrade.node.run.value = '失败';",
     "return false;",
-    "if (!$config.set('ml_log', _ml.log)) {\n          show_hvut_config_storage_failure_report('monsterLabUpgradeLogSave', { key: 'ml_log' });\n          _ml.upgrade.node.button.disabled = false;",
+    "if (!(await $config.set_derived('ml_log', _ml.log))) {\n          show_hvut_config_storage_failure_report('monsterLabUpgradeLogSave', { key: 'ml_log' });\n          _ml.upgrade.node.button.disabled = false;",
     "return true;",
-    "if (_ml.parse(mob, doc) === false) {\n            throw new Error('ml_log persistence failed');",
+    "if (_ml.parse(mob, doc) === false) {\n            throw new Error('monster lab parse failed');",
   ]) {
     if (!body.includes(required)) {
       violations.push(`${target} Monster Lab update[${index}] must guard failure with ${required}`);
@@ -164,7 +162,7 @@ for (const [index, body] of runBodies.entries()) {
     "_ml.upgrade.node.run.value = '失败';",
     "return false;",
     "return _ml.upgrade.update();",
-    "if (!$config.set('ml_log', _ml.log)) {\n          show_hvut_config_storage_failure_report('monsterLabUpgradeLogSave', { key: 'ml_log' });\n          return false;",
+    "if (!(await $config.set_derived('ml_log', _ml.log))) {\n          show_hvut_config_storage_failure_report('monsterLabUpgradeLogSave', { key: 'ml_log' });\n          return false;",
     "const html = await $ajax.fetch(url, post);",
     `const response = classify_hvut_monster_lab_upgrade_response(html, '${emptyResponseStage}', { url: url, post: post });`,
     "if (response.kind === 'rejected') {",
@@ -203,7 +201,7 @@ for (const [index, body] of runBodies.entries()) {
 
 for (const [index, body] of saveBodies.entries()) {
   for (const required of [
-    "if (!$config.set('ml_log', _ml.log)) {\n          show_hvut_config_storage_failure_report('monsterLabUpgradeLogSave', { key: 'ml_log' });\n          return false;",
+    "if (!(await $config.set_derived('ml_log', _ml.log))) {\n          show_hvut_config_storage_failure_report('monsterLabUpgradeLogSave', { key: 'ml_log' });\n          return false;",
     "return true;",
   ]) {
     if (!body.includes(required)) {

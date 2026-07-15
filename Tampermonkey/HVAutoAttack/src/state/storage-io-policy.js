@@ -124,7 +124,7 @@ const policies = new Map(
       StorageIdentity.HVUT_DERIVED_RECORD,
       {
         authority: StorageAuthority.INDEXED_DB,
-        writeMode: StorageWriteMode.APPEND_RECORD,
+        writeMode: StorageWriteMode.CONTENT_AWARE_SYNC,
         worldBound: true,
         budget: null,
       },

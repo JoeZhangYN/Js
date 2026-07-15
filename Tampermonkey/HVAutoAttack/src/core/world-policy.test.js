@@ -28,6 +28,7 @@ describe("ingress identity and world policy", () => {
       battleReport: { dbName: "hvAA_battle_reports" },
       staminaLoss: { dbName: "hvAA_stamina_loss" },
       learnedMonster: { dbName: "hvAA_learned_monsters" },
+      hvutDerived: { dbName: "hvAA_hvut_derived" },
       features: { randomEncounter: true },
       hvut: { namespace: "hvut" },
     });
@@ -37,6 +38,7 @@ describe("ingress identity and world policy", () => {
       battleReport: { dbName: "hvAA_battle_reports_isekai" },
       staminaLoss: { dbName: "hvAA_stamina_loss_isekai" },
       learnedMonster: { dbName: "hvAA_learned_monsters_isekai" },
+      hvutDerived: { dbName: "hvAA_hvut_derived_isekai" },
       features: { randomEncounter: false },
       hvut: { namespace: "hvuti" },
     });
