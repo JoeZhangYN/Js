@@ -23,7 +23,6 @@ function capability(runStore = vi.fn()) {
     runStore,
     dataset: createRiddleDatasetCapability({
       runStore,
-      runMigration: vi.fn(),
       now: () => Date.parse("2026-06-27T00:00:01Z"),
       randomId: () => "sample-id",
       cryptoApi: null,
@@ -93,7 +92,7 @@ describe("riddle dataset entry", () => {
     expect(window.alert).toHaveBeenCalledOnce();
   });
 
-  it("registers export and confirmed migration menus exactly once", () => {
+  it("registers the export menu while central maintenance owns migration", () => {
     const registerMenu = vi.fn();
     vi.stubGlobal("GM_registerMenuCommand", registerMenu);
     const { dataset } = capability();
@@ -101,10 +100,10 @@ describe("riddle dataset entry", () => {
     expect(dataset.run({ type: RiddleDatasetEvent.REGISTER_EXPORT_MENU })).toBe(true);
     expect(dataset.run({ type: RiddleDatasetEvent.REGISTER_EXPORT_MENU })).toBe(false);
 
-    expect(registerMenu).toHaveBeenCalledTimes(2);
-    expect(registerMenu.mock.calls.map(([label]) => label)).toEqual([
+    expect(registerMenu).toHaveBeenCalledOnce();
+    expect(registerMenu).toHaveBeenCalledWith(
       "导出答题训练样本(zip: 图片+json)",
-      "迁移旧答题样本到 IndexedDB（需确认）",
-    ]);
+      expect.any(Function)
+    );
   });
 });

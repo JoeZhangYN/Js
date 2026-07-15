@@ -1,8 +1,12 @@
-import { delValue } from "../state/storage.js";
 import {
   DiagnosticConsoleEvent,
   runDiagnosticConsoleAutomation,
 } from "../core/diagnostic-console.js";
+import {
+  BattleSessionCheckpointEvent,
+  runBattleSessionCheckpointAutomation,
+} from "../state/battle-session-checkpoint.js";
+import { StorageWriteOutcome } from "../state/storage-io-policy.js";
 
 export const BATTLE_RUNTIME_FAILURE_KEY = "HVAA:lastBattleRuntimeFailure";
 
@@ -14,7 +18,7 @@ export function recordBattleRuntimeFailure(stage, error) {
   };
   try {
     sessionStorage.setItem(BATTLE_RUNTIME_FAILURE_KEY, JSON.stringify(evidence));
-  } catch (_error) {
+  } catch {
     // Runtime clear failure evidence is diagnostic only.
   }
   runDiagnosticConsoleAutomation({
@@ -26,7 +30,10 @@ export function recordBattleRuntimeFailure(stage, error) {
 
 export function clearPersistedBattleSession() {
   try {
-    delValue(2);
+    const result = runBattleSessionCheckpointAutomation({
+      type: BattleSessionCheckpointEvent.CLEAR,
+    });
+    if (result?.outcome === StorageWriteOutcome.FAILED) throw result.error;
     return true;
   } catch (error) {
     recordBattleRuntimeFailure("clear-session", error);

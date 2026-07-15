@@ -84,22 +84,19 @@ describe("battle record archive persistence failures", () => {
     expect(await result.completion).toBe(false);
   });
 
-  it("does not report clear success when legacy deletion fails", async () => {
+  it("does not let normal clear commands touch compatibility storage", async () => {
     const runtime = createBattleRecordArchiveTestDeps();
-    runtime.delValue = () => {
+    runtime.delValue = vi.fn(() => {
       throw new Error("legacy delete blocked");
-    };
+    });
 
     expect(
       await runBattleRecordArchiveAutomation(
         { type: BattleRecordArchiveEvent.CLEAR_USAGE_REPORT },
         runtime
       )
-    ).toBe(false);
-    expect(lastFailure()).toMatchObject({
-      stage: "clear-legacy-history",
-      key: "usage",
-      failure: { error: "legacy delete blocked" },
-    });
+    ).toBe(true);
+    expect(runtime.delValue).not.toHaveBeenCalled();
+    expect(lastFailure()).toBeNull();
   });
 });

@@ -166,6 +166,11 @@ describe("readRecentDiagnosticEvidence", () => {
         stage: "write",
         family: "ml_log",
       },
+      "HVAA:lastStorageMaintenanceFailure": {
+        capability: "storageMaintenance",
+        stage: "execute",
+        recovery: "openLobbyAndRetry",
+      },
       "HVAA:lastHvutConfigParseFailure": { capability: "hvutConfigParse", stage: "configSeason" },
       "HVAA:lastHvutItemShopParseFailure": {
         capability: "hvutItemShopParse",
@@ -365,6 +370,11 @@ describe("readRecentDiagnosticEvidence", () => {
         capability: "hvutDerivedStore",
         stage: "write",
         family: "ml_log",
+      },
+      storageMaintenanceFailure: {
+        capability: "storageMaintenance",
+        stage: "execute",
+        recovery: "openLobbyAndRetry",
       },
       hvutTopLevelParseFailure: { capability: "hvutTopLevelParse", stage: "topLevelDetails" },
       hvutRepairLoadFailure: {

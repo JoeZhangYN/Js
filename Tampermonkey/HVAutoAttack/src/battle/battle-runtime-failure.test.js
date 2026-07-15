@@ -2,16 +2,18 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
   runDiagnosticConsoleAutomation: vi.fn(),
-  delValue: vi.fn(),
+  runBattleSessionCheckpointAutomation: vi.fn(),
 }));
 
 vi.mock("../core/diagnostic-console.js", () => ({
   DiagnosticConsoleEvent: Object.freeze({ WARN: "warn" }),
   runDiagnosticConsoleAutomation: mocks.runDiagnosticConsoleAutomation,
 }));
-vi.mock("../state/storage.js", async () => {
-  const actual = await vi.importActual("../state/storage.js");
-  return { ...actual, delValue: mocks.delValue };
+vi.mock("../state/battle-session-checkpoint.js", () => {
+  return {
+    BattleSessionCheckpointEvent: Object.freeze({ CLEAR: "clear" }),
+    runBattleSessionCheckpointAutomation: mocks.runBattleSessionCheckpointAutomation,
+  };
 });
 
 import { BattleRuntimeEvent, runBattleRuntimeAutomation } from "./battle-runtime.js";
@@ -22,8 +24,8 @@ beforeEach(() => {
   vi.restoreAllMocks();
   mocks.runDiagnosticConsoleAutomation.mockReset();
   mocks.runDiagnosticConsoleAutomation.mockReturnValue(true);
-  mocks.delValue.mockReset();
-  mocks.delValue.mockReturnValue(undefined);
+  mocks.runBattleSessionCheckpointAutomation.mockReset();
+  mocks.runBattleSessionCheckpointAutomation.mockReturnValue({ outcome: "deleted" });
 });
 
 function lastFailure() {
@@ -32,8 +34,9 @@ function lastFailure() {
 
 describe("battle runtime persistence failures", () => {
   it("does not report session clear success when persisted clear fails", () => {
-    mocks.delValue.mockImplementation(() => {
-      throw new Error("clear blocked");
+    mocks.runBattleSessionCheckpointAutomation.mockReturnValue({
+      outcome: "failed",
+      error: new Error("clear blocked"),
     });
 
     expect(runBattleRuntimeAutomation({ type: BattleRuntimeEvent.CLEAR_SESSION })).toBe(false);
@@ -52,8 +55,9 @@ describe("battle runtime persistence failures", () => {
       return Reflect.apply(originalSetItem, this, [key, value]);
     });
     mocks.runDiagnosticConsoleAutomation.mockReturnValue(false);
-    mocks.delValue.mockImplementation(() => {
-      throw new Error("clear blocked");
+    mocks.runBattleSessionCheckpointAutomation.mockReturnValue({
+      outcome: "failed",
+      error: new Error("clear blocked"),
     });
 
     expect(() =>

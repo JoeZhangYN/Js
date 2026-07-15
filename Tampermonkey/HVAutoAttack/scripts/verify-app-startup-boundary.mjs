@@ -56,12 +56,14 @@ function checkEntry() {
     "runUserscriptStartup",
     "runGamePageStartup",
     "loadCdRuntimeState",
-    "registerRiddleDatasetExportMenu",
+    "registerStorageMenus",
     "syncConfiguredStartupOption",
     "runCdRuntimeAutomation",
     "CdRuntimeEvent.LOAD",
     "runRiddleDatasetAutomation",
     "RiddleDatasetEvent.REGISTER_EXPORT_MENU",
+    "runStorageMaintenanceAutomation",
+    "StorageMaintenanceEvent.REGISTER_MENU",
     "runAbilityAoeAutomation",
     "OptionEvent.SYNC_STARTUP_OPTION",
     "GM_info",
@@ -71,7 +73,7 @@ function checkEntry() {
     }
   }
   if (
-    !/const USERSCRIPT_STARTUP_STEPS = \[\s*\["loadCdRuntimeState",\s*loadCdRuntimeState\],[\s\S]*\["registerRiddleDatasetExportMenu",\s*registerRiddleDatasetExportMenu\],\s*\]/.test(
+    !/const USERSCRIPT_STARTUP_STEPS = \[\s*\["loadCdRuntimeState",\s*loadCdRuntimeState\],[\s\S]*\["registerStorageMenus",\s*registerStorageMenus\],\s*\]/.test(
       text
     )
   ) {

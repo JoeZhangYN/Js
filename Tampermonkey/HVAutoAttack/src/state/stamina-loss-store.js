@@ -11,6 +11,7 @@ import { createStaminaLossIndexedDbAdapter } from "./stamina-loss-store-indexedd
 export const StaminaLossStoreEvent = Object.freeze({
   APPEND: "append",
   LIST: "list",
+  LIST_RECORDS: "listRecords",
   CLEAR: "clear",
 });
 
@@ -37,10 +38,11 @@ export function createStaminaLossStoreCapability({ dbName, sourceIdentity }, dep
 
   async function append(event) {
     const record = {
-      id: event.stamp,
+      id: event.id || event.stamp,
       stamp: event.stamp,
       amount: Number(event.amount) || 0,
-      observedAt: now(),
+      observedAt: event.observedAt || now(),
+      ...(event.migrationSourceId ? { migrationSourceId: event.migrationSourceId } : {}),
     };
     try {
       const result = await adapter.append(record, policy.budget, now());
@@ -62,6 +64,15 @@ export function createStaminaLossStoreCapability({ dbName, sourceIdentity }, dep
     }
   }
 
+  async function listRecords() {
+    try {
+      return await adapter.list();
+    } catch (error) {
+      recordStaminaLossLogFailure("read-records", error);
+      throw error;
+    }
+  }
+
   async function clear() {
     try {
       const result = await adapter.clear();
@@ -77,6 +88,7 @@ export function createStaminaLossStoreCapability({ dbName, sourceIdentity }, dep
   const handlers = Object.freeze({
     [StaminaLossStoreEvent.APPEND]: append,
     [StaminaLossStoreEvent.LIST]: list,
+    [StaminaLossStoreEvent.LIST_RECORDS]: listRecords,
     [StaminaLossStoreEvent.CLEAR]: clear,
   });
   return Object.freeze({ run: (event) => handlers[event?.type]?.(event) });

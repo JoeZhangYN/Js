@@ -97,6 +97,14 @@ export function createBattleReportHistoryIndexedDbAdapter({ indexedDb, dbName })
     });
   }
 
+  function listEnvelopes(family) {
+    return transact(family, "readonly", (store, done) => {
+      const request = store.getAll();
+      request.onsuccess = () =>
+        done((request.result || []).sort((left, right) => left.createdAt - right.createdAt));
+    });
+  }
+
   function clear(family) {
     return transact(family, "readwrite", (store, done) => {
       const request = store.getAll();
@@ -111,5 +119,5 @@ export function createBattleReportHistoryIndexedDbAdapter({ indexedDb, dbName })
     });
   }
 
-  return Object.freeze({ append, list, clear });
+  return Object.freeze({ append, list, listEnvelopes, clear });
 }

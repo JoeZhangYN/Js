@@ -7,6 +7,7 @@ const mocks = vi.hoisted(() => ({
   runOptionAutomation: vi.fn(),
   addStyle: vi.fn(),
   runRiddleDatasetAutomation: vi.fn(),
+  runStorageMaintenanceAutomation: vi.fn(),
   runCdRuntimeAutomation: vi.fn(),
   runAbilityAoeAutomation: vi.fn(),
 }));
@@ -21,6 +22,10 @@ vi.mock("../style/inject.js", () => ({ addStyle: mocks.addStyle }));
 vi.mock("../state/riddle-dataset.js", () => ({
   RiddleDatasetEvent: Object.freeze({ REGISTER_EXPORT_MENU: "registerExportMenu" }),
   runRiddleDatasetAutomation: mocks.runRiddleDatasetAutomation,
+}));
+vi.mock("../state/storage-maintenance.js", () => ({
+  StorageMaintenanceEvent: Object.freeze({ REGISTER_MENU: "registerMenu" }),
+  runStorageMaintenanceAutomation: mocks.runStorageMaintenanceAutomation,
 }));
 vi.mock("../state/cd-tracker.js", () => ({
   CdRuntimeEvent: Object.freeze({ LOAD: "load" }),

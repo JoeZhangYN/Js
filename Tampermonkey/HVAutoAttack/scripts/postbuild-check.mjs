@@ -49,6 +49,23 @@ if (/\bnew\s+Function\s*\(/.test(src)) {
   errors.push("contains `new Function(`; route dynamic rules through typed parsers");
 }
 
+// 5a. Storage maintenance must survive bundling as an executable, user-visible capability.
+for (const required of [
+  "storage maintenance requires an HV non-battle, non-riddle page",
+  "存储维护：预览并迁移旧数据",
+  "开始 Edge 存储 IO 验收（清零应用指标）",
+  "查看 Edge 存储 IO 验收报告（可复制）",
+  "copiedVerified",
+  "sourceDeleted",
+  "reductionFloorPercent",
+  "Edge/Tampermonkey LevelDB growth during this zero-app-write window is external state.",
+]) {
+  if (!src.includes(required)) errors.push(`storage maintenance artifact missing ${required}`);
+}
+for (const retired of ["clear-legacy-history", "normal-runtime legacy hydration"]) {
+  if (src.includes(retired)) errors.push(`storage maintenance artifact contains ${retired}`);
+}
+
 // 5b. 通用 HVUT 装备过滤必须保留结构化失败证据。调用方仍拿布尔结果，
 // 但过滤器错误和运行时崩溃不能退回 console-only。
 for (const required of [

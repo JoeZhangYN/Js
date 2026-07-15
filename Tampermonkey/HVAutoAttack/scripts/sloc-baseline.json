@@ -48,11 +48,11 @@
     "reason": "formatted baseline snapshot test verbosity"
   },
   "core/diagnostic-evidence-keys.js": {
-    "maxSloc": 207,
+    "maxSloc": 209,
     "reason": "diagnostic evidence registry data surface"
   },
   "core/diagnostic-evidence.test.js": {
-    "maxSloc": 456,
+    "maxSloc": 466,
     "reason": "diagnostic evidence registry fixture"
   },
   "core/navigate.js": {
@@ -67,8 +67,12 @@
     "maxSloc": 166,
     "reason": "formatted baseline monitor calculation split debt"
   },
+  "monitor/battle-report.test.js": {
+    "maxSloc": 155,
+    "reason": "target-authority battle report integration test verbosity"
+  },
   "pages/app-startup.test.js": {
-    "maxSloc": 174,
+    "maxSloc": 181,
     "reason": "formatted baseline startup contract test verbosity"
   },
   "pages/encounter-policy.js": {

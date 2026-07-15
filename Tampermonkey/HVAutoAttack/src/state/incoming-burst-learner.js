@@ -4,8 +4,6 @@
 // 运行 max（非 EWMA）：战斗日志累积无回合界，单发 max 由全量日志重算即幂等；persist 跨战斗 → 固定竞技场
 // 同 MID 复现直接命中。随等级提升怪变强 → max 自然上涨（保守 over-protect 是防守安全方向）。
 // 类型决定控制选择：Silence 只挡施法(对物理无效)，故法术爆发→Silence、物理→Sleep（整回合禁用）。
-import { getValue } from "./storage.js";
-import { STORAGE_KEYS } from "./persist-keys.js";
 import { normalizeMonsterName } from "../monster/monster-identity.js";
 import { persistLearnedIncomingBurst } from "./incoming-burst-learner-failure.js";
 import {
@@ -38,28 +36,10 @@ function normalizeDamageType(value) {
   return typeof value === "string" && value ? value : "unknown";
 }
 
-function normalizeLearnedBurstRecord(value) {
-  const maxHit = normalizePositiveNumber(value?.maxHit);
-  if (maxHit == null) return null;
-  return { maxHit, type: normalizeDamageType(value?.type) };
-}
-
-function readLegacyBurstMap() {
-  const source = getValue(STORAGE_KEYS.LEARNED_INCOMING_BURST, true) || {};
-  const learned = {};
-  for (const mid of Object.keys(source)) {
-    const normalizedMid = normalizeMonsterId(mid);
-    const record = normalizeLearnedBurstRecord(source[mid]);
-    if (normalizedMid != null && record) learned[normalizedMid] = record;
-  }
-  return learned;
-}
-
 function readLearnedBurstMap() {
   return runLearnedMonsterStoreAutomation({
     type: LearnedMonsterStoreEvent.READ_MAP,
     family: LearnedMonsterFamily.INCOMING_BURST,
-    legacyProvider: readLegacyBurstMap,
   });
 }
 
@@ -67,7 +47,6 @@ function hydrateLearnedBurst() {
   return runLearnedMonsterStoreAutomation({
     type: LearnedMonsterStoreEvent.HYDRATE,
     family: LearnedMonsterFamily.INCOMING_BURST,
-    legacyProvider: readLegacyBurstMap,
   });
 }
 

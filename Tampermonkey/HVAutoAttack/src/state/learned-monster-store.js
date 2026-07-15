@@ -20,6 +20,7 @@ export const LearnedMonsterFamily = Object.freeze({
 export const LearnedMonsterStoreEvent = Object.freeze({
   HYDRATE: "hydrate",
   READ_MAP: "readMap",
+  READ_RECORDS: "readRecords",
   UPSERT_MANY: "upsertMany",
   RESET_RUNTIME: "resetRuntime",
 });
@@ -39,18 +40,10 @@ export function createLearnedMonsterStoreCapability({ dbName, sourceIdentity }, 
   const recordIo = deps.recordIo || runStorageIoMetricsAutomation;
   const now = deps.now || Date.now;
   const caches = new Map();
-  const seeded = new Set();
 
   function cache(family) {
     if (!caches.has(family)) caches.set(family, new Map());
     return caches.get(family);
-  }
-
-  function seed(event) {
-    if (seeded.has(event.family)) return;
-    const legacy = event.legacyProvider?.() || {};
-    for (const [id, value] of Object.entries(legacy)) cache(event.family).set(String(id), value);
-    seeded.add(event.family);
   }
 
   function observe(outcome, family, value) {
@@ -64,7 +57,6 @@ export function createLearnedMonsterStoreCapability({ dbName, sourceIdentity }, 
   }
 
   async function hydrate(event) {
-    seed(event);
     try {
       const records = await adapter.list(event.family);
       for (const record of records) cache(event.family).set(record.id, record.value);
@@ -75,13 +67,20 @@ export function createLearnedMonsterStoreCapability({ dbName, sourceIdentity }, 
     }
   }
 
+  async function readRecords(event) {
+    try {
+      return await adapter.list(event.family);
+    } catch (error) {
+      recordLearnedMonsterStoreFailure("readRecords", event.family, error);
+      return { outcome: StorageWriteOutcome.FAILED, error };
+    }
+  }
+
   function readMap(event) {
-    seed(event);
     return Object.fromEntries([...cache(event.family)].map(([id, value]) => [id, clone(value)]));
   }
 
   async function upsertMany(event) {
-    seed(event);
     const target = cache(event.family);
     const previous = new Map(
       event.records.map(({ id }) => [
@@ -93,6 +92,7 @@ export function createLearnedMonsterStoreCapability({ dbName, sourceIdentity }, 
       id: String(id),
       value: clone(value),
       lastUsed: now(),
+      ...(event.migrationSourceId ? { migrationSourceId: event.migrationSourceId } : {}),
     }));
     for (const envelope of envelopes) target.set(envelope.id, clone(envelope.value));
     try {
@@ -121,10 +121,10 @@ export function createLearnedMonsterStoreCapability({ dbName, sourceIdentity }, 
   const handlers = Object.freeze({
     [LearnedMonsterStoreEvent.HYDRATE]: hydrate,
     [LearnedMonsterStoreEvent.READ_MAP]: readMap,
+    [LearnedMonsterStoreEvent.READ_RECORDS]: readRecords,
     [LearnedMonsterStoreEvent.UPSERT_MANY]: upsertMany,
     [LearnedMonsterStoreEvent.RESET_RUNTIME]: () => {
       caches.clear();
-      seeded.clear();
       return true;
     },
   });

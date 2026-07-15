@@ -223,7 +223,6 @@ for (const required of [
   "createRiddleSampleRecord",
   "RiddleSampleStoreEvent.WRITE",
   "exportRiddleDatasetRecords",
-  "RiddleSampleMigrationEvent.CONFIRM_AND_RUN",
 ]) {
   if (!riddleDataset.includes(required)) {
     violations.push(`riddle-dataset.js must consume ${required}`);

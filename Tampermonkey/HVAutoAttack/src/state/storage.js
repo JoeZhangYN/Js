@@ -111,7 +111,6 @@ export function createStorageCapability({ prefix }, ports = {}) {
         outcomes.push(delValue(STORAGE_KEYS.MONSTER_STATUS));
       } else if (item === 2) {
         outcomes.push(delValue(STORAGE_KEYS.ROUND_TYPE));
-        outcomes.push(delValue(STORAGE_KEYS.BATTLE_CODE));
         outcomes.push(delValue(0));
         outcomes.push(delValue(1));
       }

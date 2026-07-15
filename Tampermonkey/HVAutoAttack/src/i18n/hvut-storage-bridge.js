@@ -41,7 +41,6 @@ export function createHvutStorageBridge(worldPolicy, deps = {}) {
       {
         indexedDb: deps.indexedDb,
         recordIo: deps.recordIo,
-        legacyRead: (family) => config.read(family),
       }
     );
   const known = (family) => HVUT_DERIVED_FAMILIES.includes(family);

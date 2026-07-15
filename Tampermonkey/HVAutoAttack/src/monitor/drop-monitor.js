@@ -1,6 +1,5 @@
 // 战斗日志解析 + 掉落物追踪。
 import { gE } from "../dom/query.js";
-import { setValue, getValue, delValue } from "../state/storage.js";
 import { g } from "../state/store.js";
 import {
   BattleRecordArchiveEvent,
@@ -17,9 +16,7 @@ export const BattleDropEvent = Object.freeze({
 
 function makeDeps(deps) {
   return {
-    delValue: deps.delValue || delValue,
     gE: deps.gE || gE,
-    getValue: deps.getValue || getValue,
     randomId: deps.randomId,
     runCheckpoint: deps.runCheckpoint,
     runHistory: deps.runHistory,
@@ -33,7 +30,6 @@ function makeDeps(deps) {
             readOptionField: deps.readOptionField,
           }
         )),
-    setValue: deps.setValue || setValue,
     readLocalTimestampLabel: deps.readLocalTimestampLabel,
   };
 }

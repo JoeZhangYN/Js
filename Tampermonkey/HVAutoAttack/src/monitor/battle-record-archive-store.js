@@ -1,7 +1,5 @@
 import { TimeEvent, runTimeAutomation } from "../core/time.js";
 import { StorageWriteOutcome } from "../state/storage-io-policy.js";
-import { createBattleRecordLegacyAdapter } from "./battle-record-legacy-adapter.js";
-import { persistBattleRecordArchiveStep } from "./battle-record-archive-failure.js";
 import {
   BattleReportHistoryEvent,
   runBattleReportHistoryAutomation,
@@ -33,7 +31,6 @@ function clone(record) {
 
 export function createBattleRecordArchiveStore(deps = {}) {
   const runtime = deps.runtime || createBattleReportRuntimeStore(deps);
-  const legacy = deps.legacy || createBattleRecordLegacyAdapter(deps);
   const runHistory = deps.runHistory || runBattleReportHistoryAutomation;
   const timestamp =
     deps.readLocalTimestampLabel ||
@@ -57,7 +54,7 @@ export function createBattleRecordArchiveStore(deps = {}) {
     return {
       currentName,
       currentRaw,
-      history: [...legacy.readHistory(event.family), ...(incremental || [])],
+      history: incremental || [],
     };
   }
 
@@ -85,13 +82,6 @@ export function createBattleRecordArchiveStore(deps = {}) {
   async function clearRecordSet(event) {
     const result = await runHistory({ type: BattleReportHistoryEvent.CLEAR, family: event.family });
     if (result?.outcome === StorageWriteOutcome.FAILED) return false;
-    if (
-      !persistBattleRecordArchiveStep("clear-legacy-history", event.family, () =>
-        legacy.clearHistory(event.family)
-      )
-    ) {
-      return false;
-    }
     return runtime.clearFamily(event.family).outcome !== StorageWriteOutcome.FAILED;
   }
 

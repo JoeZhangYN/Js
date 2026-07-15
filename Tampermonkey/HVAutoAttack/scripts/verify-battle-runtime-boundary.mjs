@@ -73,8 +73,17 @@ if (!ownerText.includes("clearPersistedBattleSession")) {
     `${owner.replaceAll("\\", "/")} must clear persisted session through failure-aware owner`
   );
 }
-if (!failureOwnerText.includes("delValue(2)")) {
-  violations.push(`${failureOwner.replaceAll("\\", "/")} must own legacy delValue(2) bridge`);
+for (const required of [
+  "BattleSessionCheckpointEvent.CLEAR",
+  "runBattleSessionCheckpointAutomation",
+  "StorageWriteOutcome.FAILED",
+]) {
+  if (!failureOwnerText.includes(required)) {
+    violations.push(`${failureOwner.replaceAll("\\", "/")} must own ${required}`);
+  }
+}
+if (failureOwnerText.includes("delValue(2)")) {
+  violations.push(`${failureOwner.replaceAll("\\", "/")} must retire legacy delValue(2)`);
 }
 for (const required of [
   "BATTLE_RUNTIME_FAILURE_KEY",

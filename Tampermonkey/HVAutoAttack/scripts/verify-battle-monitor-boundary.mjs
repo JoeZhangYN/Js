@@ -11,10 +11,12 @@ const internalFiles = new Set(
     "src/monitor/battle-info.js",
     "src/monitor/battle-record-archive-drop-records.js",
     "src/monitor/battle-record-archive-store.js",
+    "src/monitor/battle-record-archive-test-fixture.js",
     "src/monitor/battle-record-archive.js",
     "src/monitor/battle-record-archive-usage-records.js",
     "src/monitor/battle-report.js",
     "src/monitor/battle-report-model.js",
+    "src/monitor/battle-report-test-fixture.js",
     "src/monitor/battle-report-view.js",
     "src/monitor/battle-monitor-runtime.js",
     "src/monitor/drop-default-record.js",
@@ -862,7 +864,6 @@ function checkRecordArchiveEntry() {
     "BattleReportHistoryEvent.LIST",
     "BattleReportHistoryEvent.CLEAR",
     "completion",
-    "clear-legacy-history",
   ]) {
     if (!archiveStoreText.includes(required)) {
       violations.push(
@@ -877,10 +878,16 @@ function checkRecordArchiveEntry() {
     "BattleSessionCheckpointSlice.BATTLE_REPORT",
     'MEMORY_ONLY: "memoryOnly"',
     'ROUND_BOUNDARY: "roundBoundary"',
-    "retire-legacy-runtime",
+    "BattleSessionCheckpointEvent.READ_SLICE",
+    "BattleSessionCheckpointEvent.CHECKPOINT_SLICE",
   ]) {
     if (!reportRuntimeText.includes(required)) {
       violations.push(`${rel(reportRuntimeFile)} must own ${required}`);
+    }
+  }
+  for (const retired of ["STORAGE_KEYS", "getValue(", "delValue(", "legacyRead"]) {
+    if (archiveStoreText.includes(retired) || reportRuntimeText.includes(retired)) {
+      violations.push(`${rel(archiveStoreFile)} normal runtime must retire ${retired}`);
     }
   }
   for (const required of [
@@ -934,7 +941,7 @@ function checkRecordArchiveEntry() {
   for (const required of [
     "does not report report-start success when the session checkpoint fails",
     "exposes asynchronous archive failure through completion",
-    "does not report clear success when legacy deletion fails",
+    "does not let normal clear commands touch compatibility storage",
     "BATTLE_RECORD_ARCHIVE_FAILURE_KEY",
     "runDiagnosticConsoleAutomation",
     "storageWrite",

@@ -16,9 +16,10 @@ describe("battle record archive reads", () => {
     ).toMatchObject({ self: { _startTime: "finished", _turn: 0 } });
   });
 
-  it("migrates legacy current records into the session checkpoint", () => {
+  it("reads current records only from the session checkpoint", () => {
     const current = { "#Credit": 5, "#startTime": "old" };
-    const runtime = createBattleRecordArchiveTestDeps({ [STORAGE_KEYS.DROP]: current });
+    const runtime = createBattleRecordArchiveTestDeps({ [STORAGE_KEYS.DROP]: { stale: true } });
+    runtime.seedRuntime({ drop: current });
 
     expect(
       runBattleRecordArchiveAutomation(
@@ -26,7 +27,7 @@ describe("battle record archive reads", () => {
         runtime
       )
     ).toEqual(current);
-    expect(runtime.values[STORAGE_KEYS.DROP]).toBeUndefined();
+    expect(runtime.values[STORAGE_KEYS.DROP]).toEqual({ stale: true });
     expect(runtime.readRuntime()).toMatchObject({ kind: "loaded", checkpoint: { drop: current } });
   });
 
@@ -39,12 +40,11 @@ describe("battle record archive reads", () => {
     ).toBeNull();
   });
 
-  it("combines legacy and incremental histories with the current name", async () => {
+  it("combines incremental histories with the current checkpoint name", async () => {
     const runtime = createBattleRecordArchiveTestDeps({
-      [STORAGE_KEYS.BATTLE_CODE]: "now",
-      [STORAGE_KEYS.DROP]: { "#Credit": 5 },
       [STORAGE_KEYS.DROP_OLD]: [{ __name: "old", "#EXP": 20 }],
     });
+    runtime.seedRuntime({ code: "now", drop: { "#Credit": 5 } });
     runtime.histories.get("drop").push({
       id: "new",
       record: { __name: "new", "#Credit": 8 },
@@ -58,10 +58,7 @@ describe("battle record archive reads", () => {
     ).toEqual({
       currentName: "now",
       currentRaw: { "#Credit": 5 },
-      history: [
-        { __name: "old", "#EXP": 20 },
-        { __name: "new", "#Credit": 8 },
-      ],
+      history: [{ __name: "new", "#Credit": 8 }],
     });
   });
 

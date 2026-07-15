@@ -37,6 +37,9 @@ function harness(count = 1, overrides = {}) {
     }),
   };
   const runStore = vi.fn(async (event) => {
+    if (event.type === RiddleSampleStoreEvent.RECEIPT_LIST) {
+      return [...receipts.values()];
+    }
     if (event.type === RiddleSampleStoreEvent.RECEIPT_READ) {
       return receipts.get(event.sourceKey) || null;
     }
@@ -109,6 +112,38 @@ describe("verified legacy riddle sample migration", () => {
     await migration.run({ type: RiddleSampleMigrationEvent.CONFIRM_AND_RUN });
 
     expect(idle).toHaveBeenCalledTimes(2);
+  });
+
+  it("does not write a sample that changed after preview", async () => {
+    const { migration, source, runStore, legacy } = harness(1);
+    const preview = await migration.run({ type: RiddleSampleMigrationEvent.PREVIEW });
+    source.set("saved_pony_1", legacyEntry(99));
+
+    await expect(
+      migration.run({ type: RiddleSampleMigrationEvent.RUN_CONFIRMED, preview })
+    ).rejects.toMatchObject({ recovery: "previewAgain" });
+    expect(runStore).not.toHaveBeenCalledWith(
+      expect.objectContaining({ type: RiddleSampleStoreEvent.WRITE })
+    );
+    expect(legacy.remove).not.toHaveBeenCalled();
+  });
+
+  it("resumes a copied receipt when the legacy source disappeared after verification", async () => {
+    const { migration, legacy, source, receipts } = harness(1);
+    legacy.remove.mockRejectedValueOnce(new Error("interrupted delete"));
+    await expect(
+      migration.run({ type: RiddleSampleMigrationEvent.CONFIRM_AND_RUN })
+    ).rejects.toThrow("interrupted delete");
+    expect(receipts.get("saved_pony_1")).toMatchObject({ state: "copiedVerified" });
+    source.delete("saved_pony_1");
+
+    await expect(
+      migration.run({ type: RiddleSampleMigrationEvent.CONFIRM_AND_RUN })
+    ).resolves.toMatchObject({ confirmed: true, count: 1 });
+    expect(receipts.get("saved_pony_1")).toMatchObject({
+      state: "sourceDeleted",
+      sourceAlreadyMissing: true,
+    });
   });
 
   it("refuses migration on battle and riddle pages before listing legacy keys", async () => {

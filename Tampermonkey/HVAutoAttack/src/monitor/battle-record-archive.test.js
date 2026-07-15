@@ -41,7 +41,8 @@ describe("runBattleRecordArchiveAutomation", () => {
   });
 
   it("archives final-round records as an incremental record", async () => {
-    const runtime = createBattleRecordArchiveTestDeps({ [STORAGE_KEYS.BATTLE_CODE]: "AR-10" });
+    const runtime = createBattleRecordArchiveTestDeps();
+    runtime.seedRuntime({ code: "AR-10" });
 
     const outcome = runBattleRecordArchiveAutomation(
       {
@@ -63,7 +64,8 @@ describe("runBattleRecordArchiveAutomation", () => {
   });
 
   it("converges concurrent drop and usage completion clears on the latest checkpoint", async () => {
-    const runtime = createBattleRecordArchiveTestDeps({ [STORAGE_KEYS.BATTLE_CODE]: "AR-10" });
+    const runtime = createBattleRecordArchiveTestDeps();
+    runtime.seedRuntime({ code: "AR-10" });
     const drop = runBattleRecordArchiveAutomation(
       {
         type: BattleRecordArchiveEvent.STORE_OR_ARCHIVE_DROP_RECORD,
@@ -92,11 +94,13 @@ describe("runBattleRecordArchiveAutomation", () => {
     });
   });
 
-  it("clears a drop report through the same lifecycle entry", async () => {
+  it("clears target drop records without deleting compatibility sources", async () => {
     const runtime = createBattleRecordArchiveTestDeps({
       [STORAGE_KEYS.DROP]: { "#Credit": 1 },
       [STORAGE_KEYS.DROP_OLD]: [{ "#Credit": 2 }],
     });
+    runtime.seedRuntime({ drop: { "#Credit": 1 } });
+    runtime.histories.get("drop").push({ id: "old", record: { "#Credit": 2 } });
 
     expect(
       await runBattleRecordArchiveAutomation(
@@ -104,15 +108,19 @@ describe("runBattleRecordArchiveAutomation", () => {
         runtime
       )
     ).toBe(true);
-    expect(runtime.values[STORAGE_KEYS.DROP]).toBeUndefined();
-    expect(runtime.values[STORAGE_KEYS.DROP_OLD]).toBeUndefined();
+    expect(runtime.readRuntime().checkpoint.drop).toBeNull();
+    expect(runtime.histories.get("drop")).toEqual([]);
+    expect(runtime.values[STORAGE_KEYS.DROP]).toEqual({ "#Credit": 1 });
+    expect(runtime.values[STORAGE_KEYS.DROP_OLD]).toEqual([{ "#Credit": 2 }]);
   });
 
-  it("clears usage report records through the usage command", async () => {
+  it("clears target usage records without deleting compatibility sources", async () => {
     const runtime = createBattleRecordArchiveTestDeps({
       [STORAGE_KEYS.STATS]: { self: {} },
       [STORAGE_KEYS.STATS_OLD]: [{ self: {} }],
     });
+    runtime.seedRuntime({ usage: { self: {} } });
+    runtime.histories.get("usage").push({ id: "old", record: { self: {} } });
 
     expect(
       await runBattleRecordArchiveAutomation(
@@ -120,7 +128,9 @@ describe("runBattleRecordArchiveAutomation", () => {
         runtime
       )
     ).toBe(true);
-    expect(runtime.values[STORAGE_KEYS.STATS]).toBeUndefined();
-    expect(runtime.values[STORAGE_KEYS.STATS_OLD]).toBeUndefined();
+    expect(runtime.readRuntime().checkpoint.usage).toBeNull();
+    expect(runtime.histories.get("usage")).toEqual([]);
+    expect(runtime.values[STORAGE_KEYS.STATS]).toEqual({ self: {} });
+    expect(runtime.values[STORAGE_KEYS.STATS_OLD]).toEqual([{ self: {} }]);
   });
 });

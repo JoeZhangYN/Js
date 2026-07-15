@@ -121,10 +121,17 @@ describe("runBattleDropAutomation", () => {
       rows: [logLine("You gain 1 Credit")],
       values,
     });
+    runtime.seedRuntime({
+      code: "AR-10",
+      drop: { "#Credit": 5, "#EXP": 0, "#startTime": "old" },
+    });
 
     const result = runBattleDropAutomation({ type: BattleDropEvent.RECORD_BATTLE_DROPS }, runtime);
 
-    expect(values[STORAGE_KEYS.DROP]).toBeUndefined();
+    expect(values).toEqual({
+      [STORAGE_KEYS.BATTLE_CODE]: "AR-10",
+      [STORAGE_KEYS.DROP]: { "#Credit": 5, "#EXP": 0, "#startTime": "old" },
+    });
     expect(await result.archive.completion).toBe(true);
     expect(runtime.histories.get("drop").map(({ record }) => record)).toEqual([
       {

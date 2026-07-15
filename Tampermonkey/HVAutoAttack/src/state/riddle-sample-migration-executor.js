@@ -1,4 +1,5 @@
 import { legacyRiddleSampleRecord } from "./riddle-sample-content.js";
+import { measureLegacyRiddleSampleBytes } from "./riddle-sample-migration-size.js";
 import { RiddleSampleStoreEvent } from "./riddle-sample-store.js";
 import { StorageWriteOutcome } from "./storage-io-policy.js";
 
@@ -61,7 +62,8 @@ export function createRiddleSampleMigrationExecutor({ legacy, runStore, ...deps 
     return { sourceKey, state: "sourceDeleted" };
   }
 
-  async function migrateOne(sourceKey) {
+  async function migrateOne(expected) {
+    const { sourceKey } = expected;
     const previousReceipt = await runStore({
       type: RiddleSampleStoreEvent.RECEIPT_READ,
       sourceKey,
@@ -72,6 +74,11 @@ export function createRiddleSampleMigrationExecutor({ legacy, runStore, ...deps 
       const recovered = await recoverMissingSource(sourceKey, previousReceipt);
       if (recovered) return recovered;
       throw new Error(`legacy riddle sample disappeared before verification: ${sourceKey}`);
+    }
+    if (measureLegacyRiddleSampleBytes(entry) !== expected.bytes) {
+      const error = new Error(`legacy riddle sample changed since preview: ${sourceKey}`);
+      error.recovery = "previewAgain";
+      throw error;
     }
 
     const target = await legacyRiddleSampleRecord(sourceKey, entry, deps);
@@ -121,7 +128,7 @@ export function createRiddleSampleMigrationExecutor({ legacy, runStore, ...deps 
         batchBytes += next.bytes;
       }
       const results = await scheduleIdle(
-        () => Promise.all(batch.map((record) => migrateOne(record.sourceKey))),
+        () => Promise.all(batch.map((record) => migrateOne(record))),
         deps
       );
       completed.push(...results);

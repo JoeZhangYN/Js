@@ -6,10 +6,12 @@ import {
   createRiddleSampleMigrationExecutor,
   RIDDLE_MIGRATION_BATCH,
 } from "./riddle-sample-migration-executor.js";
+import { measureLegacyRiddleSampleBytes } from "./riddle-sample-migration-size.js";
 import { RiddleSampleStoreEvent, runRiddleSampleStoreAutomation } from "./riddle-sample-store.js";
 
 export const RiddleSampleMigrationEvent = Object.freeze({
   PREVIEW: "preview",
+  RUN_CONFIRMED: "runConfirmed",
   CONFIRM_AND_RUN: "confirmAndRun",
 });
 
@@ -18,14 +20,6 @@ const MIGRATION_CONFIRM_COPY = Object.freeze({
   l1: "發現 {count} 條舊答題樣本（約 {mib} MiB）。遷移會分批寫入 IndexedDB Blob、回讀校驗並在成功後刪除舊 GM 記錄。現在開始？",
   l2: "Found {count} legacy riddle sample(s), about {mib} MiB. Migrate in verified IndexedDB batches and delete each GM source only after verification?",
 });
-
-function estimatedLegacyBytes(entry) {
-  try {
-    return new TextEncoder().encode(JSON.stringify(entry)).byteLength;
-  } catch {
-    return 0;
-  }
-}
 
 export function createRiddleSampleMigrationCapability(deps = {}) {
   const legacy = deps.legacy || createRiddleLegacySampleAdapter();
@@ -47,7 +41,16 @@ export function createRiddleSampleMigrationCapability(deps = {}) {
 
   async function preview() {
     const page = assertSafePage();
-    const keys = await legacy.listKeys();
+    const legacyKeys = await legacy.listKeys();
+    const receipts = await runStore({ type: RiddleSampleStoreEvent.RECEIPT_LIST });
+    const keys = [
+      ...new Set([
+        ...legacyKeys,
+        ...(receipts || [])
+          .filter((receipt) => receipt.state === "copiedVerified")
+          .map((receipt) => receipt.sourceKey),
+      ]),
+    ].sort();
     const records = [];
     for (const sourceKey of keys) {
       const receipt = await runStore({
@@ -56,8 +59,13 @@ export function createRiddleSampleMigrationCapability(deps = {}) {
       });
       if (receipt?.state === "sourceDeleted") continue;
       const entry = await legacy.read(sourceKey);
-      if (!entry) continue;
-      records.push({ sourceKey, bytes: estimatedLegacyBytes(entry) });
+      if (!entry) {
+        if (receipt?.state === "copiedVerified") {
+          records.push({ sourceKey, bytes: receipt.totalBytes });
+        }
+        continue;
+      }
+      records.push({ sourceKey, bytes: measureLegacyRiddleSampleBytes(entry) });
     }
     return Object.freeze({
       pageKind: page?.kind || PageKind.UNKNOWN,
@@ -86,7 +94,7 @@ export function createRiddleSampleMigrationCapability(deps = {}) {
       return {
         confirmed: true,
         preview: previewResult,
-        ...(await executor.run(previewResult)),
+        ...(await runConfirmed(previewResult)),
       };
     } catch (error) {
       recordRiddleDatasetFailure("migration", {
@@ -98,9 +106,17 @@ export function createRiddleSampleMigrationCapability(deps = {}) {
     }
   }
 
+  async function runConfirmed(previewResult) {
+    assertSafePage();
+    return executor.run(previewResult || (await preview()));
+  }
+
   return Object.freeze({
     run(event) {
       if (event?.type === RiddleSampleMigrationEvent.PREVIEW) return preview();
+      if (event?.type === RiddleSampleMigrationEvent.RUN_CONFIRMED) {
+        return runConfirmed(event.preview);
+      }
       if (event?.type === RiddleSampleMigrationEvent.CONFIRM_AND_RUN) return confirmAndRun();
       return undefined;
     },

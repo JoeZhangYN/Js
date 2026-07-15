@@ -10,7 +10,7 @@ const family = LearnedMonsterFamily.BIG_KILL;
 const event = (type, detail = {}) => ({ type, family, ...detail });
 
 describe("learned monster store capability", () => {
-  it("hydrates IndexedDB identities over read-only legacy compatibility values", async () => {
+  it("hydrates identities only from the IndexedDB authority", async () => {
     const adapter = {
       list: vi.fn(async () => [
         { id: "1", value: { score: "indexed" } },
@@ -23,16 +23,26 @@ describe("learned monster store capability", () => {
       { adapter, recordIo: vi.fn() }
     );
 
-    await store.run(
-      event(LearnedMonsterStoreEvent.HYDRATE, {
-        legacyProvider: () => ({ 1: { score: "legacy" }, 2: { score: "legacy-only" } }),
-      })
-    );
+    await store.run(event(LearnedMonsterStoreEvent.HYDRATE));
 
     expect(store.run(event(LearnedMonsterStoreEvent.READ_MAP))).toEqual({
       1: { score: "indexed" },
-      2: { score: "legacy-only" },
       3: { score: "indexed-only" },
+    });
+  });
+
+  it("returns a typed failure for strict maintenance reads", async () => {
+    const store = createLearnedMonsterStoreCapability(
+      { dbName: "learned", sourceIdentity: "persistent" },
+      {
+        adapter: { list: vi.fn(async () => Promise.reject(new Error("read blocked"))) },
+        recordIo: vi.fn(),
+      }
+    );
+
+    await expect(store.run(event(LearnedMonsterStoreEvent.READ_RECORDS))).resolves.toMatchObject({
+      outcome: StorageWriteOutcome.FAILED,
+      error: expect.objectContaining({ message: "read blocked" }),
     });
   });
 

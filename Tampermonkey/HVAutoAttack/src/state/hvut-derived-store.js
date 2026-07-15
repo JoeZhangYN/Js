@@ -28,7 +28,6 @@ export function createHvutDerivedStoreCapability({ dbName, sourceIdentity, famil
     deps.adapter ||
     createHvutDerivedIndexedDbAdapter({ indexedDb: deps.indexedDb || indexedDB, dbName });
   const recordIo = deps.recordIo || runStorageIoMetricsAutomation;
-  const legacyRead = deps.legacyRead || (() => undefined);
   const cache = new Map();
   const queues = new Map();
   let hydrated = false;
@@ -44,7 +43,6 @@ export function createHvutDerivedStoreCapability({ dbName, sourceIdentity, famil
   }
 
   async function hydrate() {
-    for (const family of families) cache.set(family, clone(legacyRead(family)));
     try {
       const snapshot = await adapter.load();
       for (const family of families) {

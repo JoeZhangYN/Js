@@ -57,6 +57,10 @@ describe("runBattleUsageAutomation", () => {
       [STORAGE_KEYS.BATTLE_CODE]: "AR-1",
       [STORAGE_KEYS.STATS]: { self: { _monster: 0, _boss: 0 } },
     });
+    runtime.seedRuntime({
+      code: "AR-1",
+      usage: { self: { _monster: 0, _boss: 0 } },
+    });
     runtime.readCompletionContext = () => completionContext();
 
     const result = runBattleUsageAutomation(
@@ -85,6 +89,10 @@ describe("runBattleUsageAutomation", () => {
     const runtime = createBattleRecordArchiveTestDeps({
       [STORAGE_KEYS.BATTLE_CODE]: "AR-1",
       [STORAGE_KEYS.STATS]: { self: { _monster: 0, _boss: 0 } },
+    });
+    runtime.seedRuntime({
+      code: "AR-1",
+      usage: { self: { _monster: 0, _boss: 0 } },
     });
     runtime.readCompletionContext = () => completionContext();
     runtime.runHistory = async () => ({

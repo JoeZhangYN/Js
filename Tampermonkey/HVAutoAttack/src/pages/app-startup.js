@@ -5,6 +5,10 @@ import { OptionEvent, runOptionAutomation } from "../state/option.js";
 import { _alert, UserFeedbackEvent, runUserFeedbackAutomation } from "../core/lang.js";
 import { addStyle } from "../style/inject.js";
 import { RiddleDatasetEvent, runRiddleDatasetAutomation } from "../state/riddle-dataset.js";
+import {
+  runStorageMaintenanceAutomation,
+  StorageMaintenanceEvent,
+} from "../state/storage-maintenance.js";
 import { CdRuntimeEvent, runCdRuntimeAutomation } from "../state/cd-tracker.js";
 import { AbilityAoeEvent, runAbilityAoeAutomation } from "./ability-page.js";
 import {
@@ -26,7 +30,7 @@ export const AppStartupEvent = Object.freeze({
 
 const USERSCRIPT_STARTUP_STEPS = [
   ["loadCdRuntimeState", loadCdRuntimeState],
-  ["registerRiddleDatasetExportMenu", registerRiddleDatasetExportMenu],
+  ["registerStorageMenus", registerStorageMenus],
 ];
 const GAME_PAGE_STARTUP_STEPS = [
   ["syncConfiguredStartupOption", syncConfiguredStartupOption],
@@ -72,8 +76,9 @@ function loadCdRuntimeState() {
   return true;
 }
 
-function registerRiddleDatasetExportMenu() {
+function registerStorageMenus() {
   runRiddleDatasetAutomation({ type: RiddleDatasetEvent.REGISTER_EXPORT_MENU });
+  runStorageMaintenanceAutomation({ type: StorageMaintenanceEvent.REGISTER_MENU });
   return true;
 }
 

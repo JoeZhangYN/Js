@@ -8,6 +8,7 @@ const failureOwner = path.normalize("src/state/incoming-burst-learner-failure.js
 const ownerTest = path.normalize("src/state/incoming-burst-learner.test.js");
 const failureTest = path.normalize("src/state/incoming-burst-learner-failure.test.js");
 const persistKeys = path.normalize("src/state/persist-keys.js");
+const maintenanceOwner = path.normalize("src/state/storage-maintenance-record-sources.js");
 const monsterIdentity = path.normalize("src/monster/monster-identity.js");
 const violations = [];
 
@@ -46,6 +47,7 @@ function checkFile(file) {
       relative !== ownerTest &&
       relative !== failureTest &&
       relative !== monsterIdentity &&
+      relative !== maintenanceOwner &&
       relative !== persistKeys &&
       /\bSTORAGE_KEYS\.LEARNED_INCOMING_BURST\b/.test(line)
     ) {
@@ -65,17 +67,18 @@ const ownerText = fs.readFileSync(path.join(root, owner), "utf8");
 for (const required of [
   "runIncomingBurstLearningAutomation",
   "IncomingBurstLearningEvent",
-  "STORAGE_KEYS.LEARNED_INCOMING_BURST",
   "monsterIdentities",
   "normalizeMonsterId",
   "../monster/monster-identity.js",
-  "normalizeLearnedBurstRecord",
   "readLearnedBurstMap",
   "persistLearnedIncomingBurst",
 ]) {
   if (!ownerText.includes(required)) {
     violations.push(`${owner.replaceAll("\\", "/")} must own ${required}`);
   }
+}
+if (ownerText.includes("STORAGE_KEYS.LEARNED_INCOMING_BURST")) {
+  violations.push(`${owner.replaceAll("\\", "/")} must not read compatibility aggregates`);
 }
 if ((ownerText.match(/readLearnedBurstMap\(/g) || []).length < 3) {
   violations.push(

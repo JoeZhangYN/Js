@@ -4,11 +4,7 @@ import {
   runBattleSessionCheckpointAutomation,
 } from "../state/battle-session-checkpoint.js";
 import { StorageWriteOutcome } from "../state/storage-io-policy.js";
-import { createBattleRecordLegacyAdapter } from "./battle-record-legacy-adapter.js";
-import {
-  persistBattleRecordArchiveStep,
-  recordBattleRecordArchiveFailure,
-} from "./battle-record-archive-failure.js";
+import { recordBattleRecordArchiveFailure } from "./battle-record-archive-failure.js";
 
 export const BattleReportCheckpointMode = Object.freeze({
   MEMORY_ONLY: "memoryOnly",
@@ -25,7 +21,6 @@ function emptyState() {
 
 export function createBattleReportRuntimeStore(deps = {}) {
   const runCheckpoint = deps.runCheckpoint || runBattleSessionCheckpointAutomation;
-  const legacy = deps.legacy || createBattleRecordLegacyAdapter(deps);
   const randomId =
     deps.randomId ||
     (() => globalThis.crypto?.randomUUID?.() || `${Date.now().toString(36)}-battle`);
@@ -34,24 +29,6 @@ export function createBattleReportRuntimeStore(deps = {}) {
     slice: BattleSessionCheckpointSlice.BATTLE_REPORT,
   });
   let state = loaded?.kind === "loaded" ? clone(loaded.checkpoint) : emptyState();
-
-  if (loaded?.kind !== "loaded") {
-    const old = legacy.readRuntime();
-    if (old.code || old.drop || old.usage) {
-      state = { version: 1, sessionId: randomId(), ...old };
-      const result = runCheckpoint({
-        type: BattleSessionCheckpointEvent.CHECKPOINT_SLICE,
-        slice: BattleSessionCheckpointSlice.BATTLE_REPORT,
-        value: state,
-        lifecycleBoundary: true,
-      });
-      if (result.outcome !== StorageWriteOutcome.FAILED) {
-        persistBattleRecordArchiveStep("retire-legacy-runtime", "battleRuntime", () =>
-          legacy.clearRuntime()
-        );
-      }
-    }
-  }
 
   function publish(mode) {
     const event = {

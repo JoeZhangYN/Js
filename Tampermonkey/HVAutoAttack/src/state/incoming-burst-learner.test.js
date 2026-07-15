@@ -1,12 +1,14 @@
 // F5 回归锁：进场爆发学习器（运行 max + 类型，按 MID，名归一桥）。
 import { describe, it, expect, beforeEach } from "vitest";
-import { setValue } from "./storage.js";
+import { getValue, setValue } from "./storage.js";
 import { STORAGE_KEYS } from "./persist-keys.js";
+import { normalizeLegacyIncomingBurstMap } from "./learned-monster-legacy-normalize.js";
 import {
   IncomingBurstLearningEvent,
   runIncomingBurstLearningAutomation,
 } from "./incoming-burst-learner.js";
 import {
+  LearnedMonsterFamily,
   LearnedMonsterStoreEvent,
   runLearnedMonsterStoreAutomation,
 } from "./learned-monster-store.js";
@@ -65,16 +67,24 @@ describe("incoming-burst-learner", () => {
     expect(Object.keys(readMap())).toHaveLength(0);
   });
 
-  it("normalizes learned burst storage before reading and updating", () => {
-    setValue(STORAGE_KEYS.LEARNED_INCOMING_BURST, {
+  it("normalizes migrated burst storage before reading and updating", async () => {
+    const legacyValue = {
       100.9: { maxHit: "500.5", type: "" },
       200: { maxHit: "bad", type: "cold" },
       bad: { maxHit: 999, type: "fire" },
+    };
+    setValue(STORAGE_KEYS.LEARNED_INCOMING_BURST, legacyValue);
+    const normalized = normalizeLegacyIncomingBurstMap(legacyValue);
+    await runLearnedMonsterStoreAutomation({
+      type: LearnedMonsterStoreEvent.UPSERT_MANY,
+      family: LearnedMonsterFamily.INCOMING_BURST,
+      records: Object.entries(normalized).map(([id, value]) => ({ id, value })),
     });
 
     expect(readMap()).toEqual({ 100: { maxHit: 500.5, type: "unknown" } });
     record([ev("Orc", "800.5", "")], [{ monsterId: "100.9", name: "Orc" }]);
     expect(readMap()).toEqual({ 100: { maxHit: 800.5, type: "unknown" } });
+    expect(getValue(STORAGE_KEYS.LEARNED_INCOMING_BURST, true)).toEqual(legacyValue);
   });
 
   it("ignores invalid incoming burst learning events", () => {

@@ -23,7 +23,7 @@ beforeEach(() => {
 });
 
 describe("storage shortcut cleanup", () => {
-  it("clears battle runtime keys through named storage keys", () => {
+  it("clears small runtime keys without deleting compatibility battle data", () => {
     setValue(STORAGE_KEYS.DISABLED, true);
     setValue(STORAGE_KEYS.ROUND_NOW, 2);
     setValue(STORAGE_KEYS.ROUND_ALL, 5);
@@ -38,7 +38,7 @@ describe("storage shortcut cleanup", () => {
     expect(getValue(STORAGE_KEYS.ROUND_ALL, true)).toBeNull();
     expect(getValue(STORAGE_KEYS.MONSTER_STATUS, true)).toBeNull();
     expect(getValue(STORAGE_KEYS.ROUND_TYPE, true)).toBeNull();
-    expect(getValue(STORAGE_KEYS.BATTLE_CODE, true)).toBeNull();
+    expect(getValue(STORAGE_KEYS.BATTLE_CODE)).toBe("code");
   });
 });
 

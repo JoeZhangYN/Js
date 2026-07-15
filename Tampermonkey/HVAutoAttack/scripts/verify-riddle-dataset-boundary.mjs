@@ -217,7 +217,7 @@ if (!fs.existsSync(path.join(root, ownerTest))) {
   for (const required of [
     "writes a Blob sample and derives low confidence from random fallback",
     "returns a known failure result and discloses recovery without blocking submission",
-    "registers export and confirmed migration menus exactly once",
+    "registers the export menu while central maintenance owns migration",
     "HVAA:lastRiddleDatasetFailure",
     "record-write",
     "imageBlob: expect.any(Blob)",

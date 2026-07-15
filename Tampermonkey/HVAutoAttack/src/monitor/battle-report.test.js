@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { setValue, getValue } from "../state/storage.js";
+import { getValue } from "../state/storage.js";
 import { STORAGE_KEYS } from "../state/persist-keys.js";
 import { OptionEvent, runOptionAutomation } from "../state/option.js";
 import {
@@ -10,10 +10,17 @@ import {
 import { BattleRoundEvent, runBattleRoundAutomation } from "../battle/battle-round.js";
 import { BattleMonitorEvent, runBattleMonitorAutomation } from "./battle-monitor-automation.js";
 import { BattleReportEvent, runBattleReportAutomation } from "./battle-report.js";
+import {
+  BattleReportFamily,
+  clearBattleReportTargetHistory,
+  seedActiveBattleReport,
+  seedBattleReportHistory,
+} from "./battle-report-test-fixture.js";
 
-beforeEach(() => {
+beforeEach(async () => {
   localStorage.clear();
   runBattleSessionCheckpointAutomation({ type: BattleSessionCheckpointEvent.CLEAR });
+  await clearBattleReportTargetHistory();
   vi.useFakeTimers();
   vi.setSystemTime(new Date("2026-06-27T12:00:00.000Z"));
 });
@@ -107,7 +114,7 @@ describe("battle report query", () => {
   });
 
   it("renders a single drop report from the active record", async () => {
-    setValue(STORAGE_KEYS.DROP, { "#Credit": 12, "Health Potion": 1 });
+    seedActiveBattleReport({ drop: { "#Credit": 12, "Health Potion": 1 } });
 
     expect(
       await runBattleMonitorAutomation({ type: BattleMonitorEvent.RENDER_DROP_REPORT_TABLE_BODY })
@@ -117,9 +124,11 @@ describe("battle report query", () => {
   });
 
   it("renders archived and active drop records for history view", async () => {
-    setValue(STORAGE_KEYS.BATTLE_CODE, "now");
-    setValue(STORAGE_KEYS.DROP, { "#Credit": 12 });
-    setValue(STORAGE_KEYS.DROP_OLD, [{ __name: "old", "#EXP": 20 }]);
+    seedActiveBattleReport({ code: "now", drop: { "#Credit": 12 } });
+    await seedBattleReportHistory(BattleReportFamily.DROP, "old", {
+      __name: "old",
+      "#EXP": 20,
+    });
 
     expect(
       await runBattleMonitorAutomation({ type: BattleMonitorEvent.RENDER_DROP_REPORT_TABLE_BODY })
@@ -129,9 +138,14 @@ describe("battle report query", () => {
   });
 
   it("renders usage sections and tolerates missing sections", async () => {
-    setValue(STORAGE_KEYS.BATTLE_CODE, "now");
-    setValue(STORAGE_KEYS.STATS, { self: { _turn: 3 }, magic: { Fireball: 2 } });
-    setValue(STORAGE_KEYS.STATS_OLD, [{ __name: "old", self: { _turn: 1 } }]);
+    seedActiveBattleReport({
+      code: "now",
+      usage: { self: { _turn: 3 }, magic: { Fireball: 2 } },
+    });
+    await seedBattleReportHistory(BattleReportFamily.USAGE, "old", {
+      __name: "old",
+      self: { _turn: 1 },
+    });
 
     const html = await runBattleMonitorAutomation({
       type: BattleMonitorEvent.RENDER_USAGE_REPORT_TABLE_BODY,
@@ -143,11 +157,10 @@ describe("battle report query", () => {
     expect(html).toContain("<tr><td>Fireball</td><td>2</td><td></td></tr>");
   });
 
-  it("clears battle report storage through monitor-owned commands", async () => {
-    setValue(STORAGE_KEYS.DROP, { a: 1 });
-    setValue(STORAGE_KEYS.DROP_OLD, [{ a: 2 }]);
-    setValue(STORAGE_KEYS.STATS, { self: {} });
-    setValue(STORAGE_KEYS.STATS_OLD, [{ self: {} }]);
+  it("clears target battle report storage through monitor-owned commands", async () => {
+    seedActiveBattleReport({ code: "now", drop: { a: 1 }, usage: { self: {} } });
+    await seedBattleReportHistory(BattleReportFamily.DROP, "drop-old", { a: 2 });
+    await seedBattleReportHistory(BattleReportFamily.USAGE, "usage-old", { self: {} });
 
     await runBattleMonitorAutomation({ type: BattleMonitorEvent.CLEAR_DROP_REPORT });
     await runBattleMonitorAutomation({ type: BattleMonitorEvent.CLEAR_USAGE_REPORT });

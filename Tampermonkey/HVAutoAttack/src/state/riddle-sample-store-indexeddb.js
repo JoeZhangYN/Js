@@ -139,6 +139,13 @@ export function createRiddleSampleIndexedDbAdapter({ dbName = RIDDLE_SAMPLE_DB_N
     });
   }
 
+  function listReceipts() {
+    return transaction(STORE_RECEIPTS, "readonly", (tx, setResult) => {
+      const request = tx.objectStore(STORE_RECEIPTS).getAll();
+      request.onsuccess = () => setResult(request.result || []);
+    });
+  }
+
   return Object.freeze({
     appendSample,
     readSample,
@@ -147,5 +154,6 @@ export function createRiddleSampleIndexedDbAdapter({ dbName = RIDDLE_SAMPLE_DB_N
     deleteSamples,
     readReceipt,
     writeReceipt,
+    listReceipts,
   });
 }

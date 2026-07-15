@@ -21,7 +21,7 @@ describe("stamina loss log entry", () => {
     expect(getValue(STORAGE_KEYS.STAMINA_LOST_LOG, true)).toBeNull();
   });
 
-  it("clears incremental and legacy stamina loss logs", async () => {
+  it("clears the incremental log without touching compatibility sources", async () => {
     setValue(STORAGE_KEYS.STAMINA_LOST_LOG, { legacy: 2 });
     await runStaminaLossLogAutomation({
       type: StaminaLossLogEvent.RECORD,
@@ -32,7 +32,7 @@ describe("stamina loss log entry", () => {
     await runStaminaLossLogAutomation({ type: StaminaLossLogEvent.CLEAR });
 
     expect(await runStaminaLossLogAutomation({ type: StaminaLossLogEvent.READ })).toEqual({});
-    expect(getValue(STORAGE_KEYS.STAMINA_LOST_LOG, true)).toBeNull();
+    expect(getValue(STORAGE_KEYS.STAMINA_LOST_LOG, true)).toEqual({ legacy: 2 });
   });
 
   it("renders the clear confirmation message newest first", async () => {

@@ -15,6 +15,7 @@ const ownerNormalizationTest = path.normalize(
 const snapshot = path.normalize("src/battle/snapshot.js");
 const observationLearning = path.normalize("src/battle/battle-observation-learning.js");
 const persistKeys = path.normalize("src/state/persist-keys.js");
+const maintenanceOwner = path.normalize("src/state/storage-maintenance-record-sources.js");
 const violations = [];
 
 function rel(file) {
@@ -57,6 +58,7 @@ function checkFile(file) {
       relative !== diagnosticTest &&
       relative !== failureTest &&
       relative !== ownerNormalizationTest &&
+      relative !== maintenanceOwner &&
       relative !== persistKeys &&
       /\bSTORAGE_KEYS\.LEARNED_BIG_KILL\b/.test(line)
     ) {

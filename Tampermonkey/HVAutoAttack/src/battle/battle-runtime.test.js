@@ -2,35 +2,44 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { BattleRuntimeEvent, runBattleRuntimeAutomation } from "./battle-runtime.js";
 import { getValue, setValue } from "../state/storage.js";
 import { STORAGE_KEYS } from "../state/persist-keys.js";
+import {
+  BattleSessionCheckpointEvent,
+  runBattleSessionCheckpointAutomation,
+} from "../state/battle-session-checkpoint.js";
 
 beforeEach(() => {
   localStorage.clear();
+  runBattleSessionCheckpointAutomation({ type: BattleSessionCheckpointEvent.CLEAR });
 });
 
 describe("runBattleRuntimeAutomation", () => {
-  it("clears the full persisted battle session through the entry", () => {
-    setValue(STORAGE_KEYS.DISABLED, true);
-    setValue(STORAGE_KEYS.ROUND_NOW, 2);
-    setValue(STORAGE_KEYS.ROUND_ALL, 5);
-    setValue(STORAGE_KEYS.MONSTER_STATUS, [{ id: 1 }]);
-    setValue(STORAGE_KEYS.ROUND_TYPE, "ar");
+  it("clears the bounded session checkpoint without touching compatibility data", () => {
     setValue(STORAGE_KEYS.BATTLE_CODE, "code");
+    runBattleSessionCheckpointAutomation({
+      type: BattleSessionCheckpointEvent.CHECKPOINT,
+      checkpoint: { globalTurn: 5, lastUsed: {} },
+      lifecycleBoundary: true,
+    });
 
-    runBattleRuntimeAutomation({ type: BattleRuntimeEvent.CLEAR_SESSION });
+    expect(runBattleRuntimeAutomation({ type: BattleRuntimeEvent.CLEAR_SESSION })).toBe(true);
 
-    expect(getValue(STORAGE_KEYS.DISABLED, true)).toBeNull();
-    expect(getValue(STORAGE_KEYS.ROUND_NOW, true)).toBeNull();
-    expect(getValue(STORAGE_KEYS.ROUND_ALL, true)).toBeNull();
-    expect(getValue(STORAGE_KEYS.MONSTER_STATUS, true)).toBeNull();
-    expect(getValue(STORAGE_KEYS.ROUND_TYPE, true)).toBeNull();
-    expect(getValue(STORAGE_KEYS.BATTLE_CODE, true)).toBeNull();
+    expect(
+      runBattleSessionCheckpointAutomation({ type: BattleSessionCheckpointEvent.READ })
+    ).toEqual({ kind: "absent" });
+    expect(getValue(STORAGE_KEYS.BATTLE_CODE)).toBe("code");
   });
 
   it("rejects unknown runtime events without clearing the battle session", () => {
-    setValue(STORAGE_KEYS.BATTLE_CODE, "code");
+    runBattleSessionCheckpointAutomation({
+      type: BattleSessionCheckpointEvent.CHECKPOINT,
+      checkpoint: { globalTurn: 3, lastUsed: {} },
+      lifecycleBoundary: true,
+    });
 
     expect(runBattleRuntimeAutomation({ type: "unknown" })).toBe(false);
     expect(runBattleRuntimeAutomation(null)).toBe(false);
-    expect(getValue(STORAGE_KEYS.BATTLE_CODE)).toBe("code");
+    expect(
+      runBattleSessionCheckpointAutomation({ type: BattleSessionCheckpointEvent.READ })
+    ).toMatchObject({ kind: "loaded", checkpoint: { globalTurn: 3 } });
   });
 });

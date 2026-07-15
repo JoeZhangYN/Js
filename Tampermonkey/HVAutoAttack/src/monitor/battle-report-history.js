@@ -16,6 +16,7 @@ export const BattleReportFamily = Object.freeze({ DROP: "drop", USAGE: "usage" }
 export const BattleReportHistoryEvent = Object.freeze({
   APPEND: "append",
   LIST: "list",
+  LIST_ENVELOPES: "listEnvelopes",
   CLEAR: "clear",
 });
 
@@ -75,9 +76,19 @@ export function createBattleReportHistoryCapability(
     }
   }
 
+  async function listEnvelopes(event) {
+    try {
+      return await adapter.listEnvelopes(event.family);
+    } catch (error) {
+      recordBattleRecordArchiveFailure("history-read-envelopes", event.family, error);
+      throw error;
+    }
+  }
+
   const handlers = Object.freeze({
     [BattleReportHistoryEvent.APPEND]: append,
     [BattleReportHistoryEvent.LIST]: list,
+    [BattleReportHistoryEvent.LIST_ENVELOPES]: listEnvelopes,
     [BattleReportHistoryEvent.CLEAR]: clear,
   });
   return Object.freeze({ run: (event) => handlers[event?.type]?.(event) });

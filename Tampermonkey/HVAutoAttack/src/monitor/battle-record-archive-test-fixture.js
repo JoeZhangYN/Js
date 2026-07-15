@@ -37,10 +37,19 @@ export function createBattleRecordArchiveTestDeps(values = {}) {
     readLocalTimestampLabel: () => "finished",
     randomId: () => "battle-session",
     sessionWriteCount: () => sessionStorage.writeCount(),
+    seedRuntime(value) {
+      return checkpoint.run({
+        type: BattleSessionCheckpointEvent.CHECKPOINT_SLICE,
+        slice: BattleSessionCheckpointSlice.BATTLE_REPORT,
+        value: { version: 1, sessionId: "seed", code: null, drop: null, usage: null, ...value },
+        lifecycleBoundary: true,
+      });
+    },
     runCheckpoint: (event) => checkpoint.run(event),
     async runHistory(event) {
       const rows = histories.get(event.family);
       if (event.type === "list") return rows.map((envelope) => envelope.record);
+      if (event.type === "listEnvelopes") return [...rows];
       if (event.type === "append") {
         if (rows.some((envelope) => envelope.id === event.envelope.id)) {
           return { outcome: StorageWriteOutcome.SKIPPED_UNCHANGED };

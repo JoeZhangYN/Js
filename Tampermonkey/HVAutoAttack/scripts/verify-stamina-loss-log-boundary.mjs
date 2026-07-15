@@ -10,6 +10,7 @@ const failureTest = path.normalize("src/state/stamina-loss-log-failure.test.js")
 const storeOwner = path.normalize("src/state/stamina-loss-store.js");
 const adapterOwner = path.normalize("src/state/stamina-loss-store-indexeddb.js");
 const adapterTest = path.normalize("src/state/stamina-loss-store-indexeddb.test.js");
+const maintenanceOwner = path.normalize("src/state/storage-maintenance-record-sources.js");
 const persistKeys = path.normalize("src/state/persist-keys.js");
 const settingsRender = path.normalize("src/settings/render.js");
 const settingsCommand = path.normalize("src/settings/stamina-loss-log-command.js");
@@ -40,6 +41,7 @@ function checkFile(file) {
       relative !== failureTest &&
       relative !== settingsCommand &&
       relative !== settingsCommandTest &&
+      relative !== maintenanceOwner &&
       relative !== persistKeys &&
       /\bSTORAGE_KEYS\.STAMINA_LOST_LOG\b/.test(line)
     ) {
@@ -72,7 +74,6 @@ const failureTestText = fs.readFileSync(path.join(root, failureTest), "utf8");
 for (const required of [
   "runStaminaLossLogAutomation",
   "StaminaLossLogEvent",
-  "STORAGE_KEYS.STAMINA_LOST_LOG",
   "CLEAR_CONFIRMATION_MESSAGE",
   "StaminaLossStoreEvent.APPEND",
   "StaminaLossStoreEvent.LIST",
@@ -81,6 +82,9 @@ for (const required of [
   if (!ownerText.includes(required)) {
     violations.push(`${owner.replaceAll("\\", "/")} must own ${required}`);
   }
+}
+if (ownerText.includes("STORAGE_KEYS.STAMINA_LOST_LOG")) {
+  violations.push(`${owner.replaceAll("\\", "/")} must not read compatibility aggregates`);
 }
 
 const settingsText = fs.readFileSync(path.join(root, settingsRender), "utf8");

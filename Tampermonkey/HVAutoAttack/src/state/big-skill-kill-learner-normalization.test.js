@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { g } from "./store.js";
 import { getValue, setValue } from "./storage.js";
 import { STORAGE_KEYS } from "./persist-keys.js";
+import { normalizeLegacyBigKillMap } from "./learned-monster-legacy-normalize.js";
 import {
   BigSkillKillLearningEvent,
   runBigSkillKillLearningAutomation,
@@ -110,7 +111,7 @@ describe("big-skill kill learner normalization", () => {
   });
 
   it("normalizes learned big-kill storage before skip decisions and updates", async () => {
-    setValue(STORAGE_KEYS.LEARNED_BIG_KILL, {
+    const legacyValue = {
       100: {
         OFC: {
           killProbNoIm: 2,
@@ -122,6 +123,13 @@ describe("big-skill kill learner normalization", () => {
         UNKNOWN: { killProbNoIm: 1, nNoIm: 99 },
       },
       bad: { OFC: { killProbNoIm: 1, nNoIm: 4 } },
+    };
+    setValue(STORAGE_KEYS.LEARNED_BIG_KILL, legacyValue);
+    const normalized = normalizeLegacyBigKillMap(legacyValue);
+    await runLearnedMonsterStoreAutomation({
+      type: LearnedMonsterStoreEvent.UPSERT_MANY,
+      family: LearnedMonsterFamily.BIG_KILL,
+      records: Object.entries(normalized).map(([id, value]) => ({ id, value })),
     });
 
     expect(
@@ -148,6 +156,6 @@ describe("big-skill kill learner normalization", () => {
         },
       },
     });
-    expect(getValue(STORAGE_KEYS.LEARNED_BIG_KILL, true)).not.toEqual(readLearnedMap());
+    expect(getValue(STORAGE_KEYS.LEARNED_BIG_KILL, true)).toEqual(legacyValue);
   });
 });

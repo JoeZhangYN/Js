@@ -6,10 +6,15 @@ import {
   runBattleSessionCheckpointAutomation,
 } from "../state/battle-session-checkpoint.js";
 import { BattleReportModelEvent, runBattleReportModel } from "./battle-report-model.js";
+import {
+  clearBattleReportTargetHistory,
+  seedActiveBattleReport,
+} from "./battle-report-test-fixture.js";
 
-beforeEach(() => {
+beforeEach(async () => {
   localStorage.clear();
   runBattleSessionCheckpointAutomation({ type: BattleSessionCheckpointEvent.CLEAR });
+  await clearBattleReportTargetHistory();
 });
 
 describe("runBattleReportModel", () => {
@@ -25,7 +30,7 @@ describe("runBattleReportModel", () => {
   });
 
   it("builds a single drop report model from the active record", async () => {
-    setValue(STORAGE_KEYS.DROP, { "#Credit": 12 });
+    seedActiveBattleReport({ drop: { "#Credit": 12 } });
 
     expect(
       await runBattleReportModel({ type: BattleReportModelEvent.READ_DROP_REPORT_MODEL })

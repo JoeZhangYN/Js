@@ -8,10 +8,6 @@ import {
   RIDDLE_DATASET_STATUS_COPY,
 } from "./riddle-dataset-status.js";
 import { createRiddleSampleRecord, dataUrlToBlob } from "./riddle-sample-content.js";
-import {
-  RiddleSampleMigrationEvent,
-  runRiddleSampleMigrationAutomation,
-} from "./riddle-sample-migration.js";
 import { RiddleSampleStoreEvent, runRiddleSampleStoreAutomation } from "./riddle-sample-store.js";
 import { StorageWriteOutcome } from "./storage-io-policy.js";
 
@@ -19,14 +15,12 @@ const EVENT_RECORD_SAMPLE = "recordSample";
 const EVENT_EXPORT = "export";
 const EVENT_INSPECT = "inspect";
 const EVENT_REGISTER_EXPORT_MENU = "registerExportMenu";
-const EVENT_MIGRATE_LEGACY = "migrateLegacy";
 
 export const RiddleDatasetEvent = Object.freeze({
   RECORD_SAMPLE: EVENT_RECORD_SAMPLE,
   EXPORT: EVENT_EXPORT,
   INSPECT: EVENT_INSPECT,
   REGISTER_EXPORT_MENU: EVENT_REGISTER_EXPORT_MENU,
-  MIGRATE_LEGACY: EVENT_MIGRATE_LEGACY,
 });
 
 export const RiddleSampleSource = Object.freeze({ ML: "ml", RANDOM: "random", MANUAL: "manual" });
@@ -42,7 +36,6 @@ function sampleId(now, randomId) {
 
 export function createRiddleDatasetCapability(deps = {}) {
   const runStore = deps.runStore || runRiddleSampleStoreAutomation;
-  const runMigration = deps.runMigration || runRiddleSampleMigrationAutomation;
   const now = deps.now || (() => Date.now());
   let sequence = 0;
   const randomId =
@@ -98,13 +91,6 @@ export function createRiddleDatasetCapability(deps = {}) {
     if (typeof register !== "function") return false;
     menuRegistered = true;
     register("导出答题训练样本(zip: 图片+json)", () => void exportRiddleDataset());
-    register(
-      "迁移旧答题样本到 IndexedDB（需确认）",
-      () =>
-        void Promise.resolve(
-          runMigration({ type: RiddleSampleMigrationEvent.CONFIRM_AND_RUN })
-        ).catch(() => undefined)
-    );
     return true;
   }
 
@@ -113,8 +99,6 @@ export function createRiddleDatasetCapability(deps = {}) {
     [EVENT_EXPORT]: exportRiddleDataset,
     [EVENT_INSPECT]: () => runStore({ type: RiddleSampleStoreEvent.INSPECT }),
     [EVENT_REGISTER_EXPORT_MENU]: registerExportMenu,
-    [EVENT_MIGRATE_LEGACY]: () =>
-      runMigration({ type: RiddleSampleMigrationEvent.CONFIRM_AND_RUN }),
   });
 
   return Object.freeze({

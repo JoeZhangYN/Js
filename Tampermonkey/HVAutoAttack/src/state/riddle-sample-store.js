@@ -12,6 +12,7 @@ const EVENT_INSPECT = "inspect";
 const EVENT_DELETE_EXPORTED = "deleteExported";
 const EVENT_RECEIPT_READ = "receiptRead";
 const EVENT_RECEIPT_WRITE = "receiptWrite";
+const EVENT_RECEIPT_LIST = "receiptList";
 
 export { RIDDLE_SAMPLE_STORE_FAILURE_KEY };
 
@@ -23,6 +24,7 @@ export const RiddleSampleStoreEvent = Object.freeze({
   DELETE_EXPORTED: EVENT_DELETE_EXPORTED,
   RECEIPT_READ: EVENT_RECEIPT_READ,
   RECEIPT_WRITE: EVENT_RECEIPT_WRITE,
+  RECEIPT_LIST: EVENT_RECEIPT_LIST,
 });
 
 export function createRiddleSampleStoreCapability(deps = {}) {
@@ -89,6 +91,7 @@ export function createRiddleSampleStoreCapability(deps = {}) {
     [EVENT_DELETE_EXPORTED]: deleteExported,
     [EVENT_RECEIPT_READ]: (event) => adapter.readReceipt(event.sourceKey),
     [EVENT_RECEIPT_WRITE]: (event) => adapter.writeReceipt(event.receipt),
+    [EVENT_RECEIPT_LIST]: () => adapter.listReceipts(),
   });
 
   return Object.freeze({
