@@ -3,6 +3,7 @@ import { spawnSync } from "node:child_process";
 const commands = [
   "node scripts/verify-sloc.mjs",
   "node scripts/verify-project-framework-maintenance.mjs",
+  "node scripts/verify-storage-io-boundary.mjs",
   "node scripts/check-circular.mjs",
   "node scripts/check-mainloop-imports.mjs",
   "node scripts/verify-world-capability-factory-boundary.mjs",

@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { createRuntimeStoreCapability } from "./store.js";
 import { createStorageCapability } from "./storage.js";
+import { StorageIdentity, StorageWriteOutcome } from "./storage-io-policy.js";
 
 function memoryStorage() {
   return {
@@ -13,21 +14,32 @@ function memoryStorage() {
 describe("state capability factories", () => {
   it("binds two storage namespaces without passing World to calls", () => {
     const values = new Map();
+    const recordIo = vi.fn();
     const ports = {
       gmSetValue: (key, value) => values.set(key, value),
       gmGetValue: (key) => values.get(key),
       gmDeleteValue: (key) => values.delete(key),
       warn: vi.fn(),
+      recordIo,
     };
     const persistent = createStorageCapability({ prefix: "hvAA_" }, ports);
     const isekai = createStorageCapability({ prefix: "hvAA_isekai_" }, ports);
 
-    persistent.setValue("factoryProbe", { value: "p" });
-    isekai.setValue("factoryProbe", { value: "i" });
+    expect(persistent.setValue("factoryProbe", { value: "p" })).toBe(StorageWriteOutcome.WRITTEN);
+    expect(isekai.setValue("factoryProbe", { value: "i" })).toBe(StorageWriteOutcome.WRITTEN);
 
     expect(persistent.getValue("factoryProbe")).toMatchObject({ value: "p" });
     expect(isekai.getValue("factoryProbe")).toMatchObject({ value: "i" });
     expect([...values.keys()]).toEqual(["hvAA_factoryProbe", "hvAA_isekai_factoryProbe"]);
+    expect(recordIo).toHaveBeenCalledTimes(2);
+    expect(recordIo).toHaveBeenNthCalledWith(
+      1,
+      expect.objectContaining({
+        identity: StorageIdentity.WORLD_SMALL_VALUE,
+        outcome: StorageWriteOutcome.WRITTEN,
+        sourceIdentity: "hvAA_",
+      })
+    );
   });
 
   it("keeps runtime stores isolated by construction", () => {
