@@ -14,6 +14,7 @@ import {
   BattleAutomationEvidenceEvent,
   runBattleAutomationEvidence,
 } from "./battle-automation-evidence.js";
+import { BattleLearningRuntimeEvent, runBattleLearningRuntime } from "./battle-learning-runtime.js";
 
 const EVENT_PAGE_READY = "pageReady";
 const EVENT_UNKNOWN_BATTLE_AUTOMATION = "unknownBattleAutomationEvent";
@@ -24,6 +25,10 @@ export const BattleEvent = Object.freeze({
 });
 
 const PAGE_READY_STARTUP_STEPS = Object.freeze([
+  {
+    capability: "learningRuntime",
+    run: hydrateLearningRuntime,
+  },
   {
     capability: "pauseControls",
     run: installBattlePauseControls,
@@ -50,6 +55,10 @@ function installBattlePauseControls() {
   return runBattlePauseControlsAutomation({ type: BattlePauseControlsEvent.INSTALL });
 }
 
+function hydrateLearningRuntime() {
+  return runBattleLearningRuntime({ type: BattleLearningRuntimeEvent.HYDRATE });
+}
+
 function installBattleActionEventBridge() {
   return runBattleActionEventBridgeAutomation({ type: BattleActionEventBridgeEvent.INSTALL });
 }
@@ -66,10 +75,10 @@ function runInitialBattleTurn() {
   return runBattleTurnAutomation({ type: BattleTurnWorkflowEvent.RUN_CURRENT_TURN });
 }
 
-function runPageReadyStartup(deps) {
+async function runPageReadyStartup(deps) {
   const steps = [];
   for (const step of PAGE_READY_STARTUP_STEPS) {
-    steps.push({ capability: step.capability, ...normalizeStartupResult(step.run()) });
+    steps.push({ capability: step.capability, ...normalizeStartupResult(await step.run()) });
   }
   const startupSucceeded = steps.every((step) => step.result);
   deps.recordStartup(EVENT_PAGE_READY, startupSucceeded, steps);

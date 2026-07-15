@@ -13,15 +13,12 @@
 // 任一缺失 → 保留 Imperil（默认）。MID 未知 → 保留。
 import { g } from "./store.js";
 import { OptionEvent, runOptionAutomation } from "./option.js";
-import { getValue } from "./storage.js";
-import { STORAGE_KEYS } from "./persist-keys.js";
 import {
   persistLearnedBigKill,
   recordBigSkillKillLearningDiagnostic,
 } from "./big-skill-kill-learner-failure.js";
+import { hydrateLearnedBigKill, readLearnedBigKillMap } from "./big-skill-kill-learned-map.js";
 import {
-  normalizeLearnedMid,
-  normalizeLearnedSkill,
   normalizeBossHpMax,
   normalizeLiveMonsterIds,
   normalizePending,
@@ -32,11 +29,13 @@ const OFC_OC_NEED = 205;
 const EVENT_RECORD_CAST = "recordCast";
 const EVENT_FINALIZE_PENDING = "finalizePending";
 const EVENT_WILL_KILL_BOSS = "willKillBoss";
+const EVENT_HYDRATE = "hydrate";
 
 export const BigSkillKillLearningEvent = Object.freeze({
   RECORD_CAST: EVENT_RECORD_CAST,
   FINALIZE_PENDING: EVENT_FINALIZE_PENDING,
   WILL_KILL_BOSS: EVENT_WILL_KILL_BOSS,
+  HYDRATE: EVENT_HYDRATE,
 });
 
 function isDynamicBigKillLogEnabled() {
@@ -53,21 +52,6 @@ function isDynamicBigKillLogEnabled() {
 function ewma(prior, obs, n) {
   const alpha = Math.max(0.1, 1 / n);
   return prior * (1 - alpha) + obs * alpha;
-}
-
-function readLearnedBigKillMap() {
-  const source = getValue(STORAGE_KEYS.LEARNED_BIG_KILL, true) || {};
-  const learned = {};
-  for (const mid of Object.keys(source)) {
-    const numericMid = normalizeLearnedMid(mid);
-    if (numericMid == null) continue;
-    const record = {};
-    for (const skill of ["OFC", "FRD"]) {
-      if (source[mid]?.[skill]) record[skill] = normalizeLearnedSkill(source[mid][skill]);
-    }
-    if (Object.keys(record).length) learned[numericMid] = record;
-  }
-  return learned;
 }
 
 /**
@@ -100,6 +84,7 @@ function finalizeBigSkillPending(event) {
   if (now === pending.globalTurn) return; // 同回合，未结算
   const liveMonsterIds = normalizeLiveMonsterIds(event?.liveMonsterIds);
   const learned = readLearnedBigKillMap();
+  const updated = new Set();
   for (const b of pending.bosses) {
     const killed = liveMonsterIds.has(b.mid) ? 0 : 1;
     if (!learned[b.mid]) learned[b.mid] = {};
@@ -122,16 +107,19 @@ function finalizeBigSkillPending(event) {
       sk.killProbNoIm = ewma(sk.killProbNoIm, killed, sk.nNoIm);
     }
     sk.lastHpMax = b.hpMax; // 本次观测的 boss 满血（scale-drift 参照）
+    updated.add(b.mid);
   }
-  if (!persistLearnedBigKill(learned)) return false;
-  g("bigKillPending", null);
-  if (isDynamicBigKillLogEnabled()) {
-    recordBigSkillKillLearningDiagnostic("settle", {
-      skill: pending.skill,
-      learned,
-    });
-  }
-  return true;
+  const completion = persistLearnedBigKill(
+    [...updated].map((id) => ({ id, value: learned[id] }))
+  ).then((persisted) => {
+    if (!persisted) return false;
+    g("bigKillPending", null);
+    if (isDynamicBigKillLogEnabled()) {
+      recordBigSkillKillLearningDiagnostic("settle", { skill: pending.skill, learned });
+    }
+    return true;
+  });
+  return { kind: "scheduled", completion };
 }
 
 /**
@@ -168,6 +156,7 @@ const bigSkillKillLearningEventHandlers = Object.freeze({
   [EVENT_RECORD_CAST]: (event) => recordBigSkillCast(event.code, event),
   [EVENT_FINALIZE_PENDING]: (event) => finalizeBigSkillPending(event),
   [EVENT_WILL_KILL_BOSS]: (event) => ofcWillKillBoss(event),
+  [EVENT_HYDRATE]: () => hydrateLearnedBigKill(),
 });
 
 export function runBigSkillKillLearningAutomation(event = { type: EVENT_WILL_KILL_BOSS }) {

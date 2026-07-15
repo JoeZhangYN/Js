@@ -6,6 +6,11 @@ import {
   BigSkillKillLearningEvent,
   runBigSkillKillLearningAutomation,
 } from "./big-skill-kill-learner.js";
+import {
+  LearnedMonsterFamily,
+  LearnedMonsterStoreEvent,
+  runLearnedMonsterStoreAutomation,
+} from "./learned-monster-store.js";
 
 const mocks = vi.hoisted(() => ({
   runOptionAutomation: vi.fn(),
@@ -27,6 +32,7 @@ const boss = (over = {}) => ({
 
 beforeEach(() => {
   localStorage.clear();
+  runLearnedMonsterStoreAutomation({ type: LearnedMonsterStoreEvent.RESET_RUNTIME });
   g("bigKillPending", null);
   mocks.runOptionAutomation.mockReset();
   mocks.runOptionAutomation.mockReturnValue(false);
@@ -36,6 +42,13 @@ function run(event) {
   return runBigSkillKillLearningAutomation(event);
 }
 
+function readLearnedMap() {
+  return runLearnedMonsterStoreAutomation({
+    type: LearnedMonsterStoreEvent.READ_MAP,
+    family: LearnedMonsterFamily.BIG_KILL,
+  });
+}
+
 function observe({ killed = true, t = 0 }) {
   run({
     type: BigSkillKillLearningEvent.RECORD_CAST,
@@ -43,7 +56,7 @@ function observe({ killed = true, t = 0 }) {
     globalTurn: t,
     observedBosses: [{ mid: 100, hpMax: 5000, imperilActive: false }],
   });
-  run({
+  return run({
     type: BigSkillKillLearningEvent.FINALIZE_PENDING,
     liveMonsterIds: killed ? [] : [100],
     globalTurn: t + 1,
@@ -66,7 +79,7 @@ describe("big-skill kill learner normalization", () => {
     });
   });
 
-  it("normalizes malformed pending state before finalizing", () => {
+  it("normalizes malformed pending state before finalizing", async () => {
     g("bigKillPending", {
       globalTurn: "7.9",
       skill: "OFC",
@@ -76,13 +89,14 @@ describe("big-skill kill learner normalization", () => {
       ],
     });
 
-    run({
+    const result = run({
       type: BigSkillKillLearningEvent.FINALIZE_PENDING,
       liveMonsterIds: ["bad"],
       globalTurn: "8.9",
     });
 
-    expect(getValue(STORAGE_KEYS.LEARNED_BIG_KILL, true)).toEqual({
+    expect(await result.completion).toBe(true);
+    expect(readLearnedMap()).toEqual({
       100: {
         OFC: {
           killProbNoIm: 1,
@@ -95,7 +109,7 @@ describe("big-skill kill learner normalization", () => {
     });
   });
 
-  it("normalizes learned big-kill storage before skip decisions and updates", () => {
+  it("normalizes learned big-kill storage before skip decisions and updates", async () => {
     setValue(STORAGE_KEYS.LEARNED_BIG_KILL, {
       100: {
         OFC: {
@@ -121,8 +135,9 @@ describe("big-skill kill learner normalization", () => {
       }).skip
     ).toBe(true);
 
-    observe({ killed: false, t: 500 });
-    expect(getValue(STORAGE_KEYS.LEARNED_BIG_KILL, true)).toEqual({
+    const update = observe({ killed: false, t: 500 });
+    expect(await update.completion).toBe(true);
+    expect(readLearnedMap()).toEqual({
       100: {
         OFC: {
           killProbNoIm: 0.8,
@@ -133,5 +148,6 @@ describe("big-skill kill learner normalization", () => {
         },
       },
     });
+    expect(getValue(STORAGE_KEYS.LEARNED_BIG_KILL, true)).not.toEqual(readLearnedMap());
   });
 });

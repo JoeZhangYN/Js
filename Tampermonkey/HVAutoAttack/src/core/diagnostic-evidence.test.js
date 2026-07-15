@@ -60,6 +60,10 @@ describe("readRecentDiagnosticEvidence", () => {
       },
       "HVAA:lastRepairBackendFailure": { capability: "repairBackend", stage: "requestFailure" },
       "HVAA:lastMonsterDbStoreFailure": { capability: "monsterDbStore", stage: "open" },
+      "HVAA:lastLearnedMonsterStoreFailure": {
+        capability: "learnedMonsterStore",
+        stage: "hydrate",
+      },
       "HVAA:lastAppStartupFailure": { capability: "appStartup", stage: "loadCdRuntimeState" },
       "HVAA:lastPageAutomationFailure": {
         capability: "pageAutomation",
@@ -290,6 +294,7 @@ describe("readRecentDiagnosticEvidence", () => {
       staminaRecoveryFailure: { capability: "staminaRecovery", stage: "claimRecoveryPost" },
       repairBackendFailure: { capability: "repairBackend", stage: "requestFailure" },
       monsterDbStoreFailure: { capability: "monsterDbStore", stage: "open" },
+      learnedMonsterStoreFailure: { capability: "learnedMonsterStore", stage: "hydrate" },
       appStartupFailure: { capability: "appStartup", stage: "loadCdRuntimeState" },
       pageAutomationFailure: { capability: "pageAutomation", stage: "runGamePageReadyAutomation" },
       pageRefreshFailure: { capability: "pageRefresh", stage: "scheduleReload" },

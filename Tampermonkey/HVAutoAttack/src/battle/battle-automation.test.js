@@ -7,9 +7,15 @@ const mocks = vi.hoisted(() => ({
   gE: vi.fn(),
   runBattleActionEventBridgeAutomation: vi.fn(),
   runBattleLifecycleAutomation: vi.fn(),
+  runBattleLearningRuntime: vi.fn(),
   runBattlePauseControlsAutomation: vi.fn(),
   runBattleRoundStartAutomation: vi.fn(),
   runBattleTurnAutomation: vi.fn(),
+}));
+
+vi.mock("./battle-learning-runtime.js", () => ({
+  BattleLearningRuntimeEvent: Object.freeze({ HYDRATE: "hydrate" }),
+  runBattleLearningRuntime: mocks.runBattleLearningRuntime,
 }));
 
 vi.mock("./battle-action-event-bridge.js", () => ({
@@ -39,12 +45,17 @@ beforeEach(() => {
   for (const fn of Object.values(mocks)) fn.mockClear();
   mocks.gE.mockImplementation((selector) => document.querySelector(selector));
   mocks.runBattleActionEventBridgeAutomation.mockReturnValue(undefined);
+  mocks.runBattleLearningRuntime.mockResolvedValue(true);
 });
 
 describe("runBattleAutomation", () => {
-  it("starts battle page capabilities through the event entry", () => {
-    expect(runBattleAutomation({ type: BattleEvent.PAGE_READY })).toBe(true);
+  it("starts battle page capabilities through the event entry", async () => {
+    await expect(runBattleAutomation({ type: BattleEvent.PAGE_READY })).resolves.toBe(true);
 
+    expect(mocks.runBattleLearningRuntime).toHaveBeenCalledWith({ type: "hydrate" });
+    expect(mocks.runBattleLearningRuntime.mock.invocationCallOrder[0]).toBeLessThan(
+      mocks.runBattlePauseControlsAutomation.mock.invocationCallOrder[0]
+    );
     expect(mocks.runBattlePauseControlsAutomation).toHaveBeenCalledWith({ type: "install" });
     expect(mocks.runBattleActionEventBridgeAutomation).toHaveBeenCalledWith({ type: "install" });
     expect(mocks.runBattleLifecycleAutomation).toHaveBeenCalledWith({ type: "battleStarted" });
@@ -65,6 +76,7 @@ describe("runBattleAutomation", () => {
       phase: "pageReady",
       result: true,
       steps: [
+        { capability: "learningRuntime", result: true },
         { capability: "pauseControls", result: true },
         { capability: "actionEventBridge", result: true },
         { capability: "battleStarted", result: true },
@@ -74,15 +86,16 @@ describe("runBattleAutomation", () => {
     });
   });
 
-  it("records failed startup steps without claiming page startup succeeded", () => {
+  it("records failed startup steps without claiming page startup succeeded", async () => {
     mocks.runBattleActionEventBridgeAutomation.mockReturnValue(false);
 
-    expect(runBattleAutomation({ type: BattleEvent.PAGE_READY })).toBe(false);
+    await expect(runBattleAutomation({ type: BattleEvent.PAGE_READY })).resolves.toBe(false);
 
     expect(JSON.parse(window.sessionStorage.getItem("HVAA:lastBattleAutomation"))).toMatchObject({
       phase: "pageReady",
       result: false,
       steps: [
+        { capability: "learningRuntime", result: true },
         { capability: "pauseControls", result: true },
         { capability: "actionEventBridge", result: false },
         { capability: "battleStarted", result: true },
@@ -92,11 +105,11 @@ describe("runBattleAutomation", () => {
     });
   });
 
-  it("does not treat typed failed startup steps as successful", () => {
+  it("does not treat typed failed startup steps as successful", async () => {
     const detail = { kind: "failed", reason: "battleStartFailed" };
     mocks.runBattleLifecycleAutomation.mockReturnValue(detail);
 
-    expect(runBattleAutomation({ type: BattleEvent.PAGE_READY })).toBe(false);
+    await expect(runBattleAutomation({ type: BattleEvent.PAGE_READY })).resolves.toBe(false);
 
     expect(JSON.parse(window.sessionStorage.getItem("HVAA:lastBattleAutomation"))).toMatchObject({
       phase: "pageReady",

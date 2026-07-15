@@ -1,6 +1,11 @@
 import { vi } from "vitest";
 
 export function makeFakeIndexedDb() {
+  function request(result) {
+    const value = { result, error: null, onsuccess: null, onerror: null };
+    queueMicrotask(() => value.onsuccess?.());
+    return value;
+  }
   const stores = new Map();
   const objectStoreNames = {
     contains: (name) => stores.has(name),
@@ -21,12 +26,13 @@ export function makeFakeIndexedDb() {
         objectStore: () => {
           const store = ensureStore(storeName);
           return {
-            get: (key) => ({ result: store.get(key) }),
+            get: (key) => request(store.get(key)),
+            getAll: () => request([...store.values()]),
             put: (value, key) => {
               store.set(key, value);
-              return { result: undefined };
+              return request(undefined);
             },
-            count: () => ({ result: store.size }),
+            count: () => request(store.size),
           };
         },
       };

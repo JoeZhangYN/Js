@@ -5,6 +5,7 @@ const root = process.cwd();
 const srcDir = path.join(root, "src");
 const owner = path.normalize("src/state/big-skill-kill-learner.js");
 const failureOwner = path.normalize("src/state/big-skill-kill-learner-failure.js");
+const learnedMapOwner = path.normalize("src/state/big-skill-kill-learned-map.js");
 const ownerTest = path.normalize("src/state/big-skill-kill-learner.test.js");
 const diagnosticTest = path.normalize("src/state/big-skill-kill-learner-diagnostic.test.js");
 const failureTest = path.normalize("src/state/big-skill-kill-learner-failure.test.js");
@@ -37,6 +38,7 @@ function checkFile(file) {
     if (
       relative !== owner &&
       relative !== failureOwner &&
+      relative !== learnedMapOwner &&
       relative !== ownerTest &&
       relative !== diagnosticTest &&
       relative !== failureTest &&
@@ -50,6 +52,7 @@ function checkFile(file) {
     if (
       relative !== owner &&
       relative !== failureOwner &&
+      relative !== learnedMapOwner &&
       relative !== ownerTest &&
       relative !== diagnosticTest &&
       relative !== failureTest &&
@@ -105,13 +108,12 @@ const ownerText = fs.readFileSync(path.join(root, owner), "utf8");
 for (const required of [
   "runBigSkillKillLearningAutomation",
   "BigSkillKillLearningEvent",
-  "STORAGE_KEYS.LEARNED_BIG_KILL",
   "OptionEvent.READ_FIELD",
   "normalizeTurn",
   "normalizePending",
   "normalizeLiveMonsterIds",
   "normalizeBossHpMax",
-  "normalizeLearnedSkill",
+  "hydrateLearnedBigKill",
   "readLearnedBigKillMap",
   "persistLearnedBigKill",
   "recordBigSkillKillLearningDiagnostic",
@@ -123,7 +125,7 @@ for (const required of [
 if ((ownerText.match(/normalizePending\(/g) || []).length < 2) {
   violations.push(`${owner.replaceAll("\\", "/")} must normalize pending big-kill state`);
 }
-if ((ownerText.match(/readLearnedBigKillMap\(/g) || []).length < 3) {
+if ((ownerText.match(/readLearnedBigKillMap\(/g) || []).length < 2) {
   violations.push(`${owner.replaceAll("\\", "/")} must normalize learned big-kill storage reads`);
 }
 if (/\bg\(\s*["']option["']\s*\)/.test(ownerText)) {
@@ -256,9 +258,9 @@ if (/\bconsole\.(?:log|warn|error|info|debug)\s*\(/.test(ownerText)) {
   );
 }
 if (
-  !/function persistLearnedBigKill\(learned\) \{[\s\S]*setValue\(STORAGE_KEYS\.LEARNED_BIG_KILL,\s*learned\);[\s\S]*return true;[\s\S]*catch\s*\(error\)\s*{[\s\S]*recordBigSkillKillLearningFailure\("update-learned",\s*error\);[\s\S]*return false;/.test(
-    failureOwnerText
-  )
+  !failureOwnerText.includes("LearnedMonsterStoreEvent.UPSERT_MANY") ||
+  !failureOwnerText.includes("LearnedMonsterFamily.BIG_KILL") ||
+  !failureOwnerText.includes("StorageWriteOutcome.FAILED")
 ) {
   violations.push(
     `${failureOwner.replaceAll("\\", "/")} must classify learned big-kill storage write failures`
@@ -274,7 +276,8 @@ for (const required of [
   "DiagnosticConsoleEvent.INFO",
   "DiagnosticConsoleEvent.WARN",
   "runDiagnosticConsoleAutomation",
-  "STORAGE_KEYS.LEARNED_BIG_KILL",
+  "LearnedMonsterFamily.BIG_KILL",
+  "LearnedMonsterStoreEvent.UPSERT_MANY",
 ]) {
   if (!failureOwnerText.includes(required)) {
     violations.push(`${failureOwner.replaceAll("\\", "/")} must own ${required}`);
@@ -296,7 +299,10 @@ for (const required of [
     violations.push(`${failureTest.replaceAll("\\", "/")} must cover ${required}`);
   }
 }
-if (!ownerText.includes("if (!persistLearnedBigKill(learned)) return false")) {
+if (
+  !ownerText.includes("const completion = persistLearnedBigKill(") ||
+  !ownerText.includes("if (!persisted) return false")
+) {
   violations.push(
     `${owner.replaceAll("\\", "/")} must keep pending when learned big-kill persistence fails`
   );

@@ -1,42 +1,19 @@
 // IndexedDB concrete adapter. It owns database lifecycle, transaction completion and persisted
 // failure evidence; business consumers only see MonsterDbStoreEvent decisions from the entry module.
+import { StorageWriteOutcome } from "./storage-io-policy.js";
+import { storageValueFingerprint } from "./storage-value.js";
+import { selectChangedMonsterProfiles } from "./monster-db-content-diff.js";
 import {
-  DiagnosticConsoleEvent,
-  runDiagnosticConsoleAutomation,
-} from "../core/diagnostic-console.js";
+  MONSTER_DB_STORE_FAILURE_KEY,
+  rejectMonsterDbStoreFailure,
+} from "./monster-db-store-failure.js";
 
 const DB_VERSION = 2;
 const STORE_PROFILE = "monsterProfile";
 const STORE_HP = "monsterHp";
 const STORE_META = "meta";
 
-export const MONSTER_DB_STORE_FAILURE_KEY = "HVAA:lastMonsterDbStoreFailure";
-
-function classifyDbError(stage, detail, error) {
-  return {
-    capability: "monsterDbStore",
-    source: "monsterDbStore",
-    stage,
-    ...detail,
-    error: error?.message || error?.name || String(error || "unknown"),
-  };
-}
-
-function rejectDbFailure(stage, detail, error) {
-  const failure = classifyDbError(stage, detail, error);
-  try {
-    sessionStorage.setItem(MONSTER_DB_STORE_FAILURE_KEY, JSON.stringify(failure));
-  } catch {
-    // IndexedDB failure rejection must not depend on diagnostic storage.
-  }
-  runDiagnosticConsoleAutomation({
-    type: DiagnosticConsoleEvent.WARN,
-    args: ["[HVAA] monster db store failed", failure],
-  });
-  const rejected = new Error(`monster db store ${stage} failed`);
-  rejected.failure = failure;
-  return rejected;
-}
+export { MONSTER_DB_STORE_FAILURE_KEY };
 
 export function createMonsterDbIndexedDbAdapter({ dbName, indexedDb }) {
   /** @type {Promise<IDBDatabase>|null} */
@@ -56,7 +33,7 @@ export function createMonsterDbIndexedDbAdapter({ dbName, indexedDb }) {
       req.onsuccess = () => resolve(req.result);
       req.onerror = () => {
         dbPromise = null;
-        reject(rejectDbFailure("open", { dbName, dbVersion: DB_VERSION }, req.error));
+        reject(rejectMonsterDbStoreFailure("open", { dbName, dbVersion: DB_VERSION }, req.error));
       };
     });
     return dbPromise;
@@ -72,14 +49,26 @@ export function createMonsterDbIndexedDbAdapter({ dbName, indexedDb }) {
             transaction = db.transaction(storeName, mode);
             request = operation(transaction.objectStore(storeName));
           } catch (error) {
-            reject(rejectDbFailure("transaction-start", { storeName, mode }, error));
+            reject(rejectMonsterDbStoreFailure("transaction-start", { storeName, mode }, error));
             return;
           }
           transaction.oncomplete = () => resolve(request ? request.result : undefined);
           transaction.onerror = () =>
-            reject(rejectDbFailure("transaction-error", { storeName, mode }, transaction.error));
+            reject(
+              rejectMonsterDbStoreFailure(
+                "transaction-error",
+                { storeName, mode },
+                transaction.error
+              )
+            );
           transaction.onabort = () =>
-            reject(rejectDbFailure("transaction-abort", { storeName, mode }, transaction.error));
+            reject(
+              rejectMonsterDbStoreFailure(
+                "transaction-abort",
+                { storeName, mode },
+                transaction.error
+              )
+            );
         })
     );
   }
@@ -91,15 +80,27 @@ export function createMonsterDbIndexedDbAdapter({ dbName, indexedDb }) {
   }
 
   function writeProfile(info) {
-    if (!info || info.monsterId == null) return Promise.resolve();
-    return withStore(STORE_PROFILE, "readwrite", (store) => store.put(info, info.monsterId));
+    return writeProfiles([info]);
   }
 
   function writeProfiles(infos) {
     return withStore(STORE_PROFILE, "readwrite", (store) => {
-      for (const info of infos) {
-        if (info && info.monsterId != null) store.put(info, info.monsterId);
-      }
+      const outcome = { result: null };
+      const request = store.getAll();
+      request.onsuccess = () => {
+        const diff = selectChangedMonsterProfiles(request.result || [], infos);
+        for (const info of diff.changed) store.put(info, info.monsterId);
+        outcome.result = {
+          outcome:
+            diff.changed.length > 0
+              ? StorageWriteOutcome.WRITTEN
+              : StorageWriteOutcome.SKIPPED_UNCHANGED,
+          received: diff.received,
+          written: diff.changed.length,
+          unchanged: diff.unchanged,
+        };
+      };
+      return outcome;
     });
   }
 
@@ -116,10 +117,15 @@ export function createMonsterDbIndexedDbAdapter({ dbName, indexedDb }) {
   }
 
   function writeHp(monsterId, level, maxHP, lastUpdate) {
-    if (monsterId == null || level == null || !(maxHP > 0)) return Promise.resolve();
-    return withStore(STORE_HP, "readwrite", (store) =>
-      store.put({ monsterId, level, maxHP, lastUpdate }, hpKey(monsterId, level))
-    );
+    if (monsterId == null || level == null || !(maxHP > 0)) {
+      return Promise.resolve({ outcome: StorageWriteOutcome.SKIPPED_POLICY, written: 0 });
+    }
+    return writeIfChanged(STORE_HP, hpKey(monsterId, level), {
+      monsterId,
+      level,
+      maxHP,
+      lastUpdate,
+    });
   }
 
   function readMeta(key) {
@@ -129,7 +135,23 @@ export function createMonsterDbIndexedDbAdapter({ dbName, indexedDb }) {
   }
 
   function writeMeta(key, value) {
-    return withStore(STORE_META, "readwrite", (store) => store.put(value, key));
+    return writeIfChanged(STORE_META, key, value);
+  }
+
+  function writeIfChanged(storeName, key, value) {
+    return withStore(storeName, "readwrite", (store) => {
+      const outcome = { result: null };
+      const request = store.get(key);
+      request.onsuccess = () => {
+        const changed = storageValueFingerprint(request.result) !== storageValueFingerprint(value);
+        if (changed) store.put(value, key);
+        outcome.result = {
+          outcome: changed ? StorageWriteOutcome.WRITTEN : StorageWriteOutcome.SKIPPED_UNCHANGED,
+          written: changed ? 1 : 0,
+        };
+      };
+      return outcome;
+    });
   }
 
   return Object.freeze({

@@ -71,6 +71,8 @@ for (const required of [
   "SESSION_RUNTIME_CHECKPOINT",
   "BATTLE_REPORT",
   "STAMINA_LOSS",
+  "LEARNED_MONSTER_IDENTITY",
+  "MONSTER_KNOWLEDGE",
   "DIAGNOSTIC_EVIDENCE",
 ]) {
   if (!policy.includes(required)) violations.push(`storage-io-policy.js must own ${required}`);
@@ -144,6 +146,36 @@ for (const file of productionFiles(srcRoot)) {
     violations.push(
       `${path.relative(root, file).replaceAll("\\", "/")} must not rewrite retired battle/stamina GM aggregates`
     );
+  }
+}
+
+const retiredLearnedAggregates =
+  /\bsetValue\(\s*STORAGE_KEYS\.(?:LEARNED_BIG_KILL|LEARNED_INCOMING_BURST)\b/;
+for (const file of productionFiles(srcRoot)) {
+  if (retiredLearnedAggregates.test(fs.readFileSync(file, "utf8"))) {
+    violations.push(
+      `${path.relative(root, file).replaceAll("\\", "/")} must not rewrite retired learned-monster GM aggregates`
+    );
+  }
+}
+
+const learnedMonsterStore = fs.readFileSync(
+  path.join(srcRoot, "state", "learned-monster-store-indexeddb.js"),
+  "utf8"
+);
+for (const required of ["budget.compactAt", "budget.rows", "storageValueFingerprint"]) {
+  if (!learnedMonsterStore.includes(required)) {
+    violations.push(`learned-monster-store-indexeddb.js must own ${required}`);
+  }
+}
+
+const monsterContentDiff = fs.readFileSync(
+  path.join(srcRoot, "state", "monster-db-content-diff.js"),
+  "utf8"
+);
+for (const required of ["selectChangedMonsterProfiles", "storageValueFingerprint"]) {
+  if (!monsterContentDiff.includes(required)) {
+    violations.push(`monster-db-content-diff.js must own ${required}`);
   }
 }
 

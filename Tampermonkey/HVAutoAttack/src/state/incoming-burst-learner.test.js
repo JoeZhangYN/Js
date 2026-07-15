@@ -6,6 +6,10 @@ import {
   IncomingBurstLearningEvent,
   runIncomingBurstLearningAutomation,
 } from "./incoming-burst-learner.js";
+import {
+  LearnedMonsterStoreEvent,
+  runLearnedMonsterStoreAutomation,
+} from "./learned-monster-store.js";
 
 const ev = (source, dmg, type) => ({ kind: "player-incoming", source, dmg, type });
 const identities = [
@@ -13,7 +17,10 @@ const identities = [
   { monsterId: 200, name: "Goblin" },
 ];
 
-beforeEach(() => localStorage.clear());
+beforeEach(() => {
+  localStorage.clear();
+  runLearnedMonsterStoreAutomation({ type: LearnedMonsterStoreEvent.RESET_RUNTIME });
+});
 
 const record = (events, monsterIdentities = identities) =>
   runIncomingBurstLearningAutomation({

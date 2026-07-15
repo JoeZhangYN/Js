@@ -6,6 +6,7 @@ function request(result) {
 
 export function createTestIndexedDb() {
   const databases = new Map();
+  const operations = { puts: 0, deletes: 0, clears: 0 };
 
   function database(name) {
     if (!databases.has(name)) databases.set(name, new Map());
@@ -29,16 +30,20 @@ export function createTestIndexedDb() {
             return {
               get: (key) => request(store.get(key)),
               getAll: () => request([...store.values()]),
+              count: () => request(store.size),
               put(value, key) {
                 store.set(key, value);
+                operations.puts += 1;
                 return request(key);
               },
               delete(key) {
                 store.delete(key);
+                operations.deletes += 1;
                 return request(undefined);
               },
               clear() {
                 store.clear();
+                operations.clears += 1;
                 return request(undefined);
               },
             };
@@ -55,6 +60,7 @@ export function createTestIndexedDb() {
       for (const stores of databases.values()) stores.clear();
     },
     databases,
+    operations,
     open(name) {
       const value = {
         result: database(name),

@@ -7,6 +7,10 @@ import {
   BigSkillKillLearningEvent,
   runBigSkillKillLearningAutomation,
 } from "./big-skill-kill-learner.js";
+import {
+  LearnedMonsterStoreEvent,
+  runLearnedMonsterStoreAutomation,
+} from "./learned-monster-store.js";
 
 const mocks = vi.hoisted(() => ({ runOptionAutomation: vi.fn() }));
 
@@ -32,6 +36,7 @@ const finalizeSnap = ({ mid = 100, killed = true, t = 1 } = {}) => ({
 
 beforeEach(() => {
   localStorage.clear();
+  runLearnedMonsterStoreAutomation({ type: LearnedMonsterStoreEvent.RESET_RUNTIME });
   g("bigKillPending", null);
   mocks.runOptionAutomation.mockReset();
   mocks.runOptionAutomation.mockReturnValue(false);

@@ -8,13 +8,20 @@ import { getValue } from "./storage.js";
 import { STORAGE_KEYS } from "./persist-keys.js";
 import { normalizeMonsterName } from "../monster/monster-identity.js";
 import { persistLearnedIncomingBurst } from "./incoming-burst-learner-failure.js";
+import {
+  LearnedMonsterFamily,
+  LearnedMonsterStoreEvent,
+  runLearnedMonsterStoreAutomation,
+} from "./learned-monster-store.js";
 
 const EVENT_RECORD_EVENTS = "recordEvents";
 const EVENT_READ_MAP = "readMap";
+const EVENT_HYDRATE = "hydrate";
 
 export const IncomingBurstLearningEvent = Object.freeze({
   RECORD_EVENTS: EVENT_RECORD_EVENTS,
   READ_MAP: EVENT_READ_MAP,
+  HYDRATE: EVENT_HYDRATE,
 });
 
 function normalizePositiveNumber(value) {
@@ -37,7 +44,7 @@ function normalizeLearnedBurstRecord(value) {
   return { maxHit, type: normalizeDamageType(value?.type) };
 }
 
-function readLearnedBurstMap() {
+function readLegacyBurstMap() {
   const source = getValue(STORAGE_KEYS.LEARNED_INCOMING_BURST, true) || {};
   const learned = {};
   for (const mid of Object.keys(source)) {
@@ -46,6 +53,22 @@ function readLearnedBurstMap() {
     if (normalizedMid != null && record) learned[normalizedMid] = record;
   }
   return learned;
+}
+
+function readLearnedBurstMap() {
+  return runLearnedMonsterStoreAutomation({
+    type: LearnedMonsterStoreEvent.READ_MAP,
+    family: LearnedMonsterFamily.INCOMING_BURST,
+    legacyProvider: readLegacyBurstMap,
+  });
+}
+
+function hydrateLearnedBurst() {
+  return runLearnedMonsterStoreAutomation({
+    type: LearnedMonsterStoreEvent.HYDRATE,
+    family: LearnedMonsterFamily.INCOMING_BURST,
+    legacyProvider: readLegacyBurstMap,
+  });
 }
 
 /**
@@ -62,6 +85,7 @@ function updateBurstFromEvents(events, monsterIdentities) {
   }
   const learned = readLearnedBurstMap();
   let changed = false;
+  const updated = new Set();
   for (const e of events) {
     const dmg = normalizePositiveNumber(e.dmg);
     if (e.kind !== "player-incoming" || dmg == null) continue;
@@ -71,9 +95,17 @@ function updateBurstFromEvents(events, monsterIdentities) {
     if (!rec || dmg > rec.maxHit) {
       learned[mid] = { maxHit: dmg, type: normalizeDamageType(e.type) };
       changed = true;
+      updated.add(mid);
     }
   }
-  if (changed) return persistLearnedIncomingBurst(learned);
+  if (changed) {
+    return {
+      kind: "scheduled",
+      completion: persistLearnedIncomingBurst(
+        [...updated].map((id) => ({ id, value: learned[id] }))
+      ),
+    };
+  }
   return undefined;
 }
 
@@ -85,6 +117,7 @@ function getLearnedBurstMap() {
 const incomingBurstLearningEventHandlers = Object.freeze({
   [EVENT_RECORD_EVENTS]: (event) => updateBurstFromEvents(event.events, event.monsterIdentities),
   [EVENT_READ_MAP]: () => getLearnedBurstMap(),
+  [EVENT_HYDRATE]: () => hydrateLearnedBurst(),
 });
 
 export function runIncomingBurstLearningAutomation(event = { type: EVENT_READ_MAP }) {

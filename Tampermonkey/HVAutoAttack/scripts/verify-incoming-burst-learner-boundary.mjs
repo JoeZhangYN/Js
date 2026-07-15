@@ -133,9 +133,9 @@ if ((ownerText.match(/\bsetValue\(/g) || []).length !== 0) {
   );
 }
 if (
-  !/function persistLearnedIncomingBurst\(learned\) \{[\s\S]*setValue\(STORAGE_KEYS\.LEARNED_INCOMING_BURST,\s*learned\);[\s\S]*return true;[\s\S]*catch\s*\(error\)\s*{[\s\S]*recordIncomingBurstLearningFailure\("update-learned",\s*error\);[\s\S]*return false;/.test(
-    failureOwnerText
-  )
+  !failureOwnerText.includes("LearnedMonsterStoreEvent.UPSERT_MANY") ||
+  !failureOwnerText.includes("LearnedMonsterFamily.INCOMING_BURST") ||
+  !failureOwnerText.includes("StorageWriteOutcome.FAILED")
 ) {
   violations.push(
     `${failureOwner.replaceAll("\\", "/")} must classify learned incoming-burst storage write failures`
@@ -149,7 +149,8 @@ for (const required of [
   "persistLearnedIncomingBurst",
   "DiagnosticConsoleEvent.WARN",
   "runDiagnosticConsoleAutomation",
-  "STORAGE_KEYS.LEARNED_INCOMING_BURST",
+  "LearnedMonsterFamily.INCOMING_BURST",
+  "LearnedMonsterStoreEvent.UPSERT_MANY",
 ]) {
   if (!failureOwnerText.includes(required)) {
     violations.push(`${failureOwner.replaceAll("\\", "/")} must own ${required}`);

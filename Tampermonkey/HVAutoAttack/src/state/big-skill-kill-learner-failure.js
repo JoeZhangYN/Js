@@ -1,5 +1,9 @@
-import { STORAGE_KEYS } from "./persist-keys.js";
-import { setValue } from "./storage.js";
+import {
+  LearnedMonsterFamily,
+  LearnedMonsterStoreEvent,
+  runLearnedMonsterStoreAutomation,
+} from "./learned-monster-store.js";
+import { StorageWriteOutcome } from "./storage-io-policy.js";
 import {
   DiagnosticConsoleEvent,
   runDiagnosticConsoleAutomation,
@@ -35,9 +39,17 @@ export function recordBigSkillKillLearningDiagnostic(stage, detail) {
   });
 }
 
-export function persistLearnedBigKill(learned) {
+export async function persistLearnedBigKill(records, runStore = runLearnedMonsterStoreAutomation) {
   try {
-    setValue(STORAGE_KEYS.LEARNED_BIG_KILL, learned);
+    const result = await runStore({
+      type: LearnedMonsterStoreEvent.UPSERT_MANY,
+      family: LearnedMonsterFamily.BIG_KILL,
+      records,
+    });
+    if (result?.outcome === StorageWriteOutcome.FAILED) {
+      recordBigSkillKillLearningFailure("update-learned", result.error);
+      return false;
+    }
     return true;
   } catch (error) {
     recordBigSkillKillLearningFailure("update-learned", error);

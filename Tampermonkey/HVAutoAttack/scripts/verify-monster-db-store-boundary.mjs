@@ -5,8 +5,10 @@ const root = process.cwd();
 const srcDir = path.join(root, "src");
 const owner = path.normalize("src/state/monster-db-store.js");
 const adapter = path.normalize("src/state/monster-db-store-indexeddb.js");
+const failureOwner = path.normalize("src/state/monster-db-store-failure.js");
 const ownerTest = path.normalize("src/state/monster-db-store.test.js");
 const failureEvidenceTest = path.normalize("src/state/monster-db-store-failure-evidence.test.js");
+const contentAwareTest = path.normalize("src/state/monster-db-store-content-aware.test.js");
 const diagnosticKeys = path.normalize("src/core/diagnostic-evidence-keys.js");
 const diagnosticTest = path.normalize("src/core/diagnostic-evidence.test.js");
 const violations = [];
@@ -58,7 +60,17 @@ walk(srcDir);
 
 const ownerText = fs.readFileSync(path.join(root, owner), "utf8");
 const adapterText = fs.readFileSync(path.join(root, adapter), "utf8");
-const implementationText = `${ownerText}\n${adapterText}`;
+const failureOwnerText = fs.readFileSync(path.join(root, failureOwner), "utf8");
+const implementationText = `${ownerText}\n${adapterText}\n${failureOwnerText}`;
+for (const required of [
+  "StorageIdentity.MONSTER_KNOWLEDGE",
+  "StorageWriteOutcome.SKIPPED_UNCHANGED",
+  "selectChangedMonsterProfiles",
+]) {
+  if (!implementationText.includes(required)) {
+    violations.push(`${owner.replaceAll("\\", "/")} must own content-aware ${required}`);
+  }
+}
 if (!/export const MonsterDbStoreEvent\s*=\s*Object\.freeze\(/.test(ownerText)) {
   violations.push(`${owner.replaceAll("\\", "/")} must expose MonsterDbStoreEvent`);
 }
@@ -89,7 +101,7 @@ for (const required of [
   "MONSTER_DB_STORE_FAILURE_KEY",
   "HVAA:lastMonsterDbStoreFailure",
   "classifyDbError",
-  "rejectDbFailure",
+  "rejectMonsterDbStoreFailure",
   'capability: "monsterDbStore"',
   "sessionStorage.setItem(MONSTER_DB_STORE_FAILURE_KEY",
   "[HVAA] monster db store failed",
@@ -155,6 +167,20 @@ if (!fs.existsSync(path.join(root, failureEvidenceTest))) {
   ]) {
     if (!failureEvidenceTestText.includes(required)) {
       violations.push(`${failureEvidenceTest.replaceAll("\\", "/")} must cover ${required}`);
+    }
+  }
+}
+
+if (!fs.existsSync(path.join(root, contentAwareTest))) {
+  violations.push(`${contentAwareTest.replaceAll("\\", "/")} must cover content-aware sync`);
+} else {
+  const contentAwareText = fs.readFileSync(path.join(root, contentAwareTest), "utf8");
+  for (const required of [
+    "performs zero physical writes for unchanged bulk snapshots",
+    "writes only changed profiles and skips unchanged metadata",
+  ]) {
+    if (!contentAwareText.includes(required)) {
+      violations.push(`${contentAwareTest.replaceAll("\\", "/")} must cover ${required}`);
     }
   }
 }

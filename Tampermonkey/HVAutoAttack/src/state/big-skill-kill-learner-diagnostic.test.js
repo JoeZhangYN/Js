@@ -4,6 +4,10 @@ import {
   BigSkillKillLearningEvent,
   runBigSkillKillLearningAutomation,
 } from "./big-skill-kill-learner.js";
+import {
+  LearnedMonsterStoreEvent,
+  runLearnedMonsterStoreAutomation,
+} from "./learned-monster-store.js";
 
 const mocks = vi.hoisted(() => ({
   runDiagnosticConsoleAutomation: vi.fn(),
@@ -24,13 +28,14 @@ const observedBoss = { mid: 100, hpMax: 5000, imperilActive: false };
 
 beforeEach(() => {
   localStorage.clear();
+  runLearnedMonsterStoreAutomation({ type: LearnedMonsterStoreEvent.RESET_RUNTIME });
   g("bigKillPending", null);
   mocks.runDiagnosticConsoleAutomation.mockReset();
   mocks.runOptionAutomation.mockReset();
 });
 
 describe("big-skill kill learning diagnostics", () => {
-  it("routes dynamic settle diagnostics through the typed console entry", () => {
+  it("routes dynamic settle diagnostics through the typed console entry", async () => {
     mocks.runOptionAutomation.mockReturnValue(true);
 
     runBigSkillKillLearningAutomation({
@@ -39,11 +44,13 @@ describe("big-skill kill learning diagnostics", () => {
       globalTurn: 0,
       observedBosses: [observedBoss],
     });
-    runBigSkillKillLearningAutomation({
+    const result = runBigSkillKillLearningAutomation({
       type: BigSkillKillLearningEvent.FINALIZE_PENDING,
       globalTurn: 1,
       liveMonsterIds: [],
     });
+
+    expect(await result.completion).toBe(true);
 
     expect(mocks.runOptionAutomation).toHaveBeenCalledWith({
       type: "readField",

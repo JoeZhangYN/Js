@@ -1,5 +1,9 @@
-import { STORAGE_KEYS } from "./persist-keys.js";
-import { setValue } from "./storage.js";
+import {
+  LearnedMonsterFamily,
+  LearnedMonsterStoreEvent,
+  runLearnedMonsterStoreAutomation,
+} from "./learned-monster-store.js";
+import { StorageWriteOutcome } from "./storage-io-policy.js";
 import {
   DiagnosticConsoleEvent,
   runDiagnosticConsoleAutomation,
@@ -25,9 +29,20 @@ export function recordIncomingBurstLearningFailure(stage, error) {
   return evidence;
 }
 
-export function persistLearnedIncomingBurst(learned) {
+export async function persistLearnedIncomingBurst(
+  records,
+  runStore = runLearnedMonsterStoreAutomation
+) {
   try {
-    setValue(STORAGE_KEYS.LEARNED_INCOMING_BURST, learned);
+    const result = await runStore({
+      type: LearnedMonsterStoreEvent.UPSERT_MANY,
+      family: LearnedMonsterFamily.INCOMING_BURST,
+      records,
+    });
+    if (result?.outcome === StorageWriteOutcome.FAILED) {
+      recordIncomingBurstLearningFailure("update-learned", result.error);
+      return false;
+    }
     return true;
   } catch (error) {
     recordIncomingBurstLearningFailure("update-learned", error);
