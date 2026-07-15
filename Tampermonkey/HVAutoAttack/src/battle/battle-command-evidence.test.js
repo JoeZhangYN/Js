@@ -1,8 +1,14 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { BattleCommandEvidenceEvent, runBattleCommandEvidence } from "./battle-command-evidence.js";
+import {
+  BattleCommandEvidenceEvent,
+  readBattleCommandEvidence,
+  runBattleCommandEvidence,
+} from "./battle-command-evidence.js";
+import { diagnosticEvidenceMemoryStorage } from "../core/diagnostic-evidence-journal.js";
 
 beforeEach(() => {
   window.sessionStorage.clear();
+  diagnosticEvidenceMemoryStorage.clear();
 });
 
 describe("runBattleCommandEvidence", () => {
@@ -44,7 +50,7 @@ describe("runBattleCommandEvidence", () => {
       })
     ).toBe(true);
 
-    expect(JSON.parse(window.sessionStorage.getItem("HVAA:lastBattleCommand"))).toMatchObject({
+    expect(readBattleCommandEvidence()).toMatchObject({
       command: "target.click",
       result: "accepted",
       acted: true,

@@ -1,4 +1,5 @@
 import { DiagnosticEvidenceKey } from "../core/diagnostic-evidence-keys.js";
+import { diagnosticEvidenceMemoryStorage } from "../core/diagnostic-evidence-journal.js";
 import { safeDebug } from "./battle-evidence-debug.js";
 
 const EVENT_RECORD_REPAIR = "recordRepair";
@@ -37,7 +38,7 @@ const monsterStatusRepairEvidenceEventHandlers = Object.freeze({
 
 export function runMonsterStatusRepairEvidence(
   event = { type: EVENT_RECORD_REPAIR },
-  deps = { sessionStorage: window.sessionStorage }
+  deps = { sessionStorage: diagnosticEvidenceMemoryStorage }
 ) {
   return monsterStatusRepairEvidenceEventHandlers[event?.type]?.(event, deps) ?? false;
 }

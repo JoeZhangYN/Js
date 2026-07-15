@@ -8,5 +8,6 @@ export default defineConfig({
   test: {
     environment: "happy-dom",
     include: ["src/**/*.test.js"],
+    setupFiles: ["test/diagnostic-observation-setup.js"],
   },
 });

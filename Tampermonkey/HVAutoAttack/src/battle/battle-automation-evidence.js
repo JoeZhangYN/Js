@@ -1,4 +1,5 @@
 import { DiagnosticEvidenceKey } from "../core/diagnostic-evidence-keys.js";
+import { diagnosticEvidenceMemoryStorage } from "../core/diagnostic-evidence-journal.js";
 import { safeDebug } from "./battle-evidence-debug.js";
 
 const EVENT_RECORD_STARTUP = "recordStartup";
@@ -37,7 +38,7 @@ const battleAutomationEvidenceEventHandlers = Object.freeze({
 
 export function runBattleAutomationEvidence(
   event = { type: EVENT_RECORD_STARTUP },
-  deps = { sessionStorage: window.sessionStorage }
+  deps = { sessionStorage: diagnosticEvidenceMemoryStorage }
 ) {
   return battleAutomationEvidenceEventHandlers[event?.type]?.(event, deps) ?? false;
 }

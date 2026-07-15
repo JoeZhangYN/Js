@@ -32,6 +32,7 @@ export const StorageWriteOutcome = Object.freeze({
   WRITTEN: "written",
   DELETED: "deleted",
   SKIPPED_UNCHANGED: "skippedUnchanged",
+  SKIPPED_POLICY: "skippedPolicy",
   REJECTED_BUDGET: "rejectedBudget",
   FAILED: "failed",
 });

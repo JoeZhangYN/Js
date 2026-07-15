@@ -110,6 +110,7 @@ describe("battle API bridge transport failure evidence", () => {
 
     expect(document.getElementById("eventStart").click).toHaveBeenCalledTimes(1);
     expect(xhr.send).toHaveBeenCalledWith(JSON.stringify({ type: "battle", method: "attack" }));
+    expect(sessionStorage.getItem("HVAA:lastBattleApiBridge")).toBeNull();
     vi.useRealTimers();
   });
 });

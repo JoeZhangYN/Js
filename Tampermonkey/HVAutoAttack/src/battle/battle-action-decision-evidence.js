@@ -1,4 +1,5 @@
 import { DiagnosticEvidenceKey } from "../core/diagnostic-evidence-keys.js";
+import { diagnosticEvidenceMemoryStorage } from "../core/diagnostic-evidence-journal.js";
 import { safeDebug } from "./battle-evidence-debug.js";
 
 const EVENT_RECORD_TRACE = "recordTrace";
@@ -76,7 +77,7 @@ const battleActionDecisionEvidenceEventHandlers = Object.freeze({
 
 export function runBattleActionDecisionEvidence(
   event = { type: EVENT_RECORD_TRACE },
-  deps = { sessionStorage: window.sessionStorage }
+  deps = { sessionStorage: diagnosticEvidenceMemoryStorage }
 ) {
   return battleActionDecisionEvidenceEventHandlers[event?.type]?.(event, deps) ?? false;
 }

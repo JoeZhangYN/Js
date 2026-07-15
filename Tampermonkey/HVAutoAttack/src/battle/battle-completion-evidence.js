@@ -1,4 +1,5 @@
 import { DiagnosticEvidenceKey } from "../core/diagnostic-evidence-keys.js";
+import { diagnosticEvidenceMemoryStorage } from "../core/diagnostic-evidence-journal.js";
 import { safeDebug } from "./battle-evidence-debug.js";
 
 const EVENT_RECORD_COMPLETION = "recordCompletion";
@@ -39,7 +40,7 @@ const battleCompletionEvidenceEventHandlers = Object.freeze({
 
 export function runBattleCompletionEvidence(
   event = { type: EVENT_RECORD_COMPLETION },
-  deps = { sessionStorage: window.sessionStorage }
+  deps = { sessionStorage: diagnosticEvidenceMemoryStorage }
 ) {
   return battleCompletionEvidenceEventHandlers[event?.type]?.(event, deps) ?? false;
 }

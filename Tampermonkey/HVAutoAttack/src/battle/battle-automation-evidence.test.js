@@ -3,9 +3,11 @@ import {
   BattleAutomationEvidenceEvent,
   runBattleAutomationEvidence,
 } from "./battle-automation-evidence.js";
+import { diagnosticEvidenceMemoryStorage } from "../core/diagnostic-evidence-journal.js";
 
 beforeEach(() => {
   window.sessionStorage.clear();
+  diagnosticEvidenceMemoryStorage.clear();
 });
 
 describe("runBattleAutomationEvidence", () => {
@@ -19,7 +21,9 @@ describe("runBattleAutomationEvidence", () => {
       })
     ).toBe(true);
 
-    expect(JSON.parse(window.sessionStorage.getItem("HVAA:lastBattleAutomation"))).toMatchObject({
+    expect(
+      JSON.parse(diagnosticEvidenceMemoryStorage.getItem("HVAA:lastBattleAutomation"))
+    ).toMatchObject({
       phase: "pageReady",
       result: true,
       steps: [{ capability: "initialBattleTurn", result: true }],

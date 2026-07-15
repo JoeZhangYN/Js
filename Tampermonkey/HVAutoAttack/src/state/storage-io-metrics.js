@@ -67,7 +67,10 @@ export function createStorageIoMetricsCapability(ports = {}) {
       metric.physicalWrites += 1;
       metric.deletes += 1;
       metric.logicalBytesWritten += logicalBytes;
-    } else if (event.outcome === StorageWriteOutcome.SKIPPED_UNCHANGED) {
+    } else if (
+      event.outcome === StorageWriteOutcome.SKIPPED_UNCHANGED ||
+      event.outcome === StorageWriteOutcome.SKIPPED_POLICY
+    ) {
       metric.skippedWrites += 1;
     } else if (event.outcome === StorageWriteOutcome.REJECTED_BUDGET) {
       metric.rejectedWrites += 1;

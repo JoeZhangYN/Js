@@ -69,11 +69,12 @@ requireText(ownerTest, [
   "unknownStartRuntimeEvent",
 ]);
 requireText(ownerFailureTest, [
-  "rejects unknown events with debug evidence when lifecycle storage is unavailable",
+  "rejects unknown events with memory evidence when session storage is unavailable",
   "runBattleStartRuntimeAutomation",
   "unknownStartRuntimeEvent",
-  "storageWriteOk: false",
-  'storageWriteError: "quota"',
+  "storageWriteOk: true",
+  "sessionWrite",
+  "not.toHaveBeenCalled",
 ]);
 
 if (

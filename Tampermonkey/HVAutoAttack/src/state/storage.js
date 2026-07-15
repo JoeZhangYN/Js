@@ -4,6 +4,7 @@ import {
   DiagnosticConsoleEvent,
   runDiagnosticConsoleAutomation,
 } from "../core/diagnostic-console.js";
+import { writeDiagnosticSessionSnapshot } from "../core/diagnostic-evidence-journal.js";
 import { STORAGE_KEYS } from "./persist-keys.js";
 import {
   measureStorageLogicalBytes,
@@ -11,12 +12,9 @@ import {
   StorageIoMetricsEvent,
 } from "./storage-io-metrics.js";
 import { StorageIdentity, StorageWriteOutcome } from "./storage-io-policy.js";
+import { deleteStorageValue, writeCanonicalStorageValue } from "./storage-write-adapter.js";
 
 export const STORAGE_READ_FAILURE_KEY = "HVAA:lastStorageReadFailure";
-
-function errorText(error) {
-  return error?.message || String(error);
-}
 
 export function createStorageCapability({ prefix }, ports = {}) {
   const localStorageOf = () => ports.localStorage || window.localStorage;
@@ -29,12 +27,11 @@ export function createStorageCapability({ prefix }, ports = {}) {
     ((...args) => runDiagnosticConsoleAutomation({ type: DiagnosticConsoleEvent.WARN, args }));
 
   function warnReadFailure(item, key, source, error) {
-    const evidence = { capability: "storageRead", item, key, source, error: errorText(error) };
-    try {
-      globalThis.sessionStorage?.setItem(STORAGE_READ_FAILURE_KEY, JSON.stringify(evidence));
-    } catch {
-      // Read fallback must not depend on diagnostic storage.
-    }
+    const evidence = Object.assign(
+      { capability: "storageRead", item, key, source },
+      { error: error?.message || String(error) }
+    );
+    writeDiagnosticSessionSnapshot(STORAGE_READ_FAILURE_KEY, evidence);
     diagnostic("[HVAA] storage read failed", evidence);
   }
 
@@ -47,10 +44,24 @@ export function createStorageCapability({ prefix }, ports = {}) {
       );
     }
     const gmSet = ports.gmSetValue || globalThis.GM_setValue;
+    const gmGet = ports.gmGetValue || globalThis.GM_getValue;
     const logicalBytes = measureStorageLogicalBytes(key, value);
     try {
-      if (typeof gmSet === "function") gmSet(key, value);
-      else localStorageOf()[key] = typeof value === "string" ? value : JSON.stringify(value);
+      const result = writeCanonicalStorageValue({
+        key,
+        value,
+        gmSet,
+        gmGet,
+        localStorage: typeof gmSet === "function" ? null : localStorageOf(),
+        onReadFailure: (source, error) => warnReadFailure(item, key, source, error),
+      });
+      recordIo({
+        identity: StorageIdentity.WORLD_SMALL_VALUE,
+        outcome: result.outcome,
+        logicalBytes: measureStorageLogicalBytes(key, result.canonicalValue),
+        sourceIdentity,
+      });
+      return result.outcome;
     } catch (error) {
       recordIo({
         identity: StorageIdentity.WORLD_SMALL_VALUE,
@@ -60,13 +71,6 @@ export function createStorageCapability({ prefix }, ports = {}) {
       });
       throw error;
     }
-    recordIo({
-      identity: StorageIdentity.WORLD_SMALL_VALUE,
-      outcome: StorageWriteOutcome.WRITTEN,
-      logicalBytes,
-      sourceIdentity,
-    });
-    return StorageWriteOutcome.WRITTEN;
   }
 
   function getValue(item, toJSON) {
@@ -99,25 +103,41 @@ export function createStorageCapability({ prefix }, ports = {}) {
 
   function delValue(item) {
     if (typeof item === "number") {
-      if (item === 0) delValue(STORAGE_KEYS.DISABLED);
+      const outcomes = [];
+      if (item === 0) outcomes.push(delValue(STORAGE_KEYS.DISABLED));
       else if (item === 1) {
-        delValue(STORAGE_KEYS.ROUND_NOW);
-        delValue(STORAGE_KEYS.ROUND_ALL);
-        delValue(STORAGE_KEYS.MONSTER_STATUS);
+        outcomes.push(delValue(STORAGE_KEYS.ROUND_NOW));
+        outcomes.push(delValue(STORAGE_KEYS.ROUND_ALL));
+        outcomes.push(delValue(STORAGE_KEYS.MONSTER_STATUS));
       } else if (item === 2) {
-        delValue(STORAGE_KEYS.ROUND_TYPE);
-        delValue(STORAGE_KEYS.BATTLE_CODE);
-        delValue(0);
-        delValue(1);
+        outcomes.push(delValue(STORAGE_KEYS.ROUND_TYPE));
+        outcomes.push(delValue(STORAGE_KEYS.BATTLE_CODE));
+        outcomes.push(delValue(0));
+        outcomes.push(delValue(1));
       }
-      return StorageWriteOutcome.DELETED;
+      return outcomes.includes(StorageWriteOutcome.DELETED)
+        ? StorageWriteOutcome.DELETED
+        : StorageWriteOutcome.SKIPPED_UNCHANGED;
     }
     const key = prefix + item;
     const gmDelete = ports.gmDeleteValue || globalThis.GM_deleteValue;
+    const gmGet = ports.gmGetValue || globalThis.GM_getValue;
     const logicalBytes = measureStorageLogicalBytes(key, undefined);
     try {
-      if (typeof gmDelete === "function") gmDelete(key);
-      else localStorageOf().removeItem(key);
+      const outcome = deleteStorageValue({
+        key,
+        gmDelete,
+        gmGet,
+        localStorage: typeof gmDelete === "function" ? null : localStorageOf(),
+        onReadFailure: (source, error) => warnReadFailure(item, key, source, error),
+      });
+      recordIo({
+        identity: StorageIdentity.WORLD_SMALL_VALUE,
+        outcome,
+        logicalBytes,
+        sourceIdentity,
+      });
+      return outcome;
     } catch (error) {
       recordIo({
         identity: StorageIdentity.WORLD_SMALL_VALUE,
@@ -127,19 +147,11 @@ export function createStorageCapability({ prefix }, ports = {}) {
       });
       throw error;
     }
-    recordIo({
-      identity: StorageIdentity.WORLD_SMALL_VALUE,
-      outcome: StorageWriteOutcome.DELETED,
-      logicalBytes,
-      sourceIdentity,
-    });
-    return StorageWriteOutcome.DELETED;
   }
 
   return Object.freeze({ setValue, getValue, delValue });
 }
 
-const currentStorage = createStorageCapability(CURRENT_WORLD_POLICY.storage);
-export const setValue = currentStorage.setValue;
-export const getValue = currentStorage.getValue;
-export const delValue = currentStorage.delValue;
+export const { setValue, getValue, delValue } = createStorageCapability(
+  CURRENT_WORLD_POLICY.storage
+);

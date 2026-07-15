@@ -27,7 +27,7 @@ for (const required of [
   "localStorageJson",
   "GM_getValue",
   "gmValue !== undefined",
-  "sessionStorage?.setItem",
+  "writeDiagnosticSessionSnapshot",
 ]) {
   if (!ownerText.includes(required)) {
     violations.push(`${rel(owner)} must own storage read failure ${required}`);

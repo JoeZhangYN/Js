@@ -1,4 +1,5 @@
 import { DIAGNOSTIC_EVIDENCE_SOURCES } from "./diagnostic-evidence-keys.js";
+import { diagnosticEvidenceMemoryStorage } from "./diagnostic-evidence-journal.js";
 
 function readJson(storage, key) {
   try {
@@ -14,7 +15,8 @@ export function readRecentDiagnosticEvidence(storage = window.sessionStorage, op
   const evidence = {};
   for (const item of DIAGNOSTIC_EVIDENCE_SOURCES) {
     if (excludedKeys.has(item.key)) continue;
-    const value = readJson(storage, item.key);
+    const value =
+      readJson(diagnosticEvidenceMemoryStorage, item.key) || readJson(storage, item.key);
     if (value) evidence[item.name] = value;
   }
   return Object.keys(evidence).length ? evidence : undefined;

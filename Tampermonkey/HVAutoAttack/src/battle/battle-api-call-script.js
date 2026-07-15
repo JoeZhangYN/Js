@@ -33,6 +33,9 @@ export function buildApiCallScript(apiJsonUrl, protocol) {
         detail,
         at: new Date().toISOString(),
       };
+      // Accepted start/end is the hot path. The DOM event itself is authoritative success evidence;
+      // only rejected bridge/recovery states need a bounded cross-context session snapshot.
+      if (result === "accepted") return;
       try {
         window.sessionStorage.setItem(
           apiBridgeEvidenceKey,

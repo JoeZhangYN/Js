@@ -4,6 +4,7 @@ import path from "node:path";
 const root = process.cwd();
 const srcDir = path.join(root, "src");
 const owner = path.normalize("src/state/cd-tracker.js");
+const checkpointOwner = path.normalize("src/state/cd-runtime-checkpoint.js");
 const ownerTest = path.normalize("src/state/cd-tracker.test.js");
 const failureTest = path.normalize("src/state/cd-tracker-failure.test.js");
 const persistKeys = path.normalize("src/state/persist-keys.js");
@@ -29,6 +30,7 @@ function checkFile(file) {
     const isTest = relative.endsWith(".test.js");
     if (
       relative !== owner &&
+      relative !== checkpointOwner &&
       relative !== ownerTest &&
       relative !== persistKeys &&
       /\bSTORAGE_KEYS\.(?:GLOBAL_TURN|SKILL_LAST_USED)\b/.test(line)
@@ -53,8 +55,6 @@ const ownerText = fs.readFileSync(path.join(root, owner), "utf8");
 for (const required of [
   "runCdRuntimeAutomation",
   "CdRuntimeEvent",
-  "STORAGE_KEYS.GLOBAL_TURN",
-  "STORAGE_KEYS.SKILL_LAST_USED",
   "normalizeGlobalTurn",
   "normalizeSkillLastUsed",
   "readGlobalTurn",
@@ -71,7 +71,21 @@ for (const required of [
   }
 }
 
-if ((ownerText.match(/normalizeSkillLastUsed\(/g) || []).length < 2) {
+const checkpointText = fs.readFileSync(path.join(root, checkpointOwner), "utf8");
+for (const required of [
+  "BattleSessionCheckpointEvent",
+  "STORAGE_KEYS.GLOBAL_TURN",
+  "STORAGE_KEYS.SKILL_LAST_USED",
+  "loadCdRuntimeCheckpoint",
+  "persistCdRuntimeCheckpoint",
+  "delValue",
+]) {
+  if (!checkpointText.includes(required)) {
+    violations.push(`${checkpointOwner.replaceAll("\\", "/")} must own ${required}`);
+  }
+}
+
+if (((ownerText + checkpointText).match(/normalizeSkillLastUsed\(/g) || []).length < 2) {
   violations.push(`${owner.replaceAll("\\", "/")} must normalize skillLastUsed reads and writes`);
 }
 if ((ownerText.match(/readGlobalTurn\(/g) || []).length < 4) {

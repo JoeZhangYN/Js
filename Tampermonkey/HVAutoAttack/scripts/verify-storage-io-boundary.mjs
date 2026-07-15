@@ -14,6 +14,21 @@ const transitionalRawWrites = new Map([
   ["src/i18n/hv-utils.js", { count: 2, retire: "#2049" }],
 ]);
 
+const memoryFirstBattleEvidence = [
+  "src/battle/battle-action-decision-evidence.js",
+  "src/battle/battle-action-lifecycle-evidence.js",
+  "src/battle/battle-action-effect-evidence.js",
+  "src/battle/battle-automation-evidence.js",
+  "src/battle/battle-command-evidence.js",
+  "src/battle/battle-completion-evidence.js",
+  "src/battle/battle-lifecycle-evidence.js",
+  "src/battle/battle-pause-evidence.js",
+  "src/battle/battle-round-start-evidence.js",
+  "src/battle/battle-turn-workflow-evidence.js",
+  "src/battle/kill-bug-evidence.js",
+  "src/battle/monster-status-repair-evidence.js",
+];
+
 function productionFiles(directory) {
   return fs.readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
     const absolute = path.join(directory, entry.name);
@@ -64,12 +79,71 @@ for (const required of [
 const storage = fs.readFileSync(path.join(srcRoot, "state", "storage.js"), "utf8");
 for (const required of [
   "StorageIdentity.WORLD_SMALL_VALUE",
-  "StorageWriteOutcome.WRITTEN",
   "StorageWriteOutcome.DELETED",
   "StorageWriteOutcome.FAILED",
+  "SKIPPED_UNCHANGED",
   "runStorageIoMetricsAutomation",
+  "writeCanonicalStorageValue",
+  "writeDiagnosticSessionSnapshot",
 ]) {
   if (!storage.includes(required)) violations.push(`storage.js must consume ${required}`);
+}
+
+const writeAdapter = fs.readFileSync(
+  path.join(srcRoot, "state", "storage-write-adapter.js"),
+  "utf8"
+);
+for (const required of [
+  "canonicalizeStorageValue",
+  "storageValueFingerprint",
+  "StorageWriteOutcome.WRITTEN",
+  "StorageWriteOutcome.SKIPPED_UNCHANGED",
+]) {
+  if (!writeAdapter.includes(required)) {
+    violations.push(`storage-write-adapter.js must own ${required}`);
+  }
+}
+
+const checkpoint = fs.readFileSync(
+  path.join(srcRoot, "state", "battle-session-checkpoint.js"),
+  "utf8"
+);
+for (const required of [
+  "SESSION_RUNTIME_CHECKPOINT",
+  "policy.budget.everyTurns",
+  "lifecycleBoundary",
+  "SKIPPED_POLICY",
+  "sourceIdentity",
+]) {
+  if (!checkpoint.includes(required)) {
+    violations.push(`battle-session-checkpoint.js must own ${required}`);
+  }
+}
+
+const apiCallScript = fs.readFileSync(
+  path.join(srcRoot, "battle", "battle-api-call-script.js"),
+  "utf8"
+);
+if (!apiCallScript.includes('if (result === "accepted") return')) {
+  violations.push("battle-api-call-script.js must not persist accepted per-action bridge evidence");
+}
+
+const cdTracker = fs.readFileSync(path.join(srcRoot, "state", "cd-tracker.js"), "utf8");
+for (const retired of [
+  "setValue(STORAGE_KEYS.GLOBAL_TURN",
+  "setValue(STORAGE_KEYS.SKILL_LAST_USED",
+]) {
+  if (cdTracker.includes(retired)) violations.push(`cd-tracker.js must retire ${retired}`);
+}
+
+for (const file of memoryFirstBattleEvidence) {
+  const text = fs.readFileSync(path.join(root, file), "utf8");
+  if (!text.includes("diagnosticEvidenceMemoryStorage")) {
+    violations.push(`${file} must use the bounded memory-first diagnostic journal`);
+  }
+  if (text.includes("deps = { sessionStorage: window.sessionStorage }")) {
+    violations.push(`${file} production default must not write per-event sessionStorage`);
+  }
 }
 
 if (violations.length) {

@@ -1,4 +1,5 @@
 import { DiagnosticEvidenceKey } from "../core/diagnostic-evidence-keys.js";
+import { diagnosticEvidenceMemoryStorage } from "../core/diagnostic-evidence-journal.js";
 import { safeDebug } from "./battle-evidence-debug.js";
 
 const EVENT_RECORD_ROUND_START = "recordRoundStart";
@@ -37,7 +38,7 @@ const battleRoundStartEvidenceEventHandlers = Object.freeze({
 
 export function runBattleRoundStartEvidence(
   event = { type: EVENT_RECORD_ROUND_START },
-  deps = { sessionStorage: window.sessionStorage }
+  deps = { sessionStorage: diagnosticEvidenceMemoryStorage }
 ) {
   return battleRoundStartEvidenceEventHandlers[event?.type]?.(event, deps) ?? false;
 }

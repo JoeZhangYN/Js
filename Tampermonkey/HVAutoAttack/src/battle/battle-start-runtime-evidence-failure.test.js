@@ -6,7 +6,7 @@ afterEach(() => {
 });
 
 describe("runBattleStartRuntimeAutomation evidence failure", () => {
-  it("rejects unknown events with debug evidence when lifecycle storage is unavailable", () => {
+  it("rejects unknown events with memory evidence when session storage is unavailable", () => {
     const deps = {
       readOptionField: vi.fn(),
       read: vi.fn(),
@@ -14,11 +14,13 @@ describe("runBattleStartRuntimeAutomation evidence failure", () => {
       startSpeed: vi.fn(),
     };
     const debug = vi.spyOn(console, "debug").mockImplementation(() => {});
-    vi.spyOn(window.sessionStorage, "setItem").mockImplementation((key, value) => {
-      void key;
-      void value;
-      throw new Error("quota");
-    });
+    const sessionWrite = vi
+      .spyOn(window.sessionStorage, "setItem")
+      .mockImplementation((key, value) => {
+        void key;
+        void value;
+        throw new Error("quota");
+      });
 
     let result;
     expect(() => {
@@ -35,9 +37,9 @@ describe("runBattleStartRuntimeAutomation evidence failure", () => {
       expect.objectContaining({
         phase: "unknownStartRuntimeEvent",
         result: false,
-        storageWriteOk: false,
-        storageWriteError: "quota",
+        storageWriteOk: true,
       })
     );
+    expect(sessionWrite).not.toHaveBeenCalled();
   });
 });

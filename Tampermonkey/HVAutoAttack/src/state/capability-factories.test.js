@@ -66,4 +66,33 @@ describe("state capability factories", () => {
     capability.delValue("value");
     expect(storage).not.toHaveProperty("test_value");
   });
+
+  it("canonicalizes equal GM values and deletes only present keys", () => {
+    const values = new Map();
+    const gmSetValue = vi.fn((key, value) => values.set(key, value));
+    const gmDeleteValue = vi.fn((key) => values.delete(key));
+    const capability = createStorageCapability(
+      { prefix: "test_" },
+      {
+        gmSetValue,
+        gmGetValue: (key) => values.get(key),
+        gmDeleteValue,
+        recordIo: vi.fn(),
+        warn: vi.fn(),
+      }
+    );
+
+    expect(capability.setValue("value", { z: 2, a: { y: 1, x: 0 } })).toBe(
+      StorageWriteOutcome.WRITTEN
+    );
+    expect(capability.setValue("value", { a: { x: 0, y: 1 }, z: 2 })).toBe(
+      StorageWriteOutcome.SKIPPED_UNCHANGED
+    );
+    expect(gmSetValue).toHaveBeenCalledTimes(1);
+    expect(values.get("test_value")).toEqual({ z: 2, a: { y: 1, x: 0 } });
+
+    expect(capability.delValue("value")).toBe(StorageWriteOutcome.DELETED);
+    expect(capability.delValue("value")).toBe(StorageWriteOutcome.SKIPPED_UNCHANGED);
+    expect(gmDeleteValue).toHaveBeenCalledTimes(1);
+  });
 });

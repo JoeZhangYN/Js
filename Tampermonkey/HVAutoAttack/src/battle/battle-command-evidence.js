@@ -1,4 +1,5 @@
 import { DiagnosticEvidenceKey } from "../core/diagnostic-evidence-keys.js";
+import { diagnosticEvidenceMemoryStorage } from "../core/diagnostic-evidence-journal.js";
 import { safeDebug } from "./battle-evidence-debug.js";
 
 const EVENT_RECORD_RESULT = "recordResult";
@@ -47,7 +48,7 @@ const battleCommandEvidenceEventHandlers = Object.freeze({
   [EVENT_RECORD_RESULT]: recordCommandResult,
 });
 
-export function readBattleCommandEvidence(storage = window.sessionStorage) {
+export function readBattleCommandEvidence(storage = diagnosticEvidenceMemoryStorage) {
   try {
     return JSON.parse(storage.getItem(BATTLE_COMMAND_EVIDENCE_KEY) || "null");
   } catch (_error) {
@@ -57,7 +58,7 @@ export function readBattleCommandEvidence(storage = window.sessionStorage) {
 
 export function runBattleCommandEvidence(
   event = { type: EVENT_RECORD_RESULT },
-  deps = { sessionStorage: window.sessionStorage }
+  deps = { sessionStorage: diagnosticEvidenceMemoryStorage }
 ) {
   return battleCommandEvidenceEventHandlers[event?.type]?.(event, deps) ?? false;
 }
