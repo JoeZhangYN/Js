@@ -15,18 +15,13 @@ import { runRiddleVisualAid } from "./riddle-helper.js";
 import { RiddleMlEvent, runRiddleMlAutomation } from "./riddle-ml.js";
 import { RiddleStatsEvent, runRiddleStatsAutomation } from "../state/riddle-stats.js";
 import { RiddleLogEvent, runRiddleLogAutomation } from "../state/riddle-log.js";
-import { RiddleImageEvent, runRiddleImageAutomation } from "./riddle-image.js";
-import {
-  RiddleDatasetEvent,
-  RiddleSampleSource,
-  runRiddleDatasetAutomation,
-} from "../state/riddle-dataset.js";
 import {
   RiddleSubmissionTimingEvent,
   runRiddleSubmissionTiming,
 } from "./riddle-submission-timing.js";
 import { recordRiddleMlAnswerFailure } from "./riddle-ml-answer-failure.js";
 import { submitRiddleAnswerCommand } from "./riddle-submit-command.js";
+import { installRiddleSubmissionSampleCapture } from "./riddle-submission-sample-capture.js";
 import {
   DiagnosticConsoleEvent,
   runDiagnosticConsoleAutomation,
@@ -51,26 +46,9 @@ function readOptionField(key, fallback) {
   return runOptionAutomation({ type: OptionEvent.READ_FIELD, key, fallback });
 }
 
-/**
- * 读 #riddler1 当前勾选的答案码（提交那一刻的真实状态，脚本/手动提交都准）。
- * @returns {string} 逗号分隔码，如 "ts,ra"；无勾选返 ""
- */
-function submittedCodes() {
-  const riddler1 = document.getElementById("riddler1");
-  if (!riddler1) return "";
-  const hits = [];
-  for (const code of ANSWER_KEYS) {
-    const idx = ANSWER_MAP[code];
-    const box = riddler1.children?.[idx]?.children?.[0]?.children?.[0];
-    if (box && box.checked) hits.push(code);
-  }
-  return hits.join(",");
-}
-
 const createRiddleAnsweringContext = () => ({
   mlAnswer: null,
   pendingSource: null,
-  sampled: false,
 });
 
 function recordRiddleAppearance() {
@@ -133,37 +111,9 @@ function startRiddleSubmissionTiming(context) {
   });
 }
 
-function captureSubmission(context) {
-  // 训练样本采集：hook #riddlesubmit 点击（脚本 riddleSubmit 的 .click() 与用户手动点都经此）→ 跳转前
-  // **同步**采样。无论 ML/随机/手动只要提交就存（用户诉求 2026-06-06）；source→confidence 规则内化在 riddle-dataset。
-  if (context.sampled) return;
-  context.sampled = true;
-  runRiddleSubmissionTiming({ type: RiddleSubmissionTimingEvent.EXTERNAL_SUBMITTED });
-  const source = context.pendingSource
-    ? context.pendingSource === "ML"
-      ? RiddleSampleSource.ML
-      : RiddleSampleSource.RANDOM
-    : RiddleSampleSource.MANUAL;
-  const answers = submittedCodes();
-  const image = runRiddleImageAutomation({ type: RiddleImageEvent.CAPTURE_SAMPLE });
-  runRiddleDatasetAutomation({
-    type: RiddleDatasetEvent.RECORD_SAMPLE,
-    imageDataUrl: image.imageDataUrl,
-    answers,
-    source,
-    imageSrc: image.imageSrc,
-  });
-  runRiddleLogAutomation({
-    type: RiddleLogEvent.PUSH,
-    message: `sample source=${source} answers=${answers}`,
-  });
-}
-
 function installOptionalSubmissionSampleCapture(context) {
   if (readOptionEnabled("mlBackupOnFail")) {
-    const submitBtn = document.getElementById("riddlesubmit");
-    if (submitBtn)
-      submitBtn.addEventListener("click", () => captureSubmission(context), { capture: true });
+    installRiddleSubmissionSampleCapture(context);
   }
 }
 

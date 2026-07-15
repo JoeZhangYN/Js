@@ -7,10 +7,7 @@ describe("readRecentDiagnosticEvidence", () => {
   it("returns lifecycle, decision, and effect evidence together", () => {
     const evidenceByKey = {
       "HVAA:lastNavigationAudit": { kind: "reloadNow", reason: "battleApiResponse" },
-      "HVAA:lastNavigationDecision": {
-        decision: "rejected",
-        detail: { cause: "invalidReloadDelay" },
-      },
+      "HVAA:lastNavigationDecision": { decision: "rejected" },
       "HVAA:lastBattleTurnWorkflow": { stage: "contextPrepared", detail: { hasContext: true } },
       "HVAA:lastBattleApiBridge": {
         phase: "start",
@@ -115,6 +112,7 @@ describe("readRecentDiagnosticEvidence", () => {
         reason: "restoreFailed",
       },
       "HVAA:lastRiddleDatasetFailure": { capability: "riddleDataset", stage: "export-list" },
+      "HVAA:lastRiddleSampleStoreFailure": { stage: "open" },
       "HVAA:lastI18nInitFailure": { capability: "i18nInit", entry: "interface" },
       "HVAA:lastI18nRestoreFailure": { capability: "i18nRestore", stage: "restore" },
       "HVAA:lastCustomDictionaryFailure": {
@@ -257,7 +255,7 @@ describe("readRecentDiagnosticEvidence", () => {
 
     expect(readRecentDiagnosticEvidence(window.sessionStorage)).toMatchObject({
       navigationAudit: { kind: "reloadNow", reason: "battleApiResponse" },
-      navigationDecision: { decision: "rejected", detail: { cause: "invalidReloadDelay" } },
+      navigationDecision: { decision: "rejected" },
       battleAutomation: { phase: "pageReady", result: true },
       battleLifecycle: { phase: "battleStarted", result: true },
       battleCompletion: { outcome: "victory", effects: { scheduleReload: true } },

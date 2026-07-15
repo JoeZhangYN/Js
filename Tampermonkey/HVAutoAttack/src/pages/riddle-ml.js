@@ -6,7 +6,7 @@
 //
 // 复用 data/riddle-answers.js 的 ANSWER_MAP（已下沉叶子层，断开与 riddle.js 的循环依赖 TDZ）。
 // GM 存储 key：is_maintenance / is_down / last_awake_ts / last_date / check_interval / extend_submit_interval
-//   - 直接用 GM_setValue/GM_getValue（带 prefix 会污染 RMA 兼容性；这里用裸 key 与原 RMA 一致）
+//   - 由 riddle-ml-health-storage 以裸 key 兼容 RMA，并在内容未变化时跳过物理 GM 写入
 // XHR 兜底通过 GM_xmlhttpRequest 完成（@grant 需加 GM_xmlhttpRequest）
 import { AlarmEvent, runAlarmAutomation } from "../alarm/alarm.js";
 import { gmXhr, hasNonLatin1 } from "../dom/gm-xhr.js";
@@ -19,6 +19,10 @@ import {
   DiagnosticConsoleEvent,
   runDiagnosticConsoleAutomation,
 } from "../core/diagnostic-console.js";
+import {
+  readRiddleMlHealthStorage,
+  writeRiddleMlHealthStorage,
+} from "../state/riddle-ml-health-storage.js";
 
 const ML_ENDPOINT_DEFAULT = "https://rdma.ooguy.com/help2";
 const STATUS_ENDPOINT = "https://rdma.ooguy.com/status";
@@ -152,31 +156,9 @@ function readMlOptions() {
  * GM API 统一封装：优先 GM_*（同步），退到 GM.*（Promise）。
  * 与 src/state/storage.js 不同——本模块不加 storagePrefix，沿用 RMA 的裸 key 兼容已有用户备份。
  */
-function gmGet(key, def) {
-  if (typeof GM_getValue !== "undefined") {
-    const v = GM_getValue(key, def);
-    return Promise.resolve(v);
-  }
-  if (typeof GM !== "undefined" && GM && typeof GM.getValue === "function") {
-    return GM.getValue(key, def);
-  }
-  return Promise.resolve(def);
-}
-
-function gmSet(key, val) {
-  if (typeof GM_setValue !== "undefined") {
-    GM_setValue(key, val);
-    return Promise.resolve();
-  }
-  if (typeof GM !== "undefined" && GM && typeof GM.setValue === "function") {
-    return GM.setValue(key, val);
-  }
-  return Promise.resolve();
-}
-
 async function readRiddleMlHealthValue(stage, key, fallback) {
   try {
-    return await gmGet(key, fallback);
+    return await readRiddleMlHealthStorage(key, fallback);
   } catch (error) {
     recordRiddleMlHealthFailure(stage, "gmGetFailed", { key, error: mlHealthErrorText(error) });
     return fallback;
@@ -185,7 +167,7 @@ async function readRiddleMlHealthValue(stage, key, fallback) {
 
 async function writeRiddleMlHealthValue(stage, key, value) {
   try {
-    await gmSet(key, value);
+    await writeRiddleMlHealthStorage(key, value);
     return true;
   } catch (error) {
     recordRiddleMlHealthFailure(stage, "gmSetFailed", { key, error: mlHealthErrorText(error) });
@@ -344,8 +326,8 @@ async function notePreviousRiddleMlHealthState(context) {
   // 对齐原版 RMA v0.5.2——总是尝试 POST，真失败交给下方 onerror/ontimeout + 调用侧随机兜底。
   // 这两个标志降级为纯遥测：原 bug 是后台标签页健康巡检 HEAD 超时置 is_down=true 后，
   // 当天每道题都被闸门挡死走随机（且巡检只在 riddle 页跑、极少刷新 → 长期卡死）。
-  context.isMaintenance = await gmGet("is_maintenance", false);
-  context.isDown = await gmGet("is_down", false);
+  context.isMaintenance = await readRiddleMlHealthStorage("is_maintenance", false);
+  context.isDown = await readRiddleMlHealthStorage("is_down", false);
   if (context.isMaintenance || context.isDown) {
     warnRiddleMlAnswerConsole(
       "warn",

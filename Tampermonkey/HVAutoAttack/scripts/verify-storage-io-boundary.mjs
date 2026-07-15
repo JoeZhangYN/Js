@@ -7,8 +7,6 @@ const violations = [];
 
 // Transitional debt is exact and can only shrink. Each owner is retired by its named Epic Todo.
 const transitionalRawWrites = new Map([
-  ["src/state/riddle-dataset.js", { count: 2, retire: "#2046" }],
-  ["src/pages/riddle-ml.js", { count: 2, retire: "#2046" }],
   ["src/pages/encounter-generation-incident.js", { count: 1, retire: "#2045" }],
   ["src/pages/encounter-generation-incident-clear.js", { count: 1, retire: "#2045" }],
   ["src/i18n/hv-utils.js", { count: 2, retire: "#2049" }],
@@ -134,6 +132,91 @@ for (const retired of [
   "setValue(STORAGE_KEYS.SKILL_LAST_USED",
 ]) {
   if (cdTracker.includes(retired)) violations.push(`cd-tracker.js must retire ${retired}`);
+}
+
+const riddleDataset = fs.readFileSync(path.join(srcRoot, "state", "riddle-dataset.js"), "utf8");
+for (const required of [
+  "createRiddleSampleRecord",
+  "RiddleSampleStoreEvent.WRITE",
+  "exportRiddleDatasetRecords",
+  "RiddleSampleMigrationEvent.CONFIRM_AND_RUN",
+]) {
+  if (!riddleDataset.includes(required)) {
+    violations.push(`riddle-dataset.js must consume ${required}`);
+  }
+}
+
+const riddleDatasetExport = fs.readFileSync(
+  path.join(srcRoot, "state", "riddle-dataset-export.js"),
+  "utf8"
+);
+for (const required of ["RiddleSampleStoreEvent.LIST", "RiddleSampleStoreEvent.DELETE_EXPORTED"]) {
+  if (!riddleDatasetExport.includes(required)) {
+    violations.push(`riddle-dataset-export.js must consume ${required}`);
+  }
+}
+for (const retired of ["imageBase64", "GM_setValue(", "GM_deleteValue("]) {
+  if (riddleDataset.includes(retired)) {
+    violations.push(`riddle-dataset.js must retire ${retired}`);
+  }
+}
+
+const riddleStore = fs.readFileSync(
+  path.join(srcRoot, "state", "riddle-sample-store-indexeddb.js"),
+  "utf8"
+);
+for (const required of [
+  'const STORE_SAMPLES = "samples"',
+  "StorageWriteOutcome.REJECTED_BUDGET",
+  "completedRecords > budget.completedRecords",
+  "bytes > budget.bytes",
+  "migrationReceipts",
+]) {
+  if (!riddleStore.includes(required)) {
+    violations.push(`riddle-sample-store-indexeddb.js must own ${required}`);
+  }
+}
+
+const riddleMigration = fs.readFileSync(
+  path.join(srcRoot, "state", "riddle-sample-migration.js"),
+  "utf8"
+);
+for (const required of [
+  "RIDDLE_MIGRATION_BATCH",
+  "PageKind.LOBBY",
+  "PageKind.ISEKAI_LOBBY",
+  "PageKind.SHOWEQUIP",
+  "UserFeedbackEvent.CONFIRM",
+]) {
+  if (!riddleMigration.includes(required)) {
+    violations.push(`riddle-sample-migration.js must own ${required}`);
+  }
+}
+
+const riddleMigrationExecutor = fs.readFileSync(
+  path.join(srcRoot, "state", "riddle-sample-migration-executor.js"),
+  "utf8"
+);
+for (const required of [
+  "maxRecords: 8",
+  "maxBytes: 8 * 1024 * 1024",
+  '"copiedVerified"',
+  '"sourceDeleted"',
+  "recordsMatch(target, persisted)",
+]) {
+  if (!riddleMigrationExecutor.includes(required)) {
+    violations.push(`riddle-sample-migration-executor.js must own ${required}`);
+  }
+}
+
+const riddleSubmitGate = fs.readFileSync(
+  path.join(srcRoot, "pages", "riddle-submit-gate.js"),
+  "utf8"
+);
+for (const required of ["persistAttempt", 'state = "releaseNext"', "releaseSubmit()"]) {
+  if (!riddleSubmitGate.includes(required)) {
+    violations.push(`riddle-submit-gate.js must own ${required}`);
+  }
 }
 
 for (const file of memoryFirstBattleEvidence) {

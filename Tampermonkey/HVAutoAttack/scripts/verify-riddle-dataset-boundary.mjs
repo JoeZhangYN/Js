@@ -7,10 +7,12 @@ const owner = path.normalize("src/state/riddle-dataset.js");
 const statusOwner = path.normalize("src/state/riddle-dataset-status.js");
 const downloadOwner = path.normalize("src/state/riddle-dataset-download.js");
 const failureOwner = path.normalize("src/state/riddle-dataset-failure.js");
+const exportOwner = path.normalize("src/state/riddle-dataset-export.js");
 const ownerTest = path.normalize("src/state/riddle-dataset.test.js");
 const statusTest = path.normalize("src/state/riddle-dataset-status.test.js");
 const downloadTest = path.normalize("src/state/riddle-dataset-download.test.js");
 const failureTest = path.normalize("src/state/riddle-dataset-failure.test.js");
+const exportTest = path.normalize("src/state/riddle-dataset-export.test.js");
 const diagnosticKeys = path.normalize("src/core/diagnostic-evidence-keys.js");
 const diagnosticTest = path.normalize("src/core/diagnostic-evidence.test.js");
 const violations = [];
@@ -74,26 +76,21 @@ const downloadOwnerText = fs.existsSync(path.join(root, downloadOwner))
   ? fs.readFileSync(path.join(root, downloadOwner), "utf8")
   : "";
 const failureOwnerText = fs.readFileSync(path.join(root, failureOwner), "utf8");
+const exportOwnerText = fs.readFileSync(path.join(root, exportOwner), "utf8");
 for (const required of ["runRiddleDatasetAutomation", "RiddleDatasetEvent", "RiddleSampleSource"]) {
   if (!ownerText.includes(required)) {
     violations.push(`${owner.replaceAll("\\", "/")} must own ${required}`);
   }
 }
-const entryBody =
-  ownerText.match(/export function runRiddleDatasetAutomation\([^)]*\) \{[\s\S]*?\n\}/)?.[0] || "";
-if (
-  !/const riddleDatasetEventHandlers\s*=\s*Object\.freeze\(\{[\s\S]*\[EVENT_RECORD_SAMPLE\]/.test(
-    ownerText
-  )
-) {
+if (!/const handlers\s*=\s*Object\.freeze\(\{[\s\S]*\[EVENT_RECORD_SAMPLE\]/.test(ownerText)) {
   violations.push(
     `${owner.replaceAll("\\", "/")} must route events through a frozen handler table`
   );
 }
-if (/event\.type\s*===/.test(entryBody)) {
+if (/event\.type\s*===/.test(ownerText)) {
   violations.push(`${owner.replaceAll("\\", "/")} entry must dispatch by handler table`);
 }
-if (/\bevent\.type\b/.test(entryBody) || !/\bevent\?\.type\b/.test(entryBody)) {
+if (!ownerText.includes("handlers[event?.type]?.(event)")) {
   violations.push(`${owner.replaceAll("\\", "/")} entry must fail closed for null dataset events`);
 }
 for (const required of ["TimeEvent.LOCAL_FILE_TIMESTAMP", "TimeEvent.ISO_TIMESTAMP"]) {
@@ -109,17 +106,21 @@ for (const required of [
   "HVAA:lastRiddleDatasetFailure",
   "DiagnosticConsoleEvent.WARN",
   "runDiagnosticConsoleAutomation",
-  "record-missing-gm-set",
   "record-write",
-  "export-missing-gm-list",
-  "export-list",
-  "export-read",
+  'recordRiddleDatasetFailure("export"',
   "export-download",
   "export-download-cleanup",
   "export-revoke",
-  "export-delete",
 ]) {
-  if (!(ownerText + statusOwnerText + downloadOwnerText + failureOwnerText).includes(required)) {
+  if (
+    !(
+      ownerText +
+      exportOwnerText +
+      statusOwnerText +
+      downloadOwnerText +
+      failureOwnerText
+    ).includes(required)
+  ) {
     violations.push(`${owner.replaceAll("\\", "/")} must own riddle dataset failure ${required}`);
   }
 }
@@ -130,7 +131,7 @@ for (const required of [
   "EMPTY_EXPORTABLE_SAMPLE_STORE",
   "EXPORT_SUCCESS",
 ]) {
-  if (!ownerText.includes(required)) {
+  if (!(ownerText + exportOwnerText).includes(required)) {
     violations.push(`${owner.replaceAll("\\", "/")} must route dataset status through ${required}`);
   }
 }
@@ -163,7 +164,7 @@ if (!downloadOwnerText.includes("export function triggerRiddleDatasetDownload(bl
     `${downloadOwner.replaceAll("\\", "/")} must own triggerRiddleDatasetDownload(blob)`
   );
 }
-if (!ownerText.includes("if (!triggerRiddleDatasetDownload(blob)) return;")) {
+if (!exportOwnerText.includes("if (!triggerRiddleDatasetDownload(makeStoreZip(files)))")) {
   violations.push(
     `${owner.replaceAll("\\", "/")} must not clear exported samples unless download was triggered`
   );
@@ -206,28 +207,20 @@ if (!fs.existsSync(path.join(root, ownerTest))) {
 } else {
   const ownerTestText = fs.readFileSync(path.join(root, ownerTest), "utf8");
   if (
-    !ownerTestText.includes(
-      "rejects invalid dataset events without writing samples or registering menus"
-    ) ||
-    !ownerTestText.includes("runRiddleDatasetAutomation(null)")
+    !ownerTestText.includes("rejects unknown and null events without touching storage") ||
+    !ownerTestText.includes("dataset.run(null)")
   ) {
     violations.push(
       `${ownerTest.replaceAll("\\", "/")} must cover unknown and null dataset events`
     );
   }
   for (const required of [
-    "records missing GM_setValue as dataset failure evidence",
-    "records GM_setValue write failures without throwing",
-    "continues dataset export when one stored sample cannot be read or deleted",
-    "records missing GM_listValues as export failure evidence",
-    "records GM_listValues failures without throwing from dataset export",
+    "writes a Blob sample and derives low confidence from random fallback",
+    "returns a known failure result and discloses recovery without blocking submission",
+    "registers export and confirmed migration menus exactly once",
     "HVAA:lastRiddleDatasetFailure",
-    "record-missing-gm-set",
     "record-write",
-    "export-missing-gm-list",
-    "export-list",
-    "export-read",
-    "export-delete",
+    "imageBlob: expect.any(Blob)",
   ]) {
     if (!ownerTestText.includes(required)) {
       violations.push(`${ownerTest.replaceAll("\\", "/")} must cover ${required}`);
@@ -251,11 +244,10 @@ if (!fs.existsSync(path.join(root, ownerTest))) {
     ? fs.readFileSync(path.join(root, downloadTest), "utf8")
     : "";
   for (const required of [
-    "records download click failures without clearing exported samples or reporting success",
-    "records download cleanup revoke failures after a successful export trigger",
-    "expect(deleteValue).not.toHaveBeenCalled()",
-    'expectDatasetFailure("export-download")',
-    'expectDatasetFailure("export-revoke")',
+    "returns false and records evidence when the browser blocks the click",
+    "revokes the object URL after a successful trigger",
+    "HVAA:lastRiddleDatasetFailure",
+    "export-download",
   ]) {
     if (!downloadTestText.includes(required)) {
       violations.push(`${downloadTest.replaceAll("\\", "/")} must cover ${required}`);
@@ -265,16 +257,26 @@ if (!fs.existsSync(path.join(root, ownerTest))) {
     ? fs.readFileSync(path.join(root, failureTest), "utf8")
     : "";
   for (const required of [
-    "does not throw when sample write failure evidence and diagnostic console both fail",
-    "does not throw when export list failure evidence and diagnostic console both fail",
+    "does not throw when failure evidence storage is unavailable",
     "RIDDLE_DATASET_FAILURE_KEY",
-    'throw new Error("list blocked")',
     'throw new Error("quota")',
-    "runDiagnosticConsoleAutomation",
-    "expect(setValue).toHaveBeenCalledTimes(1)",
+    "recordRiddleDatasetFailure",
   ]) {
     if (!failureTestText.includes(required)) {
       violations.push(`${failureTest.replaceAll("\\", "/")} must cover ${required}`);
+    }
+  }
+  const exportTestText = fs.existsSync(path.join(root, exportTest))
+    ? fs.readFileSync(path.join(root, exportTest), "utf8")
+    : "";
+  for (const required of [
+    "deletes exported identities only after the browser accepts the download",
+    "keeps user samples when the browser blocks the download",
+    "RiddleSampleStoreEvent.DELETE_EXPORTED",
+    "expect(runStore).toHaveBeenCalledTimes(1)",
+  ]) {
+    if (!exportTestText.includes(required)) {
+      violations.push(`${exportTest.replaceAll("\\", "/")} must cover ${required}`);
     }
   }
 }

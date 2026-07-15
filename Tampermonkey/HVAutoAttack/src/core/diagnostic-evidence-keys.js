@@ -52,6 +52,7 @@ export const DiagnosticEvidenceKey = Object.freeze({
   STORAGE_READ_FAILURE: "HVAA:lastStorageReadFailure",
   OPTION_BACKUP_FAILURE: "HVAA:lastOptionBackupFailure",
   RIDDLE_DATASET_FAILURE: "HVAA:lastRiddleDatasetFailure",
+  RIDDLE_SAMPLE_STORE_FAILURE: "HVAA:lastRiddleSampleStoreFailure",
   I18N_INIT_FAILURE: "HVAA:lastI18nInitFailure",
   I18N_RESTORE_FAILURE: "HVAA:lastI18nRestoreFailure",
   CUSTOM_DICTIONARY_FAILURE: "HVAA:lastCustomDictionaryFailure",
@@ -92,9 +93,7 @@ export const DiagnosticEvidenceKey = Object.freeze({
   LOTTERY_NOTIFICATION_FAILURE: "HVAA:lastLotteryNotificationFailure",
 });
 
-function source(name, key) {
-  return Object.freeze({ name, key });
-}
+const source = (name, key) => Object.freeze({ name, key });
 
 export const DIAGNOSTIC_EVIDENCE_SOURCES = Object.freeze([
   source("navigationAudit", DiagnosticEvidenceKey.NAVIGATION_AUDIT),
@@ -156,6 +155,7 @@ export const DIAGNOSTIC_EVIDENCE_SOURCES = Object.freeze([
   source("storageReadFailure", DiagnosticEvidenceKey.STORAGE_READ_FAILURE),
   source("optionBackupFailure", DiagnosticEvidenceKey.OPTION_BACKUP_FAILURE),
   source("riddleDatasetFailure", DiagnosticEvidenceKey.RIDDLE_DATASET_FAILURE),
+  source("riddleSampleStoreFailure", DiagnosticEvidenceKey.RIDDLE_SAMPLE_STORE_FAILURE),
   source("i18nInitFailure", DiagnosticEvidenceKey.I18N_INIT_FAILURE),
   source("i18nRestoreFailure", DiagnosticEvidenceKey.I18N_RESTORE_FAILURE),
   source("customDictionaryFailure", DiagnosticEvidenceKey.CUSTOM_DICTIONARY_FAILURE),

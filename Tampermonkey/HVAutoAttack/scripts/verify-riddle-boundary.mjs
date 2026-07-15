@@ -13,6 +13,7 @@ const riddleMlFile = path.join(root, "src/pages/riddle-ml.js");
 const riddleMlAnswerFailureFile = path.join(root, "src/pages/riddle-ml-answer-failure.js");
 const riddleSubmitCommandFile = path.join(root, "src/pages/riddle-submit-command.js");
 const riddleSubmitFailureFile = path.join(root, "src/pages/riddle-submit-failure.js");
+const riddleSampleCaptureFile = path.join(root, "src/pages/riddle-submission-sample-capture.js");
 const diagnosticKeysFile = path.join(root, "src/core/diagnostic-evidence-keys.js");
 const diagnosticTestFile = path.join(root, "src/core/diagnostic-evidence.test.js");
 const settingsFile = path.join(root, "src/settings/render.js");
@@ -205,6 +206,7 @@ function checkRiddleSettingsConsumer() {
 
 function checkRiddleSubmissionTiming() {
   const answerText = fs.readFileSync(riddleAnswerFile, "utf8");
+  const sampleCaptureText = fs.readFileSync(riddleSampleCaptureFile, "utf8");
   for (const required of [
     "RIDDLE_ANSWERING_FLOW_STEPS",
     "createRiddleAnsweringContext",
@@ -252,7 +254,6 @@ function checkRiddleSubmissionTiming() {
   }
   for (const required of [
     "RiddleSubmissionTimingEvent.START",
-    "RiddleSubmissionTimingEvent.EXTERNAL_SUBMITTED",
     "RiddleSubmissionTimingEvent.ML_ANSWERS_READY",
     "recordRiddleMlAnswerFailure",
     "submitRiddleAnswerCommand",
@@ -262,6 +263,16 @@ function checkRiddleSubmissionTiming() {
   ]) {
     if (!answerText.includes(required)) {
       violations.push(`${rel(riddleAnswerFile)} must report ${required} to the timing entry`);
+    }
+  }
+  for (const required of [
+    "createRiddleSubmitGate",
+    "RiddleSubmissionTimingEvent.EXTERNAL_SUBMITTED",
+    "RiddleDatasetEvent.RECORD_SAMPLE",
+    "installRiddleSubmissionSampleCapture",
+  ]) {
+    if (!sampleCaptureText.includes(required)) {
+      violations.push(`${rel(riddleSampleCaptureFile)} must own durable sample gate ${required}`);
     }
   }
   if (

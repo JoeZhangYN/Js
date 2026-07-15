@@ -1,9 +1,16 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
+  createRiddleDatasetCapability,
   RiddleDatasetEvent,
   RiddleSampleSource,
-  runRiddleDatasetAutomation,
 } from "./riddle-dataset.js";
+import { RiddleSampleStoreEvent } from "./riddle-sample-store.js";
+import { StorageWriteOutcome } from "./storage-io-policy.js";
+
+beforeEach(() => {
+  sessionStorage.clear();
+  window.alert = vi.fn();
+});
 
 afterEach(() => {
   vi.useRealTimers();
@@ -11,41 +18,37 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-function expectDatasetFailure(stage) {
-  expect(JSON.parse(sessionStorage.getItem("HVAA:lastRiddleDatasetFailure"))).toMatchObject({
-    capability: "riddleDataset",
-    stage,
-  });
+function capability(runStore = vi.fn()) {
+  return {
+    runStore,
+    dataset: createRiddleDatasetCapability({
+      runStore,
+      runMigration: vi.fn(),
+      now: () => Date.parse("2026-06-27T00:00:01Z"),
+      randomId: () => "sample-id",
+      cryptoApi: null,
+    }),
+  };
 }
 
 describe("riddle dataset entry", () => {
-  it("rejects invalid dataset events without writing samples or registering menus", () => {
-    const setValue = vi.fn();
-    const registerMenu = vi.fn();
-    vi.stubGlobal("GM_setValue", setValue);
-    vi.stubGlobal("GM_registerMenuCommand", registerMenu);
+  it("rejects unknown and null events without touching storage", () => {
+    const { dataset, runStore } = capability();
 
-    expect(
-      runRiddleDatasetAutomation({
-        type: "unknown",
-        imageDataUrl: "data:image/webp;base64,AAAA",
-        answers: "ra",
-        source: RiddleSampleSource.ML,
-      })
-    ).toBeUndefined();
-    expect(runRiddleDatasetAutomation(null)).toBeUndefined();
-
-    expect(setValue).not.toHaveBeenCalled();
-    expect(registerMenu).not.toHaveBeenCalled();
+    expect(dataset.run({ type: "unknown" })).toBeUndefined();
+    expect(dataset.run(null)).toBeUndefined();
+    expect(runStore).not.toHaveBeenCalled();
   });
 
-  it("records samples through the entry and derives confidence from source", () => {
-    vi.useFakeTimers();
-    vi.setSystemTime(new Date("2026-06-27T00:00:01Z"));
-    const setValue = vi.fn();
-    vi.stubGlobal("GM_setValue", setValue);
+  it("writes a Blob sample and derives low confidence from random fallback", async () => {
+    const { dataset, runStore } = capability(
+      vi.fn().mockResolvedValue({
+        outcome: StorageWriteOutcome.WRITTEN,
+        usage: { completedRecords: 1, bytes: 10 },
+      })
+    );
 
-    runRiddleDatasetAutomation({
+    await dataset.run({
       type: RiddleDatasetEvent.RECORD_SAMPLE,
       imageDataUrl: "data:image/webp;base64,AAAA",
       answers: "ra",
@@ -53,110 +56,55 @@ describe("riddle dataset entry", () => {
       imageSrc: "pony.webp",
     });
 
-    expect(setValue).toHaveBeenCalledWith(
-      "saved_pony_2026-06-27_00-00-01",
-      expect.objectContaining({
-        json: expect.objectContaining({
-          source: "random",
-          confidence: "low",
-          answers: "ra",
-          image_src: "pony.webp",
-        }),
-        imageBase64: "data:image/webp;base64,AAAA",
-      })
-    );
+    expect(runStore).toHaveBeenCalledWith({
+      type: RiddleSampleStoreEvent.WRITE,
+      sourceIdentity: "riddleSubmission",
+      record: expect.objectContaining({
+        id: "pony_2026-06-27_00-00-01_sample-id",
+        source: "random",
+        confidence: "low",
+        answers: "ra",
+        imageSrc: "pony.webp",
+        imageBlob: expect.any(Blob),
+        imageBytes: 3,
+        contentHash: expect.stringMatching(/^fnv1a32:/),
+      }),
+    });
+    expect(runStore.mock.calls[0][0].record).not.toHaveProperty("imageBase64");
   });
 
-  it("records missing GM_setValue as dataset failure evidence", () => {
-    vi.stubGlobal("GM_setValue", undefined);
+  it("returns a known failure result and discloses recovery without blocking submission", async () => {
+    const { dataset } = capability(vi.fn().mockRejectedValue(new Error("idb quota")));
 
-    runRiddleDatasetAutomation({
-      type: RiddleDatasetEvent.RECORD_SAMPLE,
-      answers: "ra",
-      source: RiddleSampleSource.ML,
-    });
-
-    expectDatasetFailure("record-missing-gm-set");
-  });
-
-  it("records GM_setValue write failures without throwing", () => {
-    vi.stubGlobal("GM_setValue", () => {
-      throw new Error("quota");
-    });
-
-    expect(() =>
-      runRiddleDatasetAutomation({
+    await expect(
+      dataset.run({
         type: RiddleDatasetEvent.RECORD_SAMPLE,
         answers: "ra",
         source: RiddleSampleSource.ML,
       })
-    ).not.toThrow();
-    expectDatasetFailure("record-write");
-  });
-
-  it("continues dataset export when one stored sample cannot be read or deleted", () => {
-    vi.useFakeTimers();
-    vi.setSystemTime(new Date("2026-06-27T00:00:01Z"));
-    vi.stubGlobal("GM_listValues", () => ["saved_pony_bad", "saved_pony_good"]);
-    vi.stubGlobal("GM_getValue", (key) => {
-      if (key === "saved_pony_bad") throw new Error("read blocked");
-      return {
-        json: { source: "ml", answers: "ra", confidence: "high", image_src: "pony.webp" },
-        imageBase64: "",
-        timestamp: Date.now(),
-      };
+    ).resolves.toMatchObject({
+      outcome: StorageWriteOutcome.FAILED,
+      recovery: "continueSubmission",
     });
-    vi.stubGlobal("GM_deleteValue", (key) => {
-      if (key === "saved_pony_good") throw new Error("delete blocked");
+    expect(JSON.parse(sessionStorage.getItem("HVAA:lastRiddleDatasetFailure"))).toMatchObject({
+      capability: "riddleDataset",
+      stage: "record-write",
     });
-    vi.spyOn(URL, "createObjectURL").mockReturnValue("blob:dataset");
-    vi.spyOn(URL, "revokeObjectURL").mockImplementation(() => {});
-    vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => {});
-
-    runRiddleDatasetAutomation({ type: RiddleDatasetEvent.EXPORT });
-    vi.runAllTimers();
-
-    expect(URL.createObjectURL).toHaveBeenCalledOnce();
-    expectDatasetFailure("export-delete");
+    expect(window.alert).toHaveBeenCalledOnce();
   });
 
-  it("records stored sample read failures during dataset export", () => {
-    vi.stubGlobal("GM_listValues", () => ["saved_pony_bad"]);
-    vi.stubGlobal("GM_getValue", () => {
-      throw new Error("read blocked");
-    });
-
-    runRiddleDatasetAutomation({ type: RiddleDatasetEvent.EXPORT });
-
-    expectDatasetFailure("export-read");
-  });
-
-  it("records missing GM_listValues as export failure evidence", () => {
-    vi.stubGlobal("GM_listValues", undefined);
-
-    runRiddleDatasetAutomation({ type: RiddleDatasetEvent.EXPORT });
-
-    expectDatasetFailure("export-missing-gm-list");
-  });
-
-  it("records GM_listValues failures without throwing from dataset export", () => {
-    vi.stubGlobal("GM_listValues", () => {
-      throw new Error("list blocked");
-    });
-
-    expect(() => runRiddleDatasetAutomation({ type: RiddleDatasetEvent.EXPORT })).not.toThrow();
-    expectDatasetFailure("export-list");
-  });
-
-  it("registers the export menu once through the entry", () => {
+  it("registers export and confirmed migration menus exactly once", () => {
     const registerMenu = vi.fn();
     vi.stubGlobal("GM_registerMenuCommand", registerMenu);
+    const { dataset } = capability();
 
-    runRiddleDatasetAutomation({ type: RiddleDatasetEvent.REGISTER_EXPORT_MENU });
-    runRiddleDatasetAutomation({ type: RiddleDatasetEvent.REGISTER_EXPORT_MENU });
+    expect(dataset.run({ type: RiddleDatasetEvent.REGISTER_EXPORT_MENU })).toBe(true);
+    expect(dataset.run({ type: RiddleDatasetEvent.REGISTER_EXPORT_MENU })).toBe(false);
 
-    expect(registerMenu).toHaveBeenCalledTimes(1);
-    expect(registerMenu.mock.calls[0][0]).toBe("导出答题训练样本(zip: 图片+json)");
-    expect(registerMenu.mock.calls[0][1]).toEqual(expect.any(Function));
+    expect(registerMenu).toHaveBeenCalledTimes(2);
+    expect(registerMenu.mock.calls.map(([label]) => label)).toEqual([
+      "导出答题训练样本(zip: 图片+json)",
+      "迁移旧答题样本到 IndexedDB（需确认）",
+    ]);
   });
 });
