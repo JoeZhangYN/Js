@@ -858,10 +858,12 @@ try {
   var prepare_hvut_ability_tree = function (divs, catalog, availableAbilityPoints, context) {
     var entries = [];
     for (const div of Array.from(divs || [])) {
-      var name = div?.firstElementChild?.textContent || '';
+      var nameNode = div?.firstElementChild;
+      var observedName = (nameNode?.textContent || '').trim();
+      var name = (resolveEn(nameNode, 'ability') ?? observedName).trim();
       var ability = catalog?.[name];
       if (!ability) {
-        record_hvut_ability_parse_failure(context?.stage || 'abilityTreePrepare', { reason: 'abilityCatalogEntryMissing', name: name });
+        record_hvut_ability_parse_failure(context?.stage || 'abilityTreePrepare', { reason: 'abilityCatalogEntryMissing', name: name, observedName: observedName });
         return null;
       }
       var panel = parse_hvut_ability_button_panel(div, context?.panelStage || 'abilityButtonPanel');

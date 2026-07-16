@@ -95,7 +95,11 @@ for (const required of [
   "var create_hvut_ability_page_definition = function",
   "reason: 'abilityCatalogBridgeMissing'",
   "var prepare_hvut_ability_tree = function",
+  "var nameNode = div?.firstElementChild;",
+  "var observedName = (nameNode?.textContent || '').trim();",
+  "var name = (resolveEn(nameNode, 'ability') ?? observedName).trim();",
   "reason: 'abilityCatalogEntryMissing'",
+  "observedName: observedName",
   "reason: 'abilityRankCountMismatch'",
 ]) {
   requirePart("ability parse helper", helperRegion, required);
@@ -139,6 +143,7 @@ for (const forbidden of [
 }
 
 for (const forbidden of [
+  "var name = div?.firstElementChild?.textContent || '';",
   "parseInt(/Ability Points: (\\d+)/.exec($id('ability_top').children[3].textContent)[1])",
   "const type = /(.)\\.png/.exec(button.style.backgroundImage)[1];",
   "$qsa('#ability_top div[onmouseover*=\"overability\"]').forEach((div) => {",

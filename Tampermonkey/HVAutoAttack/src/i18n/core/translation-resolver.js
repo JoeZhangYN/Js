@@ -16,9 +16,28 @@ export function registerTranslation(node, enText) {
   }
 }
 
+function registeredSourceText(node) {
+  if (enByNode.has(node)) return enByNode.get(node);
+  if (!node?.childNodes?.length) return undefined;
+
+  let source = "";
+  let hasRegisteredSource = false;
+  for (const child of node.childNodes) {
+    const registered = registeredSourceText(child);
+    if (registered !== undefined) {
+      source += registered;
+      hasRegisteredSource = true;
+    } else {
+      source += child.textContent || "";
+    }
+  }
+  return hasRegisteredSource ? source : undefined;
+}
+
 export function resolveEn(nodeOrText, group) {
   if (nodeOrText && typeof nodeOrText === "object" && "nodeType" in nodeOrText) {
-    if (enByNode.has(nodeOrText)) return enByNode.get(nodeOrText);
+    const registeredSource = registeredSourceText(nodeOrText);
+    if (registeredSource !== undefined) return registeredSource;
     const text = nodeOrText.textContent || "";
     return resolveCustomOrCanonical(text, group);
   }

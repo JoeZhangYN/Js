@@ -126,3 +126,23 @@ describe("restore-controller fallback handling", () => {
     });
   });
 });
+
+describe("translated business identity resolution", () => {
+  it("resolves a translated ability title element back to its registered English identity", async () => {
+    const { registerTranslation, resolveEn } = await freshController();
+    const title = document.createElement("div");
+    const marker = document.createElement("span");
+    const name = document.createTextNode("Ether Theft");
+    title.append(marker, name);
+    registerTranslation(name, name.data);
+    name.data = "以太窃取";
+
+    expect(resolveEn(title, "ability")).toBe("Ether Theft");
+  });
+
+  it("resolves a translated ability literal when no source node was registered", async () => {
+    const { resolveEn } = await freshController();
+
+    expect(resolveEn("体力值增幅", "ability")).toBe("HP Tank");
+  });
+});
