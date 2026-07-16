@@ -16,10 +16,11 @@ const GENERATION_REQUEST = {
 function currentState(fields = {}) {
   return {
     date: 0,
+    cycleReadyAt: 0,
     key: "",
     count: 0,
     clear: true,
-    schemaVersion: 2,
+    schemaVersion: 3,
     utcDay: "2026-06-27",
     dayPhase: "active",
     anchorReason: null,

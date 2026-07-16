@@ -31,8 +31,8 @@ describe("encounter persistence loop recovery", () => {
     const shared = new Map();
     vi.stubGlobal("GM_getValue", (key, fallback) => (shared.has(key) ? shared.get(key) : fallback));
     vi.stubGlobal("GM_setValue", (key, value) => {
-      if (key === "hvut_re" && value.nextProbeAt) {
-        throw new Error("GM probe-cycle write blocked");
+      if (key === "hvut_re" && value.anchorReason === "encounterFailed") {
+        throw new Error("GM encounter-failure write blocked");
       }
       shared.set(key, value);
     });
@@ -65,7 +65,7 @@ describe("encounter persistence loop recovery", () => {
       key: "",
       count: 0,
       clear: true,
-      schemaVersion: 2,
+      schemaVersion: 3,
     });
   });
 });

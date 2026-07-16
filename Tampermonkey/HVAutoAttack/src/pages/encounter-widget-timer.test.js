@@ -65,7 +65,7 @@ describe("encounter widget timer expiry", () => {
     });
   });
 
-  it("starts a full probe cycle after a news load returns no key", () => {
+  it("starts a new primary cycle after a news load returns no key", () => {
     vi.setSystemTime(new Date("2026-06-27T12:00:00.000Z"));
     const state = { date: Date.now() - 31 * 60 * 1000, key: "", count: 1, clear: true };
 
@@ -97,16 +97,40 @@ describe("encounter widget timer expiry", () => {
       action: "unavailable",
       unavailableReason: "encounterKeyMissing",
       state: {
-        nextProbeAt: Date.now() + ENCOUNTER_COOLDOWN_MS,
-        probeReason: "encounterKeyMissing",
+        date: Date.now(),
+        cycleReadyAt: Date.now() + ENCOUNTER_COOLDOWN_MS,
+        anchorReason: "encounterFailed",
       },
     });
     expect(backedOff).toMatchObject({
       status: "countdown",
-      reason: "probeCycle",
-      attemptKey: first.attemptKey,
+      reason: "cooldown",
     });
     expect(mocks.runNavigationAutomation).not.toHaveBeenCalled();
+  });
+
+  it("rechecks during the primary countdown and enters immediately when a key is found", () => {
+    vi.setSystemTime(new Date("2026-06-27T12:00:00.000Z"));
+    const clicked = runEncounterAutomation({
+      type: EncounterEvent.WIDGET_CLICKED,
+      state: { date: Date.now(), key: "", count: 1, clear: true },
+      pageType: "hv",
+    });
+    const loaded = runEncounterAutomation({
+      type: EncounterEvent.WIDGET_NEWS_LOADED,
+      state: clicked.state,
+      eventpane: '<a href="?s=Battle&amp;ss=ba&amp;encounter=ready123=">Random Encounter</a>',
+      engage: clicked.engage,
+      pageType: "hv",
+    });
+
+    expect(clicked).toMatchObject({ action: "load", engage: true, status: "countdown" });
+    expect(loaded).toMatchObject({
+      action: "navigated",
+      href: "?s=Battle&ss=ba&encounter=ready123=",
+      handled: true,
+    });
+    expect(mocks.runNavigationAutomation).toHaveBeenCalledOnce();
   });
 
   it("lets gallery timer expiry request an HV availability check before opening", () => {

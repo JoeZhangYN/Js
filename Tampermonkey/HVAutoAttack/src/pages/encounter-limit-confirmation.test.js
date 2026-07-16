@@ -67,7 +67,7 @@ describe("encounter daily limit confirmation", () => {
     );
 
     expect(transport).toMatchObject({
-      application: "failure",
+      application: "generationFault",
       state: { invalidCycleCount: 1, generationFailureCount: 1 },
     });
     expect(rejected).toMatchObject({

@@ -75,7 +75,14 @@ describe("encounter widget generation recovery", () => {
         state: outcome.state,
         pageType: "hv",
       })
-    ).toMatchObject({ status: "countdown", reason: "generationBackoff" });
+    ).toMatchObject({
+      status: "ready",
+      reason: "readyWindow",
+      operationalStatus: "countdown",
+      operationalReason: "generationBackoff",
+      recoveryStatus: "countdown",
+      recoveryRemainingMs: 60 * 1000,
+    });
     expect(mocks.runUserFeedbackAutomation).not.toHaveBeenCalled();
   });
 });

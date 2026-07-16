@@ -1,22 +1,22 @@
-import { clearEncounterGenerationSchedule } from "./encounter-generation-recovery.js";
+import { clearGenerationRecovery } from "./encounter-generation-recovery.js";
 import {
   EncounterGenerationFailureReason,
   EncounterGenerationResultStatus,
 } from "./encounter-generation-result.js";
 import {
   EncounterDayPhase,
+  markEncounterFailed,
   markEncounterLimitProbeEmpty,
-  markEncounterProbeEmpty,
   normalizeEncounterState,
   observeEncounterNewDay,
 } from "./encounter-day-state.js";
 
 export const EncounterGenerationApplication = Object.freeze({
   AVAILABLE: "available",
-  FAILURE: "failure",
+  ENCOUNTER_FAILED: "encounterFailed",
+  GENERATION_FAULT: "generationFault",
   LIMIT_PROBE_EMPTY: "limitProbeEmpty",
   NEW_DAY: "newDay",
-  PROBE_EMPTY: "probeEmpty",
 });
 
 export function markEncounterKeyAvailable(state, key, nowMs = Date.now()) {
@@ -25,7 +25,7 @@ export function markEncounterKeyAvailable(state, key, nowMs = Date.now()) {
   if (next.key === key) return next;
   next.key = key;
   next.clear = false;
-  return clearEncounterGenerationSchedule(next);
+  return clearGenerationRecovery(next);
 }
 
 export function markEncounterAttempted(state, key, nowMs = Date.now()) {
@@ -44,7 +44,7 @@ export function markEncounterEntryStarted(state, event = {}) {
   return next;
 }
 
-export function applyEncounterGenerationResult(state, result, nowMs = Date.now(), attemptKey) {
+export function applyEncounterGenerationResult(state, result, nowMs = Date.now()) {
   if (result.status === EncounterGenerationResultStatus.NEW_DAY) {
     return {
       application: EncounterGenerationApplication.NEW_DAY,
@@ -58,13 +58,13 @@ export function applyEncounterGenerationResult(state, result, nowMs = Date.now()
       return { application: EncounterGenerationApplication.AVAILABLE, result, state: next };
     }
     return {
-      application: EncounterGenerationApplication.FAILURE,
+      application: EncounterGenerationApplication.ENCOUNTER_FAILED,
       result: {
         status: EncounterGenerationResultStatus.UNAVAILABLE,
         reason: EncounterGenerationFailureReason.ENCOUNTER_KEY_ALREADY_ATTEMPTED,
         key: result.key,
       },
-      state: next,
+      state: markEncounterFailed(next, nowMs),
     };
   }
   const current = normalizeEncounterState(state, nowMs);
@@ -78,15 +78,16 @@ export function applyEncounterGenerationResult(state, result, nowMs = Date.now()
       state: markEncounterLimitProbeEmpty(current, nowMs),
     };
   }
-  if (
-    result.reason === EncounterGenerationFailureReason.ENCOUNTER_KEY_MISSING ||
-    result.reason === EncounterGenerationFailureReason.ENCOUNTER_KEY_ALREADY_ATTEMPTED
-  ) {
+  if (result.status === EncounterGenerationResultStatus.UNAVAILABLE) {
     return {
-      application: EncounterGenerationApplication.PROBE_EMPTY,
+      application: EncounterGenerationApplication.ENCOUNTER_FAILED,
       result,
-      state: markEncounterProbeEmpty(current, result.reason, nowMs, attemptKey),
+      state: markEncounterFailed(current, nowMs),
     };
   }
-  return { application: EncounterGenerationApplication.FAILURE, result, state: current };
+  return {
+    application: EncounterGenerationApplication.GENERATION_FAULT,
+    result,
+    state: current,
+  };
 }

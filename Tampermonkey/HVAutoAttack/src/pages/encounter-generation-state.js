@@ -44,7 +44,7 @@ function recordResult(event, deps) {
   });
   const { result } = application;
   let { state } = application;
-  if (application.application === EncounterGenerationApplication.FAILURE) {
+  if (application.application === EncounterGenerationApplication.GENERATION_FAULT) {
     state = runEncounterPolicy({
       type: EncounterPolicyEvent.MARK_GENERATION_FAILED,
       state,
@@ -72,10 +72,11 @@ function recordResult(event, deps) {
     persistence,
     persisted,
     recovery,
+    attemptKey: attemptClock.attemptKey,
     blocked:
       !persisted ||
       isBlockingEncounterGenerationResult(result) ||
-      recovery.reason === "generationCircuitOpen",
+      recovery.recoveryReason === "generationCircuitOpen",
     application: application.application,
   };
 }

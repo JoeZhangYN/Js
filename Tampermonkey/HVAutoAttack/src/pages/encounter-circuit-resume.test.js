@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { ENCOUNTER_COOLDOWN_MS } from "./encounter-day-state.js";
+import { ENCOUNTER_BASE_COOLDOWN_MS, ENCOUNTER_COOLDOWN_MS } from "./encounter-day-state.js";
 import { EncounterEvent, runEncounterAutomation } from "./encounter.js";
 
 const mocks = vi.hoisted(() => ({
@@ -22,7 +22,7 @@ beforeEach(() => {
 });
 
 describe("encounter generation circuit resume", () => {
-  it("migrates a persisted missing-key circuit into the 30:05 probe deadline", () => {
+  it("migrates a persisted missing-key circuit into the primary failure deadline", () => {
     localStorage.setItem(
       "hvut_re",
       JSON.stringify({
@@ -43,14 +43,14 @@ describe("encounter generation circuit resume", () => {
 
     expect(outcome).toMatchObject({
       status: "waiting",
-      reason: "probeCycle",
+      reason: "cooldown",
       clock: { countdownMs: ENCOUNTER_COOLDOWN_MS },
     });
     expect(mocks.runUserFeedbackAutomation).not.toHaveBeenCalled();
     expect(mocks.gmXhr).not.toHaveBeenCalled();
   });
 
-  it("rechecks an expired legacy missing-key circuit and starts a full probe cycle", async () => {
+  it("rechecks an expired legacy missing-key circuit and starts a primary failure cycle", async () => {
     const attemptKey = "2026-06-27:0::true:ready";
     localStorage.setItem(
       "hvut_re",
@@ -75,10 +75,54 @@ describe("encounter generation circuit resume", () => {
 
     expect(outcome).toMatchObject({
       status: "waiting",
-      reason: "probeCycle",
+      reason: "cooldown",
       clock: { countdownMs: ENCOUNTER_COOLDOWN_MS },
     });
     expect(mocks.gmXhr).toHaveBeenCalledOnce();
     expect(mocks.runUserFeedbackAutomation).not.toHaveBeenCalled();
+  });
+
+  it("persists the second circuit response as a jittered primary cooldown", () => {
+    localStorage.setItem(
+      "hvut_re",
+      JSON.stringify({
+        date: 0,
+        cycleReadyAt: 0,
+        key: "",
+        count: 4,
+        clear: true,
+        schemaVersion: 3,
+        utcDay: "2026-06-27",
+        dayPhase: "active",
+        anchorReason: null,
+        invalidCycleCount: 0,
+        generationAttemptKey: "2026-06-27:0::true:ready",
+        generationFailureCount: 6,
+        generationRecoveryCircuit: 2,
+        generationRecoveryStep: 3,
+        generationFailureReason: "generationRequestFailed",
+        generationCircuitOpenUntil: Date.now(),
+        generationCircuitTerminal: true,
+      })
+    );
+
+    const outcome = runEncounterAutomation({
+      type: EncounterEvent.LOBBY_TICK,
+      nowMs: Date.now(),
+      random: () => 0.5,
+    });
+
+    expect(outcome).toMatchObject({
+      status: "waiting",
+      reason: "cooldown",
+      clock: { countdownMs: ENCOUNTER_BASE_COOLDOWN_MS + 15 * 1000 },
+      state: {
+        date: Date.now(),
+        cycleReadyAt: Date.now() + ENCOUNTER_BASE_COOLDOWN_MS + 15 * 1000,
+        anchorReason: "circuitResponse",
+      },
+    });
+    expect(outcome.state).not.toHaveProperty("generationCircuitOpenUntil");
+    expect(mocks.gmXhr).not.toHaveBeenCalled();
   });
 });

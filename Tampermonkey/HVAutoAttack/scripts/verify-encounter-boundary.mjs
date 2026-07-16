@@ -48,9 +48,11 @@ const widgetFailureFlowTest = path.normalize("src/pages/encounter-widget-failure
 const lobbyFlowFile = path.normalize("src/pages/encounter-lobby-flow.js");
 const lobbyOutcomeFile = path.normalize("src/pages/encounter-lobby-outcome.js");
 const lobbyActiveBlockFile = path.normalize("src/pages/encounter-lobby-active-block.js");
+const lobbyCircuitResponseFile = path.normalize("src/pages/encounter-lobby-circuit-response.js");
 const crossSiteStaleTest = path.normalize("src/pages/encounter-cross-site-stale.test.js");
 const policyFile = path.normalize("src/pages/encounter-policy.js");
 const dayStateFile = path.normalize("src/pages/encounter-day-state.js");
+const stateMigrationFile = path.normalize("src/pages/encounter-state-migration.js");
 const entryStateFile = path.normalize("src/pages/encounter-entry-state.js");
 const clockFile = path.normalize("src/pages/encounter-clock.js");
 const policyTest = path.normalize("src/pages/encounter-policy.test.js");
@@ -65,8 +67,10 @@ const hvUtilsFile = path.normalize("src/i18n/hv-utils.js");
 const legacyWidgetFile = path.normalize("src/pages/encounter-widget.js");
 const widgetPolicyFile = path.normalize("src/pages/encounter-widget-policy.js");
 const widgetStateFile = path.normalize("src/pages/encounter-widget-state.js");
+const widgetObservationFile = path.normalize("src/pages/encounter-widget-observation.js");
 const widgetPolicyTest = path.normalize("src/pages/encounter-widget-policy.test.js");
 const widgetMainWorldTest = path.normalize("src/pages/encounter-widget-main-world.test.js");
+const widgetTimerTest = path.normalize("src/pages/encounter-widget-timer.test.js");
 const widgetGenerationRecoveryTest = path.normalize(
   "src/pages/encounter-widget-generation-recovery.test.js"
 );
@@ -77,7 +81,13 @@ const timeFile = path.normalize("src/core/time.js");
 const diagnosticKeys = path.normalize("src/core/diagnostic-evidence-keys.js");
 const diagnosticTest = path.normalize("src/core/diagnostic-evidence.test.js");
 const violations = [];
-const policyInternalFiles = new Set([policyFile, dayStateFile, entryStateFile, clockFile]);
+const policyInternalFiles = new Set([
+  policyFile,
+  dayStateFile,
+  stateMigrationFile,
+  entryStateFile,
+  clockFile,
+]);
 
 function walk(dir) {
   for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
@@ -146,6 +156,7 @@ function checkFile(file) {
       relative !== stateGenerationFailureTest &&
       relative !== generationRequestFailureTest &&
       relative !== stateEvidenceTest &&
+      relative !== lobbyCircuitResponseFile &&
       relative !== bridgeFile &&
       /from\s+["']\.\/encounter-state\.js["']/.test(line)
     ) {
@@ -319,6 +330,7 @@ const diagnosticKeysText = fs.readFileSync(path.join(root, diagnosticKeys), "utf
 const diagnosticTestText = fs.readFileSync(path.join(root, diagnosticTest), "utf8");
 const policyText = fs.readFileSync(path.join(root, policyFile), "utf8");
 const dayStateText = fs.readFileSync(path.join(root, dayStateFile), "utf8");
+const stateMigrationText = fs.readFileSync(path.join(root, stateMigrationFile), "utf8");
 const entryStateText = fs.readFileSync(path.join(root, entryStateFile), "utf8");
 const clockText = fs.readFileSync(path.join(root, clockFile), "utf8");
 const entryPolicyText = fs.readFileSync(path.join(root, entryPolicyFile), "utf8");
@@ -336,10 +348,12 @@ const generationRequestFailureTestText = fs.readFileSync(
   "utf8"
 );
 const persistenceLoopTestText = fs.readFileSync(path.join(root, persistenceLoopTest), "utf8");
+const circuitResumeTestText = fs.readFileSync(path.join(root, circuitResumeTest), "utf8");
 const widgetFailureFlowTestText = fs.readFileSync(path.join(root, widgetFailureFlowTest), "utf8");
 const lobbyFlowText = fs.readFileSync(path.join(root, lobbyFlowFile), "utf8");
 const lobbyOutcomeText = fs.readFileSync(path.join(root, lobbyOutcomeFile), "utf8");
 const lobbyActiveBlockText = fs.readFileSync(path.join(root, lobbyActiveBlockFile), "utf8");
+const lobbyCircuitResponseText = fs.readFileSync(path.join(root, lobbyCircuitResponseFile), "utf8");
 const dawnLoopRecoveryTestText = fs.readFileSync(path.join(root, dawnLoopRecoveryTest), "utf8");
 const dawnIncidentExpiryTestText = fs.readFileSync(path.join(root, dawnIncidentExpiryTest), "utf8");
 const crossSiteStaleTestText = fs.readFileSync(path.join(root, crossSiteStaleTest), "utf8");
@@ -352,9 +366,11 @@ const policyCorruptStateTestText = fs.existsSync(path.join(root, policyCorruptSt
 const rejectionText = fs.readFileSync(path.join(root, rejectionFile), "utf8");
 const hvUtilsText = fs.readFileSync(path.join(root, hvUtilsFile), "utf8");
 const widgetPolicyText = fs.readFileSync(path.join(root, widgetPolicyFile), "utf8");
+const widgetObservationText = fs.readFileSync(path.join(root, widgetObservationFile), "utf8");
 const widgetPolicyTestText = [
   widgetPolicyTest,
   widgetMainWorldTest,
+  widgetTimerTest,
   widgetGenerationRecoveryTest,
   generationResultTest,
 ]
@@ -627,7 +643,7 @@ for (const required of [
 }
 for (const required of [
   "generates and enters a different key after the old key cooldown",
-  "waits a full probe cycle when generation returns the same already attempted key",
+  "waits a full primary cycle when generation returns the same already attempted key",
   "encounterKeyAlreadyAttempted",
 ]) {
   const text = fs.readFileSync(path.join(root, clearedKeyGenerationTest), "utf8");
@@ -788,29 +804,33 @@ if (!/\bMARK_GENERATION_FAILED\b/.test(policyText)) {
   );
 }
 for (const required of [
-  'PROBE_EMPTY: "probeEmpty"',
-  "markEncounterProbeEmpty(current, result.reason, nowMs, attemptKey)",
-  "EncounterGenerationFailureReason.ENCOUNTER_KEY_MISSING",
-  "EncounterGenerationFailureReason.ENCOUNTER_KEY_ALREADY_ATTEMPTED",
+  'ENCOUNTER_FAILED: "encounterFailed"',
+  'GENERATION_FAULT: "generationFault"',
+  "result.status === EncounterGenerationResultStatus.UNAVAILABLE",
+  "markEncounterFailed(current, nowMs)",
 ]) {
   if (!entryStateText.includes(required)) {
     violations.push(
-      `${entryStateFile.replaceAll("\\", "/")} must classify authoritative no-key as probe cadence: ${required}`
+      `${entryStateFile.replaceAll("\\", "/")} must separate authoritative encounter failure from technical generation faults: ${required}`
     );
   }
 }
 for (const required of [
-  "schemaVersion: 2",
+  "schemaVersion: 3",
+  "cycleReadyAt",
   "utcDay",
   "EncounterDayPhase.AWAITING_NEW_DAY",
   "EncounterDayPhase.CONFIRMING_LIMIT",
   "EncounterDayPhase.STOPPED_FOR_DAY",
   "EncounterAnchorReason.NEW_DAY",
   "EncounterAnchorReason.ENCOUNTER_COMPLETED",
-  "EncounterAnchorReason.LIMIT_PROBE",
+  "EncounterAnchorReason.ENCOUNTER_FAILED",
+  "EncounterAnchorReason.CIRCUIT_RESPONSE",
   "ENCOUNTER_DAILY_LIMIT = 24",
   "ENCOUNTER_LIMIT_EMPTY_CYCLES = 3",
-  "ENCOUNTER_COOLDOWN_MS = 30 * 60 * 1000 + 5000",
+  "ENCOUNTER_BASE_COOLDOWN_MS = 30 * 60 * 1000",
+  "ENCOUNTER_COOLDOWN_MS = ENCOUNTER_BASE_COOLDOWN_MS + 5000",
+  "ENCOUNTER_CIRCUIT_JITTER_SECONDS = 30",
 ]) {
   if (!dayStateText.includes(required)) {
     violations.push(`${dayStateFile.replaceAll("\\", "/")} must own ${required}`);
@@ -832,13 +852,16 @@ if (/\bREADINESS\b/.test(policyText)) {
     `${policyFile.replaceAll("\\", "/")} must not expose a parallel readiness query; use READ_CLOCK`
   );
 }
-const clockBody = clockText.match(/function readEncounterClock[\s\S]*?\n}/)?.[0] || "";
-if (!clockBody.includes("if (readiness.canEnter)")) {
+const primaryClockBody = clockText.match(/function primaryClock[\s\S]*?\n}/)?.[0] || "";
+if (!primaryClockBody.includes("if (readiness.canEnter)")) {
   violations.push(
     `${clockFile.replaceAll("\\", "/")} must let available encounter keys bypass cooldown countdown`
   );
 }
-if (clockBody.indexOf("if (readiness.canEnter)") > clockBody.indexOf("readiness.remainingMs > 0")) {
+if (
+  primaryClockBody.indexOf("if (readiness.canEnter)") >
+  primaryClockBody.indexOf("readiness.remainingMs > 0")
+) {
   violations.push(`${clockFile.replaceAll("\\", "/")} must check keyAvailable before cooldown`);
 }
 for (const required of [
@@ -1020,31 +1043,31 @@ if (
 }
 for (const required of [
   "EncounterPolicyEvent.MARK_GENERATION_FAILED",
-  'reason: "probeCycle"',
-  "nextProbeAt",
-  "probeReason",
-  "probeAttemptKey",
+  "operationalStatus",
+  "recoveryStatus",
+  "recoveryRemainingMs",
   "classifyEncounterGenerationResult",
   'reason: "dailyResetEvent"',
   'action: "dailyResetEvent"',
   'unavailableReason: "dailyResetEvent"',
-  "schedules a full encounter probe cycle when main-world news has no encounter key",
-  "keeps repeated main-world checks inside the same full probe cycle",
-  "never opens the fault circuit for repeated authoritative no-key results",
+  "uses encounter failure, not a probe timer, for authoritative no-key results",
+  "shows primary and technical recovery clocks as independent identities",
+  "clears technical recovery when an authoritative no-key failure resets the primary cycle",
   "treats the UTC dawn response as the non-counting new-day cooldown anchor",
-  "keeps manual ready-window clicks able to load the encounter check",
+  "lets a plain battle-page countdown click recheck immediately",
+  "rechecks during the primary countdown and enters immediately when a key is found",
   'action: "load"',
 ]) {
   if (!widgetPolicyText.includes(required) && !widgetPolicyTestText.includes(required)) {
     violations.push(
-      `${widgetPolicyFile.replaceAll("\\", "/")} must separate no-key probe cadence from fault recovery: ${required}`
+      `${widgetPolicyFile.replaceAll("\\", "/")} must separate the primary cycle, technical recovery, and manual recheck: ${required}`
     );
   }
 }
 for (const required of [
   "records dawn once and starts cooldown without navigation, feedback, or a second request",
   "coalesces simultaneous rollover ticks into one generation request",
-  "turns a legacy missing-key circuit into a normal full probe cycle",
+  "turns a legacy missing-key circuit into a normal primary failure cycle",
   "vi.getTimerCount()",
 ]) {
   if (!dawnLoopRecoveryTestText.includes(required)) {
@@ -1072,13 +1095,39 @@ if (/reason\s*=\s*["']encounterKeyMissing["']/.test(generationRecoveryText)) {
   );
 }
 for (const required of [
-  "legacyProbeDeadline",
-  "clearEncounterProbeSchedule",
+  "migrateEncounterCycle",
+  "migrateGenerationRecoveryDeadline",
+  "clearGenerationRecovery",
   "markEncounterGenerationFailed",
 ]) {
-  if (!generationRecoveryText.includes(required)) {
+  if (!(generationRecoveryText + dayStateText + stateMigrationText).includes(required)) {
     violations.push(
-      `${generationRecoveryFile.replaceAll("\\", "/")} must preserve no-key migration and typed fault separation: ${required}`
+      `${generationRecoveryFile.replaceAll("\\", "/")} must preserve legacy migration and typed fault separation: ${required}`
+    );
+  }
+}
+for (const retired of [
+  'PROBE_EMPTY: "probeEmpty"',
+  "markEncounterProbeEmpty",
+  'reason: "probeCycle"',
+  "probeAttemptKey",
+]) {
+  if ((entryStateText + clockText + widgetPolicyText).includes(retired)) {
+    violations.push(
+      `${entryStateFile.replaceAll("\\", "/")} primary encounter flow must keep retired probe path absent: ${retired}`
+    );
+  }
+}
+for (const required of [
+  "primaryStatus",
+  "primaryCountdownMs",
+  "recoveryStatus",
+  "recoveryCountdownMs",
+  "recoveryReason",
+]) {
+  if (!(clockText + widgetStateText).includes(required)) {
+    violations.push(
+      `${clockFile.replaceAll("\\", "/")} must expose independent clock identity ${required}`
     );
   }
 }
@@ -1116,7 +1165,7 @@ for (const required of [
   "EncounterGenerationStateEvent",
   "executeEncounterGenerationRequest",
   "generationStatePersistenceFailed",
-  'recovery.reason === "generationCircuitOpen"',
+  'recovery.recoveryReason === "generationCircuitOpen"',
 ]) {
   if (!stateGenerationText.includes(required)) {
     violations.push(`${stateGenerationFile.replaceAll("\\", "/")} must preserve ${required}`);
@@ -1165,16 +1214,75 @@ for (const required of [
 }
 for (const required of [
   "ENCOUNTER_GENERATION_BACKOFF_MS",
-  "ENCOUNTER_GENERATION_CIRCUIT_THRESHOLD",
   "ENCOUNTER_GENERATION_CIRCUIT_OPEN_MS",
+  "ENCOUNTER_GENERATION_STEPS_PER_CIRCUIT",
+  "ENCOUNTER_GENERATION_MAX_CIRCUITS",
   "buildGenerationAttemptKey",
   "readGenerationRecovery",
+  "isGenerationCircuitResponseDue",
   "generationFailureReason",
 ]) {
   if (!(policyText.includes(required) || generationRecoveryText.includes(required))) {
     violations.push(
       `${policyFile.replaceAll("\\", "/")} must own generation backoff/circuit recovery: ${required}`
     );
+  }
+}
+for (const required of [
+  "const ENCOUNTER_GENERATION_BACKOFF_MS = [1 * 60 * 1000, 3 * 60 * 1000]",
+  "const ENCOUNTER_GENERATION_CIRCUIT_OPEN_MS = 5 * 60 * 1000",
+  "const ENCOUNTER_GENERATION_MAX_CIRCUITS = 2",
+  'status: "responseDue"',
+  'reason: "generationCircuitResponse"',
+]) {
+  if (!generationRecoveryText.includes(required)) {
+    violations.push(
+      `${generationRecoveryFile.replaceAll("\\", "/")} must lock two 1/3/5 minute recovery rounds: ${required}`
+    );
+  }
+}
+for (const required of [
+  "runs two 1/3/5 minute recovery rounds before a typed circuit response",
+  "keeps technical recovery separate from the primary encounter deadline",
+  "keeps one recovery episode when the independent primary clock becomes ready",
+  "ENCOUNTER_BASE_COOLDOWN_MS + 15 * 1000",
+]) {
+  if (!policyTestText.includes(required)) {
+    violations.push(`${generationRecoveryTest.replaceAll("\\", "/")} must cover ${required}`);
+  }
+}
+const attemptKeyBody =
+  generationRecoveryText.match(/export function buildGenerationAttemptKey[\s\S]*?\n}/)?.[0] || "";
+if (attemptKeyBody.includes("status")) {
+  violations.push(
+    `${generationRecoveryFile.replaceAll("\\", "/")} generation recovery identity must not depend on primary clock status`
+  );
+}
+if (
+  !circuitResumeTestText.includes(
+    "persists the second circuit response as a jittered primary cooldown"
+  )
+) {
+  violations.push(
+    `${circuitResumeTest.replaceAll("\\", "/")} must cover persisted circuit response`
+  );
+}
+for (const required of [
+  "EncounterPolicyEvent.RESOLVE_GENERATION_CIRCUIT",
+  "EncounterStateEvent.RESOLVE_GENERATION_CIRCUIT",
+  'clock.status !== "responseDue"',
+  "EncounterAnchorReason.CIRCUIT_RESPONSE",
+]) {
+  if (
+    !(
+      policyText +
+      stateHelperText +
+      lobbyFlowText +
+      lobbyCircuitResponseText +
+      dayStateText
+    ).includes(required)
+  ) {
+    violations.push(`encounter circuit response flow must preserve ${required}`);
   }
 }
 for (const required of [
@@ -1205,7 +1313,7 @@ for (const required of [
 for (const required of [
   "starts the widget cooldown from dawn without reporting a generation failure",
   "backs off a widget fetch failure before its timer can request again",
-  'reason: "generationBackoff"',
+  'operationalReason: "generationBackoff"',
 ]) {
   if (!widgetFailureFlowTestText.includes(required)) {
     violations.push(`${widgetFailureFlowTest.replaceAll("\\", "/")} must cover ${required}`);
@@ -1225,6 +1333,22 @@ if (!/\bWIDGET_TIMER_ELAPSED\b/.test(hvUtilsText)) {
     `${hvUtilsFile.replaceAll("\\", "/")} widget countdown expiry must report WIDGET_TIMER_ELAPSED`
   );
 }
+if (widgetPolicyText.includes("event.force")) {
+  violations.push(
+    `${widgetPolicyFile.replaceAll("\\", "/")} manual WIDGET_CLICKED identity must not require a modifier force flag`
+  );
+}
+for (const required of [
+  "re.button.addEventListener('click', () => { re.run(true); });",
+  "readiness.recoveryStatus === 'countdown'",
+  "readiness.recoveryRemainingMs",
+]) {
+  if (!hvUtilsText.includes(required)) {
+    violations.push(
+      `${hvUtilsFile.replaceAll("\\", "/")} must expose ordinary-click recheck and separate recovery display: ${required}`
+    );
+  }
+}
 if (/\bIS_ISEKAI\b/.test(hvUtilsText)) {
   violations.push(
     `${hvUtilsFile.replaceAll("\\", "/")} must not classify the isekai world as gallery/e-hentai page type`
@@ -1243,7 +1367,7 @@ for (const required of [
   "function suppressIsekaiNavigation(current) {",
   'recovery: "isekaiNavigationSuppressed"',
   'if (event.pageType === "is") return suppressIsekaiNavigation(current);',
-  'if (event.pageType === "is") return suppressIsekaiNavigation(readWidgetState(event.state));',
+  "return suppressIsekaiNavigation(widgetState(event));",
   "suppresses isekai root encounter clicks and timer expiry without loading news",
 ]) {
   if (!widgetPolicyText.includes(required) && !widgetPolicyTestText.includes(required)) {
@@ -1323,7 +1447,7 @@ if (!widgetPolicyText.includes("classifyEncounterGenerationResult")) {
 for (const required of [
   "does not classify low equipment capacity text as encounter equipment-full failure",
   "does not classify untyped equipment full text outside the news error box",
-  "handles plain battle-page countdown clicks without requesting a news load",
+  "lets a plain battle-page countdown click recheck immediately",
   "ignores root-page started checks even when a stale encounter key is present",
   "Inventory Capacity:",
   "54",
@@ -1336,7 +1460,9 @@ for (const required of [
   }
 }
 if (
-  !widgetPolicyText.includes('if (event.pageType !== "ba") return readWidgetState(event.state);')
+  !(widgetPolicyText + widgetObservationText).includes(
+    'if (event.pageType !== "ba") return widgetState(event);'
+  )
 ) {
   violations.push(
     `${widgetPolicyFile.replaceAll("\\", "/")} must reject widget started events outside the battle page`

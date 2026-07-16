@@ -105,7 +105,9 @@ describe("encounter generation transport recovery", () => {
     let sharedState;
     vi.stubGlobal("GM_getValue", (_key, fallback) => sharedState || fallback);
     vi.stubGlobal("GM_setValue", (_key, value) => {
-      if (value.nextProbeAt) throw new Error("GM probe-cycle write blocked");
+      if (value.anchorReason === "encounterFailed") {
+        throw new Error("GM encounter-failure write blocked");
+      }
       sharedState = value;
     });
     mocks.gmXhr.mockImplementation(({ onload }) =>
@@ -124,8 +126,8 @@ describe("encounter generation transport recovery", () => {
       blocked: true,
       persistence: { ok: false, reason: "gmWriteFailed" },
       state: {
-        nextProbeAt: Date.now() + ENCOUNTER_COOLDOWN_MS,
-        probeReason: "encounterKeyMissing",
+        cycleReadyAt: Date.now() + ENCOUNTER_COOLDOWN_MS,
+        anchorReason: "encounterFailed",
       },
     });
     expect(mocks.gmXhr).toHaveBeenCalledOnce();
@@ -134,7 +136,7 @@ describe("encounter generation transport recovery", () => {
       key: "",
       count: 0,
       clear: true,
-      schemaVersion: 2,
+      schemaVersion: 3,
     });
     expect(localStorage.getItem("hvut_re")).toBeNull();
   });

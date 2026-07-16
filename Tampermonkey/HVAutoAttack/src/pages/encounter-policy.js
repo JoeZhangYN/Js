@@ -4,6 +4,7 @@ import {
   markEncounterCompleted,
   normalizeEncounterState,
   observeEncounterNewDay,
+  resolveEncounterGenerationCircuit,
 } from "./encounter-day-state.js";
 import { readEncounterClock, readEncounterReadiness } from "./encounter-clock.js";
 import { planEncounterEntryRoute } from "./encounter-entry-policy.js";
@@ -34,6 +35,7 @@ export const EncounterPolicyEvent = Object.freeze({
   PARSE_SEARCH_KEY: "parseSearchKey",
   PLAN_ACTIVATION: "planActivation",
   READ_CLOCK: "readClock",
+  RESOLVE_GENERATION_CIRCUIT: "resolveGenerationCircuit",
 });
 
 function planEncounterActivation(state, nowMs = Date.now()) {
@@ -42,7 +44,7 @@ function planEncounterActivation(state, nowMs = Date.now()) {
 
 const encounterPolicyEventHandlers = Object.freeze({
   applyGenerationResult: (event) =>
-    applyEncounterGenerationResult(event.state, event.result, event.nowMs, event.attemptKey),
+    applyEncounterGenerationResult(event.state, event.result, event.nowMs),
   beginNewDay: (event) => beginEncounterDay(event.nowMs),
   defaultState: (event) => defaultEncounterState(event.nowMs),
   markCompleted: (event) => markEncounterCompleted(event.state, event.nowMs),
@@ -63,6 +65,8 @@ const encounterPolicyEventHandlers = Object.freeze({
   parseSearchKey: (event) => parseSearchEncounterKey(event.search),
   planActivation: (event) => planEncounterActivation(event.state, event.nowMs),
   readClock: (event) => readEncounterClock(event.state, event.nowMs),
+  resolveGenerationCircuit: (event) =>
+    resolveEncounterGenerationCircuit(event.state, event.nowMs, event.random),
 });
 
 export function runEncounterPolicy(event = { type: EncounterPolicyEvent.READ_CLOCK }) {

@@ -42,7 +42,7 @@ describe("encounter limit policy", () => {
       expect(state).toMatchObject({
         count: 24,
         invalidCycleCount: cycle,
-        anchorReason: "limitProbe",
+        anchorReason: "encounterFailed",
       });
     }
 
@@ -59,7 +59,7 @@ describe("encounter limit policy", () => {
       },
     });
 
-    expect(applied.application).toBe("failure");
+    expect(applied.application).toBe("generationFault");
     expect(applied.state.invalidCycleCount).toBe(1);
     expect(applied.state.date).toBe(state.date);
   });

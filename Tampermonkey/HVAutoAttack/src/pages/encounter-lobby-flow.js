@@ -1,6 +1,10 @@
 import { StaminaEvent, runStaminaAutomation } from "../state/stamina.js";
 import { recordEncounterLobbyDegradation } from "./encounter-generation-block.js";
-import { blockActiveEncounterIncident } from "./encounter-lobby-active-block.js";
+import {
+  blockActiveEncounterIncident,
+  createActiveEncounterBlockOutcome,
+} from "./encounter-lobby-active-block.js";
+import { resolveEncounterLobbyCircuitResponse } from "./encounter-lobby-circuit-response.js";
 import {
   enterPlannedEncounter,
   planStoredEncounterEntry,
@@ -17,13 +21,10 @@ import { EncounterStateEvent, runEncounterStateAutomation } from "./encounter-st
 
 let pendingLobbyGeneration = null;
 
-function nowFor(event) {
-  return event.nowMs ?? Date.now();
-}
+const nowFor = (event) => event.nowMs ?? Date.now();
 
-function readEncounterSnapshot() {
-  return runEncounterStateAutomation({ type: EncounterStateEvent.READ_SNAPSHOT });
-}
+const readEncounterSnapshot = () =>
+  runEncounterStateAutomation({ type: EncounterStateEvent.READ_SNAPSHOT });
 
 async function loadAndEnterEncounter(plan, event) {
   if (plan?.action !== "generate") return { status: "notRequested", state: plan?.state };
@@ -101,21 +102,27 @@ export function runEncounterLobbyFlow(event = {}) {
       }),
   });
   if (activeBlock?.status === "blocked") {
-    return createEncounterDegradedOutcome(
-      {
-        reason: activeBlock.outcome?.evidence?.reason || "encounterIncidentActive",
-        state: activeBlock.state,
-        clock,
-        diagnostic: activeBlock.outcome,
-      },
-      nowMs
-    );
+    return createActiveEncounterBlockOutcome(activeBlock, clock, nowMs);
   }
   if (activeBlock?.status === "recovered") {
     state = activeBlock.state;
     clock = runEncounterPolicy({ type: EncounterPolicyEvent.READ_CLOCK, state, nowMs });
   }
-  if (clock.reason === "generationCircuitOpen") {
+  const circuit = resolveEncounterLobbyCircuitResponse(clock, state, {
+    nowMs,
+    random: event.random,
+  });
+  if (!circuit.ok) {
+    return recordEncounterLobbyDegradation(
+      circuit.generation,
+      "lobbyCircuitResponse",
+      clock,
+      nowMs
+    );
+  }
+  state = circuit.state;
+  clock = circuit.clock;
+  if (clock.recoveryReason === "generationCircuitOpen") {
     const generation = {
       status: "unavailable",
       reason: state.generationFailureReason,

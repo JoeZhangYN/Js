@@ -79,11 +79,11 @@ describe("encounter stale entry recovery", () => {
 
     expect(outcome).toMatchObject({
       status: "waiting",
-      reason: "probeCycle",
+      reason: "cooldown",
       generation: {
         status: "unavailable",
         reason: "encounterKeyMissing",
-        recovery: { reason: "probeCycle", countdownMs: ENCOUNTER_COOLDOWN_MS },
+        recovery: { reason: "cooldown", countdownMs: ENCOUNTER_COOLDOWN_MS },
       },
     });
     expect(mocks.gmXhr).toHaveBeenCalledWith(

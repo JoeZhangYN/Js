@@ -1,61 +1,59 @@
-import { EncounterGenerationFailureReason } from "./encounter-generation-result.js";
+import {
+  isLegacyEncounterAbsence,
+  migrateGenerationRecoveryDeadline,
+} from "./encounter-state-migration.js";
 
-const ENCOUNTER_GENERATION_BACKOFF_MS = [5 * 60 * 1000, 15 * 60 * 1000];
-const ENCOUNTER_GENERATION_CIRCUIT_THRESHOLD = 3;
-const ENCOUNTER_GENERATION_CIRCUIT_OPEN_MS = 60 * 60 * 1000;
-const ENCOUNTER_PROBE_ABSENCE_REASONS = new Set([
-  EncounterGenerationFailureReason.ENCOUNTER_KEY_MISSING,
-  EncounterGenerationFailureReason.ENCOUNTER_KEY_ALREADY_ATTEMPTED,
-]);
+const ENCOUNTER_GENERATION_BACKOFF_MS = [1 * 60 * 1000, 3 * 60 * 1000];
+const ENCOUNTER_GENERATION_CIRCUIT_OPEN_MS = 5 * 60 * 1000;
+const ENCOUNTER_GENERATION_STEPS_PER_CIRCUIT = 3;
+const ENCOUNTER_GENERATION_MAX_CIRCUITS = 2;
 
 const utcDayKey = (stamp) => new Date(stamp).toISOString().slice(0, 10);
 
-export function buildGenerationAttemptKey(state, nowMs = Date.now(), status = "ready") {
-  return `${utcDayKey(nowMs)}:${state.date}:${state.key}:${state.clear}:${status}`;
+export function buildGenerationAttemptKey(state, nowMs = Date.now()) {
+  return `${utcDayKey(nowMs)}:${state.date}:${state.key}:${state.clear}`;
 }
 
-function legacyProbeDeadline(state, nowMs, cooldownMs) {
-  const circuitOpenUntil = Math.max(0, Number(state?.generationCircuitOpenUntil) || 0);
-  if (circuitOpenUntil) {
-    return Math.max(nowMs, circuitOpenUntil - ENCOUNTER_GENERATION_CIRCUIT_OPEN_MS + cooldownMs);
-  }
-  const nextAttemptAt = Math.max(0, Number(state?.generationNextAttemptAt) || 0);
-  if (!nextAttemptAt) return nowMs + cooldownMs;
-  const failureCount = Math.max(1, Number(state?.generationFailureCount) || 1);
-  const index = Math.min(failureCount - 1, ENCOUNTER_GENERATION_BACKOFF_MS.length - 1);
-  return Math.max(nowMs, nextAttemptAt - ENCOUNTER_GENERATION_BACKOFF_MS[index] + cooldownMs);
-}
-
-export function carryGenerationSchedule(normalized, state, nowMs, cooldownMs) {
-  const nextProbeAt = Math.max(0, Number(state?.nextProbeAt) || 0);
-  if (nextProbeAt) {
-    normalized.nextProbeAt = nextProbeAt;
-    normalized.probeReason = String(
-      state?.probeReason || EncounterGenerationFailureReason.ENCOUNTER_KEY_MISSING
-    );
-    if (state?.probeAttemptKey) normalized.probeAttemptKey = String(state.probeAttemptKey);
-    return normalized;
-  }
-  const failureReason = String(state?.generationFailureReason || "");
-  if (ENCOUNTER_PROBE_ABSENCE_REASONS.has(failureReason)) {
-    normalized.nextProbeAt = nextProbeAt || legacyProbeDeadline(state, nowMs, cooldownMs);
-    normalized.probeReason = failureReason;
-    if (!normalized.probeAttemptKey && state?.generationAttemptKey) {
-      normalized.probeAttemptKey = String(state.generationAttemptKey);
-    }
-    return normalized;
-  }
-  const attemptKey = state?.generationAttemptKey ? String(state.generationAttemptKey) : "";
-  if (!attemptKey || !attemptKey.startsWith(`${utcDayKey(nowMs)}:`)) return normalized;
-  normalized.generationAttemptKey = attemptKey;
-  normalized.generationFailureCount = Math.max(0, Number(state?.generationFailureCount) || 0);
-  normalized.generationNextAttemptAt = Math.max(0, Number(state?.generationNextAttemptAt) || 0);
-  normalized.generationCircuitOpenUntil = Math.max(
-    0,
-    Number(state?.generationCircuitOpenUntil) || 0
+function recoveryPosition(failureCount) {
+  const count = Math.min(
+    ENCOUNTER_GENERATION_STEPS_PER_CIRCUIT * ENCOUNTER_GENERATION_MAX_CIRCUITS,
+    Math.max(1, failureCount)
   );
-  if (state?.generationFailureReason) {
-    normalized.generationFailureReason = String(state.generationFailureReason);
+  return {
+    count,
+    circuit: Math.ceil(count / ENCOUNTER_GENERATION_STEPS_PER_CIRCUIT),
+    step: ((count - 1) % ENCOUNTER_GENERATION_STEPS_PER_CIRCUIT) + 1,
+  };
+}
+
+export function carryGenerationRecovery(normalized, state, nowMs) {
+  const failureReason = String(state?.generationFailureReason || "");
+  if (isLegacyEncounterAbsence(failureReason)) return normalized;
+  const sourceAttemptKey = state?.generationAttemptKey ? String(state.generationAttemptKey) : "";
+  if (!sourceAttemptKey || !sourceAttemptKey.startsWith(`${utcDayKey(nowMs)}:`)) return normalized;
+  const attemptKey = buildGenerationAttemptKey(normalized, nowMs);
+  const position = recoveryPosition(Math.max(1, Number(state?.generationFailureCount) || 1));
+  const legacy = Number(state?.schemaVersion) < 3;
+  const nextDelay =
+    position.step === ENCOUNTER_GENERATION_STEPS_PER_CIRCUIT
+      ? ENCOUNTER_GENERATION_CIRCUIT_OPEN_MS
+      : ENCOUNTER_GENERATION_BACKOFF_MS[position.step - 1];
+  const deadline = legacy
+    ? migrateGenerationRecoveryDeadline(state, nowMs, position.step, nextDelay)
+    : Math.max(
+        0,
+        Number(state?.generationCircuitOpenUntil) || Number(state?.generationNextAttemptAt) || 0
+      );
+  normalized.generationAttemptKey = attemptKey;
+  normalized.generationFailureCount = position.count;
+  normalized.generationRecoveryCircuit = position.circuit;
+  normalized.generationRecoveryStep = position.step;
+  normalized.generationFailureReason = failureReason || "generationRequestFailed";
+  if (position.step === ENCOUNTER_GENERATION_STEPS_PER_CIRCUIT) {
+    normalized.generationCircuitOpenUntil = deadline;
+    normalized.generationCircuitTerminal = position.circuit >= ENCOUNTER_GENERATION_MAX_CIRCUITS;
+  } else {
+    normalized.generationNextAttemptAt = deadline;
   }
   return normalized;
 }
@@ -65,22 +63,29 @@ export function clearGenerationRecovery(state) {
   delete state.generationFailureCount;
   delete state.generationNextAttemptAt;
   delete state.generationCircuitOpenUntil;
+  delete state.generationCircuitTerminal;
+  delete state.generationRecoveryCircuit;
+  delete state.generationRecoveryStep;
   delete state.generationFailureReason;
   return state;
 }
 
-export function clearEncounterProbeSchedule(state) {
-  delete state.nextProbeAt;
-  delete state.probeReason;
-  delete state.probeAttemptKey;
-  return state;
-}
-
-export function clearEncounterGenerationSchedule(state) {
-  return clearEncounterProbeSchedule(clearGenerationRecovery(state));
+export function isGenerationCircuitResponseDue(state, nowMs) {
+  return Boolean(
+    state.generationCircuitTerminal &&
+    state.generationCircuitOpenUntil &&
+    state.generationCircuitOpenUntil <= nowMs
+  );
 }
 
 export function readGenerationRecovery(state, nowMs) {
+  if (isGenerationCircuitResponseDue(state, nowMs)) {
+    return {
+      status: "responseDue",
+      countdownMs: 0,
+      reason: "generationCircuitResponse",
+    };
+  }
   if (state.generationCircuitOpenUntil > nowMs) {
     return {
       status: "countdown",
@@ -105,22 +110,25 @@ export function markEncounterGenerationFailed(
   reason = "generationRequestFailed"
 ) {
   if (state.key && !state.clear) return state;
-  clearEncounterProbeSchedule(state);
+  if (state.generationCircuitTerminal) return state;
   state.clear = true;
-  const key = String(attemptKey || buildGenerationAttemptKey(state, nowMs, "ready"));
+  const key = String(attemptKey || buildGenerationAttemptKey(state, nowMs));
   const previousCount =
     state.generationAttemptKey === key ? Math.max(0, Number(state.generationFailureCount) || 0) : 0;
-  const failureCount = previousCount + 1;
+  const position = recoveryPosition(previousCount + 1);
   state.generationAttemptKey = key;
-  state.generationFailureCount = failureCount;
-  state.generationFailureReason = String(reason || "encounterKeyMissing");
-  if (failureCount >= ENCOUNTER_GENERATION_CIRCUIT_THRESHOLD) {
+  state.generationFailureCount = position.count;
+  state.generationRecoveryCircuit = position.circuit;
+  state.generationRecoveryStep = position.step;
+  state.generationFailureReason = String(reason || "generationRequestFailed");
+  if (position.step === ENCOUNTER_GENERATION_STEPS_PER_CIRCUIT) {
     state.generationCircuitOpenUntil = nowMs + ENCOUNTER_GENERATION_CIRCUIT_OPEN_MS;
+    state.generationCircuitTerminal = position.circuit >= ENCOUNTER_GENERATION_MAX_CIRCUITS;
     delete state.generationNextAttemptAt;
   } else {
-    const index = Math.min(failureCount - 1, ENCOUNTER_GENERATION_BACKOFF_MS.length - 1);
-    state.generationNextAttemptAt = nowMs + ENCOUNTER_GENERATION_BACKOFF_MS[index];
+    state.generationNextAttemptAt = nowMs + ENCOUNTER_GENERATION_BACKOFF_MS[position.step - 1];
     delete state.generationCircuitOpenUntil;
+    delete state.generationCircuitTerminal;
   }
   return state;
 }

@@ -4,6 +4,7 @@ import {
   runEncounterGenerationIncident,
 } from "./encounter-generation-incident.js";
 import { EncounterPolicyEvent, runEncounterPolicy } from "./encounter-policy.js";
+import { createEncounterDegradedOutcome } from "./encounter-lobby-outcome.js";
 
 const REPLAYABLE_PERSISTENCE_REASONS = new Set([
   "generationStatePersistenceFailed",
@@ -41,7 +42,10 @@ export function blockActiveEncounterIncident(clock, state, deps = {}) {
     type: EncounterPolicyEvent.READ_CLOCK,
     state: replay?.persistence?.state || state,
   });
-  if (!replay && !["generationBackoff", "generationCircuitOpen"].includes(recoveryClock.reason)) {
+  if (
+    !replay &&
+    !["generationBackoff", "generationCircuitOpen"].includes(recoveryClock.recoveryReason)
+  ) {
     return { status: "cleared", state, incidentClear: clearIncident(incident) };
   }
   const outcome = recordEncounterGenerationDegradation(
@@ -59,4 +63,16 @@ export function blockActiveEncounterIncident(clock, state, deps = {}) {
     incident.sourceIdentity || "lobbyResume"
   );
   return { status: "blocked", state, outcome };
+}
+
+export function createActiveEncounterBlockOutcome(activeBlock, clock, nowMs) {
+  return createEncounterDegradedOutcome(
+    {
+      reason: activeBlock.outcome?.evidence?.reason || "encounterIncidentActive",
+      state: activeBlock.state,
+      clock,
+      diagnostic: activeBlock.outcome,
+    },
+    nowMs
+  );
 }

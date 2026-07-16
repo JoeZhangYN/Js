@@ -7,8 +7,7 @@ import {
 import { createEncounterDegradedOutcome } from "./encounter-lobby-outcome.js";
 
 function buildIncident(generation, source) {
-  const attemptKey =
-    generation.state?.generationAttemptKey || generation.state?.probeAttemptKey || "unknown";
+  const attemptKey = generation.attemptKey || generation.state?.generationAttemptKey || "unknown";
   const sourceIdentity =
     typeof source === "string" ? source : source?.identity || source?.pageKind || "unknown";
   const recoveryEpisode =

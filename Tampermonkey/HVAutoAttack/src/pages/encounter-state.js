@@ -15,6 +15,7 @@ const EVENT_MARK_ATTEMPTED = "markAttempted";
 const EVENT_RESTORE_ENTRY = "restoreEntry";
 const EVENT_RECORD_GENERATION_RESULT = "recordGenerationResult";
 const EVENT_LOAD_KEY = "loadKey";
+const EVENT_RESOLVE_GENERATION_CIRCUIT = "resolveGenerationCircuit";
 
 export const EncounterStateEvent = Object.freeze({
   READ_CURRENT: EVENT_READ_CURRENT,
@@ -25,6 +26,7 @@ export const EncounterStateEvent = Object.freeze({
   RESTORE_ENTRY: EVENT_RESTORE_ENTRY,
   RECORD_GENERATION_RESULT: EVENT_RECORD_GENERATION_RESULT,
   LOAD_KEY: EVENT_LOAD_KEY,
+  RESOLVE_GENERATION_CIRCUIT: EVENT_RESOLVE_GENERATION_CIRCUIT,
 });
 
 function warnEncounterStateFailure(stage, detail) {
@@ -106,6 +108,19 @@ function restoreEncounterEntry(state) {
   return { ok: persistence.ok === true, state, persistence };
 }
 
+function resolveGenerationCircuit(event = {}) {
+  const snapshot = readCurrentSnapshot();
+  if (!snapshot.ok) return { ok: false, state: snapshot.state, persistence: snapshot };
+  const state = runEncounterPolicy({
+    type: EncounterPolicyEvent.RESOLVE_GENERATION_CIRCUIT,
+    state: snapshot.state,
+    nowMs: event.nowMs,
+    random: event.random,
+  });
+  const persistence = writeReState(state);
+  return { ok: persistence.ok === true, state, persistence };
+}
+
 function runGenerationState(event, type) {
   return runEncounterGenerationState(
     { ...event, type },
@@ -129,6 +144,7 @@ const encounterStateEventHandlers = Object.freeze({
   [EVENT_RECORD_GENERATION_RESULT]: (event) =>
     runGenerationState(event, EncounterGenerationStateEvent.RECORD_RESULT),
   [EVENT_LOAD_KEY]: (event) => runGenerationState(event, EncounterGenerationStateEvent.LOAD),
+  [EVENT_RESOLVE_GENERATION_CIRCUIT]: resolveGenerationCircuit,
 });
 
 export function runEncounterStateAutomation(event = { type: EVENT_READ_CURRENT }) {

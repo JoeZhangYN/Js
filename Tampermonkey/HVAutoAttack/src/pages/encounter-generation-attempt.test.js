@@ -7,32 +7,27 @@ beforeEach(() => {
   vi.setSystemTime(new Date("2026-06-27T12:00:00.000Z"));
 });
 
-afterEach(() => {
-  vi.useRealTimers();
-});
+afterEach(() => vi.useRealTimers());
 
 describe("encounter generation attempt evidence", () => {
-  it("starts a full probe cycle without moving the completion-owned cooldown or count", () => {
-    const state = { date: Date.now() - 31 * 60 * 1000, key: "", count: 7, clear: true };
-
+  it("anchors an authoritative no-key failure to a new primary encounter cycle", () => {
     const application = runEncounterPolicy({
       type: EncounterPolicyEvent.APPLY_GENERATION_RESULT,
-      state,
+      state: { date: Date.now() - 31 * 60 * 1000, key: "", count: 7, clear: true },
       nowMs: Date.now(),
       result: { status: "unavailable", reason: "encounterKeyMissing" },
     });
 
     expect(application).toMatchObject({
-      application: "probeEmpty",
+      application: "encounterFailed",
       state: {
-        date: state.date,
-        key: "",
+        date: Date.now(),
+        cycleReadyAt: Date.now() + ENCOUNTER_COOLDOWN_MS,
+        anchorReason: "encounterFailed",
         count: 7,
-        clear: true,
-        nextProbeAt: Date.now() + ENCOUNTER_COOLDOWN_MS,
-        probeReason: "encounterKeyMissing",
       },
     });
+    expect(application.state).not.toHaveProperty("nextProbeAt");
     expect(
       runEncounterPolicy({
         type: EncounterPolicyEvent.READ_CLOCK,
@@ -41,7 +36,7 @@ describe("encounter generation attempt evidence", () => {
       })
     ).toMatchObject({
       status: "countdown",
-      reason: "probeCycle",
+      reason: "cooldown",
       countdownMs: ENCOUNTER_COOLDOWN_MS - 1000,
     });
   });

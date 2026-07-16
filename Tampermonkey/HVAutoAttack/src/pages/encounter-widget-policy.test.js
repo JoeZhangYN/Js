@@ -86,7 +86,7 @@ describe("planEncounterWidgetEvent", () => {
     });
   });
 
-  it("handles plain battle-page countdown clicks without requesting a news load", () => {
+  it("lets a plain battle-page countdown click recheck immediately", () => {
     expect(
       planEncounterWidgetEvent({
         type: "widgetClicked",
@@ -94,8 +94,8 @@ describe("planEncounterWidgetEvent", () => {
         pageType: "ba",
       })
     ).toMatchObject({
-      action: "none",
-      handled: true,
+      action: "load",
+      engage: true,
       status: "countdown",
     });
   });

@@ -75,10 +75,6 @@
     "maxSloc": 181,
     "reason": "formatted baseline startup contract test verbosity"
   },
-  "pages/encounter-widget-policy.js": {
-    "maxSloc": 166,
-    "reason": "formatted baseline encounter widget policy split debt"
-  },
   "pages/page-automation.test.js": {
     "maxSloc": 174,
     "reason": "formatted baseline page automation test verbosity"

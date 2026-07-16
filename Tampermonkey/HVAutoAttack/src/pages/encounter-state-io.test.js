@@ -4,6 +4,7 @@ import {
   runStorageIoMetricsAutomation,
 } from "../state/storage-io-metrics.js";
 import { StorageIdentity, StorageWriteOutcome } from "../state/storage-io-policy.js";
+import { ENCOUNTER_COOLDOWN_MS } from "./encounter-day-state.js";
 import { EncounterStateEvent, runEncounterStateAutomation } from "./encounter-state.js";
 
 beforeEach(() => {
@@ -16,10 +17,11 @@ describe("encounter state IO", () => {
   it("does not physically rewrite unchanged GM encounter state during repeated reads", () => {
     const stored = {
       date: Date.now() - 1000,
+      cycleReadyAt: Date.now() - 1000 + ENCOUNTER_COOLDOWN_MS,
       key: "",
       count: 1,
       clear: true,
-      schemaVersion: 2,
+      schemaVersion: 3,
       utcDay: "2026-06-27",
       dayPhase: "active",
       anchorReason: "encounterCompleted",

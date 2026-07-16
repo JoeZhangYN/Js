@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { ENCOUNTER_COOLDOWN_MS } from "./encounter-day-state.js";
 import { planEncounterWidgetEvent } from "./encounter-widget-policy.js";
 
 beforeEach(() => {
@@ -6,11 +7,10 @@ beforeEach(() => {
 });
 
 describe("encounter widget generation recovery", () => {
-  it("schedules a full encounter probe cycle when main-world news has no encounter key", () => {
-    const date = Date.now() - 31 * 60 * 1000;
+  it("uses encounter failure, not a probe timer, for authoritative no-key results", () => {
     const outcome = planEncounterWidgetEvent({
       type: "widgetNewsLoaded",
-      state: { date, key: "", count: 7, clear: true },
+      state: { date: Date.now() - 31 * 60 * 1000, key: "", count: 7, clear: true },
       eventpane: "<p>No random encounter is currently available.</p>",
       engage: true,
       pageType: "hv",
@@ -20,76 +20,71 @@ describe("encounter widget generation recovery", () => {
       action: "unavailable",
       unavailableReason: "encounterKeyMissing",
       status: "countdown",
-      reason: "probeCycle",
-      remainingMs: 30 * 60 * 1000 + 5000,
+      reason: "cooldown",
+      remainingMs: ENCOUNTER_COOLDOWN_MS,
       state: {
-        date,
+        date: Date.now(),
+        cycleReadyAt: Date.now() + ENCOUNTER_COOLDOWN_MS,
         count: 7,
-        nextProbeAt: Date.now() + 30 * 60 * 1000 + 5000,
-        probeReason: "encounterKeyMissing",
-        probeAttemptKey: `2026-06-27:${date}::true:ready`,
+        anchorReason: "encounterFailed",
       },
     });
+    expect(outcome.state).not.toHaveProperty("nextProbeAt");
   });
 
-  it("keeps repeated main-world checks inside the same full probe cycle", () => {
-    const date = Date.now() - 31 * 60 * 1000;
-    const nextProbeAt = Date.now() + 30 * 60 * 1000 + 5000;
-
-    expect(
-      planEncounterWidgetEvent({
-        type: "widgetTimerElapsed",
-        state: {
-          date,
-          key: "",
-          count: 7,
-          clear: true,
-          nextProbeAt,
-          probeReason: "encounterKeyMissing",
-        },
-        pageType: "hv",
-      })
-    ).toMatchObject({
-      status: "countdown",
-      reason: "probeCycle",
-      remainingMs: 30 * 60 * 1000 + 5000,
-      state: { nextProbeAt, probeReason: "encounterKeyMissing" },
-    });
-  });
-
-  it("never opens the fault circuit for repeated authoritative no-key results", () => {
-    const date = Date.now() - 31 * 60 * 1000;
-    const attemptKey = `2026-06-27:${date}::true:ready`;
-
+  it("shows primary and technical recovery clocks as independent identities", () => {
     const outcome = planEncounterWidgetEvent({
-      type: "widgetNewsLoaded",
+      type: "widgetTick",
+      nowMs: Date.now(),
       state: {
-        date,
+        date: Date.now() - ENCOUNTER_COOLDOWN_MS,
+        cycleReadyAt: Date.now(),
         key: "",
         count: 7,
         clear: true,
-        generationAttemptKey: attemptKey,
-        generationFailureCount: 2,
+        schemaVersion: 3,
+        utcDay: "2026-06-27",
+        generationAttemptKey: "2026-06-27:technical",
+        generationFailureCount: 1,
+        generationRecoveryCircuit: 1,
+        generationRecoveryStep: 1,
+        generationNextAttemptAt: Date.now() + 60 * 1000,
+        generationFailureReason: "generationRequestFailed",
+      },
+    });
+
+    expect(outcome).toMatchObject({
+      status: "ready",
+      reason: "readyWindow",
+      remainingMs: 0,
+      operationalStatus: "countdown",
+      operationalReason: "generationBackoff",
+      recoveryStatus: "countdown",
+      recoveryRemainingMs: 60 * 1000,
+    });
+  });
+
+  it("clears technical recovery when an authoritative no-key failure resets the primary cycle", () => {
+    const outcome = planEncounterWidgetEvent({
+      type: "widgetNewsLoaded",
+      state: {
+        date: Date.now() - 31 * 60 * 1000,
+        key: "",
+        count: 7,
+        clear: true,
+        generationAttemptKey: "2026-06-27:technical",
+        generationFailureCount: 5,
+        generationNextAttemptAt: Date.now() + 3 * 60 * 1000,
+        generationFailureReason: "generationRequestFailed",
       },
       eventpane: "<p>No random encounter is currently available.</p>",
       engage: true,
       pageType: "hv",
     });
 
-    expect(outcome).toMatchObject({
-      action: "unavailable",
-      unavailableReason: "encounterKeyMissing",
-      status: "countdown",
-      reason: "probeCycle",
-      remainingMs: 30 * 60 * 1000 + 5000,
-      state: {
-        nextProbeAt: Date.now() + 30 * 60 * 1000 + 5000,
-        probeReason: "encounterKeyMissing",
-        probeAttemptKey: attemptKey,
-      },
-    });
-    expect(outcome.state).not.toHaveProperty("generationCircuitOpenUntil");
+    expect(outcome.state).toMatchObject({ anchorReason: "encounterFailed" });
     expect(outcome.state).not.toHaveProperty("generationFailureCount");
+    expect(outcome.state).not.toHaveProperty("generationNextAttemptAt");
   });
 
   it("treats the UTC dawn response as the non-counting new-day cooldown anchor", () => {
@@ -107,7 +102,7 @@ describe("encounter widget generation recovery", () => {
       unavailableReason: "dailyResetEvent",
       status: "countdown",
       reason: "cooldown",
-      remainingMs: 30 * 60 * 1000 + 5000,
+      remainingMs: ENCOUNTER_COOLDOWN_MS,
       state: {
         date: Date.now(),
         key: "",

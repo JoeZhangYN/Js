@@ -3456,7 +3456,7 @@ const bindRe = function (re, ctx) {
   re.clock = function (button) {
     if (re.init() === false) return false;
     re.button = button;
-    re.button.addEventListener('click', (e) => { re.run(e.ctrlKey || e.shiftKey); });
+    re.button.addEventListener('click', () => { re.run(true); });
     const dayState = run_hvut_encounter_bridge('WIDGET_TICK', { state: re.json });
     if (applyEncounterState(dayState) === false) return false;
     if (re.json.date === 0) re.load();
@@ -3530,7 +3530,12 @@ const bindRe = function (re, ctx) {
     const readiness = run_hvut_encounter_bridge('WIDGET_TICK', { state: re.json }) ?? { state: re.json, remainingMs: 0 };
     if (applyEncounterState(readiness) === false) return false;
     if (readiness.status === 'countdown') {
-      re.button.textContent = time_format(readiness.remainingMs, 2) + ` [${readiness.count}]`;
+      const recovery = readiness.recoveryStatus === 'countdown' ? ` · R${time_format(readiness.recoveryRemainingMs, 2)}` : '';
+      re.button.textContent = time_format(readiness.remainingMs, 2) + ` [${readiness.count}]${recovery}`;
+      re.beep = true;
+      re.readyAttemptKey = '';
+    } else if (readiness.recoveryStatus === 'countdown') {
+      re.button.textContent = `遭遇战 [${readiness.count}] · R${time_format(readiness.recoveryRemainingMs, 2)}`;
       re.beep = true;
       re.readyAttemptKey = '';
     } else {
@@ -3550,17 +3555,17 @@ const bindRe = function (re, ctx) {
   };
   re.run = async function (engage) {
     if (re.type === 'ba') {
-      const outcome = run_hvut_encounter_bridge('WIDGET_CLICKED', { state: re.json, pageType: re.type, force: engage });
+      const outcome = run_hvut_encounter_bridge('WIDGET_CLICKED', { state: re.json, pageType: re.type });
       if (applyEncounterState(outcome) === false) return false;
       if (outcome?.handled) return;
-      return re.load();
+      return re.load(outcome.engage, outcome.href);
     } else if (re.type === 'is') {
-      const outcome = run_hvut_encounter_bridge('WIDGET_CLICKED', { state: re.json, pageType: re.type, force: engage });
+      const outcome = run_hvut_encounter_bridge('WIDGET_CLICKED', { state: re.json, pageType: re.type });
       if (applyEncounterState(outcome) === false) return false;
       if (outcome?.handled) return;
       return false;
     } else if (re.type === 'hv') {
-      const outcome = run_hvut_encounter_bridge('WIDGET_CLICKED', { state: re.json, pageType: re.type, force: engage });
+      const outcome = run_hvut_encounter_bridge('WIDGET_CLICKED', { state: re.json, pageType: re.type });
       if (applyEncounterState(outcome) === false) return false;
       if (outcome?.handled) return;
       return re.load(true, outcome.href);
@@ -3579,7 +3584,7 @@ const bindRe = function (re, ctx) {
         return false;
       }
       if (html.includes('<div id="navbar">')) {
-        const outcome = run_hvut_encounter_bridge('WIDGET_CLICKED', { state: re.json, pageType: re.type, force: engage, hvAvailable: true });
+        const outcome = run_hvut_encounter_bridge('WIDGET_CLICKED', { state: re.json, pageType: re.type, hvAvailable: true });
         if (applyEncounterState(outcome) === false) return false;
         if (outcome?.handled) return;
         return re.load(true, outcome.href);

@@ -1,6 +1,5 @@
 import { TimeEvent, runTimeAutomation } from "../core/time.js";
 import {
-  ENCOUNTER_COOLDOWN_MS,
   ENCOUNTER_DAILY_LIMIT,
   EncounterDayPhase,
   normalizeEncounterState,
@@ -15,9 +14,7 @@ const msUntilNextUtcDay = (stamp) =>
 
 export function readEncounterReadiness(state, nowMs = Date.now()) {
   const normalized = normalizeEncounterState(state, nowMs);
-  const remainingMs = normalized.date
-    ? Math.max(0, normalized.date + ENCOUNTER_COOLDOWN_MS - nowMs)
-    : 0;
+  const remainingMs = Math.max(0, normalized.cycleReadyAt - nowMs);
   return {
     state: normalized,
     remainingMs,
@@ -31,52 +28,16 @@ export function readEncounterReadiness(state, nowMs = Date.now()) {
   };
 }
 
-function countdown(readiness, countdownMs, reason, nowMs) {
-  return {
-    ...readiness,
-    status: "countdown",
-    countdownMs,
-    reason,
-    attemptKey: buildGenerationAttemptKey(readiness.state, nowMs, "countdown"),
-  };
-}
-
-export function readEncounterClock(state, nowMs = Date.now()) {
-  const readiness = readEncounterReadiness(state, nowMs);
-  const newDayBoundaryMs = msUntilNextUtcDay(nowMs) + 5000;
-  if (readiness.canEnter) {
-    return {
-      ...readiness,
-      status: "ready",
-      countdownMs: 0,
-      reason: "keyAvailable",
-      attemptKey: buildGenerationAttemptKey(readiness.state, nowMs, "ready"),
-    };
-  }
+function primaryClock(readiness, newDayBoundaryMs) {
+  if (readiness.canEnter) return { status: "ready", countdownMs: 0, reason: "keyAvailable" };
   if (readiness.state.dayPhase === EncounterDayPhase.STOPPED_FOR_DAY) {
-    return countdown(readiness, newDayBoundaryMs, "stoppedForDay", nowMs);
+    return { status: "countdown", countdownMs: newDayBoundaryMs, reason: "stoppedForDay" };
   }
   if (readiness.remainingMs > 0) {
     if (newDayBoundaryMs < readiness.remainingMs) {
-      return countdown(readiness, newDayBoundaryMs, "newDayBoundary", nowMs);
+      return { status: "countdown", countdownMs: newDayBoundaryMs, reason: "newDayBoundary" };
     }
-    return countdown(readiness, readiness.remainingMs, "cooldown", nowMs);
-  }
-  if (readiness.state.nextProbeAt > nowMs) {
-    const probeCountdownMs = readiness.state.nextProbeAt - nowMs;
-    if (newDayBoundaryMs < probeCountdownMs) {
-      return countdown(readiness, newDayBoundaryMs, "newDayBoundary", nowMs);
-    }
-    return {
-      ...countdown(readiness, probeCountdownMs, "probeCycle", nowMs),
-      attemptKey:
-        readiness.state.probeAttemptKey ||
-        buildGenerationAttemptKey(readiness.state, nowMs, "countdown"),
-    };
-  }
-  const recovery = readGenerationRecovery(readiness.state, nowMs);
-  if (recovery) {
-    return { ...readiness, ...recovery, attemptKey: readiness.state.generationAttemptKey };
+    return { status: "countdown", countdownMs: readiness.remainingMs, reason: "cooldown" };
   }
   const reason =
     readiness.state.dayPhase === EncounterDayPhase.AWAITING_NEW_DAY
@@ -84,12 +45,43 @@ export function readEncounterClock(state, nowMs = Date.now()) {
       : readiness.state.dayPhase === EncounterDayPhase.CONFIRMING_LIMIT
         ? "limitProbe"
         : "readyWindow";
-  const status = readiness.state.clear ? "ready" : "missed";
+  return { status: readiness.state.clear ? "ready" : "missed", countdownMs: 0, reason };
+}
+
+function withClockIdentities(readiness, primary, recovery, operational, nowMs) {
   return {
     ...readiness,
-    status,
-    countdownMs: 0,
-    reason,
-    attemptKey: buildGenerationAttemptKey(readiness.state, nowMs, status),
+    ...operational,
+    primaryStatus: primary.status,
+    primaryCountdownMs: primary.countdownMs,
+    primaryReason: primary.reason,
+    recoveryStatus: recovery?.status || "idle",
+    recoveryCountdownMs: recovery?.countdownMs || 0,
+    recoveryReason: recovery?.reason || null,
+    attemptKey:
+      recovery?.status !== undefined
+        ? readiness.state.generationAttemptKey
+        : buildGenerationAttemptKey(readiness.state, nowMs),
   };
+}
+
+export function readEncounterClock(state, nowMs = Date.now()) {
+  const readiness = readEncounterReadiness(state, nowMs);
+  const newDayBoundaryMs = msUntilNextUtcDay(nowMs) + 5000;
+  const primary = primaryClock(readiness, newDayBoundaryMs);
+  const recovery = readGenerationRecovery(readiness.state, nowMs);
+  if (readiness.canEnter || primary.reason === "stoppedForDay") {
+    return withClockIdentities(readiness, primary, null, primary, nowMs);
+  }
+  if (recovery?.status === "responseDue") {
+    return withClockIdentities(readiness, primary, recovery, recovery, nowMs);
+  }
+  if (newDayBoundaryMs < Math.max(primary.countdownMs, recovery?.countdownMs || 0)) {
+    const newDay = { status: "countdown", countdownMs: newDayBoundaryMs, reason: "newDayBoundary" };
+    return withClockIdentities(readiness, primary, recovery, newDay, nowMs);
+  }
+  if ((recovery?.countdownMs || 0) > primary.countdownMs) {
+    return withClockIdentities(readiness, primary, recovery, recovery, nowMs);
+  }
+  return withClockIdentities(readiness, primary, recovery, primary, nowMs);
 }
