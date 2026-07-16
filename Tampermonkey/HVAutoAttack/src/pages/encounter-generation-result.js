@@ -17,6 +17,7 @@ export const EncounterGenerationFailureReason = Object.freeze({
   REQUEST_FAILED: "generationRequestFailed",
   REQUEST_REJECTED: "generationRequestRejected",
   REQUEST_TIMEOUT: "generationRequestTimeout",
+  RESPONSE_UNRECOGNIZED: "generationResponseUnrecognized",
 });
 
 export const parseEventpaneEncounterKey = (eventpane = "") =>
@@ -35,6 +36,13 @@ export function classifyEncounterGenerationResult(event = {}) {
       status: EncounterGenerationResultStatus.TRANSPORT_FAILURE,
       reason: event.transportFailure.reason,
       failure: event.transportFailure.detail,
+    };
+  }
+  if (event.eventpanePresent === false) {
+    return {
+      status: EncounterGenerationResultStatus.TRANSPORT_FAILURE,
+      reason: EncounterGenerationFailureReason.RESPONSE_UNRECOGNIZED,
+      failure: { reason: "eventpaneMissing" },
     };
   }
   const eventpane = event.eventpane || "";

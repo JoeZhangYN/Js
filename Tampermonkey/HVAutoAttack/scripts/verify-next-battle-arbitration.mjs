@@ -24,6 +24,9 @@ const repairFile = "src/repair/repair-orchestrator.js";
 const dayRecordFile = "src/state/day-record.js";
 const incidentTestFile = "src/pages/encounter-generation-block.test.js";
 const encounterCheckFile = "src/pages/next-battle-encounter-check.js";
+const encounterOwnerFile = "src/pages/encounter.js";
+const widgetPolicyFile = "src/pages/encounter-widget-policy.js";
+const hvUtilsFile = "src/i18n/hv-utils.js";
 const arbitrationText = read(arbitrationFile);
 const testText = arbitrationTests.map(read).join("\n");
 const policyText = read(policyFile);
@@ -40,6 +43,9 @@ const repairText = read(repairFile);
 const dayRecordText = read(dayRecordFile);
 const incidentTestText = read(incidentTestFile);
 const encounterCheckText = read(encounterCheckFile);
+const encounterOwnerText = read(encounterOwnerFile);
+const widgetPolicyText = read(widgetPolicyFile);
+const hvUtilsText = read(hvUtilsFile);
 const violations = [];
 
 function requireText(text, needle, message) {
@@ -90,6 +96,30 @@ if (/\b(?:setTimeout|setInterval)\s*\(/.test(arbitrationText)) {
 }
 if (/\bsetInterval\s*\(/.test(wakeScheduleText)) {
   violations.push(`${wakeScheduleFile} must not reintroduce a heartbeat interval`);
+}
+if (
+  /\bWIDGET_TIMER_ELAPSED\b|widgetTimerElapsed/.test(
+    encounterOwnerText + widgetPolicyText + hvUtilsText
+  )
+) {
+  violations.push("widget timer expiry must not bypass next-battle arbitration");
+}
+const widgetRefresh =
+  hvUtilsText.match(/re\.refresh = function \(\) \{[\s\S]*?\n  \};\n  re\.run/)?.[0] || "";
+if (!widgetRefresh) {
+  violations.push(`${hvUtilsFile} must keep a visible projection heartbeat`);
+}
+for (const forbidden of ["re.load(", "re.run(", "WIDGET_GENERATION_FAILED", "WIDGET_NEWS_LOADED"]) {
+  if (widgetRefresh.includes(forbidden)) {
+    violations.push(`${hvUtilsFile} widget heartbeat must not own automatic action: ${forbidden}`);
+  }
+}
+for (const required of ["const readiness = re.get();", "readiness.remainingMs"]) {
+  requireText(
+    widgetRefresh,
+    required,
+    `${hvUtilsFile} projection heartbeat must include ${required}`
+  );
 }
 for (const required of [
   "scheduledWake",

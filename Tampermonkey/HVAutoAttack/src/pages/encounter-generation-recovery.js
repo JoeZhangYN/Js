@@ -28,17 +28,19 @@ function recoveryPosition(failureCount) {
 
 export function carryGenerationRecovery(normalized, state, nowMs) {
   const failureReason = String(state?.generationFailureReason || "");
-  if (isLegacyEncounterAbsence(failureReason)) return normalized;
+  const schemaVersion = Number(state?.schemaVersion);
+  const legacy = !Number.isFinite(schemaVersion) || schemaVersion < 4;
+  if (legacy && isLegacyEncounterAbsence(failureReason)) return normalized;
   const sourceAttemptKey = state?.generationAttemptKey ? String(state.generationAttemptKey) : "";
   if (!sourceAttemptKey || !sourceAttemptKey.startsWith(`${utcDayKey(nowMs)}:`)) return normalized;
   const attemptKey = buildGenerationAttemptKey(normalized, nowMs);
   const position = recoveryPosition(Math.max(1, Number(state?.generationFailureCount) || 1));
-  const legacy = Number(state?.schemaVersion) < 3;
+  const legacyRecovery = !Number.isFinite(schemaVersion) || schemaVersion < 3;
   const nextDelay =
     position.step === ENCOUNTER_GENERATION_STEPS_PER_CIRCUIT
       ? ENCOUNTER_GENERATION_CIRCUIT_OPEN_MS
       : ENCOUNTER_GENERATION_BACKOFF_MS[position.step - 1];
-  const deadline = legacy
+  const deadline = legacyRecovery
     ? migrateGenerationRecoveryDeadline(state, nowMs, position.step, nextDelay)
     : Math.max(
         0,

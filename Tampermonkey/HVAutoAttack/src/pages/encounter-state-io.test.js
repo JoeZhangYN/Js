@@ -21,7 +21,7 @@ describe("encounter state IO", () => {
       key: "",
       count: 1,
       clear: true,
-      schemaVersion: 3,
+      schemaVersion: 4,
       utcDay: "2026-06-27",
       dayPhase: "active",
       anchorReason: "encounterCompleted",

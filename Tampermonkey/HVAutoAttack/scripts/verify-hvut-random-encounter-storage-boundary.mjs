@@ -36,11 +36,9 @@ const clock = body(/re\.clock = function \(button\) \{[\s\S]*?\n  \};\n  re\.hv/
 const hv = body(/re\.hv = function \(\) \{[\s\S]*?\n  \};\n  re\.ba/, "re.hv");
 const ba = body(/re\.ba = function \(\) \{[\s\S]*?\n  \};\n  re\.eh/, "re.ba");
 const eh = body(/re\.eh = function \(\) \{[\s\S]*?\n  \};\n  re\.get/, "re.eh");
-const run = body(/re\.run = async function \(engage\) \{[\s\S]*?\n  \};\n  re\.load/, "re.run");
-const load = body(
-  /re\.load = async function \(engage, href\) \{[\s\S]*?\n  \};\n  re\.start/,
-  "re.load"
-);
+const refresh = body(/re\.refresh = function \(\) \{[\s\S]*?\n  \};\n  re\.run/, "re.refresh");
+const run = body(/re\.run = async function \(\) \{[\s\S]*?\n  \};\n  re\.load/, "re.run");
+const load = body(/re\.load = async function \(href\) \{[\s\S]*?\n  \};\n  re\.start/, "re.load");
 
 requireParts("applyEncounterState", applyState, [
   "if (!ctx.config.set('re', outcome.state, 'hvut_')) {",
@@ -61,12 +59,14 @@ requireParts("run_hvut_encounter_bridge", encounterBridge, [
 
 requireParts("re.init", init, ["ctx.hvPageType", "return re.get();"]);
 if (/\bisIsekai\b|\bIS_ISEKAI\b/.test(bindRe)) {
-  violations.push(`${target} bindRe must not forward world identity through invariant widget events`);
+  violations.push(
+    `${target} bindRe must not forward world identity through invariant widget events`
+  );
 }
 requireParts("re.clock", clock, [
   "if (re.init() === false) return false;",
-  "const dayState = run_hvut_encounter_bridge('WIDGET_TICK', { state: re.json });",
-  "if (applyEncounterState(dayState) === false) return false;",
+  "re.button.addEventListener('click', () => { re.run(); });",
+  "re.start();",
   "return true;",
 ]);
 requireParts("re.hv", hv, ["if (re.init() === false) return false;", "return re.clock(button);"]);
@@ -88,7 +88,7 @@ requireParts("re.run", run, [
   "record_hvut_random_encounter_failure('widgetHvAvailabilityFetch'",
   "run_hvut_encounter_bridge('WIDGET_GENERATION_FAILED'",
   "if (applyEncounterState(outcome) === false) return false;",
-  "if (outcome?.handled) return false;",
+  "checkMode: 'manual'",
   "re.start();",
   "return false;",
   "hvAvailable: true",
@@ -101,19 +101,34 @@ requireParts("re.load", load, [
   "re.start();",
   "return false;",
   "if (applyEncounterState(outcome) === false) return false;",
+  "eventpanePresent: Boolean(eventpaneNode)",
+  "checkMode: 'manual'",
   "return true;",
 ]);
+
+requireParts("re.refresh", refresh, [
+  "const readiness = re.get();",
+  "readiness.recoveryStatus === 'countdown'",
+  "play_beep(...ctx.config.settings.reBeep);",
+]);
+for (const forbidden of ["WIDGET_TIMER_ELAPSED", "re.load(", "re.run("]) {
+  if (refresh.includes(forbidden)) {
+    violations.push(`${target} re.refresh must stay projection-only: ${forbidden}`);
+  }
+}
 
 requireParts("bindRe encounter bridge calls", bindRe, [
   "run_hvut_encounter_bridge('WIDGET_TICK', { state: re.json })",
   "run_hvut_encounter_bridge('WIDGET_LINK_FOUND', { state: re.json, key })",
   "run_hvut_encounter_bridge('WIDGET_RESET_DAY')",
   "run_hvut_encounter_bridge('WIDGET_STARTED_ENCOUNTER', { state: re.json, search: location.search, pageType: re.type })",
-  "run_hvut_encounter_bridge('WIDGET_TIMER_ELAPSED'",
   "run_hvut_encounter_bridge('WIDGET_CLICKED'",
   "run_hvut_encounter_bridge('WIDGET_NEWS_LOADED'",
   "run_hvut_encounter_bridge('WIDGET_GENERATION_FAILED'",
 ]);
+if (bindRe.includes("WIDGET_TIMER_ELAPSED")) {
+  violations.push(`${target} must not restore widget timer expiry as an automatic entry`);
+}
 
 requireParts("random encounter failure recorder", text, [
   "var record_hvut_random_encounter_failure = function (stage, detail) {",

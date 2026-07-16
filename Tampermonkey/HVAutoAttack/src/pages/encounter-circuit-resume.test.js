@@ -50,7 +50,7 @@ describe("encounter generation circuit resume", () => {
     expect(mocks.gmXhr).not.toHaveBeenCalled();
   });
 
-  it("rechecks an expired legacy missing-key circuit and starts a primary failure cycle", async () => {
+  it("rechecks an expired legacy missing-key circuit and starts first-round recovery", async () => {
     const attemptKey = "2026-06-27:0::true:ready";
     localStorage.setItem(
       "hvut_re",
@@ -75,8 +75,8 @@ describe("encounter generation circuit resume", () => {
 
     expect(outcome).toMatchObject({
       status: "waiting",
-      reason: "cooldown",
-      clock: { countdownMs: ENCOUNTER_COOLDOWN_MS },
+      reason: "generationBackoff",
+      clock: { countdownMs: 60_000 },
     });
     expect(mocks.gmXhr).toHaveBeenCalledOnce();
     expect(mocks.runUserFeedbackAutomation).not.toHaveBeenCalled();

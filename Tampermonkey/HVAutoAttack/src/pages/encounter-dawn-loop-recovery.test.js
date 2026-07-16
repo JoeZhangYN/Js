@@ -93,9 +93,10 @@ describe("UTC encounter new-day recovery", () => {
     await expect(second).resolves.toMatchObject({ status: "waiting" });
     expect(mocks.gmXhr).toHaveBeenCalledTimes(1);
     expect(JSON.parse(localStorage.getItem(HVUT_RE_KEY))).toMatchObject({
-      date: Date.now(),
-      cycleReadyAt: Date.now() + 30 * 60 * 1000 + 5000,
-      anchorReason: "encounterFailed",
+      date: 0,
+      cycleReadyAt: 0,
+      generationFailureCount: 1,
+      generationNextAttemptAt: Date.now() + 60_000,
     });
   });
 

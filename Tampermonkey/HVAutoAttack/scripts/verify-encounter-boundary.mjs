@@ -52,8 +52,14 @@ const lobbyCircuitResponseFile = path.normalize("src/pages/encounter-lobby-circu
 const crossSiteStaleTest = path.normalize("src/pages/encounter-cross-site-stale.test.js");
 const policyFile = path.normalize("src/pages/encounter-policy.js");
 const dayStateFile = path.normalize("src/pages/encounter-day-state.js");
+const battleCycleFile = path.normalize("src/pages/encounter-battle-cycle.js");
+const battleCycleTest = path.normalize("src/pages/encounter-battle-cycle.test.js");
+const primaryClockFile = path.normalize("src/pages/encounter-primary-clock.js");
+const primaryClockTest = path.normalize("src/pages/encounter-primary-clock.test.js");
+const checkModeFile = path.normalize("src/pages/encounter-check-mode.js");
 const stateMigrationFile = path.normalize("src/pages/encounter-state-migration.js");
 const entryStateFile = path.normalize("src/pages/encounter-entry-state.js");
+const generationApplicationFile = path.normalize("src/pages/encounter-generation-application.js");
 const clockFile = path.normalize("src/pages/encounter-clock.js");
 const policyTest = path.normalize("src/pages/encounter-policy.test.js");
 const limitPolicyTest = path.normalize("src/pages/encounter-limit-policy.test.js");
@@ -84,8 +90,12 @@ const violations = [];
 const policyInternalFiles = new Set([
   policyFile,
   dayStateFile,
+  battleCycleFile,
+  primaryClockFile,
+  checkModeFile,
   stateMigrationFile,
   entryStateFile,
+  generationApplicationFile,
   clockFile,
 ]);
 
@@ -210,9 +220,10 @@ function checkFile(file) {
       relative !== dawnLoopRecoveryTest &&
       relative !== widgetGenerationRecoveryTest &&
       relative !== limitConfirmationTest &&
+      relative !== primaryClockTest &&
       /\b1800000\b|30\s*\*\s*60\s*\*\s*1000/.test(line)
     ) {
-      violations.push(`${where} encounter interval belongs in encounter-policy.js`);
+      violations.push(`${where} encounter interval belongs in encounter-primary-clock.js`);
     }
     if (relative !== policyFile && relative !== policyTest && /\bcount\s*>=\s*24\b/.test(line)) {
       violations.push(`${where} encounter daily limit belongs in encounter-policy.js`);
@@ -330,8 +341,17 @@ const diagnosticKeysText = fs.readFileSync(path.join(root, diagnosticKeys), "utf
 const diagnosticTestText = fs.readFileSync(path.join(root, diagnosticTest), "utf8");
 const policyText = fs.readFileSync(path.join(root, policyFile), "utf8");
 const dayStateText = fs.readFileSync(path.join(root, dayStateFile), "utf8");
+const battleCycleText = fs.readFileSync(path.join(root, battleCycleFile), "utf8");
+const battleCycleTestText = fs.readFileSync(path.join(root, battleCycleTest), "utf8");
+const primaryClockText = fs.readFileSync(path.join(root, primaryClockFile), "utf8");
+const primaryClockTestText = fs.readFileSync(path.join(root, primaryClockTest), "utf8");
+const checkModeText = fs.readFileSync(path.join(root, checkModeFile), "utf8");
 const stateMigrationText = fs.readFileSync(path.join(root, stateMigrationFile), "utf8");
 const entryStateText = fs.readFileSync(path.join(root, entryStateFile), "utf8");
+const generationApplicationText = fs.readFileSync(
+  path.join(root, generationApplicationFile),
+  "utf8"
+);
 const clockText = fs.readFileSync(path.join(root, clockFile), "utf8");
 const entryPolicyText = fs.readFileSync(path.join(root, entryPolicyFile), "utf8");
 const generationRecoveryText = fs.readFileSync(path.join(root, generationRecoveryFile), "utf8");
@@ -643,7 +663,7 @@ for (const required of [
 }
 for (const required of [
   "generates and enters a different key after the old key cooldown",
-  "waits a full primary cycle when generation returns the same already attempted key",
+  "uses the first recovery delay when generation returns the same attempted key",
   "encounterKeyAlreadyAttempted",
 ]) {
   const text = fs.readFileSync(path.join(root, clearedKeyGenerationTest), "utf8");
@@ -804,36 +824,102 @@ if (!/\bMARK_GENERATION_FAILED\b/.test(policyText)) {
   );
 }
 for (const required of [
-  'ENCOUNTER_FAILED: "encounterFailed"',
-  'GENERATION_FAULT: "generationFault"',
+  'AUTOMATIC_CHECK_FAILED: "automaticCheckFailed"',
+  'MANUAL_CHECK_FAILED: "manualCheckFailed"',
+  'MANUAL_EMPTY: "manualEmpty"',
+  'LIMIT_PROBE_EMPTY: "limitProbeEmpty"',
   "result.status === EncounterGenerationResultStatus.UNAVAILABLE",
-  "markEncounterFailed(current, nowMs)",
+  "!isManualEncounterCheck(checkMode)",
 ]) {
-  if (!entryStateText.includes(required)) {
+  if (!generationApplicationText.includes(required)) {
     violations.push(
-      `${entryStateFile.replaceAll("\\", "/")} must separate authoritative encounter failure from technical generation faults: ${required}`
+      `${generationApplicationFile.replaceAll("\\", "/")} must separate automatic, manual, and limit generation outcomes: ${required}`
+    );
+  }
+}
+if (/EncounterGenerationApplication|applyEncounterGenerationResult/.test(entryStateText)) {
+  violations.push(
+    `${entryStateFile.replaceAll("\\", "/")} must own only encounter-key entry lifecycle`
+  );
+}
+for (const consumerText of [policyText, stateGenerationText, widgetPolicyText, ownerText]) {
+  if (!consumerText.includes("encounter-generation-application.js")) {
+    violations.push(
+      `${generationApplicationFile.replaceAll("\\", "/")} must remain the live generation-decision identity`
     );
   }
 }
 for (const required of [
-  "schemaVersion: 3",
-  "cycleReadyAt",
-  "utcDay",
+  "schemaVersion: 4",
+  "normalizeEncounterBattleCycle",
+  "normalizeEncounterPrimaryClock",
+  "completeEncounterBattleCycle",
+  "recordPostLimitEmptyCycle",
+  "anchorEncounterPrimaryClock",
+  "circuitResponsePrimaryClock",
+]) {
+  if (!dayStateText.includes(required)) {
+    violations.push(`${dayStateFile.replaceAll("\\", "/")} must compose ${required}`);
+  }
+}
+for (const required of [
   "EncounterDayPhase.AWAITING_NEW_DAY",
   "EncounterDayPhase.CONFIRMING_LIMIT",
   "EncounterDayPhase.STOPPED_FOR_DAY",
-  "EncounterAnchorReason.NEW_DAY",
-  "EncounterAnchorReason.ENCOUNTER_COMPLETED",
-  "EncounterAnchorReason.ENCOUNTER_FAILED",
-  "EncounterAnchorReason.CIRCUIT_RESPONSE",
   "ENCOUNTER_DAILY_LIMIT = 24",
   "ENCOUNTER_LIMIT_EMPTY_CYCLES = 3",
+  "completeEncounterBattleCycle",
+  "recordPostLimitEmptyCycle",
+]) {
+  if (!battleCycleText.includes(required)) {
+    violations.push(`${battleCycleFile.replaceAll("\\", "/")} must own ${required}`);
+  }
+}
+for (const required of [
+  'NEW_DAY: "newDay"',
+  'BATTLE_TERMINAL: "encounterCompleted"',
+  'CIRCUIT_RESPONSE: "circuitResponse"',
   "ENCOUNTER_BASE_COOLDOWN_MS = 30 * 60 * 1000",
   "ENCOUNTER_COOLDOWN_MS = ENCOUNTER_BASE_COOLDOWN_MS + 5000",
   "ENCOUNTER_CIRCUIT_JITTER_SECONDS = 30",
 ]) {
-  if (!dayStateText.includes(required)) {
-    violations.push(`${dayStateFile.replaceAll("\\", "/")} must own ${required}`);
+  if (!primaryClockText.includes(required)) {
+    violations.push(`${primaryClockFile.replaceAll("\\", "/")} must own ${required}`);
+  }
+}
+if (/\b(?:date|cycleReadyAt|anchorReason|generationFailureCount)\b/.test(battleCycleText)) {
+  violations.push(
+    `${battleCycleFile.replaceAll("\\", "/")} battle-cycle policy must not own clock identities`
+  );
+}
+if (/\b(?:count|invalidCycleCount|dayPhase|generationFailureCount)\b/.test(primaryClockText)) {
+  violations.push(
+    `${primaryClockFile.replaceAll("\\", "/")} primary-clock policy must not own cycle or recovery identities`
+  );
+}
+for (const required of [
+  'AUTOMATIC: "automatic"',
+  'MANUAL: "manual"',
+  "normalizeEncounterCheckMode",
+]) {
+  if (!checkModeText.includes(required)) {
+    violations.push(`${checkModeFile.replaceAll("\\", "/")} must own ${required}`);
+  }
+}
+for (const [testFile, testText, required] of [
+  [
+    battleCycleTest,
+    battleCycleTestText,
+    "counts only a battle terminal and does not own either clock",
+  ],
+  [
+    primaryClockTest,
+    primaryClockTestText,
+    "anchors battle terminal time without owning battle or invalid-cycle counts",
+  ],
+]) {
+  if (!testText.includes(required)) {
+    violations.push(`${testFile.replaceAll("\\", "/")} must cover ${required}`);
   }
 }
 const limitConfirmationTestText = fs.readFileSync(path.join(root, limitConfirmationTest), "utf8");
@@ -888,7 +974,11 @@ for (const required of [
   "marks entry attempted without counting or moving the completion-owned cooldown",
   'state: { date, key: "abc", count: 24, clear: true }',
 ]) {
-  if (!dayStateText.includes(required) && !widgetPolicyTestText.includes(required)) {
+  if (
+    !dayStateText.includes(required) &&
+    !battleCycleText.includes(required) &&
+    !widgetPolicyTestText.includes(required)
+  ) {
     violations.push(
       `${policyFile.replaceAll("\\", "/")} must recover stale over-limit encounter state: ${required}`
     );
@@ -1042,7 +1132,6 @@ if (
   );
 }
 for (const required of [
-  "EncounterPolicyEvent.MARK_GENERATION_FAILED",
   "operationalStatus",
   "recoveryStatus",
   "recoveryRemainingMs",
@@ -1050,12 +1139,12 @@ for (const required of [
   'reason: "dailyResetEvent"',
   'action: "dailyResetEvent"',
   'unavailableReason: "dailyResetEvent"',
-  "uses encounter failure, not a probe timer, for authoritative no-key results",
+  "keeps a manual authoritative empty result outside both clocks",
   "shows primary and technical recovery clocks as independent identities",
-  "clears technical recovery when an authoritative no-key failure resets the primary cycle",
+  "preserves an active automatic recovery when a manual check is empty",
   "treats the UTC dawn response as the non-counting new-day cooldown anchor",
   "lets a plain battle-page countdown click recheck immediately",
-  "rechecks during the primary countdown and enters immediately when a key is found",
+  "lets a manual click check immediately without moving any counters or clocks when empty",
   'action: "load"',
 ]) {
   if (!widgetPolicyText.includes(required) && !widgetPolicyTestText.includes(required)) {
@@ -1279,7 +1368,8 @@ for (const required of [
       stateHelperText +
       lobbyFlowText +
       lobbyCircuitResponseText +
-      dayStateText
+      dayStateText +
+      primaryClockText
     ).includes(required)
   ) {
     violations.push(`encounter circuit response flow must preserve ${required}`);
@@ -1296,9 +1386,11 @@ for (const required of [
     );
   }
 }
-if (!/\bWIDGET_TIMER_ELAPSED\b/.test(ownerText)) {
+if (
+  /\bWIDGET_TIMER_ELAPSED\b|widgetTimerElapsed/.test(ownerText + widgetPolicyText + hvUtilsText)
+) {
   violations.push(
-    `${owner.replaceAll("\\", "/")} must expose widget timer expiry as an encounter event`
+    "widget timer expiry must remain retired; automatic checks belong to next-battle arbitration"
   );
 }
 for (const required of [
@@ -1312,8 +1404,8 @@ for (const required of [
 }
 for (const required of [
   "starts the widget cooldown from dawn without reporting a generation failure",
-  "backs off a widget fetch failure before its timer can request again",
-  'operationalReason: "generationBackoff"',
+  "reports a manual widget fetch failure without changing automatic recovery",
+  'application: "manualCheckFailed"',
 ]) {
   if (!widgetFailureFlowTestText.includes(required)) {
     violations.push(`${widgetFailureFlowTest.replaceAll("\\", "/")} must cover ${required}`);
@@ -1322,16 +1414,10 @@ for (const required of [
 for (const required of [
   "run_hvut_encounter_bridge('WIDGET_GENERATION_FAILED'",
   "if (applyEncounterState(outcome) === false) return false;",
-  "if (outcome?.handled) return false;",
 ]) {
   if (!hvUtilsText.includes(required)) {
     violations.push(`${hvUtilsFile.replaceAll("\\", "/")} must preserve ${required}`);
   }
-}
-if (!/\bWIDGET_TIMER_ELAPSED\b/.test(hvUtilsText)) {
-  violations.push(
-    `${hvUtilsFile.replaceAll("\\", "/")} widget countdown expiry must report WIDGET_TIMER_ELAPSED`
-  );
 }
 if (widgetPolicyText.includes("event.force")) {
   violations.push(
@@ -1339,7 +1425,7 @@ if (widgetPolicyText.includes("event.force")) {
   );
 }
 for (const required of [
-  "re.button.addEventListener('click', () => { re.run(true); });",
+  "re.button.addEventListener('click', () => { re.run(); });",
   "readiness.recoveryStatus === 'countdown'",
   "readiness.recoveryRemainingMs",
 ]) {
@@ -1368,7 +1454,7 @@ for (const required of [
   'recovery: "isekaiNavigationSuppressed"',
   'if (event.pageType === "is") return suppressIsekaiNavigation(current);',
   "return suppressIsekaiNavigation(widgetState(event));",
-  "suppresses isekai root encounter clicks and timer expiry without loading news",
+  "suppresses isekai root encounter clicks and exposes no timer-expiry entry",
 ]) {
   if (!widgetPolicyText.includes(required) && !widgetPolicyTestText.includes(required)) {
     violations.push(
@@ -1378,7 +1464,7 @@ for (const required of [
 }
 for (const required of [
   "href: plan.href",
-  "preserves the ready-window generation URL for main-world widget loads",
+  "keeps manual ready-window clicks able to load the encounter check",
   "https://e-hentai.org/news.php?encounter",
 ]) {
   if (!widgetPolicyText.includes(required) && !widgetPolicyTestText.includes(required)) {
@@ -1388,8 +1474,7 @@ for (const required of [
   }
 }
 for (const required of [
-  "re.load(outcome.engage, outcome.href)",
-  "re.load(true, outcome.href)",
+  "re.load(outcome.href)",
   "$ajax.fetch(href || 'https://e-hentai.org/news.php')",
 ]) {
   if (!hvUtilsText.includes(required)) {

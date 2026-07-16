@@ -3476,10 +3476,7 @@ const bindRe = function (re, ctx) {
   re.clock = function (button) {
     if (re.init() === false) return false;
     re.button = button;
-    re.button.addEventListener('click', () => { re.run(true); });
-    const dayState = run_hvut_encounter_bridge('WIDGET_TICK', { state: re.json });
-    if (applyEncounterState(dayState) === false) return false;
-    if (re.json.date === 0) re.load();
+    re.button.addEventListener('click', () => { re.run(); });
     re.start();
     return true;
   };
@@ -3533,7 +3530,9 @@ const bindRe = function (re, ctx) {
   };
   re.get = function () {
     re.json = ctx.config.get('re', { date: 0, key: '', count: 0, clear: true }, 'hvut_');
-    return applyEncounterState(run_hvut_encounter_bridge('WIDGET_TICK', { state: re.json }));
+    const outcome = run_hvut_encounter_bridge('WIDGET_TICK', { state: re.json }) ?? { state: re.json, remainingMs: 0, count: re.json.count || 0, status: 'ready' };
+    if (applyEncounterState(outcome) === false) return false;
+    return outcome;
   };
   re.set = function (key) {
     return applyEncounterState(run_hvut_encounter_bridge('WIDGET_LINK_FOUND', { state: re.json, key }));
@@ -3547,38 +3546,29 @@ const bindRe = function (re, ctx) {
     return applyEncounterState(run_hvut_encounter_bridge('WIDGET_STARTED_ENCOUNTER', { state: re.json, search: location.search, pageType: re.type }));
   };
   re.refresh = function () {
-    const readiness = run_hvut_encounter_bridge('WIDGET_TICK', { state: re.json }) ?? { state: re.json, remainingMs: 0 };
-    if (applyEncounterState(readiness) === false) return false;
+    const readiness = re.get();
+    if (readiness === false) return false;
     if (readiness.status === 'countdown') {
       const recovery = readiness.recoveryStatus === 'countdown' ? ` · R${time_format(readiness.recoveryRemainingMs, 2)}` : '';
       re.button.textContent = time_format(readiness.remainingMs, 2) + ` [${readiness.count}]${recovery}`;
       re.beep = true;
-      re.readyAttemptKey = '';
     } else if (readiness.recoveryStatus === 'countdown') {
       re.button.textContent = `遭遇战 [${readiness.count}] · R${time_format(readiness.recoveryRemainingMs, 2)}`;
       re.beep = true;
-      re.readyAttemptKey = '';
     } else {
       re.button.textContent = (readiness.status === 'missed' ? '已错失' : '遭遇战') + ` [${readiness.count}]`;
       if (re.beep) {
         re.beep = false;
         play_beep(...ctx.config.settings.reBeep);
       }
-      re.stop();
-      const outcome = run_hvut_encounter_bridge('WIDGET_TIMER_ELAPSED', { state: re.json, pageType: re.type, lastAttemptKey: re.readyAttemptKey, galleryAlt: ctx.config.settings.reGalleryAlt });
-      if (applyEncounterState(outcome) === false) return false;
-      if (outcome?.attemptKey) re.readyAttemptKey = outcome.attemptKey;
-      if (outcome?.handled) return;
-      if (outcome?.action === 'load') return re.load(outcome.engage, outcome.href);
-      if (outcome?.action === 'checkHv') return re.run(outcome.engage);
     }
   };
-  re.run = async function (engage) {
+  re.run = async function () {
     if (re.type === 'ba') {
       const outcome = run_hvut_encounter_bridge('WIDGET_CLICKED', { state: re.json, pageType: re.type });
       if (applyEncounterState(outcome) === false) return false;
       if (outcome?.handled) return;
-      return re.load(outcome.engage, outcome.href);
+      return re.load(outcome.href);
     } else if (re.type === 'is') {
       const outcome = run_hvut_encounter_bridge('WIDGET_CLICKED', { state: re.json, pageType: re.type });
       if (applyEncounterState(outcome) === false) return false;
@@ -3588,7 +3578,7 @@ const bindRe = function (re, ctx) {
       const outcome = run_hvut_encounter_bridge('WIDGET_CLICKED', { state: re.json, pageType: re.type });
       if (applyEncounterState(outcome) === false) return false;
       if (outcome?.handled) return;
-      return re.load(true, outcome.href);
+      return re.load(outcome.href);
     } else if (re.type === 'eh') {
       re.stop();
       re.button.textContent = '检查中...';
@@ -3597,9 +3587,8 @@ const bindRe = function (re, ctx) {
         html = await $ajax.fetch('https://hentaiverse.org/');
       } catch (error) {
         record_hvut_random_encounter_failure('widgetHvAvailabilityFetch', { reason: 'requestFailed', error: error?.message || String(error) });
-        const outcome = run_hvut_encounter_bridge('WIDGET_GENERATION_FAILED', { state: re.json, request: { method: 'GET', url: 'https://hentaiverse.org/' }, reason: 'generationRequestFailed', detail: { error: error?.message || String(error) }, pageType: re.type });
+        const outcome = run_hvut_encounter_bridge('WIDGET_GENERATION_FAILED', { state: re.json, request: { method: 'GET', url: 'https://hentaiverse.org/' }, reason: 'generationRequestFailed', detail: { error: error?.message || String(error) }, pageType: re.type, checkMode: 'manual' });
         if (applyEncounterState(outcome) === false) return false;
-        if (outcome?.handled) return false;
         re.start();
         return false;
       }
@@ -3607,13 +3596,13 @@ const bindRe = function (re, ctx) {
         const outcome = run_hvut_encounter_bridge('WIDGET_CLICKED', { state: re.json, pageType: re.type, hvAvailable: true });
         if (applyEncounterState(outcome) === false) return false;
         if (outcome?.handled) return;
-        return re.load(true, outcome.href);
+        return re.load(outcome.href);
       } else {
         return re.load();
       }
     }
   };
-  re.load = async function (engage, href) {
+  re.load = async function (href) {
     re.stop();
     if (re.get() === false) return false;
     re.button.textContent = '加载中...';
@@ -3622,15 +3611,15 @@ const bindRe = function (re, ctx) {
       html = await $ajax.fetch(href || 'https://e-hentai.org/news.php');
     } catch (error) {
       record_hvut_random_encounter_failure('widgetNewsLoadFetch', { reason: 'requestFailed', error: error?.message || String(error) });
-      const outcome = run_hvut_encounter_bridge('WIDGET_GENERATION_FAILED', { state: re.json, request: { method: 'GET', url: href || 'https://e-hentai.org/news.php' }, reason: 'generationRequestFailed', detail: { error: error?.message || String(error) }, pageType: re.type });
+      const outcome = run_hvut_encounter_bridge('WIDGET_GENERATION_FAILED', { state: re.json, request: { method: 'GET', url: href || 'https://e-hentai.org/news.php' }, reason: 'generationRequestFailed', detail: { error: error?.message || String(error) }, pageType: re.type, checkMode: 'manual' });
       if (applyEncounterState(outcome) === false) return false;
-      if (outcome?.handled) return false;
       re.start();
       return false;
     }
     const doc = $doc(html);
-    const eventpane = $id('eventpane', doc)?.innerHTML;
-    const outcome = run_hvut_encounter_bridge('WIDGET_NEWS_LOADED', { state: re.json, eventpane, engage, pageType: re.type, galleryAlt: ctx.config.settings.reGalleryAlt });
+    const eventpaneNode = $id('eventpane', doc);
+    const eventpane = eventpaneNode?.innerHTML;
+    const outcome = run_hvut_encounter_bridge('WIDGET_NEWS_LOADED', { state: re.json, eventpane, eventpanePresent: Boolean(eventpaneNode), checkMode: 'manual', pageType: re.type, galleryAlt: ctx.config.settings.reGalleryAlt });
     if (applyEncounterState(outcome) === false) return false;
     if (outcome?.handled) {
       return;

@@ -1,5 +1,5 @@
 import { executeEncounterGenerationRequest } from "./encounter-generation-request.js";
-import { EncounterGenerationApplication } from "./encounter-entry-state.js";
+import { EncounterGenerationApplication } from "./encounter-generation-application.js";
 import { isBlockingEncounterGenerationResult } from "./encounter-generation-result.js";
 import { EncounterPolicyEvent, runEncounterPolicy } from "./encounter-policy.js";
 
@@ -41,10 +41,11 @@ function recordResult(event, deps) {
     result: event.result,
     nowMs,
     attemptKey: attemptClock.attemptKey,
+    checkMode: event.checkMode,
   });
   const { result } = application;
   let { state } = application;
-  if (application.application === EncounterGenerationApplication.GENERATION_FAULT) {
+  if (application.application === EncounterGenerationApplication.AUTOMATIC_CHECK_FAILED) {
     state = runEncounterPolicy({
       type: EncounterPolicyEvent.MARK_GENERATION_FAILED,
       state,

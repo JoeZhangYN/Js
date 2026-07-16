@@ -3,6 +3,7 @@ import {
   EncounterGenerationFailureReason,
   EncounterGenerationResultStatus,
 } from "./encounter-generation-result.js";
+import { EncounterCheckMode } from "./encounter-check-mode.js";
 import { EncounterPolicyEvent, runEncounterPolicy } from "./encounter-policy.js";
 
 const COOLDOWN_MS = 30 * 60 * 1000 + 5000;
@@ -36,13 +37,14 @@ describe("encounter limit policy", () => {
       const applied = policy(EncounterPolicyEvent.APPLY_GENERATION_RESULT, state, {
         result: missing,
         nowMs: DAY + cycle * COOLDOWN_MS,
+        checkMode: EncounterCheckMode.AUTOMATIC,
       });
       state = applied.state;
       expect(applied.application).toBe("limitProbeEmpty");
       expect(state).toMatchObject({
         count: 24,
         invalidCycleCount: cycle,
-        anchorReason: "encounterFailed",
+        anchorReason: "postLimitEmpty",
       });
     }
 
@@ -57,11 +59,29 @@ describe("encounter limit policy", () => {
         status: EncounterGenerationResultStatus.TRANSPORT_FAILURE,
         reason: EncounterGenerationFailureReason.REQUEST_TIMEOUT,
       },
+      checkMode: EncounterCheckMode.AUTOMATIC,
     });
 
-    expect(applied.application).toBe("generationFault");
+    expect(applied.application).toBe("automaticCheckFailed");
     expect(applied.state.invalidCycleCount).toBe(1);
     expect(applied.state.date).toBe(state.date);
+  });
+
+  it("keeps manual empty checks outside the post-limit invalid-cycle count", () => {
+    const state = confirming({ invalidCycleCount: 2 });
+    const applied = policy(EncounterPolicyEvent.APPLY_GENERATION_RESULT, state, {
+      nowMs: DAY,
+      result: missing,
+      checkMode: EncounterCheckMode.MANUAL,
+    });
+
+    expect(applied.application).toBe("manualEmpty");
+    expect(applied.state).toMatchObject({
+      count: 24,
+      invalidCycleCount: 2,
+      dayPhase: "confirmingLimit",
+      date: state.date,
+    });
   });
 
   it("accepts an unexpected key while confirming and keeps the completion count capped", () => {

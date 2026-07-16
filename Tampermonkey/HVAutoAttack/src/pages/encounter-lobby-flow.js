@@ -1,5 +1,6 @@
 import { StaminaEvent, runStaminaAutomation } from "../state/stamina.js";
 import { recordEncounterLobbyDegradation } from "./encounter-generation-block.js";
+import { EncounterCheckMode } from "./encounter-check-mode.js";
 import {
   blockActiveEncounterIncident,
   createActiveEncounterBlockOutcome,
@@ -33,6 +34,7 @@ async function loadAndEnterEncounter(plan, event) {
     request: plan.request,
     state: plan.state,
     source: "lobbyGenerationRequest",
+    checkMode: EncounterCheckMode.AUTOMATIC,
     nowMs: event.nowMs,
   });
   if (generation.status !== "available") return generation;

@@ -1,5 +1,4 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { ENCOUNTER_COOLDOWN_MS } from "./encounter-day-state.js";
 import { EncounterEvent, runEncounterAutomation } from "./encounter.js";
 
 const mocks = vi.hoisted(() => ({
@@ -79,11 +78,11 @@ describe("encounter stale entry recovery", () => {
 
     expect(outcome).toMatchObject({
       status: "waiting",
-      reason: "cooldown",
+      reason: "generationBackoff",
       generation: {
         status: "unavailable",
         reason: "encounterKeyMissing",
-        recovery: { reason: "cooldown", countdownMs: ENCOUNTER_COOLDOWN_MS },
+        recovery: { reason: "generationBackoff", countdownMs: 60_000 },
       },
     });
     expect(mocks.gmXhr).toHaveBeenCalledWith(

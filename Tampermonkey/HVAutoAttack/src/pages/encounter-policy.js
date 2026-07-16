@@ -8,8 +8,8 @@ import {
 } from "./encounter-day-state.js";
 import { readEncounterClock, readEncounterReadiness } from "./encounter-clock.js";
 import { planEncounterEntryRoute } from "./encounter-entry-policy.js";
+import { applyEncounterGenerationResult } from "./encounter-generation-application.js";
 import {
-  applyEncounterGenerationResult,
   markEncounterAttempted,
   markEncounterEntryStarted,
   markEncounterKeyAvailable,
@@ -44,7 +44,7 @@ function planEncounterActivation(state, nowMs = Date.now()) {
 
 const encounterPolicyEventHandlers = Object.freeze({
   applyGenerationResult: (event) =>
-    applyEncounterGenerationResult(event.state, event.result, event.nowMs),
+    applyEncounterGenerationResult(event.state, event.result, event),
   beginNewDay: (event) => beginEncounterDay(event.nowMs),
   defaultState: (event) => defaultEncounterState(event.nowMs),
   markCompleted: (event) => markEncounterCompleted(event.state, event.nowMs),

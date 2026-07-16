@@ -15,12 +15,12 @@ describe("main-world encounter widget timing", () => {
       })
     ).toMatchObject({
       action: "load",
-      engage: true,
+      checkMode: "manual",
       href: "https://e-hentai.org/news.php?encounter",
     });
   });
 
-  it("suppresses isekai root encounter clicks and timer expiry without loading news", () => {
+  it("suppresses isekai root encounter clicks and exposes no timer-expiry entry", () => {
     const state = { date: Date.now() - 31 * 60 * 1000, key: "", count: 1, clear: true };
 
     expect(
@@ -40,11 +40,7 @@ describe("main-world encounter widget timing", () => {
         state,
         pageType: "is",
       })
-    ).toMatchObject({
-      action: "none",
-      handled: true,
-      recovery: "isekaiNavigationSuppressed",
-    });
+    ).toBeUndefined();
   });
 
   it("does not count or start cooldown when news only exposes an encounter key", () => {
@@ -53,11 +49,12 @@ describe("main-world encounter widget timing", () => {
         type: "widgetNewsLoaded",
         state: { date: 0, key: "", count: 0, clear: true },
         eventpane: '<a href="?s=Battle&amp;ss=ba&amp;encounter=abc=">RE</a>',
-        engage: false,
+        checkMode: "manual",
         pageType: "hv",
       })
     ).toMatchObject({
-      action: "ready",
+      action: "navigate",
+      href: "?s=Battle&ss=ba&encounter=abc=",
       status: "ready",
       count: 0,
       state: { date: 0, key: "abc=", count: 0, clear: false },

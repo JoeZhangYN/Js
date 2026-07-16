@@ -7,26 +7,28 @@ beforeEach(() => {
 });
 
 describe("encounter widget generation recovery", () => {
-  it("uses encounter failure, not a probe timer, for authoritative no-key results", () => {
+  it("keeps a manual authoritative empty result outside both clocks", () => {
+    const date = Date.now() - 31 * 60 * 1000;
     const outcome = planEncounterWidgetEvent({
       type: "widgetNewsLoaded",
-      state: { date: Date.now() - 31 * 60 * 1000, key: "", count: 7, clear: true },
+      state: { date, key: "", count: 7, clear: true },
       eventpane: "<p>No random encounter is currently available.</p>",
-      engage: true,
+      eventpanePresent: true,
+      checkMode: "manual",
       pageType: "hv",
     });
 
     expect(outcome).toMatchObject({
       action: "unavailable",
       unavailableReason: "encounterKeyMissing",
-      status: "countdown",
-      reason: "cooldown",
-      remainingMs: ENCOUNTER_COOLDOWN_MS,
+      status: "ready",
+      reason: "readyWindow",
+      remainingMs: 0,
       state: {
-        date: Date.now(),
-        cycleReadyAt: Date.now() + ENCOUNTER_COOLDOWN_MS,
+        date,
+        cycleReadyAt: date + ENCOUNTER_COOLDOWN_MS,
         count: 7,
-        anchorReason: "encounterFailed",
+        anchorReason: "encounterCompleted",
       },
     });
     expect(outcome.state).not.toHaveProperty("nextProbeAt");
@@ -64,7 +66,7 @@ describe("encounter widget generation recovery", () => {
     });
   });
 
-  it("clears technical recovery when an authoritative no-key failure resets the primary cycle", () => {
+  it("preserves an active automatic recovery when a manual check is empty", () => {
     const outcome = planEncounterWidgetEvent({
       type: "widgetNewsLoaded",
       state: {
@@ -72,19 +74,25 @@ describe("encounter widget generation recovery", () => {
         key: "",
         count: 7,
         clear: true,
+        schemaVersion: 4,
+        utcDay: "2026-06-27",
+        dayPhase: "active",
+        invalidCycleCount: 0,
         generationAttemptKey: "2026-06-27:technical",
         generationFailureCount: 5,
         generationNextAttemptAt: Date.now() + 3 * 60 * 1000,
         generationFailureReason: "generationRequestFailed",
       },
       eventpane: "<p>No random encounter is currently available.</p>",
-      engage: true,
+      eventpanePresent: true,
+      checkMode: "manual",
       pageType: "hv",
     });
 
-    expect(outcome.state).toMatchObject({ anchorReason: "encounterFailed" });
-    expect(outcome.state).not.toHaveProperty("generationFailureCount");
-    expect(outcome.state).not.toHaveProperty("generationNextAttemptAt");
+    expect(outcome.state).toMatchObject({
+      generationFailureCount: 5,
+      generationNextAttemptAt: Date.now() + 3 * 60 * 1000,
+    });
   });
 
   it("treats the UTC dawn response as the non-counting new-day cooldown anchor", () => {
@@ -93,7 +101,8 @@ describe("encounter widget generation recovery", () => {
       type: "widgetNewsLoaded",
       state: { date: 0, key: "", count: 0, clear: true },
       eventpane: "<p>It is the dawn of a new day!</p>",
-      engage: true,
+      eventpanePresent: true,
+      checkMode: "manual",
       pageType: "hv",
     });
 

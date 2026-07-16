@@ -31,6 +31,11 @@ describe("encounter generation result classifier", () => {
       reason: "generationRequestTimeout",
       failure: { url: "news" },
     });
+    expect(classifyEncounterGenerationResult({ eventpanePresent: false })).toEqual({
+      status: "transportFailure",
+      reason: "generationResponseUnrecognized",
+      failure: { reason: "eventpaneMissing" },
+    });
   });
 
   it("requires the owned news error surface for equipment-full classification", () => {

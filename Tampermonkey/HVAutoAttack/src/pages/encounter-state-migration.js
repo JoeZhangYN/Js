@@ -9,6 +9,14 @@ const LEGACY_ABSENCE_REASONS = new Set([
 
 export const isLegacyEncounterAbsence = (reason) => LEGACY_ABSENCE_REASONS.has(String(reason));
 
+const utcDayKey = (stamp) => new Date(stamp).toISOString().slice(0, 10);
+
+export function migrateEncounterUtcDay(source, nowMs = Date.now()) {
+  if (typeof source?.utcDay === "string" && source.utcDay) return source.utcDay;
+  const legacyAnchor = Math.max(0, Number(source?.date) || 0);
+  return utcDayKey(legacyAnchor || nowMs);
+}
+
 function legacyFailureDeadline(state, nowMs, cooldownMs) {
   const probeDeadline = Math.max(0, Number(state?.nextProbeAt) || 0);
   if (probeDeadline) return probeDeadline;
@@ -26,7 +34,11 @@ function legacyFailureDeadline(state, nowMs, cooldownMs) {
 export function migrateEncounterCycle(source, nowMs, cooldownMs, date, anchorReason) {
   let cycleReadyAt = Math.max(0, Number(source.cycleReadyAt) || 0);
   const failureReason = source.probeReason || source.generationFailureReason;
-  if (source.nextProbeAt || isLegacyEncounterAbsence(failureReason)) {
+  const schemaVersion = Number(source.schemaVersion);
+  const legacyAbsence =
+    (!Number.isFinite(schemaVersion) || schemaVersion < 4) &&
+    isLegacyEncounterAbsence(failureReason);
+  if (source.nextProbeAt || legacyAbsence) {
     cycleReadyAt = legacyFailureDeadline(source, nowMs, cooldownMs);
     return {
       date: Math.max(0, cycleReadyAt - cooldownMs),

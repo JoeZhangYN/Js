@@ -1,5 +1,4 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { ENCOUNTER_COOLDOWN_MS } from "./encounter-day-state.js";
 import { EncounterStateEvent, runEncounterStateAutomation } from "./encounter-state.js";
 
 const mocks = vi.hoisted(() => ({ gmXhr: vi.fn() }));
@@ -105,7 +104,7 @@ describe("encounter generation transport recovery", () => {
     let sharedState;
     vi.stubGlobal("GM_getValue", (_key, fallback) => sharedState || fallback);
     vi.stubGlobal("GM_setValue", (_key, value) => {
-      if (value.anchorReason === "encounterFailed") {
+      if (value.generationFailureCount) {
         throw new Error("GM encounter-failure write blocked");
       }
       sharedState = value;
@@ -126,8 +125,9 @@ describe("encounter generation transport recovery", () => {
       blocked: true,
       persistence: { ok: false, reason: "gmWriteFailed" },
       state: {
-        cycleReadyAt: Date.now() + ENCOUNTER_COOLDOWN_MS,
-        anchorReason: "encounterFailed",
+        cycleReadyAt: 0,
+        generationFailureCount: 1,
+        generationNextAttemptAt: Date.now() + 60_000,
       },
     });
     expect(mocks.gmXhr).toHaveBeenCalledOnce();
@@ -136,7 +136,7 @@ describe("encounter generation transport recovery", () => {
       key: "",
       count: 0,
       clear: true,
-      schemaVersion: 3,
+      schemaVersion: 4,
     });
     expect(localStorage.getItem("hvut_re")).toBeNull();
   });

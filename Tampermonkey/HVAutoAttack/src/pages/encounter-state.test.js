@@ -20,7 +20,7 @@ function currentState(fields = {}) {
     key: "",
     count: 0,
     clear: true,
-    schemaVersion: 3,
+    schemaVersion: 4,
     utcDay: "2026-06-27",
     dayPhase: "active",
     anchorReason: null,

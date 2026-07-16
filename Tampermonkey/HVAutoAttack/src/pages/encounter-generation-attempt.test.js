@@ -1,6 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { ENCOUNTER_COOLDOWN_MS } from "./encounter-day-state.js";
-import { EncounterPolicyEvent, runEncounterPolicy } from "./encounter-policy.js";
+import { EncounterCheckMode } from "./encounter-check-mode.js";
+import {
+  EncounterGenerationStateEvent,
+  runEncounterGenerationState,
+} from "./encounter-generation-state.js";
 
 beforeEach(() => {
   vi.useFakeTimers();
@@ -10,34 +13,78 @@ beforeEach(() => {
 afterEach(() => vi.useRealTimers());
 
 describe("encounter generation attempt evidence", () => {
-  it("anchors an authoritative no-key failure to a new primary encounter cycle", () => {
-    const application = runEncounterPolicy({
-      type: EncounterPolicyEvent.APPLY_GENERATION_RESULT,
-      state: { date: Date.now() - 31 * 60 * 1000, key: "", count: 7, clear: true },
-      nowMs: Date.now(),
-      result: { status: "unavailable", reason: "encounterKeyMissing" },
-    });
+  it("starts automatic recovery without rewriting the completion-owned primary clock", () => {
+    const state = {
+      date: Date.now() - 31 * 60 * 1000,
+      cycleReadyAt: Date.now() - 55_000,
+      anchorReason: "encounterCompleted",
+      key: "",
+      count: 7,
+      clear: true,
+      schemaVersion: 4,
+      utcDay: "2026-06-27",
+      dayPhase: "active",
+      invalidCycleCount: 0,
+    };
+    const application = runEncounterGenerationState(
+      {
+        type: EncounterGenerationStateEvent.RECORD_RESULT,
+        state,
+        checkMode: EncounterCheckMode.AUTOMATIC,
+        nowMs: Date.now(),
+        result: { status: "unavailable", reason: "encounterKeyMissing" },
+      },
+      { writeState: (next) => ({ ok: true, state: next }) }
+    );
 
     expect(application).toMatchObject({
-      application: "encounterFailed",
+      application: "automaticCheckFailed",
       state: {
-        date: Date.now(),
-        cycleReadyAt: Date.now() + ENCOUNTER_COOLDOWN_MS,
-        anchorReason: "encounterFailed",
+        date: state.date,
+        cycleReadyAt: state.cycleReadyAt,
+        anchorReason: "encounterCompleted",
         count: 7,
+        generationFailureCount: 1,
+        generationRecoveryCircuit: 1,
+        generationRecoveryStep: 1,
+        generationNextAttemptAt: Date.now() + 60_000,
+      },
+      recovery: {
+        status: "countdown",
+        reason: "generationBackoff",
+        countdownMs: 60_000,
       },
     });
-    expect(application.state).not.toHaveProperty("nextProbeAt");
-    expect(
-      runEncounterPolicy({
-        type: EncounterPolicyEvent.READ_CLOCK,
-        state: application.state,
-        nowMs: Date.now() + 1000,
-      })
-    ).toMatchObject({
-      status: "countdown",
-      reason: "cooldown",
-      countdownMs: ENCOUNTER_COOLDOWN_MS - 1000,
+  });
+
+  it("keeps a manual empty check outside automatic recovery", () => {
+    const state = {
+      date: Date.now(),
+      cycleReadyAt: Date.now() + 1_805_000,
+      anchorReason: "encounterCompleted",
+      key: "",
+      count: 7,
+      clear: true,
+      schemaVersion: 4,
+      utcDay: "2026-06-27",
+      dayPhase: "active",
+      invalidCycleCount: 0,
+    };
+    const application = runEncounterGenerationState(
+      {
+        type: EncounterGenerationStateEvent.RECORD_RESULT,
+        state,
+        checkMode: EncounterCheckMode.MANUAL,
+        nowMs: Date.now(),
+        result: { status: "unavailable", reason: "encounterKeyMissing" },
+      },
+      { writeState: (next) => ({ ok: true, state: next }) }
+    );
+
+    expect(application).toMatchObject({
+      application: "manualEmpty",
+      state,
     });
+    expect(application.state).not.toHaveProperty("generationFailureCount");
   });
 });

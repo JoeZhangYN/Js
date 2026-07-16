@@ -35,7 +35,7 @@ function readReturnOrigin(deps) {
   return DEFAULT_HV_ORIGIN;
 }
 
-function blockUnavailableEncounter(deps, eventpane, result) {
+function blockUnavailableEncounter(deps, eventpane, eventpanePresent, result) {
   const source = {
     identity: "persistentEncounterGeneration",
     pageKind: PageKind.EHENTAI,
@@ -50,6 +50,7 @@ function blockUnavailableEncounter(deps, eventpane, result) {
   });
   const generation = deps.handleGenerationPage({
     eventpane,
+    eventpanePresent,
     request,
     source,
   });
@@ -58,10 +59,12 @@ function blockUnavailableEncounter(deps, eventpane, result) {
 
 function redirectToEncounterOrigin(deps) {
   if (deps.href() !== EHENTAI_ENCOUNTER_URL) return true;
-  const eventpane = deps.document().querySelector("#eventpane")?.innerHTML || "";
-  const result = classifyEncounterGenerationResult({ eventpane });
+  const eventpaneNode = deps.document().querySelector("#eventpane");
+  const eventpane = eventpaneNode?.innerHTML || "";
+  const eventpanePresent = Boolean(eventpaneNode);
+  const result = classifyEncounterGenerationResult({ eventpane, eventpanePresent });
   if (result.status !== EncounterGenerationResultStatus.AVAILABLE) {
-    return blockUnavailableEncounter(deps, eventpane, result);
+    return blockUnavailableEncounter(deps, eventpane, eventpanePresent, result);
   }
   return Boolean(
     deps.openUrl(

@@ -1,5 +1,4 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { ENCOUNTER_COOLDOWN_MS } from "./encounter-day-state.js";
 import { EncounterEvent, runEncounterAutomation } from "./encounter.js";
 
 const mocks = vi.hoisted(() => ({
@@ -7,11 +6,7 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock("../core/navigate.js", () => ({
-  NavigationEvent: Object.freeze({
-    OPEN_URL: "openUrl",
-    RELOAD_NOW: "reloadNow",
-    SCHEDULE_RELOAD: "scheduleReload",
-  }),
+  NavigationEvent: Object.freeze({ OPEN_URL: "openUrl" }),
   NavigationRedirectReason: Object.freeze({ ENCOUNTER_ENTRY: "encounterEntry" }),
   runNavigationAutomation: mocks.runNavigationAutomation,
 }));
@@ -20,133 +15,94 @@ beforeEach(() => {
   mocks.runNavigationAutomation.mockReset();
   mocks.runNavigationAutomation.mockReturnValue(true);
   vi.useFakeTimers();
-  vi.setSystemTime(new Date("2026-06-27T23:59:55.000Z"));
+  vi.setSystemTime(new Date("2026-06-27T12:00:00.000Z"));
 });
 
-afterEach(() => {
-  vi.useRealTimers();
+afterEach(() => vi.useRealTimers());
+
+const state = (fields = {}) => ({
+  date: Date.now(),
+  cycleReadyAt: Date.now() + 1_805_000,
+  anchorReason: "encounterCompleted",
+  key: "",
+  count: 4,
+  clear: true,
+  schemaVersion: 4,
+  utcDay: "2026-06-27",
+  dayPhase: "active",
+  invalidCycleCount: 0,
+  ...fields,
 });
 
-describe("encounter widget timer expiry", () => {
-  it("counts down to the next UTC day when the daily encounter limit is reached", () => {
-    const state = { date: Date.UTC(2026, 5, 27, 23, 45), key: "", count: 24, clear: true };
-
-    expect(
-      runEncounterAutomation({
-        type: EncounterEvent.WIDGET_TICK,
-        state,
-      })
-    ).toMatchObject({
-      status: "countdown",
-      remainingMs: 10000,
-      reason: "newDayBoundary",
-    });
-  });
-
-  it("auto-enters from the widget timer through the encounter entry", () => {
-    const state = { date: Date.now() - 31 * 60 * 1000, key: "abc123=", count: 1, clear: false };
-
-    const outcome = runEncounterAutomation({
-      type: EncounterEvent.WIDGET_TIMER_ELAPSED,
-      state,
-      pageType: "hv",
-    });
+describe("encounter widget timer identity", () => {
+  it("keeps the one-second widget tick projection-only", () => {
+    const current = state();
+    const outcome = runEncounterAutomation({ type: EncounterEvent.WIDGET_TICK, state: current });
 
     expect(outcome).toMatchObject({
-      action: "navigated",
-      href: "?s=Battle&ss=ba&encounter=abc123=",
-      handled: true,
-      attemptKey: expect.any(String),
+      status: "countdown",
+      remainingMs: 1_805_000,
+      state: current,
     });
-    expect(mocks.runNavigationAutomation).toHaveBeenCalledWith({
-      type: "openUrl",
-      reason: "encounterEntry",
-      url: "?s=Battle&ss=ba&encounter=abc123=",
-    });
+    expect(outcome).not.toHaveProperty("action");
+    expect(mocks.runNavigationAutomation).not.toHaveBeenCalled();
+    expect(EncounterEvent).not.toHaveProperty("WIDGET_TIMER_ELAPSED");
   });
 
-  it("starts a new primary cycle after a news load returns no key", () => {
-    vi.setSystemTime(new Date("2026-06-27T12:00:00.000Z"));
-    const state = { date: Date.now() - 31 * 60 * 1000, key: "", count: 1, clear: true };
+  it("rejects the retired timer-elapsed bypass", () => {
+    expect(
+      runEncounterAutomation({ type: "widgetTimerElapsed", state: state(), pageType: "hv" })
+    ).toMatchObject({ rejected: true, reason: "unknownEncounterEvent" });
+    expect(mocks.runNavigationAutomation).not.toHaveBeenCalled();
+  });
 
-    const first = runEncounterAutomation({
-      type: EncounterEvent.WIDGET_TIMER_ELAPSED,
-      state,
+  it("lets a manual click check immediately without moving any counters or clocks when empty", () => {
+    const current = state({ count: 24, dayPhase: "confirmingLimit", invalidCycleCount: 2 });
+    const clicked = runEncounterAutomation({
+      type: EncounterEvent.WIDGET_CLICKED,
+      state: current,
       pageType: "hv",
     });
     const loaded = runEncounterAutomation({
       type: EncounterEvent.WIDGET_NEWS_LOADED,
-      state: first.state,
+      state: clicked.state,
       eventpane: "<p>No random encounter is currently available.</p>",
-      engage: true,
-      pageType: "hv",
-    });
-    const backedOff = runEncounterAutomation({
-      type: EncounterEvent.WIDGET_TIMER_ELAPSED,
-      state: loaded.state,
+      eventpanePresent: true,
+      checkMode: clicked.checkMode,
       pageType: "hv",
     });
 
-    expect(first).toMatchObject({
-      action: "load",
-      engage: true,
-      href: "https://e-hentai.org/news.php?encounter",
-      attemptKey: expect.any(String),
-    });
+    expect(clicked).toMatchObject({ action: "load", checkMode: "manual" });
     expect(loaded).toMatchObject({
       action: "unavailable",
       unavailableReason: "encounterKeyMissing",
-      state: {
-        date: Date.now(),
-        cycleReadyAt: Date.now() + ENCOUNTER_COOLDOWN_MS,
-        anchorReason: "encounterFailed",
-      },
+      state: current,
     });
-    expect(backedOff).toMatchObject({
-      status: "countdown",
-      reason: "cooldown",
-    });
-    expect(mocks.runNavigationAutomation).not.toHaveBeenCalled();
+    expect(loaded.state).not.toHaveProperty("generationFailureCount");
   });
 
-  it("rechecks during the primary countdown and enters immediately when a key is found", () => {
-    vi.setSystemTime(new Date("2026-06-27T12:00:00.000Z"));
+  it("enters a battle found by a manual check and leaves counting to battle terminal", () => {
+    const current = state();
     const clicked = runEncounterAutomation({
       type: EncounterEvent.WIDGET_CLICKED,
-      state: { date: Date.now(), key: "", count: 1, clear: true },
+      state: current,
       pageType: "hv",
     });
     const loaded = runEncounterAutomation({
       type: EncounterEvent.WIDGET_NEWS_LOADED,
       state: clicked.state,
       eventpane: '<a href="?s=Battle&amp;ss=ba&amp;encounter=ready123=">Random Encounter</a>',
-      engage: clicked.engage,
+      eventpanePresent: true,
+      checkMode: clicked.checkMode,
       pageType: "hv",
     });
 
-    expect(clicked).toMatchObject({ action: "load", engage: true, status: "countdown" });
     expect(loaded).toMatchObject({
       action: "navigated",
-      href: "?s=Battle&ss=ba&encounter=ready123=",
       handled: true,
+      href: "?s=Battle&ss=ba&encounter=ready123=",
+      state: { count: 4, date: current.date, cycleReadyAt: current.cycleReadyAt },
     });
     expect(mocks.runNavigationAutomation).toHaveBeenCalledOnce();
-  });
-
-  it("lets gallery timer expiry request an HV availability check before opening", () => {
-    const state = { date: Date.now() - 31 * 60 * 1000, key: "abc123=", count: 1, clear: false };
-
-    const outcome = runEncounterAutomation({
-      type: EncounterEvent.WIDGET_TIMER_ELAPSED,
-      state,
-      pageType: "eh",
-    });
-
-    expect(outcome).toMatchObject({
-      action: "checkHv",
-      engage: true,
-      attemptKey: expect.any(String),
-    });
-    expect(mocks.runNavigationAutomation).not.toHaveBeenCalled();
   });
 });

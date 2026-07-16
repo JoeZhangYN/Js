@@ -1,5 +1,7 @@
 // 自动遭遇战业务能力：唯一入口 runEncounterAutomation(event)。
 import { executeEncounterEntry } from "./encounter-entry-execution.js";
+import { EncounterCheckMode } from "./encounter-check-mode.js";
+import { EncounterGenerationApplication } from "./encounter-generation-application.js";
 import {
   completeRandomEncounter,
   recognizeRandomEncounterStarted,
@@ -24,7 +26,6 @@ const EVENT_WIDGET_LINK_FOUND = "widgetLinkFound";
 const EVENT_WIDGET_STARTED_ENCOUNTER = "widgetStartedEncounter";
 const EVENT_WIDGET_RESET_DAY = "widgetResetDay";
 const EVENT_WIDGET_CLICKED = "widgetClicked";
-const EVENT_WIDGET_TIMER_ELAPSED = "widgetTimerElapsed";
 const EVENT_WIDGET_NEWS_LOADED = "widgetNewsLoaded";
 const EVENT_WIDGET_GENERATION_FAILED = "widgetGenerationFailed";
 
@@ -38,7 +39,6 @@ export const EncounterEvent = Object.freeze({
   WIDGET_STARTED_ENCOUNTER: EVENT_WIDGET_STARTED_ENCOUNTER,
   WIDGET_RESET_DAY: EVENT_WIDGET_RESET_DAY,
   WIDGET_CLICKED: EVENT_WIDGET_CLICKED,
-  WIDGET_TIMER_ELAPSED: EVENT_WIDGET_TIMER_ELAPSED,
   WIDGET_NEWS_LOADED: EVENT_WIDGET_NEWS_LOADED,
   WIDGET_GENERATION_FAILED: EVENT_WIDGET_GENERATION_FAILED,
 });
@@ -67,9 +67,13 @@ function executeWidgetEvent(event) {
 function handleGenerationPageReady(event) {
   const generation = runEncounterStateAutomation({
     type: EncounterStateEvent.RECORD_GENERATION_RESULT,
-    result: classifyEncounterGenerationResult({ eventpane: event.eventpane }),
+    result: classifyEncounterGenerationResult({
+      eventpane: event.eventpane,
+      eventpanePresent: event.eventpanePresent,
+    }),
     request: event.request,
     source: event.source,
+    checkMode: EncounterCheckMode.AUTOMATIC,
     nowMs: event.nowMs,
   });
   return { ...showEncounterGenerationBlock(generation, event.source), generation };
@@ -86,10 +90,20 @@ function recordWidgetGeneration(event, result) {
     result,
     request: event.request,
     source,
+    checkMode: event.checkMode || EncounterCheckMode.MANUAL,
     nowMs: event.nowMs,
   });
   if (!generation.blocked) {
-    return { action: "recovery", handled: false, state: generation.state, generation };
+    return {
+      action:
+        generation.application === EncounterGenerationApplication.AVAILABLE
+          ? "ready"
+          : "unavailable",
+      handled: true,
+      reason: generation.reason,
+      state: generation.state,
+      generation,
+    };
   }
   return {
     ...showEncounterGenerationBlock(generation, source),
@@ -104,6 +118,7 @@ function handleWidgetNewsLoaded(event) {
     dawn: event.dawn,
     key: event.key,
     search: event.search,
+    eventpanePresent: event.eventpanePresent,
   });
   if (isBlockingEncounterGenerationResult(result)) {
     return recordWidgetGeneration(event, result);
@@ -133,7 +148,6 @@ const encounterEventHandlers = Object.freeze({
   [EVENT_WIDGET_STARTED_ENCOUNTER]: executeWidgetEvent,
   [EVENT_WIDGET_RESET_DAY]: executeWidgetEvent,
   [EVENT_WIDGET_CLICKED]: executeWidgetEvent,
-  [EVENT_WIDGET_TIMER_ELAPSED]: executeWidgetEvent,
   [EVENT_WIDGET_NEWS_LOADED]: handleWidgetNewsLoaded,
   [EVENT_WIDGET_GENERATION_FAILED]: handleWidgetGenerationFailed,
 });

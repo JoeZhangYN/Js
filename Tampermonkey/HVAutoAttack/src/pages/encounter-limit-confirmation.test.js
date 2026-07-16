@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
+import { EncounterCheckMode } from "./encounter-check-mode.js";
 import {
   EncounterGenerationStateEvent,
   runEncounterGenerationState,
@@ -31,6 +32,7 @@ function record(state, result, nowMs, writeState = vi.fn((next) => ({ ok: true, 
       result,
       nowMs,
       source: "limitConfirmationTest",
+      checkMode: EncounterCheckMode.AUTOMATIC,
     },
     { writeState }
   );
@@ -67,7 +69,7 @@ describe("encounter daily limit confirmation", () => {
     );
 
     expect(transport).toMatchObject({
-      application: "generationFault",
+      application: "automaticCheckFailed",
       state: { invalidCycleCount: 1, generationFailureCount: 1 },
     });
     expect(rejected).toMatchObject({

@@ -40,49 +40,35 @@ describe("encounter widget generation recovery", () => {
     });
     expect(mocks.runUserFeedbackAutomation).not.toHaveBeenCalled();
     expect(
-      runEncounterAutomation({
-        type: EncounterEvent.WIDGET_TIMER_ELAPSED,
-        state: outcome.state,
-        pageType: "hv",
-      })
+      runEncounterAutomation({ type: EncounterEvent.WIDGET_TICK, state: outcome.state })
     ).toMatchObject({ status: "countdown", reason: "cooldown" });
     expect(mocks.runNavigationAutomation).not.toHaveBeenCalled();
   });
 
-  it("backs off a widget fetch failure before its timer can request again", () => {
+  it("reports a manual widget fetch failure without changing automatic recovery", () => {
+    const state = {
+      date: Date.now() - 31 * 60 * 1000,
+      key: "",
+      count: 1,
+      clear: true,
+    };
     const outcome = runEncounterAutomation({
       type: EncounterEvent.WIDGET_GENERATION_FAILED,
-      state: {
-        date: Date.now() - 31 * 60 * 1000,
-        key: "",
-        count: 1,
-        clear: true,
-      },
+      state,
       request: { method: "GET", url: "https://e-hentai.org/news.php?encounter" },
       reason: "generationRequestFailed",
       detail: { error: "network down" },
       pageType: "hv",
+      checkMode: "manual",
     });
 
     expect(outcome).toMatchObject({
-      action: "recovery",
-      handled: false,
-      state: { generationFailureCount: 1, generationFailureReason: "generationRequestFailed" },
+      action: "unavailable",
+      handled: true,
+      generation: { application: "manualCheckFailed" },
+      state: { date: state.date, count: 1 },
     });
-    expect(
-      runEncounterAutomation({
-        type: EncounterEvent.WIDGET_TIMER_ELAPSED,
-        state: outcome.state,
-        pageType: "hv",
-      })
-    ).toMatchObject({
-      status: "ready",
-      reason: "readyWindow",
-      operationalStatus: "countdown",
-      operationalReason: "generationBackoff",
-      recoveryStatus: "countdown",
-      recoveryRemainingMs: 60 * 1000,
-    });
+    expect(outcome.state).not.toHaveProperty("generationFailureCount");
     expect(mocks.runUserFeedbackAutomation).not.toHaveBeenCalled();
   });
 });

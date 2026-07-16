@@ -7,8 +7,11 @@ const ENCOUNTER_GENERATION_REQUEST_TIMEOUT_MS = 15_000;
 
 function classifyResponse(html, deps) {
   const doc = new deps.DOMParser().parseFromString(html, "text/html");
-  const eventpane = doc.querySelector("#eventpane")?.innerHTML || "";
-  return classifyEncounterGenerationResult({ eventpane });
+  const eventpaneNode = doc.querySelector("#eventpane");
+  return classifyEncounterGenerationResult({
+    eventpane: eventpaneNode?.innerHTML || "",
+    eventpanePresent: Boolean(eventpaneNode),
+  });
 }
 
 function recordTransportFailure(reason, detail, event, deps) {
