@@ -3,8 +3,10 @@ import path from "node:path";
 
 const root = process.cwd();
 const srcDir = path.join(root, "src");
+const worldPolicyFile = path.normalize("src/core/world-policy.js");
 const owner = path.normalize("src/pages/encounter.js");
 const battleLifecycleFile = path.normalize("src/pages/encounter-battle-lifecycle.js");
+const encounterCompletionTest = path.normalize("src/pages/encounter-completion.test.js");
 const entryExecutionFile = path.normalize("src/pages/encounter-entry-execution.js");
 const entryExecutionFailureTest = path.normalize(
   "src/pages/encounter-entry-execution-failure.test.js"
@@ -15,6 +17,10 @@ const stateIoTest = path.normalize("src/pages/encounter-state-io.test.js");
 const stateDawnRecoveryTest = path.normalize("src/pages/encounter-state-dawn-recovery.test.js");
 const stateGenerationFile = path.normalize("src/pages/encounter-generation-state.js");
 const generationRequestFile = path.normalize("src/pages/encounter-generation-request.js");
+const generationRouteFile = path.normalize("src/pages/encounter-generation-route.js");
+const generationRouteTest = path.normalize("src/pages/encounter-generation-route.test.js");
+const generationResponseFile = path.normalize("src/pages/encounter-generation-response.js");
+const generationResponseTest = path.normalize("src/pages/encounter-generation-response.test.js");
 const stateStorageFile = path.normalize("src/pages/encounter-state-storage.js");
 const stateStorageTest = path.normalize("src/pages/encounter-state-storage.test.js");
 const stateGenerationFailureTest = path.normalize(
@@ -58,6 +64,9 @@ const primaryClockFile = path.normalize("src/pages/encounter-primary-clock.js");
 const primaryClockTest = path.normalize("src/pages/encounter-primary-clock.test.js");
 const checkModeFile = path.normalize("src/pages/encounter-check-mode.js");
 const stateMigrationFile = path.normalize("src/pages/encounter-state-migration.js");
+const generationRouteStateFile = path.normalize(
+  "src/pages/encounter-generation-route-state.js"
+);
 const entryStateFile = path.normalize("src/pages/encounter-entry-state.js");
 const generationApplicationFile = path.normalize("src/pages/encounter-generation-application.js");
 const clockFile = path.normalize("src/pages/encounter-clock.js");
@@ -94,6 +103,7 @@ const policyInternalFiles = new Set([
   primaryClockFile,
   checkModeFile,
   stateMigrationFile,
+  generationRouteStateFile,
   entryStateFile,
   generationApplicationFile,
   clockFile,
@@ -118,6 +128,21 @@ function checkFile(file) {
   const relative = path.normalize(path.relative(root, file));
   const text = fs.readFileSync(file, "utf8");
   const lines = text.split(/\r?\n/);
+
+  if (!relative.endsWith(".test.js")) {
+    lines.forEach((line, index) => {
+      if (!line.includes("news.php?encounter")) return;
+      if (
+        relative.endsWith(path.normalize("cross-site-encounter-navigation.js")) &&
+        line.includes("LEGACY_ENCOUNTER_REDIRECT_URL")
+      ) {
+        return;
+      }
+      violations.push(
+        `${rel(file)}:${index + 1} retired encounter URL must never be a request or navigation authority`
+      );
+    });
+  }
 
   if (relative === legacyWidgetFile) {
     violations.push(
@@ -149,6 +174,7 @@ function checkFile(file) {
       relative !== persistenceLoopTest &&
       relative !== stateEvidenceTest &&
       relative !== stateFailureTest &&
+      relative !== encounterCompletionTest &&
       relative !== policyFile &&
       relative !== bridgeFile &&
       /\bhvut_re\b/.test(line)
@@ -328,11 +354,19 @@ function checkFile(file) {
 walk(srcDir);
 
 const ownerText = fs.readFileSync(path.join(root, owner), "utf8");
+const worldPolicyText = fs.readFileSync(path.join(root, worldPolicyFile), "utf8");
 const battleLifecycleText = fs.readFileSync(path.join(root, battleLifecycleFile), "utf8");
 const entryExecutionText = fs.readFileSync(path.join(root, entryExecutionFile), "utf8");
 const stateHelperText = fs.readFileSync(path.join(root, stateHelper), "utf8");
 const stateGenerationText = fs.readFileSync(path.join(root, stateGenerationFile), "utf8");
 const generationRequestText = fs.readFileSync(path.join(root, generationRequestFile), "utf8");
+const generationRouteText = fs.readFileSync(path.join(root, generationRouteFile), "utf8");
+const generationRouteTestText = fs.readFileSync(path.join(root, generationRouteTest), "utf8");
+const generationResponseText = fs.readFileSync(path.join(root, generationResponseFile), "utf8");
+const generationResponseTestText = fs.readFileSync(
+  path.join(root, generationResponseTest),
+  "utf8"
+);
 const stateStorageText = fs.readFileSync(path.join(root, stateStorageFile), "utf8");
 const stateFailureText = fs.readFileSync(path.join(root, stateFailureFile), "utf8");
 const stateFailureTestText = fs.readFileSync(path.join(root, stateFailureTest), "utf8");
@@ -452,10 +486,36 @@ for (const required of [
   "isAutomaticEncounterEnabled",
   "EncounterStateEvent.MARK_COMPLETED",
   "encounterCompletionPersistenceFailed",
+  "EncounterCompletionStatus",
+  "NOT_ENCOUNTER_BATTLE",
+  "NOT_TERMINAL",
+  "PERSISTENCE_FAILED",
 ]) {
   if (!battleLifecycleText.includes(required)) {
     violations.push(`${battleLifecycleFile.replaceAll("\\", "/")} must own ${required}`);
   }
+}
+const completeEncounterBody =
+  battleLifecycleText.match(
+    /export function completeRandomEncounter\([^)]*\)\s*\{(?<body>[\s\S]*?)\n\}/
+  )?.groups?.body || "";
+if (completeEncounterBody.includes("isAutomaticEncounterEnabled")) {
+  violations.push(
+    `${battleLifecycleFile.replaceAll("\\", "/")} completion count must not depend on the automatic-entry option`
+  );
+}
+const encounterCompletionTestText = fs.readFileSync(
+  path.join(root, "src/pages/encounter-completion.test.js"),
+  "utf8"
+);
+if (
+  !encounterCompletionTestText.includes(
+    "counts a completed encounter independently from the automatic-entry option"
+  )
+) {
+  violations.push(
+    "src/pages/encounter-completion.test.js must lock completion-count identity apart from entry enablement"
+  );
 }
 for (const required of ["EVENT_RANDOM_ENCOUNTER_STARTED", "EVENT_RANDOM_ENCOUNTER_COMPLETED"]) {
   if (!ownerText.includes(required)) {
@@ -1172,10 +1232,41 @@ if (
 }
 for (const required of [
   'action: "generate"',
-  'request: { method: "GET", url: ENCOUNTER_GENERATION_URL }',
+  "EncounterGenerationRouteEvent.CREATE_REQUEST",
+  "runEncounterGenerationRoute",
 ]) {
   if (!entryPolicyText.includes(required)) {
     violations.push(`${entryPolicyFile.replaceAll("\\", "/")} must plan ${required}`);
+  }
+}
+for (const required of [
+  "CURRENT_WORLD_POLICY.routes.encounterGenerationUrl",
+  'routeIdentity: "persistentEncounterNews"',
+  "EncounterGenerationRouteEvent",
+]) {
+  if (!generationRouteText.includes(required)) {
+    violations.push(
+      `${generationRouteFile.replaceAll("\\", "/")} must own canonical generation route: ${required}`
+    );
+  }
+}
+if (!worldPolicyText.includes('encounterGenerationUrl: "https://e-hentai.org/news.php"')) {
+  violations.push(
+    `${worldPolicyFile.replaceAll("\\", "/")} must bind the canonical encounter news route`
+  );
+}
+if (/e-hentai\.org\/news\.php/.test(entryPolicyText)) {
+  violations.push(
+    `${entryPolicyFile.replaceAll("\\", "/")} must consume the bound route command instead of owning a raw URL`
+  );
+}
+for (const required of [
+  "creates only the canonical news-page request",
+  "https://e-hentai.org/news.php",
+  "rejects unknown route events without exposing a fallback URL",
+]) {
+  if (!generationRouteTestText.includes(required)) {
+    violations.push(`${generationRouteTest.replaceAll("\\", "/")} must cover ${required}`);
   }
 }
 if (/reason\s*=\s*["']encounterKeyMissing["']/.test(generationRecoveryText)) {
@@ -1262,6 +1353,7 @@ for (const required of [
 }
 for (const required of [
   "classifyEncounterGenerationResult",
+  "readEncounterGenerationResponse",
   "EncounterGenerationFailureReason.REQUEST_REJECTED",
   "load-key-error",
   "load-key-timeout",
@@ -1272,6 +1364,28 @@ for (const required of [
 ]) {
   if (!generationRequestText.includes(required)) {
     violations.push(`${generationRequestFile.replaceAll("\\", "/")} must preserve ${required}`);
+  }
+}
+for (const required of [
+  "EncounterGenerationResponseIdentity",
+  "requestedRoute",
+  "finalRoute",
+  "newsPagePresent",
+  "contentLength",
+]) {
+  if (!generationResponseText.includes(required)) {
+    violations.push(
+      `${generationResponseFile.replaceAll("\\", "/")} must preserve response identity ${required}`
+    );
+  }
+}
+for (const required of [
+  "recognizes the canonical news page",
+  "preserves the event surface and encounter link",
+  "without persisting response bodies",
+]) {
+  if (!generationResponseTestText.includes(required)) {
+    violations.push(`${generationResponseTest.replaceAll("\\", "/")} must cover ${required}`);
   }
 }
 for (const required of [
@@ -1465,7 +1579,7 @@ for (const required of [
 for (const required of [
   "href: plan.href",
   "keeps manual ready-window clicks able to load the encounter check",
-  "https://e-hentai.org/news.php?encounter",
+  "https://e-hentai.org/news.php",
 ]) {
   if (!widgetPolicyText.includes(required) && !widgetPolicyTestText.includes(required)) {
     violations.push(

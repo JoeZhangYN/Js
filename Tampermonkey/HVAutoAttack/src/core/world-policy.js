@@ -21,7 +21,7 @@ const WORLD_POLICIES = Object.freeze({
     storageMaintenance: Object.freeze({ dbName: "hvAA_storage_maintenance" }),
     routes: Object.freeze({
       rootUrl: MAIN_ROOT,
-      encounterGenerationUrl: "https://e-hentai.org/news.php?encounter",
+      encounterGenerationUrl: "https://e-hentai.org/news.php",
     }),
     features: Object.freeze({ randomEncounter: true }),
     hvut: Object.freeze({ namespace: "hvut" }),

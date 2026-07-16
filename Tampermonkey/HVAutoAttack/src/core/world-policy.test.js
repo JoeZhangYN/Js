@@ -30,6 +30,7 @@ describe("ingress identity and world policy", () => {
       learnedMonster: { dbName: "hvAA_learned_monsters" },
       hvutDerived: { dbName: "hvAA_hvut_derived" },
       storageMaintenance: { dbName: "hvAA_storage_maintenance" },
+      routes: { encounterGenerationUrl: "https://e-hentai.org/news.php" },
       features: { randomEncounter: true },
       hvut: { namespace: "hvut" },
     });
@@ -41,6 +42,7 @@ describe("ingress identity and world policy", () => {
       learnedMonster: { dbName: "hvAA_learned_monsters_isekai" },
       hvutDerived: { dbName: "hvAA_hvut_derived_isekai" },
       storageMaintenance: { dbName: "hvAA_storage_maintenance_isekai" },
+      routes: { encounterGenerationUrl: null },
       features: { randomEncounter: false },
       hvut: { namespace: "hvuti" },
     });

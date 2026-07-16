@@ -108,6 +108,7 @@ describe("UTC encounter new-day recovery", () => {
         key: "",
         count: 0,
         clear: true,
+        generationRouteRevision: 1,
         generationAttemptKey: "2026-06-27:0::true:ready",
         generationFailureCount: 2,
         generationFailureReason: "encounterKeyMissing",

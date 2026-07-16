@@ -31,7 +31,7 @@ describe("encounter widget generation recovery", () => {
       eventpane: "It is the dawn of a new day!",
       engage: true,
       pageType: "hv",
-      request: { method: "GET", url: "https://e-hentai.org/news.php?encounter" },
+      request: { method: "GET", url: "https://e-hentai.org/news.php" },
     });
 
     expect(outcome).toMatchObject({
@@ -55,7 +55,7 @@ describe("encounter widget generation recovery", () => {
     const outcome = runEncounterAutomation({
       type: EncounterEvent.WIDGET_GENERATION_FAILED,
       state,
-      request: { method: "GET", url: "https://e-hentai.org/news.php?encounter" },
+      request: { method: "GET", url: "https://e-hentai.org/news.php" },
       reason: "generationRequestFailed",
       detail: { error: "network down" },
       pageType: "hv",

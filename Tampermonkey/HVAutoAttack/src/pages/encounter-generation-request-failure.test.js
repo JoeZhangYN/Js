@@ -5,7 +5,7 @@ const mocks = vi.hoisted(() => ({ gmXhr: vi.fn() }));
 
 vi.mock("../dom/gm-xhr.js", () => ({ gmXhr: mocks.gmXhr }));
 
-const request = { method: "GET", url: "https://e-hentai.org/news.php?encounter" };
+const request = { method: "GET", url: "https://e-hentai.org/news.php" };
 
 beforeEach(() => {
   localStorage.clear();

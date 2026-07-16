@@ -70,15 +70,19 @@ function effectOk(result) {
   return result !== false;
 }
 
-function encounterCompletionOk(result) {
-  if (result?.completed === false) return false;
-  return effectOk(result);
+function normalizeEncounterCompletion(result) {
+  if (result && typeof result === "object" && typeof result.status === "string") return result;
+  return { status: "unknown", ok: false, counted: false };
 }
 
 function handleTerminalCompletion(outcome, context, deps) {
   const alarmKind = outcome === BattleCompletionOutcome.DEFEAT ? "Defeat" : "Victory";
+  const encounterCompletion = normalizeEncounterCompletion(
+    deps.completeEncounter(outcome, context)
+  );
   const effects = {
-    encounterCompletion: encounterCompletionOk(deps.completeEncounter(outcome, context)),
+    encounterCompletion,
+    encounterCompletionOk: encounterCompletion.ok === true,
     utilityLearning: effectOk(deps.completeUtilityLearning(outcome)),
     alarm: effectOk(deps.triggerAlarm(alarmKind)),
     clearSession: effectOk(deps.clearSession()),

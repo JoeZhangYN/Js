@@ -19,6 +19,10 @@ import {
   normalizeEncounterPrimaryClock,
 } from "./encounter-primary-clock.js";
 import { migrateEncounterUtcDay } from "./encounter-state-migration.js";
+import {
+  ENCOUNTER_GENERATION_ROUTE_REVISION,
+  migrateEncounterGenerationRouteState,
+} from "./encounter-generation-route-state.js";
 
 export {
   ENCOUNTER_DAILY_LIMIT,
@@ -42,6 +46,7 @@ export function defaultEncounterState(nowMs = Date.now()) {
     ...defaultEncounterPrimaryClock(),
     ...entryState(),
     schemaVersion: 4,
+    generationRouteRevision: ENCOUNTER_GENERATION_ROUTE_REVISION,
     ...defaultEncounterBattleCycle(nowMs),
   };
 }
@@ -63,7 +68,10 @@ export function normalizeEncounterState(state, nowMs = Date.now()) {
     schemaVersion: 4,
     ...normalizeEncounterBattleCycle({ ...source, utcDay: sourceUtcDay }, nowMs),
   };
-  return carryGenerationRecovery(normalized, source, nowMs);
+  return migrateEncounterGenerationRouteState(
+    carryGenerationRecovery(normalized, source, nowMs),
+    source
+  );
 }
 
 export function observeEncounterNewDay(state, nowMs = Date.now()) {

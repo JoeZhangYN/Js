@@ -4,6 +4,7 @@ import path from "node:path";
 const root = process.cwd();
 const owner = path.normalize("src/battle/battle-completion.js");
 const ownerTest = path.normalize("src/battle/battle-completion.test.js");
+const rejectionTest = path.normalize("src/battle/battle-completion-rejection.test.js");
 const encounterTest = path.normalize("src/battle/battle-completion-encounter.test.js");
 const monitorResultTest = path.normalize("src/battle/battle-completion-monitor-result.test.js");
 const evidence = path.normalize("src/battle/battle-completion-evidence.js");
@@ -64,6 +65,9 @@ function checkOwner() {
     "BattleProgressEvent.READ_CONTEXT",
     "EncounterEvent.RANDOM_ENCOUNTER_COMPLETED",
     "deps.completeEncounter(outcome, context)",
+    "normalizeEncounterCompletion",
+    "encounterCompletionOk",
+    "counted",
     "roundType: progress.roundType",
   ]) {
     if (!text.includes(required)) {
@@ -154,7 +158,9 @@ function checkOwner() {
     );
   }
   if (fs.existsSync(path.join(root, ownerTest))) {
-    const testText = fs.readFileSync(path.join(root, ownerTest), "utf8");
+    const testText = [ownerTest, rejectionTest]
+      .map((file) => fs.readFileSync(path.join(root, file), "utf8"))
+      .join("\n");
     if (!testText.includes("rejects unknown battle completion events without side effects")) {
       violations.push(`${ownerTest.replaceAll("\\", "/")} must cover unknown completion events`);
     }
@@ -182,6 +188,16 @@ function checkOwner() {
     violations.push(
       `${encounterTest.replaceAll("\\", "/")} must cover encounter completion before session clear`
     );
+  }
+  for (const required of [
+    "keeps terminal cleanup running while evidencing encounter persistence failure",
+    "does not turn an unknown encounter completion response into success evidence",
+    'status: "persistenceFailed"',
+    'status: "unknown"',
+  ]) {
+    if (!encounterTestText.includes(required)) {
+      violations.push(`${encounterTest.replaceAll("\\", "/")} must cover ${required}`);
+    }
   }
   if (!fs.existsSync(path.join(root, monitorResultTest))) {
     violations.push(

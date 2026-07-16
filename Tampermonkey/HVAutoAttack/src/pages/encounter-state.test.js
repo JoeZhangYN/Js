@@ -10,7 +10,7 @@ vi.mock("../dom/gm-xhr.js", () => ({ gmXhr: mocks.gmXhr }));
 const HVUT_RE_KEY = "hvut_re";
 const GENERATION_REQUEST = {
   method: "GET",
-  url: "https://e-hentai.org/news.php?encounter",
+  url: "https://e-hentai.org/news.php",
 };
 
 function currentState(fields = {}) {
@@ -21,6 +21,7 @@ function currentState(fields = {}) {
     count: 0,
     clear: true,
     schemaVersion: 4,
+    generationRouteRevision: 1,
     utcDay: "2026-06-27",
     dayPhase: "active",
     anchorReason: null,

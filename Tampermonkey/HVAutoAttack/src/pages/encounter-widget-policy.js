@@ -50,6 +50,8 @@ function planWidgetNewsLoaded(event) {
     key: event.key,
     search: event.search,
     eventpanePresent: event.eventpanePresent,
+    newsPagePresent: event.newsPagePresent,
+    responseIdentity: event.responseIdentity,
   });
   const application = runEncounterPolicy({
     type: EncounterPolicyEvent.APPLY_GENERATION_RESULT,

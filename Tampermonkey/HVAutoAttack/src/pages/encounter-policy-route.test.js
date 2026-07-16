@@ -127,7 +127,7 @@ describe("runEncounterPolicy route contract", () => {
       })
     ).toMatchObject({
       action: "generate",
-      request: { method: "GET", url: "https://e-hentai.org/news.php?encounter" },
+      request: { method: "GET", url: "https://e-hentai.org/news.php" },
     });
   });
 

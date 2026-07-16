@@ -2,16 +2,22 @@ import {
   classifyEncounterGenerationResult,
   EncounterGenerationFailureReason,
 } from "./encounter-generation-result.js";
+import { readEncounterGenerationResponse } from "./encounter-generation-response.js";
 
 const ENCOUNTER_GENERATION_REQUEST_TIMEOUT_MS = 15_000;
 
-function classifyResponse(html, deps) {
-  const doc = new deps.DOMParser().parseFromString(html, "text/html");
-  const eventpaneNode = doc.querySelector("#eventpane");
-  return classifyEncounterGenerationResult({
-    eventpane: eventpaneNode?.innerHTML || "",
-    eventpanePresent: Boolean(eventpaneNode),
-  });
+function classifyResponse(response, request, deps) {
+  return classifyEncounterGenerationResult(
+    readEncounterGenerationResponse(
+      {
+        html: response.responseText || response.response || "",
+        status: response.status,
+        requestedUrl: request.url,
+        finalUrl: response.finalUrl,
+      },
+      deps
+    )
+  );
 }
 
 function recordTransportFailure(reason, detail, event, deps) {
@@ -100,7 +106,7 @@ export function executeEncounterGenerationRequest(event, deps) {
           finish("load-key-response", EncounterGenerationFailureReason.REQUEST_FAILED, {}, () =>
             deps.recordResult({
               ...generationEvent,
-              result: classifyResponse(response.responseText || response.response || "", deps),
+              result: classifyResponse(response, request, deps),
             })
           );
         },

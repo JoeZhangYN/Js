@@ -86,7 +86,7 @@ describe("encounter stale entry recovery", () => {
       },
     });
     expect(mocks.gmXhr).toHaveBeenCalledWith(
-      expect.objectContaining({ url: "https://e-hentai.org/news.php?encounter" })
+      expect.objectContaining({ url: "https://e-hentai.org/news.php" })
     );
     expect(mocks.runNavigationAutomation).not.toHaveBeenCalled();
   });

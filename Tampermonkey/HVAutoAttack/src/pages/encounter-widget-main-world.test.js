@@ -16,7 +16,7 @@ describe("main-world encounter widget timing", () => {
     ).toMatchObject({
       action: "load",
       checkMode: "manual",
-      href: "https://e-hentai.org/news.php?encounter",
+      href: "https://e-hentai.org/news.php",
     });
   });
 

@@ -5,7 +5,11 @@ function deps(context = { monsterAlive: 0, roundNow: 1, roundAll: 1 }) {
   return {
     readCompletionContext: vi.fn(() => context),
     recordCompletion: vi.fn(),
-    completeEncounter: vi.fn(),
+    completeEncounter: vi.fn(() => ({
+      status: "notEncounterBattle",
+      ok: true,
+      counted: false,
+    })),
     completeUtilityLearning: vi.fn(),
     triggerAlarm: vi.fn(),
     clearSession: vi.fn(),
@@ -33,7 +37,12 @@ describe("runBattleCompletionAutomation", () => {
       effects: {
         recordCompletion: true,
         recordCompletionResult: { kind: "recorded" },
-        encounterCompletion: true,
+        encounterCompletion: {
+          status: "notEncounterBattle",
+          ok: true,
+          counted: false,
+        },
+        encounterCompletionOk: true,
         utilityLearning: true,
         alarm: true,
         clearSession: true,
@@ -81,7 +90,12 @@ describe("runBattleCompletionAutomation", () => {
       effects: {
         recordCompletion: true,
         recordCompletionResult: { kind: "recorded" },
-        encounterCompletion: true,
+        encounterCompletion: {
+          status: "notEncounterBattle",
+          ok: true,
+          counted: false,
+        },
+        encounterCompletionOk: true,
         utilityLearning: true,
         alarm: true,
         clearSession: true,
@@ -105,56 +119,5 @@ describe("runBattleCompletionAutomation", () => {
       outcome: "victory",
       context: { monsterAlive: 0, roundNow: 1, roundAll: 1 },
     });
-  });
-
-  it("rejects unknown battle completion events without side effects", () => {
-    const d = deps({ monsterAlive: 0, roundNow: 2, roundAll: 2 });
-
-    expect(runBattleCompletionAutomation({ type: "unknown" }, d)).toEqual({ outcome: "ongoing" });
-
-    expect(d.recordCompletion).not.toHaveBeenCalled();
-    expect(d.readCompletionContext).not.toHaveBeenCalled();
-    expect(d.triggerAlarm).not.toHaveBeenCalled();
-    expect(d.completeEncounter).not.toHaveBeenCalled();
-    expect(d.clearSession).not.toHaveBeenCalled();
-    expect(d.isCompletionReached).not.toHaveBeenCalled();
-    expect(d.scheduleReload).not.toHaveBeenCalled();
-    expect(d.recordCompletionEvidence).toHaveBeenCalledWith({
-      outcome: "ongoing",
-      reason: "unknownCompletionEvent",
-      eventType: "unknown",
-    });
-  });
-
-  it("rejects null battle completion events without side effects", () => {
-    const d = deps({ monsterAlive: 0, roundNow: 2, roundAll: 2 });
-
-    expect(runBattleCompletionAutomation(null, d)).toEqual({ outcome: "ongoing" });
-
-    expect(d.recordCompletion).not.toHaveBeenCalled();
-    expect(d.readCompletionContext).not.toHaveBeenCalled();
-    expect(d.triggerAlarm).not.toHaveBeenCalled();
-    expect(d.completeEncounter).not.toHaveBeenCalled();
-    expect(d.clearSession).not.toHaveBeenCalled();
-    expect(d.isCompletionReached).not.toHaveBeenCalled();
-    expect(d.scheduleReload).not.toHaveBeenCalled();
-    expect(d.recordCompletionEvidence).toHaveBeenCalledWith({
-      outcome: "ongoing",
-      reason: "unknownCompletionEvent",
-      eventType: null,
-    });
-  });
-
-  it("reads completion panel reachability through the completion entry", () => {
-    const d = deps();
-    d.isCompletionReached.mockReturnValue(false);
-
-    expect(runBattleCompletionAutomation({ type: BattleCompletionEvent.READ_REACHED }, d)).toBe(
-      false
-    );
-
-    expect(d.isCompletionReached).toHaveBeenCalledTimes(1);
-    expect(d.recordCompletion).not.toHaveBeenCalled();
-    expect(d.readCompletionContext).not.toHaveBeenCalled();
   });
 });

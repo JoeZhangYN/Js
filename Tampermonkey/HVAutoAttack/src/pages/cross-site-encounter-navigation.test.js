@@ -111,7 +111,10 @@ describe("runCrossSiteEncounterNavigation", () => {
       "generation-result-unavailable",
       expect.objectContaining({
         kind: "encounterGenerationUnavailable",
-        request: { method: "GET", url: "https://e-hentai.org/news.php?encounter" },
+        request: expect.objectContaining({
+          method: "GET",
+          url: "https://e-hentai.org/news.php",
+        }),
       })
     );
     expect(recordFailure.mock.invocationCallOrder[0]).toBeLessThan(

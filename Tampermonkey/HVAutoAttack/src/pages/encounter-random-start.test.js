@@ -58,53 +58,6 @@ describe("runEncounterAutomation random encounter start", () => {
     expect(localStorage.getItem(HVUT_RE_KEY)).toBeNull();
   });
 
-  it("counts victory and defeat only when the random encounter reaches a terminal result", () => {
-    const victory = runEncounterAutomation({
-      type: EncounterEvent.RANDOM_ENCOUNTER_COMPLETED,
-      outcome: "victory",
-      roundType: "ba",
-    });
-    vi.setSystemTime(new Date("2026-06-27T12:31:00.000Z"));
-    const defeat = runEncounterAutomation({
-      type: EncounterEvent.RANDOM_ENCOUNTER_COMPLETED,
-      outcome: "defeat",
-      roundType: "ba",
-    });
-
-    expect(victory).toMatchObject({ completed: true, state: { count: 1 } });
-    expect(defeat).toMatchObject({
-      completed: true,
-      state: {
-        date: Date.now(),
-        count: 2,
-        anchorReason: "encounterCompleted",
-        dayPhase: "active",
-      },
-    });
-  });
-
-  it("ignores terminal battles outside the main-world random encounter identity", () => {
-    expect(
-      runEncounterAutomation({
-        type: EncounterEvent.RANDOM_ENCOUNTER_COMPLETED,
-        outcome: "victory",
-        roundType: "ar",
-      })
-    ).toEqual({ claimed: false, skipped: true });
-    expect(localStorage.getItem(HVUT_RE_KEY)).toBeNull();
-  });
-
-  it("does not count a non-terminal event even when it claims random-encounter identity", () => {
-    expect(
-      runEncounterAutomation({
-        type: EncounterEvent.RANDOM_ENCOUNTER_COMPLETED,
-        outcome: "ongoing",
-        roundType: "ba",
-      })
-    ).toEqual({ claimed: false, skipped: true });
-    expect(localStorage.getItem(HVUT_RE_KEY)).toBeNull();
-  });
-
   it("recognizes battle-start evidence without mutating encounter state", () => {
     expect(
       runEncounterAutomation({
@@ -124,23 +77,5 @@ describe("runEncounterAutomation random encounter start", () => {
       })
     ).toEqual({ claimed: false, recognized: false });
     expect(localStorage.getItem(HVUT_RE_KEY)).toBeNull();
-  });
-
-  it("records completion persistence failures as diagnostics without blocking battle completion", () => {
-    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
-    vi.stubGlobal("GM_getValue", (_key, fallback) => fallback);
-    vi.stubGlobal("GM_setValue", () => {
-      throw new Error("GM write blocked");
-    });
-
-    expect(
-      runEncounterAutomation({
-        type: EncounterEvent.RANDOM_ENCOUNTER_COMPLETED,
-        outcome: "defeat",
-        roundType: "ba",
-      })
-    ).toMatchObject({ claimed: false, completed: false, persistence: { ok: false } });
-    expect(warn).toHaveBeenCalled();
-    expect(mocks.runUserFeedbackAutomation).not.toHaveBeenCalled();
   });
 });

@@ -26,43 +26,73 @@ export const parseEventpaneEncounterKey = (eventpane = "") =>
 export const parseSearchEncounterKey = (search = "") =>
   /\?s=Battle&ss=ba&encounter=([A-Za-z0-9=]+)/.exec(search)?.[1];
 
+function withResponseIdentity(result, event) {
+  return event.responseIdentity ? { ...result, responseIdentity: event.responseIdentity } : result;
+}
+
 export function isBlockingEncounterGenerationResult(result) {
   return result?.reason === EncounterGenerationFailureReason.EQUIPMENT_INVENTORY_FULL;
 }
 
 export function classifyEncounterGenerationResult(event = {}) {
   if (event.transportFailure) {
-    return {
-      status: EncounterGenerationResultStatus.TRANSPORT_FAILURE,
-      reason: event.transportFailure.reason,
-      failure: event.transportFailure.detail,
-    };
+    return withResponseIdentity(
+      {
+        status: EncounterGenerationResultStatus.TRANSPORT_FAILURE,
+        reason: event.transportFailure.reason,
+        failure: event.transportFailure.detail,
+      },
+      event
+    );
   }
   if (event.eventpanePresent === false) {
-    return {
-      status: EncounterGenerationResultStatus.TRANSPORT_FAILURE,
-      reason: EncounterGenerationFailureReason.RESPONSE_UNRECOGNIZED,
-      failure: { reason: "eventpaneMissing" },
-    };
+    if (event.newsPagePresent) {
+      return withResponseIdentity(
+        {
+          status: EncounterGenerationResultStatus.UNAVAILABLE,
+          reason: EncounterGenerationFailureReason.ENCOUNTER_KEY_MISSING,
+        },
+        event
+      );
+    }
+    return withResponseIdentity(
+      {
+        status: EncounterGenerationResultStatus.TRANSPORT_FAILURE,
+        reason: EncounterGenerationFailureReason.RESPONSE_UNRECOGNIZED,
+        failure: { reason: "eventpaneMissing" },
+      },
+      event
+    );
   }
   const eventpane = event.eventpane || "";
   const key =
     event.key || parseEventpaneEncounterKey(eventpane) || parseSearchEncounterKey(event.search);
-  if (key) return { status: EncounterGenerationResultStatus.AVAILABLE, key };
+  if (key) {
+    return withResponseIdentity({ status: EncounterGenerationResultStatus.AVAILABLE, key }, event);
+  }
   if (eventpane.includes(DAWN_EVENTPANE_TEXT) || event.dawn) {
-    return {
-      status: EncounterGenerationResultStatus.NEW_DAY,
-      reason: EncounterGenerationFailureReason.DAILY_RESET_EVENT,
-    };
+    return withResponseIdentity(
+      {
+        status: EncounterGenerationResultStatus.NEW_DAY,
+        reason: EncounterGenerationFailureReason.DAILY_RESET_EVENT,
+      },
+      event
+    );
   }
   if (EQUIPMENT_FULL_EVENTPANE_RE.test(eventpane)) {
-    return {
-      status: EncounterGenerationResultStatus.UNAVAILABLE,
-      reason: EncounterGenerationFailureReason.EQUIPMENT_INVENTORY_FULL,
-    };
+    return withResponseIdentity(
+      {
+        status: EncounterGenerationResultStatus.UNAVAILABLE,
+        reason: EncounterGenerationFailureReason.EQUIPMENT_INVENTORY_FULL,
+      },
+      event
+    );
   }
-  return {
-    status: EncounterGenerationResultStatus.UNAVAILABLE,
-    reason: EncounterGenerationFailureReason.ENCOUNTER_KEY_MISSING,
-  };
+  return withResponseIdentity(
+    {
+      status: EncounterGenerationResultStatus.UNAVAILABLE,
+      reason: EncounterGenerationFailureReason.ENCOUNTER_KEY_MISSING,
+    },
+    event
+  );
 }

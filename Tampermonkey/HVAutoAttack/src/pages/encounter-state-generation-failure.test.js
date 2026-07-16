@@ -7,7 +7,7 @@ vi.mock("../dom/gm-xhr.js", () => ({ gmXhr: mocks.gmXhr }));
 
 const GENERATION_REQUEST = {
   method: "GET",
-  url: "https://e-hentai.org/news.php?encounter",
+  url: "https://e-hentai.org/news.php",
 };
 
 beforeEach(() => {
@@ -78,6 +78,35 @@ describe("encounter generation transport recovery", () => {
       status: "transportFailure",
       reason: "generationRequestRejected",
       state: { generationFailureReason: "generationRequestRejected" },
+      recovery: { reason: "generationBackoff" },
+    });
+  });
+
+  it("records canonical news-page absence separately from unrecognized response drift", async () => {
+    mocks.gmXhr.mockImplementation(({ onload }) =>
+      onload({
+        status: 200,
+        finalUrl: "https://e-hentai.org/news.php",
+        responseText:
+          '<html><head><title>E-Hentai Galleries</title></head><body><div id="newsouter"><div id="newsinner">News</div></div></body></html>',
+      })
+    );
+
+    const result = await runEncounterStateAutomation({
+      type: EncounterStateEvent.LOAD_KEY,
+      request: GENERATION_REQUEST,
+    });
+
+    expect(result).toMatchObject({
+      status: "unavailable",
+      reason: "encounterKeyMissing",
+      result: {
+        responseIdentity: {
+          kind: "newsPage",
+          finalRoute: { origin: "https://e-hentai.org", pathname: "/news.php" },
+        },
+      },
+      state: { generationFailureReason: "encounterKeyMissing" },
       recovery: { reason: "generationBackoff" },
     });
   });

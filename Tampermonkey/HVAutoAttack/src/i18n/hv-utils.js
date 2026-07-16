@@ -3619,7 +3619,8 @@ const bindRe = function (re, ctx) {
     const doc = $doc(html);
     const eventpaneNode = $id('eventpane', doc);
     const eventpane = eventpaneNode?.innerHTML;
-    const outcome = run_hvut_encounter_bridge('WIDGET_NEWS_LOADED', { state: re.json, eventpane, eventpanePresent: Boolean(eventpaneNode), checkMode: 'manual', pageType: re.type, galleryAlt: ctx.config.settings.reGalleryAlt });
+    const newsPagePresent = Boolean($id('newsouter', doc) && $id('newsinner', doc));
+    const outcome = run_hvut_encounter_bridge('WIDGET_NEWS_LOADED', { state: re.json, eventpane, eventpanePresent: Boolean(eventpaneNode), newsPagePresent, responseIdentity: { kind: eventpaneNode ? 'eventSurface' : newsPagePresent ? 'newsPage' : 'unrecognizedPage', title: doc.title || '', markers: { eventpane: Boolean(eventpaneNode), newsOuter: Boolean($id('newsouter', doc)), newsInner: Boolean($id('newsinner', doc)) } }, checkMode: 'manual', pageType: re.type, galleryAlt: ctx.config.settings.reGalleryAlt });
     if (applyEncounterState(outcome) === false) return false;
     if (outcome?.handled) {
       return;

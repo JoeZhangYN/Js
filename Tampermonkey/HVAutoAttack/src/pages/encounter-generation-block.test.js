@@ -66,7 +66,7 @@ describe("encounter generation blocking feedback", () => {
     const outcome = showEncounterGenerationBlock(
       {
         reason: "dailyResetEvent",
-        request: { method: "GET", url: "https://e-hentai.org/news.php?encounter" },
+        request: { method: "GET", url: "https://e-hentai.org/news.php" },
         state: { generationAttemptKey: "attempt-2" },
       },
       "lobby"
@@ -83,7 +83,7 @@ describe("encounter generation blocking feedback", () => {
     });
     expect(shared.get(DiagnosticEvidenceKey.ENCOUNTER_GENERATION_INCIDENT)).toMatchObject({
       reason: "dailyResetEvent",
-      request: { url: "https://e-hentai.org/news.php?encounter" },
+      request: { url: "https://e-hentai.org/news.php" },
       display: { status: "shown" },
     });
   });

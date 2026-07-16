@@ -13,12 +13,18 @@ import {
 } from "./encounter-generation-result.js";
 import { PageKind } from "./page-kind.js";
 import {
+  EncounterGenerationRouteEvent,
+  runEncounterGenerationRoute,
+} from "./encounter-generation-route.js";
+import {
   persistCrossSiteReturnOrigin,
   recordCrossSiteEncounterFailure,
 } from "./cross-site-encounter-failure.js";
 
 const DEFAULT_HV_ORIGIN = "https://hentaiverse.org";
-const EHENTAI_ENCOUNTER_URL = "https://e-hentai.org/news.php?encounter";
+// Compatibility-only recovery for pages opened by builds that used the retired trigger URL.
+// This value must never be used as a request or navigation target.
+const LEGACY_ENCOUNTER_REDIRECT_URL = "https://e-hentai.org/news.php?encounter";
 const EVENT_PAGE_READY = "pageReady";
 
 export const CrossSiteEncounterEvent = Object.freeze({
@@ -41,7 +47,9 @@ function blockUnavailableEncounter(deps, eventpane, eventpanePresent, result) {
     pageKind: PageKind.EHENTAI,
     href: deps.href(),
   };
-  const request = { method: "GET", url: EHENTAI_ENCOUNTER_URL };
+  const request = runEncounterGenerationRoute({
+    type: EncounterGenerationRouteEvent.CREATE_REQUEST,
+  });
   deps.recordFailure("generation-result-unavailable", {
     kind: "encounterGenerationUnavailable",
     source,
@@ -58,7 +66,7 @@ function blockUnavailableEncounter(deps, eventpane, eventpanePresent, result) {
 }
 
 function redirectToEncounterOrigin(deps) {
-  if (deps.href() !== EHENTAI_ENCOUNTER_URL) return true;
+  if (deps.href() !== LEGACY_ENCOUNTER_REDIRECT_URL) return true;
   const eventpaneNode = deps.document().querySelector("#eventpane");
   const eventpane = eventpaneNode?.innerHTML || "";
   const eventpanePresent = Boolean(eventpaneNode);

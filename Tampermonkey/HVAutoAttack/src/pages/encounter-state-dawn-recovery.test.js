@@ -26,7 +26,7 @@ describe("encounter state dawn recovery", () => {
 
     const result = await runEncounterStateAutomation({
       type: EncounterStateEvent.LOAD_KEY,
-      request: { method: "GET", url: "https://e-hentai.org/news.php?encounter" },
+      request: { method: "GET", url: "https://e-hentai.org/news.php" },
     });
 
     expect(result).toMatchObject({

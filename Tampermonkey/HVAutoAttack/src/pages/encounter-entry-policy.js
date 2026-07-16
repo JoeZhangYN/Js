@@ -1,4 +1,7 @@
-const ENCOUNTER_GENERATION_URL = "https://e-hentai.org/news.php?encounter";
+import {
+  EncounterGenerationRouteEvent,
+  runEncounterGenerationRoute,
+} from "./encounter-generation-route.js";
 
 const buildEncounterEntryUrl = (key) => `?s=Battle&ss=ba&encounter=${key}`;
 
@@ -11,9 +14,13 @@ export function planEncounterEntryRoute(readiness) {
     };
   }
   if (readiness.generationDue) {
+    const request = runEncounterGenerationRoute({
+      type: EncounterGenerationRouteEvent.CREATE_REQUEST,
+    });
+    if (!request) return { action: "load", state: readiness.state };
     return {
       action: "generate",
-      request: { method: "GET", url: ENCOUNTER_GENERATION_URL },
+      request,
       state: readiness.state,
     };
   }

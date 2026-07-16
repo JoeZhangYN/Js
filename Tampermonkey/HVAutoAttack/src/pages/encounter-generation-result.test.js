@@ -36,6 +36,17 @@ describe("encounter generation result classifier", () => {
       reason: "generationResponseUnrecognized",
       failure: { reason: "eventpaneMissing" },
     });
+    expect(
+      classifyEncounterGenerationResult({
+        eventpanePresent: false,
+        newsPagePresent: true,
+        responseIdentity: { kind: "newsPage" },
+      })
+    ).toEqual({
+      status: "unavailable",
+      reason: "encounterKeyMissing",
+      responseIdentity: { kind: "newsPage" },
+    });
   });
 
   it("requires the owned news error surface for equipment-full classification", () => {

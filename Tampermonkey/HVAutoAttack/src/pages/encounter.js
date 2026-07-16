@@ -67,10 +67,7 @@ function executeWidgetEvent(event) {
 function handleGenerationPageReady(event) {
   const generation = runEncounterStateAutomation({
     type: EncounterStateEvent.RECORD_GENERATION_RESULT,
-    result: classifyEncounterGenerationResult({
-      eventpane: event.eventpane,
-      eventpanePresent: event.eventpanePresent,
-    }),
+    result: classifyEncounterGenerationResult(event),
     request: event.request,
     source: event.source,
     checkMode: EncounterCheckMode.AUTOMATIC,
@@ -113,13 +110,7 @@ function recordWidgetGeneration(event, result) {
 }
 
 function handleWidgetNewsLoaded(event) {
-  const result = classifyEncounterGenerationResult({
-    eventpane: event.eventpane,
-    dawn: event.dawn,
-    key: event.key,
-    search: event.search,
-    eventpanePresent: event.eventpanePresent,
-  });
+  const result = classifyEncounterGenerationResult(event);
   if (isBlockingEncounterGenerationResult(result)) {
     return recordWidgetGeneration(event, result);
   }

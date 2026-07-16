@@ -31,11 +31,11 @@ describe("stale cross-site encounter generation", () => {
     const outcome = runEncounterAutomation({
       type: EncounterEvent.GENERATION_PAGE_READY,
       eventpane: "It is the dawn of a new day!",
-      request: { method: "GET", url: "https://e-hentai.org/news.php?encounter" },
+      request: { method: "GET", url: "https://e-hentai.org/news.php" },
       source: {
         identity: "persistentEncounterGeneration",
         pageKind: "ehentai",
-        href: "https://e-hentai.org/news.php?encounter",
+        href: "https://e-hentai.org/news.php",
       },
     });
 

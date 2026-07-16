@@ -42,15 +42,43 @@ describe("battle completion encounter handoff", () => {
     );
   });
 
-  it("keeps terminal cleanup running while evidencing encounter persistence Unknown", () => {
+  it("keeps terminal cleanup running while evidencing encounter persistence failure", () => {
     const d = deps({ monsterAlive: 1, roundNow: 1, roundAll: 1, roundType: "ba" });
-    d.completeEncounter.mockReturnValue({ completed: false });
+    d.completeEncounter.mockReturnValue({
+      status: "persistenceFailed",
+      ok: false,
+      counted: false,
+    });
 
     runBattleCompletionAutomation({ type: BattleCompletionEvent.COMPLETION_REACHED }, d);
 
     expect(d.clearSession).toHaveBeenCalledOnce();
     expect(d.recordCompletionEvidence).toHaveBeenCalledWith(
-      expect.objectContaining({ effects: expect.objectContaining({ encounterCompletion: false }) })
+      expect.objectContaining({
+        effects: expect.objectContaining({
+          encounterCompletion: {
+            status: "persistenceFailed",
+            ok: false,
+            counted: false,
+          },
+          encounterCompletionOk: false,
+        }),
+      })
+    );
+  });
+
+  it("does not turn an unknown encounter completion response into success evidence", () => {
+    const d = deps({ monsterAlive: 0, roundNow: 1, roundAll: 1, roundType: "ba" });
+
+    runBattleCompletionAutomation({ type: BattleCompletionEvent.COMPLETION_REACHED }, d);
+
+    expect(d.recordCompletionEvidence).toHaveBeenCalledWith(
+      expect.objectContaining({
+        effects: expect.objectContaining({
+          encounterCompletion: { status: "unknown", ok: false, counted: false },
+          encounterCompletionOk: false,
+        }),
+      })
     );
   });
 });

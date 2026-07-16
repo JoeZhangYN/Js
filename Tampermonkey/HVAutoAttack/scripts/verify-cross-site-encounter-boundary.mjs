@@ -66,7 +66,9 @@ function checkEntry() {
     "CrossSiteEncounterEvent",
     "EVENT_PAGE_READY",
     "PageKind.EHENTAI",
-    "news.php?encounter",
+    "LEGACY_ENCOUNTER_REDIRECT_URL",
+    "EncounterGenerationRouteEvent.CREATE_REQUEST",
+    "runEncounterGenerationRoute",
     "STORAGE_KEYS.URL",
     "persistCrossSiteReturnOrigin",
     "return Boolean(",
@@ -109,7 +111,8 @@ function checkEntry() {
     ) ||
     !testText.includes(
       "blocks an encounter generation page with no route instead of redirecting to bare HV"
-    )
+    ) ||
+    !testText.includes('url: "https://e-hentai.org/news.php"')
   ) {
     violations.push(`${rel(entryTestFile)} must cover cross-site navigation rejection events`);
   }
