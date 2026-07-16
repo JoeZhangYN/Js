@@ -505,7 +505,7 @@ function checkRoundStartEntry() {
   if (!/export function runBattleRoundStartAutomation\(/.test(text)) {
     violations.push(`${rel(roundStartFile)} must expose runBattleRoundStartAutomation(event)`);
   }
-  if (!text.includes("EncounterEvent.RANDOM_ENCOUNTER_STARTED")) {
+  if (!text.includes("EncounterEvent.BATTLE_SESSION_STARTED")) {
     violations.push(
       `${rel(roundStartFile)} must report random encounter starts through encounter entry`
     );

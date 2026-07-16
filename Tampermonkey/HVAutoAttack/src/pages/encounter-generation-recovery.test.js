@@ -72,9 +72,13 @@ describe("encounter generation recovery", () => {
 
   it("runs two 1/3/5 minute recovery rounds before a typed circuit response", () => {
     const start = Date.UTC(2026, 5, 27, 12);
-    const attemptKey = "2026-06-27:0::true";
     let nowMs = start;
     let state = { date: 0, cycleReadyAt: 0, key: "", count: 0, clear: true };
+    const attemptKey = runEncounterPolicy({
+      type: EncounterPolicyEvent.READ_CLOCK,
+      state,
+      nowMs,
+    }).attemptKey;
     const expected = [
       { count: 1, circuit: 1, step: 1, wait: 60 * 1000 },
       { count: 2, circuit: 1, step: 2, wait: 3 * 60 * 1000 },

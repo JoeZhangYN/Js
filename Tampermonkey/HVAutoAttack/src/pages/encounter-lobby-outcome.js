@@ -49,7 +49,7 @@ export function createEncounterClaimedOutcome(reason, state, detail = {}) {
 }
 
 export function createEnteredEncounterOutcome(outcome) {
-  if (outcome?.action !== "navigated" || !outcome?.state?.key) return undefined;
+  if (outcome?.action !== "navigated" || !outcome?.state?.entry?.key) return undefined;
   return createEncounterClaimedOutcome("encounterEntered", outcome.state, {
     action: outcome.action,
     href: outcome.href,

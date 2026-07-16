@@ -74,21 +74,30 @@ function markRandomEncounterStarted(event = {}) {
   const state = runEncounterPolicy({
     type: EncounterPolicyEvent.MARK_ENTRY_STARTED,
     state: snapshot.state,
-    search: event.search,
-    source: event.source,
+    session: event.session,
+    nowMs: event.nowMs,
   });
-  return writeReState(state);
+  const persistence = writeReState(state);
+  return { ok: persistence.ok === true, state, persistence };
 }
 
 function markRandomEncounterCompleted(event = {}) {
   const snapshot = readCurrentSnapshot();
   if (!snapshot.ok) return snapshot;
-  const state = runEncounterPolicy({
+  const settlement = runEncounterPolicy({
     type: EncounterPolicyEvent.MARK_COMPLETED,
     state: snapshot.state,
+    session: event.session,
     nowMs: event.nowMs,
   });
-  return writeReState(state);
+  const persistence = writeReState(settlement.state);
+  return {
+    ok: persistence.ok === true,
+    counted: settlement.counted,
+    status: settlement.status,
+    state: settlement.state,
+    persistence,
+  };
 }
 
 function markEncounterAttempted(key, state) {

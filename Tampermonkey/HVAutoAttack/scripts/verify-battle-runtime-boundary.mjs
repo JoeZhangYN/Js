@@ -47,7 +47,7 @@ function checkFile(file) {
       relative !== storage &&
       relative !== storageTest &&
       relative !== path.normalize("src/state/persist-keys.js") &&
-      /\bSTORAGE_KEYS\.(?:DISABLED|ROUND_NOW|ROUND_ALL|ROUND_TYPE|BATTLE_CODE|MONSTER_STATUS)\b/.test(
+      /\bSTORAGE_KEYS\.(?:ROUND_NOW|ROUND_ALL|ROUND_TYPE|BATTLE_CODE|MONSTER_STATUS)\b/.test(
         line
       ) &&
       /\bdelValue\(/.test(line)

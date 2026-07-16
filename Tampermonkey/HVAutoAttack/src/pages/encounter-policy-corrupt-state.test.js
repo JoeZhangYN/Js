@@ -12,7 +12,12 @@ describe("runEncounterPolicy legacy state recovery", () => {
         nowMs: Date.UTC(2026, 5, 27, 12, 0),
       })
     ).toMatchObject({
-      state: { date: 0, key: "", count: 24, clear: true, dayPhase: "confirmingLimit" },
+      state: {
+        date: 0,
+        count: 24,
+        entry: { phase: "idle", key: "", sessionId: null },
+        dayPhase: "confirmingLimit",
+      },
       dailyLimitReached: true,
       status: "ready",
       reason: "limitProbe",
@@ -31,9 +36,8 @@ describe("runEncounterPolicy legacy state recovery", () => {
     ).toMatchObject({
       state: {
         date: Date.UTC(2026, 5, 27, 23, 0),
-        key: "",
         count: 24,
-        clear: true,
+        entry: { phase: "idle", key: "", sessionId: null },
         dayPhase: "confirmingLimit",
       },
       dailyLimitReached: true,

@@ -8,6 +8,7 @@ import {
   buildGenerationAttemptKey,
   readGenerationRecovery,
 } from "./encounter-generation-recovery.js";
+import { EncounterEntryPhase } from "./encounter-entry-identity.js";
 
 const msUntilNextUtcDay = (stamp) =>
   runTimeAutomation({ type: TimeEvent.MS_UNTIL_NEXT_UTC_DAY, stamp });
@@ -18,18 +19,25 @@ export function readEncounterReadiness(state, nowMs = Date.now()) {
   return {
     state: normalized,
     remainingMs,
-    canEnter: Boolean(
-      normalized.key &&
-      !normalized.clear &&
-      normalized.dayPhase !== EncounterDayPhase.STOPPED_FOR_DAY
-    ),
+    entryPhase: normalized.entry.phase,
+    canEnter:
+      normalized.entry.phase === EncounterEntryPhase.KEY_AVAILABLE &&
+      normalized.dayPhase !== EncounterDayPhase.STOPPED_FOR_DAY,
     dailyLimitReached: normalized.count >= ENCOUNTER_DAILY_LIMIT,
-    generationDue: remainingMs === 0 && normalized.dayPhase !== EncounterDayPhase.STOPPED_FOR_DAY,
+    generationDue:
+      remainingMs === 0 &&
+      normalized.dayPhase !== EncounterDayPhase.STOPPED_FOR_DAY &&
+      [EncounterEntryPhase.IDLE, EncounterEntryPhase.NAVIGATION_ATTEMPTED].includes(
+        normalized.entry.phase
+      ),
   };
 }
 
 function primaryClock(readiness, newDayBoundaryMs) {
   if (readiness.canEnter) return { status: "ready", countdownMs: 0, reason: "keyAvailable" };
+  if (readiness.entryPhase === EncounterEntryPhase.BATTLE_ACTIVE) {
+    return { status: "active", countdownMs: 0, reason: "battleActive" };
+  }
   if (readiness.state.dayPhase === EncounterDayPhase.STOPPED_FOR_DAY) {
     return { status: "countdown", countdownMs: newDayBoundaryMs, reason: "stoppedForDay" };
   }
@@ -39,13 +47,16 @@ function primaryClock(readiness, newDayBoundaryMs) {
     }
     return { status: "countdown", countdownMs: readiness.remainingMs, reason: "cooldown" };
   }
+  if (readiness.entryPhase === EncounterEntryPhase.NAVIGATION_ATTEMPTED) {
+    return { status: "ready", countdownMs: 0, reason: "attemptedCycleDue" };
+  }
   const reason =
     readiness.state.dayPhase === EncounterDayPhase.AWAITING_NEW_DAY
       ? "awaitingNewDay"
       : readiness.state.dayPhase === EncounterDayPhase.CONFIRMING_LIMIT
         ? "limitProbe"
         : "readyWindow";
-  return { status: readiness.state.clear ? "ready" : "missed", countdownMs: 0, reason };
+  return { status: "ready", countdownMs: 0, reason };
 }
 
 function withClockIdentities(readiness, primary, recovery, operational, nowMs) {
@@ -70,7 +81,11 @@ export function readEncounterClock(state, nowMs = Date.now()) {
   const newDayBoundaryMs = msUntilNextUtcDay(nowMs) + 5000;
   const primary = primaryClock(readiness, newDayBoundaryMs);
   const recovery = readGenerationRecovery(readiness.state, nowMs);
-  if (readiness.canEnter || primary.reason === "stoppedForDay") {
+  if (
+    readiness.canEnter ||
+    readiness.entryPhase === EncounterEntryPhase.BATTLE_ACTIVE ||
+    primary.reason === "stoppedForDay"
+  ) {
     return withClockIdentities(readiness, primary, null, primary, nowMs);
   }
   if (recovery?.status === "responseDue") {

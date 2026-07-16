@@ -81,14 +81,16 @@ for (const required of [
 const storage = fs.readFileSync(path.join(srcRoot, "state", "storage.js"), "utf8");
 for (const required of [
   "StorageIdentity.WORLD_SMALL_VALUE",
-  "StorageWriteOutcome.DELETED",
   "StorageWriteOutcome.FAILED",
-  "SKIPPED_UNCHANGED",
+  "deleteStorageValue",
   "runStorageIoMetricsAutomation",
   "writeCanonicalStorageValue",
   "writeDiagnosticSessionSnapshot",
 ]) {
   if (!storage.includes(required)) violations.push(`storage.js must consume ${required}`);
+}
+if (/typeof item === ["']number["']|delValue\(\s*\d/.test(storage)) {
+  violations.push("storage.js must not expose numeric pseudo-commands through delValue(item)");
 }
 
 const writeAdapter = fs.readFileSync(

@@ -11,6 +11,7 @@ vi.mock("../core/diagnostic-console.js", () => ({
 
 import { delValue, getValue, setValue, STORAGE_READ_FAILURE_KEY } from "./storage.js";
 import { STORAGE_KEYS } from "./persist-keys.js";
+import { retireLegacyBattleRoundStorage } from "../battle/battle-session-legacy-storage.js";
 
 const STORAGE_FAILURE_FIXTURE_KEY = "storageFailureFixture";
 
@@ -23,21 +24,20 @@ beforeEach(() => {
 });
 
 describe("storage shortcut cleanup", () => {
-  it("clears small runtime keys without deleting compatibility battle data", () => {
+  it("uses explicit storage identities and retires legacy round keys", () => {
     setValue(STORAGE_KEYS.DISABLED, true);
-    setValue(STORAGE_KEYS.ROUND_NOW, 2);
-    setValue(STORAGE_KEYS.ROUND_ALL, 5);
-    setValue(STORAGE_KEYS.MONSTER_STATUS, [{ id: 1 }]);
-    setValue(STORAGE_KEYS.ROUND_TYPE, "ar");
+    setValue("roundNow", 2);
+    setValue("roundAll", 5);
+    setValue("roundType", "ar");
     setValue(STORAGE_KEYS.BATTLE_CODE, "code");
 
-    delValue(2);
+    delValue(STORAGE_KEYS.DISABLED);
+    retireLegacyBattleRoundStorage();
 
     expect(getValue(STORAGE_KEYS.DISABLED, true)).toBeNull();
-    expect(getValue(STORAGE_KEYS.ROUND_NOW, true)).toBeNull();
-    expect(getValue(STORAGE_KEYS.ROUND_ALL, true)).toBeNull();
-    expect(getValue(STORAGE_KEYS.MONSTER_STATUS, true)).toBeNull();
-    expect(getValue(STORAGE_KEYS.ROUND_TYPE, true)).toBeNull();
+    expect(getValue("roundNow", true)).toBeNull();
+    expect(getValue("roundAll", true)).toBeNull();
+    expect(getValue("roundType", true)).toBeNull();
     expect(getValue(STORAGE_KEYS.BATTLE_CODE)).toBe("code");
   });
 });

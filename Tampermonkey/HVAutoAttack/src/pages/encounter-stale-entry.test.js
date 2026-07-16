@@ -51,8 +51,7 @@ describe("encounter stale entry recovery", () => {
     expect(second.action).not.toBe("navigated");
     expect(mocks.runNavigationAutomation).not.toHaveBeenCalled();
     expect(JSON.parse(localStorage.getItem(HVUT_RE_KEY))).toMatchObject({
-      key: "abc123=",
-      clear: true,
+      entry: { phase: "navigationAttempted", key: "abc123=", sessionId: null },
     });
   });
 
@@ -101,7 +100,9 @@ describe("encounter stale entry recovery", () => {
 
     expect(outcome).toMatchObject({
       action: "load",
-      state: { key: "abc123=", clear: true },
+      state: {
+        entry: { phase: "navigationAttempted", key: "abc123=", sessionId: null },
+      },
     });
     expect(mocks.runNavigationAutomation).not.toHaveBeenCalled();
   });
@@ -118,7 +119,10 @@ describe("encounter stale entry recovery", () => {
     expect(outcome).toMatchObject({
       action: "unavailable",
       unavailableReason: "encounterKeyAlreadyAttempted",
-      state: { key: "xyz=", count: 1, clear: true },
+      state: {
+        count: 1,
+        entry: { phase: "navigationAttempted", key: "xyz=", sessionId: null },
+      },
     });
     expect(mocks.runNavigationAutomation).not.toHaveBeenCalled();
   });

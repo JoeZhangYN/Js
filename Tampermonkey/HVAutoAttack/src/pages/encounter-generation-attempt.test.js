@@ -83,7 +83,13 @@ describe("encounter generation attempt evidence", () => {
 
     expect(application).toMatchObject({
       application: "manualEmpty",
-      state,
+      state: {
+        date: state.date,
+        cycleReadyAt: state.cycleReadyAt,
+        count: 7,
+        entry: { phase: "idle", key: "", sessionId: null },
+        schemaVersion: 5,
+      },
     });
     expect(application.state).not.toHaveProperty("generationFailureCount");
   });

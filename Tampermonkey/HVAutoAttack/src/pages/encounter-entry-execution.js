@@ -6,7 +6,7 @@ import {
 import { EncounterStateEvent, runEncounterStateAutomation } from "./encounter-state.js";
 
 function markEncounterAttempted(outcome) {
-  const key = outcome?.state?.key;
+  const key = outcome?.state?.entry?.key;
   if (!key) return { ok: true, state: outcome?.state };
   return runEncounterStateAutomation({
     type: EncounterStateEvent.MARK_ATTEMPTED,

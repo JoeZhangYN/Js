@@ -116,7 +116,7 @@ function recordPauseState(state, reason, detail) {
 function resumeBattle(resume, pauseState) {
   if (pauseState.persistent) {
     try {
-      delValue(0);
+      delValue(STORAGE_KEYS.DISABLED);
     } catch (error) {
       recordPauseState("failed", "pauseResumePersistenceFailed", {
         error: errorText(error),

@@ -1,4 +1,3 @@
-// 自动遭遇战业务能力：唯一入口 runEncounterAutomation(event)。
 import { executeEncounterEntry } from "./encounter-entry-execution.js";
 import { EncounterCheckMode } from "./encounter-check-mode.js";
 import { EncounterGenerationApplication } from "./encounter-generation-application.js";
@@ -18,12 +17,11 @@ import { EncounterStateEvent, runEncounterStateAutomation } from "./encounter-st
 import { planEncounterWidgetEvent } from "./encounter-widget-policy.js";
 
 const EVENT_LOBBY_TICK = "lobbyTick";
-const EVENT_RANDOM_ENCOUNTER_STARTED = "randomEncounterStarted";
-const EVENT_RANDOM_ENCOUNTER_COMPLETED = "randomEncounterCompleted";
+const EVENT_BATTLE_SESSION_STARTED = "battleSessionStarted";
+const EVENT_BATTLE_SESSION_TERMINAL = "battleSessionTerminal";
 const EVENT_GENERATION_PAGE_READY = "generationPageReady";
 const EVENT_WIDGET_TICK = "widgetTick";
 const EVENT_WIDGET_LINK_FOUND = "widgetLinkFound";
-const EVENT_WIDGET_STARTED_ENCOUNTER = "widgetStartedEncounter";
 const EVENT_WIDGET_RESET_DAY = "widgetResetDay";
 const EVENT_WIDGET_CLICKED = "widgetClicked";
 const EVENT_WIDGET_NEWS_LOADED = "widgetNewsLoaded";
@@ -31,12 +29,11 @@ const EVENT_WIDGET_GENERATION_FAILED = "widgetGenerationFailed";
 
 export const EncounterEvent = Object.freeze({
   LOBBY_TICK: EVENT_LOBBY_TICK,
-  RANDOM_ENCOUNTER_STARTED: EVENT_RANDOM_ENCOUNTER_STARTED,
-  RANDOM_ENCOUNTER_COMPLETED: EVENT_RANDOM_ENCOUNTER_COMPLETED,
+  BATTLE_SESSION_STARTED: EVENT_BATTLE_SESSION_STARTED,
+  BATTLE_SESSION_TERMINAL: EVENT_BATTLE_SESSION_TERMINAL,
   GENERATION_PAGE_READY: EVENT_GENERATION_PAGE_READY,
   WIDGET_TICK: EVENT_WIDGET_TICK,
   WIDGET_LINK_FOUND: EVENT_WIDGET_LINK_FOUND,
-  WIDGET_STARTED_ENCOUNTER: EVENT_WIDGET_STARTED_ENCOUNTER,
   WIDGET_RESET_DAY: EVENT_WIDGET_RESET_DAY,
   WIDGET_CLICKED: EVENT_WIDGET_CLICKED,
   WIDGET_NEWS_LOADED: EVENT_WIDGET_NEWS_LOADED,
@@ -46,7 +43,21 @@ export const EncounterEvent = Object.freeze({
 export { EncounterLobbyStatus } from "./encounter-lobby-outcome.js";
 
 function executeWidgetEvent(event) {
-  const outcome = executeEncounterEntry(planEncounterWidgetEvent(event));
+  let authoritativeEvent = event;
+  if (event.state === undefined) {
+    const snapshot = runEncounterStateAutomation({ type: EncounterStateEvent.READ_SNAPSHOT });
+    if (!snapshot?.ok) {
+      return {
+        action: "stateReadFailed",
+        blocked: true,
+        reason: "encounterStateReadFailed",
+        state: snapshot?.state,
+        persistence: snapshot,
+      };
+    }
+    authoritativeEvent = { ...event, state: snapshot.state };
+  }
+  const outcome = executeEncounterEntry(planEncounterWidgetEvent(authoritativeEvent));
   if (!outcome?.blocked) return outcome;
   return {
     ...outcome,
@@ -131,12 +142,11 @@ function handleWidgetGenerationFailed(event) {
 
 const encounterEventHandlers = Object.freeze({
   [EVENT_LOBBY_TICK]: runEncounterLobbyFlow,
-  [EVENT_RANDOM_ENCOUNTER_STARTED]: recognizeRandomEncounterStarted,
-  [EVENT_RANDOM_ENCOUNTER_COMPLETED]: completeRandomEncounter,
+  [EVENT_BATTLE_SESSION_STARTED]: recognizeRandomEncounterStarted,
+  [EVENT_BATTLE_SESSION_TERMINAL]: completeRandomEncounter,
   [EVENT_GENERATION_PAGE_READY]: handleGenerationPageReady,
   [EVENT_WIDGET_TICK]: executeWidgetEvent,
   [EVENT_WIDGET_LINK_FOUND]: executeWidgetEvent,
-  [EVENT_WIDGET_STARTED_ENCOUNTER]: executeWidgetEvent,
   [EVENT_WIDGET_RESET_DAY]: executeWidgetEvent,
   [EVENT_WIDGET_CLICKED]: executeWidgetEvent,
   [EVENT_WIDGET_NEWS_LOADED]: handleWidgetNewsLoaded,
@@ -145,8 +155,6 @@ const encounterEventHandlers = Object.freeze({
 
 export function runEncounterAutomation(event = { type: EVENT_LOBBY_TICK }) {
   const handler = encounterEventHandlers[event?.type];
-  if (!handler) {
-    return rejectUnknownEncounterEvent(event);
-  }
+  if (!handler) return rejectUnknownEncounterEvent(event);
   return handler(event);
 }

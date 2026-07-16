@@ -62,10 +62,9 @@ describe("encounter persistence loop recovery", () => {
     expect(mocks.runNavigationAutomation).not.toHaveBeenCalled();
     expect(shared.get("hvut_re")).toMatchObject({
       date: 0,
-      key: "",
       count: 0,
-      clear: true,
-      schemaVersion: 4,
+      entry: { phase: "idle", key: "", sessionId: null },
+      schemaVersion: 5,
     });
   });
 });

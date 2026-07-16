@@ -1,5 +1,5 @@
 // 当前战斗进度查询：round 与 combatant 事实统一从这里组合。
-import { BattleRoundEvent, runBattleRoundAutomation } from "./battle-round.js";
+import { BattleSessionEvent, runBattleSessionAutomation } from "./battle-session.js";
 import { MonsterStatusEvent, runMonsterStatusAutomation } from "./monster-status-automation.js";
 
 const EVENT_READ_CONTEXT = "readContext";
@@ -9,7 +9,7 @@ export const BattleProgressEvent = Object.freeze({
 });
 
 function readContext() {
-  const round = runBattleRoundAutomation({ type: BattleRoundEvent.READ_RUNTIME });
+  const round = runBattleSessionAutomation({ type: BattleSessionEvent.READ_CONTEXT });
   const combatants = runMonsterStatusAutomation({
     type: MonsterStatusEvent.READ_COMBATANT_COUNTS,
   });
@@ -18,9 +18,11 @@ function readContext() {
     bossAll: combatants.bossAll,
     monsterAlive: combatants.monsterAlive,
     monsterAll: combatants.monsterAll,
-    roundAll: round.roundAll,
-    roundNow: round.roundNow,
-    roundType: runBattleRoundAutomation({ type: BattleRoundEvent.READ_TYPE }),
+    roundAll: round?.roundAll ?? 1,
+    roundNow: round?.roundNow ?? 1,
+    roundType: round?.roundType || "",
+    sessionId: round?.sessionId || null,
+    sessionPhase: round?.sessionPhase || null,
   };
 }
 

@@ -48,7 +48,11 @@ function checkEntry() {
   if (!text.includes("STORAGE_KEYS.DISABLED")) {
     violations.push(`${entry.replaceAll("\\", "/")} must use STORAGE_KEYS.DISABLED`);
   }
-  for (const required of ["battlePauseEventHandlers", "STORAGE_KEYS.DISABLED", "delValue(0)"]) {
+  for (const required of [
+    "battlePauseEventHandlers",
+    "STORAGE_KEYS.DISABLED",
+    "delValue(STORAGE_KEYS.DISABLED)",
+  ]) {
     if (!text.includes(required)) {
       violations.push(`${entry.replaceAll("\\", "/")} must own ${required} pause wiring`);
     }

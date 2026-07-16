@@ -13,7 +13,11 @@ describe("planEncounterWidgetEvent", () => {
         state: { date: 1000, key: "abc=", count: 3, clear: false },
       })
     ).toMatchObject({
-      state: { date: 0, key: "", count: 0, clear: true },
+      state: {
+        date: 0,
+        count: 0,
+        entry: { phase: "idle", key: "", sessionId: null },
+      },
       status: "ready",
       count: 0,
       warn: false,
@@ -110,7 +114,7 @@ describe("planEncounterWidgetEvent", () => {
     ).toBeUndefined();
   });
 
-  it("marks entry attempted without counting or moving the completion-owned cooldown", () => {
+  it("does not expose widget-owned battle recognition", () => {
     const date = Date.now() - 10 * 60 * 1000;
     const outcome = planEncounterWidgetEvent({
       type: "widgetStartedEncounter",
@@ -119,12 +123,6 @@ describe("planEncounterWidgetEvent", () => {
       pageType: "ba",
     });
 
-    expect(outcome).toMatchObject({
-      status: "countdown",
-      reason: "newDayBoundary",
-      count: 24,
-      state: { date, key: "abc", count: 24, clear: true },
-    });
-    expect(outcome.remainingMs).toBeGreaterThan(0);
+    expect(outcome).toBeUndefined();
   });
 });

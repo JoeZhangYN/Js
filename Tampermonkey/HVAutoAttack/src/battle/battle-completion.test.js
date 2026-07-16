@@ -2,9 +2,18 @@ import { describe, expect, it, vi } from "vitest";
 import { BattleCompletionEvent, runBattleCompletionAutomation } from "./battle-completion.js";
 
 function deps(context = { monsterAlive: 0, roundNow: 1, roundAll: 1 }) {
+  const snapshot = {
+    version: 1,
+    sessionId: "session-1",
+    phase: "terminal",
+    identity: { roundType: context.roundType || "ar", source: "initializationLog" },
+    progress: { roundNow: context.roundNow, roundAll: context.roundAll, roundLeft: 0 },
+    outcome: context.monsterAlive > 0 ? "defeat" : "victory",
+  };
   return {
     readCompletionContext: vi.fn(() => context),
     recordCompletion: vi.fn(),
+    markSessionTerminal: vi.fn(() => ({ ok: true, snapshot })),
     completeEncounter: vi.fn(() => ({
       status: "notEncounterBattle",
       ok: true,
@@ -37,6 +46,8 @@ describe("runBattleCompletionAutomation", () => {
       effects: {
         recordCompletion: true,
         recordCompletionResult: { kind: "recorded" },
+        terminalSession: expect.objectContaining({ ok: true }),
+        terminalSessionOk: true,
         encounterCompletion: {
           status: "notEncounterBattle",
           ok: true,
@@ -90,6 +101,8 @@ describe("runBattleCompletionAutomation", () => {
       effects: {
         recordCompletion: true,
         recordCompletionResult: { kind: "recorded" },
+        terminalSession: expect.objectContaining({ ok: true }),
+        terminalSessionOk: true,
         encounterCompletion: {
           status: "notEncounterBattle",
           ok: true,

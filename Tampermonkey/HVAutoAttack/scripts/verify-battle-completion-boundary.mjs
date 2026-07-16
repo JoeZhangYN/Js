@@ -3,6 +3,7 @@ import path from "node:path";
 
 const root = process.cwd();
 const owner = path.normalize("src/battle/battle-completion.js");
+const rulingOwner = path.normalize("src/battle/battle-completion-ruling.js");
 const ownerTest = path.normalize("src/battle/battle-completion.test.js");
 const rejectionTest = path.normalize("src/battle/battle-completion-rejection.test.js");
 const encounterTest = path.normalize("src/battle/battle-completion-encounter.test.js");
@@ -35,13 +36,13 @@ function checkActionEventBridge() {
 
 function checkOwner() {
   const text = fs.readFileSync(path.join(root, owner), "utf8");
+  const rulingText = fs.readFileSync(path.join(root, rulingOwner), "utf8");
   for (const required of [
     "runBattleCompletionAutomation",
     "battleCompletionEventHandlers",
     "COMPLETION_REACHED",
     "READ_REACHED",
     'gE("#btcp")',
-    "NEXT_ROUND",
     "Defeat",
     "Victory",
     "VICTORY_RELOAD_SECONDS",
@@ -63,8 +64,9 @@ function checkOwner() {
     "BattleMonitorEvent.COMPLETION_REACHED",
     "runBattleMonitorAutomation",
     "BattleProgressEvent.READ_CONTEXT",
-    "EncounterEvent.RANDOM_ENCOUNTER_COMPLETED",
-    "deps.completeEncounter(outcome, context)",
+    "EncounterEvent.BATTLE_SESSION_TERMINAL",
+    "deps.markSessionTerminal(outcome)",
+    "deps.completeEncounter(terminalSession.snapshot)",
     "normalizeEncounterCompletion",
     "encounterCompletionOk",
     "counted",
@@ -74,11 +76,16 @@ function checkOwner() {
       violations.push(`${owner.replaceAll("\\", "/")} must own ${required}`);
     }
   }
-  const classifyMatch = text.match(
-    /function\s+classifyCompletion\s*\([^)]*\)\s*\{(?<body>[\s\S]*?)\n\}/
+  for (const required of ["BattleCompletionOutcome", "NEXT_ROUND", "classifyBattleCompletion"]) {
+    if (!rulingText.includes(required)) {
+      violations.push(`${rulingOwner.replaceAll("\\", "/")} must own ${required}`);
+    }
+  }
+  const classifyMatch = rulingText.match(
+    /function\s+classifyBattleCompletion\s*\([^)]*\)\s*\{(?<body>[\s\S]*?)\n\}/
   );
   if (!classifyMatch) {
-    violations.push(`${owner.replaceAll("\\", "/")} must own classifyCompletion`);
+    violations.push(`${rulingOwner.replaceAll("\\", "/")} must own classifyBattleCompletion`);
   } else if (/\bg\s*\(/.test(classifyMatch.groups.body)) {
     violations.push(
       `${owner.replaceAll("\\", "/")} must classify from one completion context, not repeated g() reads`
@@ -135,11 +142,18 @@ function checkOwner() {
       `${owner.replaceAll("\\", "/")} terminal completion cleanup must have one side-effect point`
     );
   }
-  const encounterIndex = text.indexOf("deps.completeEncounter(outcome, context)");
+  const terminalIndex = text.indexOf("deps.markSessionTerminal(outcome)");
+  const encounterIndex = text.indexOf("deps.completeEncounter(terminalSession.snapshot)");
   const clearIndex = text.indexOf("deps.clearSession()");
-  if (encounterIndex < 0 || clearIndex < 0 || encounterIndex > clearIndex) {
+  if (
+    terminalIndex < 0 ||
+    encounterIndex < 0 ||
+    clearIndex < 0 ||
+    terminalIndex > encounterIndex ||
+    encounterIndex > clearIndex
+  ) {
     violations.push(
-      `${owner.replaceAll("\\", "/")} must record random-encounter completion before clearing round identity`
+      `${owner.replaceAll("\\", "/")} must persist terminal session, settle encounter, then clear session`
     );
   }
   const entryBody =

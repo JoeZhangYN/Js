@@ -64,9 +64,7 @@ const primaryClockFile = path.normalize("src/pages/encounter-primary-clock.js");
 const primaryClockTest = path.normalize("src/pages/encounter-primary-clock.test.js");
 const checkModeFile = path.normalize("src/pages/encounter-check-mode.js");
 const stateMigrationFile = path.normalize("src/pages/encounter-state-migration.js");
-const generationRouteStateFile = path.normalize(
-  "src/pages/encounter-generation-route-state.js"
-);
+const generationRouteStateFile = path.normalize("src/pages/encounter-generation-route-state.js");
 const entryStateFile = path.normalize("src/pages/encounter-entry-state.js");
 const generationApplicationFile = path.normalize("src/pages/encounter-generation-application.js");
 const clockFile = path.normalize("src/pages/encounter-clock.js");
@@ -363,10 +361,7 @@ const generationRequestText = fs.readFileSync(path.join(root, generationRequestF
 const generationRouteText = fs.readFileSync(path.join(root, generationRouteFile), "utf8");
 const generationRouteTestText = fs.readFileSync(path.join(root, generationRouteTest), "utf8");
 const generationResponseText = fs.readFileSync(path.join(root, generationResponseFile), "utf8");
-const generationResponseTestText = fs.readFileSync(
-  path.join(root, generationResponseTest),
-  "utf8"
-);
+const generationResponseTestText = fs.readFileSync(path.join(root, generationResponseTest), "utf8");
 const stateStorageText = fs.readFileSync(path.join(root, stateStorageFile), "utf8");
 const stateFailureText = fs.readFileSync(path.join(root, stateFailureFile), "utf8");
 const stateFailureTestText = fs.readFileSync(path.join(root, stateFailureTest), "utf8");
@@ -411,7 +406,7 @@ const lobbyCircuitResponseText = fs.readFileSync(path.join(root, lobbyCircuitRes
 const dawnLoopRecoveryTestText = fs.readFileSync(path.join(root, dawnLoopRecoveryTest), "utf8");
 const dawnIncidentExpiryTestText = fs.readFileSync(path.join(root, dawnIncidentExpiryTest), "utf8");
 const crossSiteStaleTestText = fs.readFileSync(path.join(root, crossSiteStaleTest), "utf8");
-const policyTestText = [policyTest, policyRouteTest, generationRecoveryTest]
+const policyTestText = [policyTest, policyRouteTest, limitPolicyTest, generationRecoveryTest]
   .map((file) => fs.readFileSync(path.join(root, file), "utf8"))
   .join("\n");
 const policyCorruptStateTestText = fs.existsSync(path.join(root, policyCorruptStateTest))
@@ -483,13 +478,16 @@ for (const required of ["statePersistenceFailed", "restoreEncounterEntry", "roll
   }
 }
 for (const required of [
-  "isAutomaticEncounterEnabled",
+  'event.session?.phase !== "active"',
+  'event.session?.identity?.roundType !== "ba"',
+  "EncounterStateEvent.MARK_ENTRY_STARTED",
   "EncounterStateEvent.MARK_COMPLETED",
   "encounterCompletionPersistenceFailed",
   "EncounterCompletionStatus",
   "NOT_ENCOUNTER_BATTLE",
   "NOT_TERMINAL",
   "PERSISTENCE_FAILED",
+  "ALREADY_COMPLETED",
 ]) {
   if (!battleLifecycleText.includes(required)) {
     violations.push(`${battleLifecycleFile.replaceAll("\\", "/")} must own ${required}`);
@@ -510,28 +508,37 @@ const encounterCompletionTestText = fs.readFileSync(
 );
 if (
   !encounterCompletionTestText.includes(
-    "counts a completed encounter independently from the automatic-entry option"
+    "counts each terminal random-encounter session exactly once"
   )
 ) {
   violations.push(
     "src/pages/encounter-completion.test.js must lock completion-count identity apart from entry enablement"
   );
 }
-for (const required of ["EVENT_RANDOM_ENCOUNTER_STARTED", "EVENT_RANDOM_ENCOUNTER_COMPLETED"]) {
+for (const required of ["EVENT_BATTLE_SESSION_STARTED", "EVENT_BATTLE_SESSION_TERMINAL"]) {
   if (!ownerText.includes(required)) {
     violations.push(`${owner.replaceAll("\\", "/")} must own ${required}`);
+  }
+}
+for (const required of [
+  "event.state === undefined",
+  "EncounterStateEvent.READ_SNAPSHOT",
+  'reason: "encounterStateReadFailed"',
+]) {
+  if (!ownerText.includes(required)) {
+    violations.push(`${owner.replaceAll("\\", "/")} must own widget state authority: ${required}`);
   }
 }
 if (
   !fs
     .readFileSync(path.join(root, "src/battle/battle-round-start.js"), "utf8")
-    .includes('source: "battleRoundStart"')
+    .includes("session: result.snapshot")
 ) {
   violations.push(
-    "src/battle/battle-round-start.js must mark random encounters with battleRoundStart evidence"
+    "src/battle/battle-round-start.js must report the authoritative battle session snapshot"
   );
 }
-if (!entryStateText.includes('event.source === "battleRoundStart"')) {
+if (!entryStateText.includes("encounterEntryActive(next.entry, session)")) {
   violations.push(
     `${entryStateFile.replaceAll("\\", "/")} must recognize battle-start identity without owning completion count`
   );
@@ -910,7 +917,9 @@ for (const consumerText of [policyText, stateGenerationText, widgetPolicyText, o
   }
 }
 for (const required of [
-  "schemaVersion: 4",
+  "schemaVersion: 5",
+  "lastSettledSessionId",
+  "settleEncounterBattle",
   "normalizeEncounterBattleCycle",
   "normalizeEncounterPrimaryClock",
   "completeEncounterBattleCycle",
@@ -1031,12 +1040,13 @@ for (const required of [
 }
 for (const required of [
   "Math.min(ENCOUNTER_DAILY_LIMIT",
-  "marks entry attempted without counting or moving the completion-owned cooldown",
-  'state: { date, key: "abc", count: 24, clear: true }',
+  "stops only after three complete authoritative empty cycles beyond the 24th completion",
+  'session: terminalSession("session-24")',
 ]) {
   if (
     !dayStateText.includes(required) &&
     !battleCycleText.includes(required) &&
+    !policyTestText.includes(required) &&
     !widgetPolicyTestText.includes(required)
   ) {
     violations.push(
@@ -1324,7 +1334,7 @@ for (const required of [
   "resumeAtMs",
   "EncounterStateEvent.LOAD_KEY",
   'generation.status !== "available"',
-  'outcome?.action !== "navigated" || !outcome?.state?.key',
+  'outcome?.action !== "navigated" || !outcome?.state?.entry?.key',
 ]) {
   if (!(lobbyFlowText + lobbyOutcomeText).includes(required)) {
     violations.push(`${lobbyFlowFile.replaceAll("\\", "/")} must preserve ${required}`);
@@ -1647,7 +1657,7 @@ for (const required of [
   "does not classify low equipment capacity text as encounter equipment-full failure",
   "does not classify untyped equipment full text outside the news error box",
   "lets a plain battle-page countdown click recheck immediately",
-  "ignores root-page started checks even when a stale encounter key is present",
+  "does not expose the retired widget-start recognition path",
   "Inventory Capacity:",
   "54",
   "500",
@@ -1658,13 +1668,9 @@ for (const required of [
     );
   }
 }
-if (
-  !(widgetPolicyText + widgetObservationText).includes(
-    'if (event.pageType !== "ba") return widgetState(event);'
-  )
-) {
+if ((widgetPolicyText + widgetObservationText).includes("widgetStartedEncounter")) {
   violations.push(
-    `${widgetPolicyFile.replaceAll("\\", "/")} must reject widget started events outside the battle page`
+    `${widgetPolicyFile.replaceAll("\\", "/")} must retire widget-owned battle recognition`
   );
 }
 if (/Inventory Capacity:[\s\S]{0,180}equipmentInventoryFull/.test(generationResultText)) {

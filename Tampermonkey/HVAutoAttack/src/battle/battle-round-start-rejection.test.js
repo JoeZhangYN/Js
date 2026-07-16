@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { BattleRoundStartEvent, runBattleRoundStartAutomation } from "./battle-round-start.js";
 
 const mocks = vi.hoisted(() => ({
-  runBattleRoundAutomation: vi.fn(),
+  runBattleSessionAutomation: vi.fn(),
   runBattleRoundLifecycle: vi.fn(),
   runBattleRoundStartLog: vi.fn(),
   runBattleStaminaAutomation: vi.fn(),
@@ -17,7 +17,7 @@ vi.mock("../core/navigate.js", () => ({
   runNavigationAutomation: mocks.runNavigationAutomation,
 }));
 vi.mock("../pages/encounter.js", () => ({
-  EncounterEvent: Object.freeze({ RANDOM_ENCOUNTER_STARTED: "randomEncounterStarted" }),
+  EncounterEvent: Object.freeze({ BATTLE_SESSION_STARTED: "battleSessionStarted" }),
   runEncounterAutomation: mocks.runEncounterAutomation,
 }));
 vi.mock("./monster-status-automation.js", () => ({
@@ -27,13 +27,13 @@ vi.mock("./monster-status-automation.js", () => ({
   }),
   runMonsterStatusAutomation: mocks.runMonsterStatusAutomation,
 }));
-vi.mock("./battle-round.js", () => ({
-  BattleRoundEvent: Object.freeze({
-    RECORD_START_CONTEXT: "recordStartContext",
-    RECORD_START_COUNT: "recordStartCount",
+vi.mock("./battle-session.js", () => ({
+  BattleSessionEvent: Object.freeze({
+    START_OR_RESUME: "startOrResume",
+    RECORD_START_PROGRESS: "recordStartProgress",
     SYNC_RUNTIME: "syncRuntime",
   }),
-  runBattleRoundAutomation: mocks.runBattleRoundAutomation,
+  runBattleSessionAutomation: mocks.runBattleSessionAutomation,
 }));
 vi.mock("./battle-stamina.js", () => ({
   BattleStaminaEvent: Object.freeze({ ROUND_LOG_READY: "roundLogReady" }),
@@ -59,11 +59,18 @@ beforeEach(() => {
     firstText: "Round begins",
     initializingText: "",
   });
-  mocks.runBattleRoundAutomation.mockImplementation((event) =>
-    event.type === "recordStartContext"
-      ? { initialized: false, roundType: "ba", randomEncounterStarted: false }
-      : undefined
-  );
+  mocks.runBattleSessionAutomation.mockImplementation((event) => {
+    if (event.type !== "startOrResume") return {};
+    return {
+      ok: true,
+      initialized: false,
+      snapshot: {
+        sessionId: "session-1",
+        phase: "active",
+        identity: { roundType: "ba", source: "initializationLog" },
+      },
+    };
+  });
   mocks.runBattleStaminaAutomation.mockReturnValue({ lostStamina: 0, paused: false });
   window.location.hash = "";
 });
@@ -102,8 +109,8 @@ describe("runBattleRoundStartAutomation rejection evidence", () => {
       false
     );
 
-    expect(mocks.runBattleRoundAutomation).not.toHaveBeenCalledWith(
-      expect.objectContaining({ type: "recordStartCount" })
+    expect(mocks.runBattleSessionAutomation).not.toHaveBeenCalledWith(
+      expect.objectContaining({ type: "recordStartProgress" })
     );
     expect(mocks.runBattleRoundLifecycle).not.toHaveBeenCalledWith({ type: "roundReady" });
     expect(JSON.parse(sessionStorage.getItem("HVAA:lastBattleRoundStart"))).toMatchObject({
@@ -120,14 +127,9 @@ describe("runBattleRoundStartAutomation rejection evidence", () => {
   });
 
   it("returns false when round start context records persistence failure", () => {
-    const failedContext = {
-      initialized: true,
-      roundType: "",
-      randomEncounterStarted: false,
-      reason: "roundPersistenceFailed",
-    };
-    mocks.runBattleRoundAutomation.mockImplementation((event) =>
-      event.type === "recordStartContext" ? failedContext : undefined
+    const failedSession = { ok: false, reason: "sessionPersistenceFailed" };
+    mocks.runBattleSessionAutomation.mockImplementation((event) =>
+      event.type === "startOrResume" ? failedSession : undefined
     );
 
     expect(runBattleRoundStartAutomation({ type: BattleRoundStartEvent.ROUND_STARTED })).toBe(
@@ -138,15 +140,19 @@ describe("runBattleRoundStartAutomation rejection evidence", () => {
     expect(mocks.runMonsterStatusAutomation).not.toHaveBeenCalledWith(
       expect.objectContaining({ type: "prepareRoundStart" })
     );
-    expect(mocks.runBattleRoundAutomation).not.toHaveBeenCalledWith(
-      expect.objectContaining({ type: "recordStartCount" })
+    expect(mocks.runBattleSessionAutomation).not.toHaveBeenCalledWith(
+      expect.objectContaining({ type: "recordStartProgress" })
     );
     expect(mocks.runBattleRoundLifecycle).not.toHaveBeenCalledWith({ type: "roundReady" });
     expect(JSON.parse(sessionStorage.getItem("HVAA:lastBattleRoundStart"))).toMatchObject({
       phase: "roundStarted",
       result: false,
       steps: expect.arrayContaining([
-        { step: "recordStartContext", result: false, detail: failedContext },
+        {
+          step: "recordStartContext",
+          result: false,
+          detail: { reason: "sessionPersistenceFailed" },
+        },
       ]),
     });
   });

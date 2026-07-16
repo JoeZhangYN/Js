@@ -55,6 +55,7 @@ function checkEntry() {
     "runStartupStep",
     "runUserscriptStartup",
     "runGamePageStartup",
+    "retireLegacyBattleRoundStorage",
     "loadCdRuntimeState",
     "registerStorageMenus",
     "syncConfiguredStartupOption",
@@ -73,7 +74,7 @@ function checkEntry() {
     }
   }
   if (
-    !/const USERSCRIPT_STARTUP_STEPS = \[\s*\["loadCdRuntimeState",\s*loadCdRuntimeState\],[\s\S]*\["registerStorageMenus",\s*registerStorageMenus\],\s*\]/.test(
+    !/const USERSCRIPT_STARTUP_STEPS = \[\s*\["retireLegacyBattleRoundStorage",\s*retireLegacyBattleRoundStorage\],[\s\S]*\["loadCdRuntimeState",\s*loadCdRuntimeState\],[\s\S]*\["registerStorageMenus",\s*registerStorageMenus\],\s*\]/.test(
       text
     )
   ) {
@@ -87,7 +88,7 @@ function checkEntry() {
     violations.push(`${rel(entryFile)} must own explicit game-page startup order`);
   }
   if (
-    !/\[EVENT_USERSCRIPT_START\]: runUserscriptStartup[\s\S]*\[EVENT_GAME_PAGE_READY\]: runGamePageStartup/.test(
+    !/\[AppStartupEvent\.USERSCRIPT_START\]: runUserscriptStartup[\s\S]*\[AppStartupEvent\.GAME_PAGE_READY\]: runGamePageStartup/.test(
       text
     )
   ) {
@@ -95,7 +96,7 @@ function checkEntry() {
   }
   const entryBody =
     text.match(
-      /export function runAppStartup\(event = \{ type: EVENT_USERSCRIPT_START \}\) \{[\s\S]*?\n\}/
+      /export function runAppStartup\(event = \{ type: AppStartupEvent\.USERSCRIPT_START \}\) \{[\s\S]*?\n\}/
     )?.[0] || "";
   if (/if\s*\(\s*event\.type\s*===/.test(entryBody)) {
     violations.push(`${rel(entryFile)} entry must route events through handler table`);

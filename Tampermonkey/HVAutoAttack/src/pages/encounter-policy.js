@@ -1,7 +1,7 @@
 import {
   beginEncounterDay,
   defaultEncounterState,
-  markEncounterCompleted,
+  settleEncounterBattle,
   normalizeEncounterState,
   observeEncounterNewDay,
   resolveEncounterGenerationCircuit,
@@ -11,7 +11,7 @@ import { planEncounterEntryRoute } from "./encounter-entry-policy.js";
 import { applyEncounterGenerationResult } from "./encounter-generation-application.js";
 import {
   markEncounterAttempted,
-  markEncounterEntryStarted,
+  markEncounterBattleActive,
   markEncounterKeyAvailable,
 } from "./encounter-entry-state.js";
 import {
@@ -47,9 +47,8 @@ const encounterPolicyEventHandlers = Object.freeze({
     applyEncounterGenerationResult(event.state, event.result, event),
   beginNewDay: (event) => beginEncounterDay(event.nowMs),
   defaultState: (event) => defaultEncounterState(event.nowMs),
-  markCompleted: (event) => markEncounterCompleted(event.state, event.nowMs),
-  markEntryStarted: (event) =>
-    markEncounterEntryStarted(event.state, { ...event, parseKey: parseSearchEncounterKey }),
+  markCompleted: (event) => settleEncounterBattle(event.state, event.session, event.nowMs),
+  markEntryStarted: (event) => markEncounterBattleActive(event.state, event.session, event.nowMs),
   markGenerationFailed: (event) =>
     markEncounterGenerationFailed(
       normalizeEncounterState(event.state, event.nowMs),

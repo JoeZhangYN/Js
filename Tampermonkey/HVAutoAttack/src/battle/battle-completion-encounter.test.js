@@ -2,9 +2,16 @@ import { describe, expect, it, vi } from "vitest";
 import { BattleCompletionEvent, runBattleCompletionAutomation } from "./battle-completion.js";
 
 function deps(context) {
+  const snapshot = {
+    sessionId: "session-1",
+    phase: "terminal",
+    identity: { roundType: context.roundType || "ba" },
+    outcome: context.monsterAlive > 0 ? "defeat" : "victory",
+  };
   return {
     readCompletionContext: vi.fn(() => context),
     recordCompletion: vi.fn(),
+    markSessionTerminal: vi.fn(() => ({ ok: true, snapshot })),
     completeEncounter: vi.fn(),
     completeUtilityLearning: vi.fn(),
     triggerAlarm: vi.fn(),
@@ -20,7 +27,12 @@ describe("battle completion encounter handoff", () => {
     const d = deps(context);
     runBattleCompletionAutomation({ type: BattleCompletionEvent.COMPLETION_REACHED }, d);
 
-    expect(d.completeEncounter).toHaveBeenCalledWith("defeat", context);
+    expect(d.completeEncounter).toHaveBeenCalledWith(
+      expect.objectContaining({ sessionId: "session-1", outcome: "defeat" })
+    );
+    expect(d.markSessionTerminal.mock.invocationCallOrder[0]).toBeLessThan(
+      d.completeEncounter.mock.invocationCallOrder[0]
+    );
     expect(d.completeEncounter.mock.invocationCallOrder[0]).toBeLessThan(
       d.clearSession.mock.invocationCallOrder[0]
     );

@@ -9,8 +9,8 @@ const allowedDirectReaders = new Set(
   [
     owner,
     ownerTest,
-    "src/battle/battle-round.js",
-    "src/battle/battle-round.test.js",
+    "src/battle/battle-session.js",
+    "src/battle/battle-session.test.js",
     "src/battle/monster-status-automation.js",
     "src/battle/monster-status-automation.test.js",
     "src/battle/monster-status-runtime.test.js",
@@ -64,8 +64,7 @@ function checkOwner() {
     "BattleProgressEvent",
     "runBattleProgressAutomation",
     "READ_CONTEXT",
-    "BattleRoundEvent.READ_RUNTIME",
-    "BattleRoundEvent.READ_TYPE",
+    "BattleSessionEvent.READ_CONTEXT",
     "MonsterStatusEvent.READ_COMBATANT_COUNTS",
     "bossAlive",
     "bossAll",
@@ -74,6 +73,8 @@ function checkOwner() {
     "roundAll",
     "roundNow",
     "roundType",
+    "sessionId",
+    "sessionPhase",
   ]) {
     if (!text.includes(required)) {
       violations.push(`${owner.replaceAll("\\", "/")} must own ${required}`);

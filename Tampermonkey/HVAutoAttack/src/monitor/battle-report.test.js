@@ -7,7 +7,7 @@ import {
   BattleSessionCheckpointSlice,
   runBattleSessionCheckpointAutomation,
 } from "../state/battle-session-checkpoint.js";
-import { BattleRoundEvent, runBattleRoundAutomation } from "../battle/battle-round.js";
+import { BattleSessionEvent, runBattleSessionAutomation } from "../battle/battle-session.js";
 import { BattleMonitorEvent, runBattleMonitorAutomation } from "./battle-monitor-automation.js";
 import { BattleReportEvent, runBattleReportAutomation } from "./battle-report.js";
 import {
@@ -30,9 +30,11 @@ afterEach(() => {
 });
 
 function setRoundContext(roundType, roundNow, roundAll) {
-  runBattleRoundAutomation({ type: BattleRoundEvent.RECORD_TYPE, roundType });
-  runBattleRoundAutomation({ type: BattleRoundEvent.RECORD_COUNT, roundNow, roundAll });
-  runBattleRoundAutomation({ type: BattleRoundEvent.SYNC_RUNTIME });
+  const initializingText =
+    roundType === "rb" ? "Initializing arena challenge #105" : "Initializing arena challenge #10";
+  runBattleSessionAutomation({ type: BattleSessionEvent.START_OR_RESUME, initializingText });
+  runBattleSessionAutomation({ type: BattleSessionEvent.RECORD_PROGRESS, roundNow, roundAll });
+  runBattleSessionAutomation({ type: BattleSessionEvent.SYNC_RUNTIME });
 }
 
 function readReportRuntime() {
@@ -48,8 +50,6 @@ describe("battle report query", () => {
     expect(runBattleMonitorAutomation(null)).toBe(false);
 
     expect(getValue(STORAGE_KEYS.BATTLE_CODE, true)).toBeNull();
-    expect(getValue(STORAGE_KEYS.DROP, true)).toBeNull();
-    expect(getValue(STORAGE_KEYS.STATS, true)).toBeNull();
   });
 
   it("rejects unknown and null report events without writing report storage", () => {

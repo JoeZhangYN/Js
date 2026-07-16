@@ -162,10 +162,9 @@ describe("encounter generation transport recovery", () => {
     expect(mocks.gmXhr).toHaveBeenCalledOnce();
     expect(sharedState).toMatchObject({
       date: 0,
-      key: "",
       count: 0,
-      clear: true,
-      schemaVersion: 4,
+      entry: { phase: "idle", key: "", sessionId: null },
+      schemaVersion: 5,
     });
     expect(localStorage.getItem("hvut_re")).toBeNull();
   });

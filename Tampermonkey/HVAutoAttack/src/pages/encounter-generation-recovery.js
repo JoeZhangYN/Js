@@ -2,6 +2,7 @@ import {
   isLegacyEncounterAbsence,
   migrateGenerationRecoveryDeadline,
 } from "./encounter-state-migration.js";
+import { EncounterEntryPhase } from "./encounter-entry-identity.js";
 
 const ENCOUNTER_GENERATION_BACKOFF_MS = [1 * 60 * 1000, 3 * 60 * 1000];
 const ENCOUNTER_GENERATION_CIRCUIT_OPEN_MS = 5 * 60 * 1000;
@@ -11,7 +12,7 @@ const ENCOUNTER_GENERATION_MAX_CIRCUITS = 2;
 const utcDayKey = (stamp) => new Date(stamp).toISOString().slice(0, 10);
 
 export function buildGenerationAttemptKey(state, nowMs = Date.now()) {
-  return `${utcDayKey(nowMs)}:${state.date}:${state.key}:${state.clear}`;
+  return `${utcDayKey(nowMs)}:${state.date}:${state.entry.phase}:${state.entry.key}`;
 }
 
 function recoveryPosition(failureCount) {
@@ -111,9 +112,13 @@ export function markEncounterGenerationFailed(
   nowMs = Date.now(),
   reason = "generationRequestFailed"
 ) {
-  if (state.key && !state.clear) return state;
+  if (
+    state.entry.phase === EncounterEntryPhase.KEY_AVAILABLE ||
+    state.entry.phase === EncounterEntryPhase.BATTLE_ACTIVE
+  ) {
+    return state;
+  }
   if (state.generationCircuitTerminal) return state;
-  state.clear = true;
   const key = String(attemptKey || buildGenerationAttemptKey(state, nowMs));
   const previousCount =
     state.generationAttemptKey === key ? Math.max(0, Number(state.generationFailureCount) || 0) : 0;

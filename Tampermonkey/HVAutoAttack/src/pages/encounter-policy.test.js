@@ -20,9 +20,8 @@ describe("runEncounterPolicy encounter day contract", () => {
 
     expect(normalized).toMatchObject({
       date: 0,
-      key: "",
       count: 0,
-      clear: true,
+      entry: { phase: "idle", key: "", sessionId: null },
       utcDay: "2026-06-27",
       dayPhase: "awaitingNewDay",
       anchorReason: null,
@@ -59,24 +58,33 @@ describe("runEncounterPolicy encounter day contract", () => {
   it("starts cooldown only when an encounter reaches a terminal completion", () => {
     const state = policy(EncounterPolicyEvent.DEFAULT_STATE, undefined, { nowMs: DAY });
     const started = policy(EncounterPolicyEvent.MARK_ENTRY_STARTED, state, {
-      source: "battleRoundStart",
+      session: { sessionId: "session-1", phase: "active", identity: { roundType: "ba" } },
       nowMs: DAY,
     });
-    const completed = policy(EncounterPolicyEvent.MARK_COMPLETED, started, { nowMs: DAY });
+    const completed = policy(EncounterPolicyEvent.MARK_COMPLETED, started, {
+      session: {
+        sessionId: "session-1",
+        phase: "terminal",
+        identity: { roundType: "ba" },
+        outcome: "victory",
+      },
+      nowMs: DAY,
+    });
 
     expect(started).toMatchObject({ date: 0, count: 0 });
     expect(completed).toMatchObject({
-      date: DAY,
-      count: 1,
-      anchorReason: "encounterCompleted",
+      status: "completed",
+      counted: true,
+      state: { date: DAY, count: 1, anchorReason: "encounterCompleted" },
     });
     expect(
-      policy(EncounterPolicyEvent.READ_CLOCK, completed, {
+      policy(EncounterPolicyEvent.READ_CLOCK, completed.state, {
         nowMs: DAY + 30 * 60 * 1000,
       }).remainingMs
     ).toBe(5000);
     expect(
-      policy(EncounterPolicyEvent.READ_CLOCK, completed, { nowMs: DAY + COOLDOWN_MS }).remainingMs
+      policy(EncounterPolicyEvent.READ_CLOCK, completed.state, { nowMs: DAY + COOLDOWN_MS })
+        .remainingMs
     ).toBe(0);
   });
 

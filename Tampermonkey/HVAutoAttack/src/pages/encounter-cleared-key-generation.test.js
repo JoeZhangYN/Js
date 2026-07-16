@@ -53,7 +53,9 @@ describe("cleared encounter key generation", () => {
     expect(outcome).toMatchObject({
       status: "claimed",
       action: "navigated",
-      state: { key: "new=" },
+      state: {
+        entry: { phase: "navigationAttempted", key: "new=", sessionId: null },
+      },
     });
     expect(mocks.runNavigationAutomation).toHaveBeenCalledWith({
       type: "openUrl",

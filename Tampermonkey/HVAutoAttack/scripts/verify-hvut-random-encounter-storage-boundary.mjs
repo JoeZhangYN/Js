@@ -72,7 +72,6 @@ requireParts("re.clock", clock, [
 requireParts("re.hv", hv, ["if (re.init() === false) return false;", "return re.clock(button);"]);
 requireParts("re.ba", ba, [
   "if (re.init() === false) return false;",
-  "if (re.check() === false) return false;",
   "if (re.clock(button) === false) return false;",
   "if (!button.isConnected && $id('csp')) {",
 ]);
@@ -108,6 +107,8 @@ requireParts("re.load", load, [
 
 requireParts("re.refresh", refresh, [
   "const readiness = re.get();",
+  "readiness.entryPhase === 'battleActive'",
+  "readiness.entryPhase === 'navigationAttempted'",
   "readiness.recoveryStatus === 'countdown'",
   "play_beep(...ctx.config.settings.reBeep);",
 ]);
@@ -118,16 +119,23 @@ for (const forbidden of ["WIDGET_TIMER_ELAPSED", "re.load(", "re.run("]) {
 }
 
 requireParts("bindRe encounter bridge calls", bindRe, [
-  "run_hvut_encounter_bridge('WIDGET_TICK', { state: re.json })",
+  "run_hvut_encounter_bridge('WIDGET_TICK', {})",
   "run_hvut_encounter_bridge('WIDGET_LINK_FOUND', { state: re.json, key })",
   "run_hvut_encounter_bridge('WIDGET_RESET_DAY')",
-  "run_hvut_encounter_bridge('WIDGET_STARTED_ENCOUNTER', { state: re.json, search: location.search, pageType: re.type })",
   "run_hvut_encounter_bridge('WIDGET_CLICKED'",
   "run_hvut_encounter_bridge('WIDGET_NEWS_LOADED'",
   "run_hvut_encounter_bridge('WIDGET_GENERATION_FAILED'",
 ]);
+if (/ctx\.config\.get\(['"]re['"]/.test(bindRe)) {
+  violations.push(`${target} widget must not read encounter storage outside its business entry`);
+}
 if (bindRe.includes("WIDGET_TIMER_ELAPSED")) {
   violations.push(`${target} must not restore widget timer expiry as an automatic entry`);
+}
+for (const retired of ["WIDGET_STARTED_ENCOUNTER", "re.check = function"]) {
+  if (bindRe.includes(retired)) {
+    violations.push(`${target} must retire widget-owned encounter recognition: ${retired}`);
+  }
 }
 
 requireParts("random encounter failure recorder", text, [

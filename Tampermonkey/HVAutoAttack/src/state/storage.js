@@ -102,22 +102,6 @@ export function createStorageCapability({ prefix }, ports = {}) {
   }
 
   function delValue(item) {
-    if (typeof item === "number") {
-      const outcomes = [];
-      if (item === 0) outcomes.push(delValue(STORAGE_KEYS.DISABLED));
-      else if (item === 1) {
-        outcomes.push(delValue(STORAGE_KEYS.ROUND_NOW));
-        outcomes.push(delValue(STORAGE_KEYS.ROUND_ALL));
-        outcomes.push(delValue(STORAGE_KEYS.MONSTER_STATUS));
-      } else if (item === 2) {
-        outcomes.push(delValue(STORAGE_KEYS.ROUND_TYPE));
-        outcomes.push(delValue(0));
-        outcomes.push(delValue(1));
-      }
-      return outcomes.includes(StorageWriteOutcome.DELETED)
-        ? StorageWriteOutcome.DELETED
-        : StorageWriteOutcome.SKIPPED_UNCHANGED;
-    }
     const key = prefix + item;
     const gmDelete = ports.gmDeleteValue || globalThis.GM_deleteValue;
     const gmGet = ports.gmGetValue || globalThis.GM_getValue;

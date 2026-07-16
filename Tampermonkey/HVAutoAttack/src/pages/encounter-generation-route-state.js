@@ -1,4 +1,5 @@
 import { clearGenerationRecovery } from "./encounter-generation-recovery.js";
+import { EncounterEntryPhase, idleEncounterEntry } from "./encounter-entry-identity.js";
 
 export const ENCOUNTER_GENERATION_ROUTE_REVISION = 1;
 
@@ -10,7 +11,7 @@ export function migrateEncounterGenerationRouteState(normalized, source = {}) {
     return normalized;
   }
   if (
-    !normalized.clear ||
+    normalized.entry.phase !== EncounterEntryPhase.IDLE ||
     (!source.generationFailureReason && !retiredRouteAnchors.has(source.anchorReason))
   ) {
     return normalized;
@@ -19,7 +20,6 @@ export function migrateEncounterGenerationRouteState(normalized, source = {}) {
   normalized.date = 0;
   normalized.cycleReadyAt = 0;
   normalized.anchorReason = null;
-  normalized.key = "";
-  normalized.clear = true;
+  normalized.entry = idleEncounterEntry();
   return normalized;
 }

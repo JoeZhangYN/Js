@@ -39,9 +39,8 @@ describe("encounter state dawn recovery", () => {
     });
     expect(JSON.parse(localStorage.getItem(HVUT_RE_KEY))).toMatchObject({
       date: Date.now(),
-      key: "",
       count: 0,
-      clear: true,
+      entry: { phase: "idle", key: "", sessionId: null },
       dayPhase: "active",
       anchorReason: "newDay",
       invalidCycleCount: 0,

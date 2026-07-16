@@ -15,20 +15,18 @@ import {
   DiagnosticConsoleEvent,
   runDiagnosticConsoleAutomation,
 } from "../core/diagnostic-console.js";
-
-const EVENT_USERSCRIPT_START = "userscriptStart";
-const EVENT_GAME_PAGE_READY = "gamePageReady";
-const INITIAL_LANGUAGE_PROMPT =
-  "请输入以下语言代码对应的数字\nPlease put in the number of your preferred language (0, 1 or 2)\n0.简体中文\n1.繁體中文\n2.English";
+import { retireLegacyBattleRoundStorage } from "../battle/battle-session-legacy-storage.js";
+import { INITIAL_LANGUAGE_PROMPT } from "./app-startup-copy.js";
 
 export const APP_STARTUP_FAILURE_KEY = "HVAA:lastAppStartupFailure";
 
 export const AppStartupEvent = Object.freeze({
-  USERSCRIPT_START: EVENT_USERSCRIPT_START,
-  GAME_PAGE_READY: EVENT_GAME_PAGE_READY,
+  USERSCRIPT_START: "userscriptStart",
+  GAME_PAGE_READY: "gamePageReady",
 });
 
 const USERSCRIPT_STARTUP_STEPS = [
+  ["retireLegacyBattleRoundStorage", retireLegacyBattleRoundStorage],
   ["loadCdRuntimeState", loadCdRuntimeState],
   ["registerStorageMenus", registerStorageMenus],
 ];
@@ -39,8 +37,8 @@ const GAME_PAGE_STARTUP_STEPS = [
 ];
 
 const appStartupEventHandlers = Object.freeze({
-  [EVENT_USERSCRIPT_START]: runUserscriptStartup,
-  [EVENT_GAME_PAGE_READY]: runGamePageStartup,
+  [AppStartupEvent.USERSCRIPT_START]: runUserscriptStartup,
+  [AppStartupEvent.GAME_PAGE_READY]: runGamePageStartup,
 });
 
 function recordAppStartupFailure(stage, reason, detail = {}) {
@@ -165,6 +163,6 @@ function runGamePageStartup() {
   return true;
 }
 
-export function runAppStartup(event = { type: EVENT_USERSCRIPT_START }) {
+export function runAppStartup(event = { type: AppStartupEvent.USERSCRIPT_START }) {
   return appStartupEventHandlers[event?.type]?.(event) ?? false;
 }

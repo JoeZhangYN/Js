@@ -27,7 +27,12 @@ describe("encounter state failure evidence", () => {
 
     const state = runEncounterStateAutomation({ type: EncounterStateEvent.READ_CURRENT });
 
-    expect(state).toMatchObject({ date: 0, key: "", count: 0, clear: true, schemaVersion: 4 });
+    expect(state).toMatchObject({
+      date: 0,
+      count: 0,
+      entry: { phase: "idle", key: "", sessionId: null },
+      schemaVersion: 5,
+    });
     expect(JSON.parse(sessionStorage.getItem(ENCOUNTER_STATE_FAILURE_KEY))).toMatchObject({
       capability: "encounterState",
       source: "encounterState",
@@ -68,7 +73,12 @@ describe("encounter state failure evidence", () => {
       state = runEncounterStateAutomation({ type: EncounterStateEvent.READ_CURRENT });
     }).not.toThrow();
 
-    expect(state).toMatchObject({ date: 0, key: "", count: 0, clear: true, schemaVersion: 4 });
+    expect(state).toMatchObject({
+      date: 0,
+      count: 0,
+      entry: { phase: "idle", key: "", sessionId: null },
+      schemaVersion: 5,
+    });
     expect(window.sessionStorage.getItem(ENCOUNTER_STATE_FAILURE_KEY)).toBeNull();
   });
 });

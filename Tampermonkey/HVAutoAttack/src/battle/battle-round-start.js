@@ -6,7 +6,7 @@ import {
 } from "../core/navigate.js";
 import { EncounterEvent, runEncounterAutomation } from "../pages/encounter.js";
 import { MonsterStatusEvent, runMonsterStatusAutomation } from "./monster-status-automation.js";
-import { BattleRoundEvent, runBattleRoundAutomation } from "./battle-round.js";
+import { BattleSessionEvent, runBattleSessionAutomation } from "./battle-session.js";
 import { BattleStaminaEvent, runBattleStaminaAutomation } from "./battle-stamina.js";
 import { BattleRoundLifecycleEvent, runBattleRoundLifecycle } from "./round-lifecycle.js";
 import { BattleRoundStartLogEvent, runBattleRoundStartLog } from "./round-start-log.js";
@@ -23,17 +23,24 @@ export const BattleRoundStartEvent = Object.freeze({
 });
 
 function recordRoundStartContext(initializingText) {
-  const context = runBattleRoundAutomation({
-    type: BattleRoundEvent.RECORD_START_CONTEXT,
+  const result = runBattleSessionAutomation({
+    type: BattleSessionEvent.START_OR_RESUME,
     initializingText,
   });
-  if (context.randomEncounterStarted) {
+  if (result?.snapshot?.identity.roundType === "ba") {
     runEncounterAutomation({
-      type: EncounterEvent.RANDOM_ENCOUNTER_STARTED,
+      type: EncounterEvent.BATTLE_SESSION_STARTED,
+      session: result.snapshot,
       source: "battleRoundStart",
     });
   }
-  return context;
+  return result?.ok
+    ? {
+        initialized: result.initialized,
+        roundType: result.snapshot.identity.roundType,
+        sessionId: result.snapshot.sessionId,
+      }
+    : { reason: result?.reason || "battleSessionUnavailable" };
 }
 
 function cleanupBattleHash() {
@@ -113,18 +120,15 @@ function startRound() {
   recordStep(
     steps,
     "recordStartCount",
-    runBattleRoundAutomation({
-      type: BattleRoundEvent.RECORD_START_COUNT,
+    runBattleSessionAutomation({
+      type: BattleSessionEvent.RECORD_START_PROGRESS,
       initializingText,
-      roundType: roundStartContext.roundType,
-      initialized: roundStartContext.initialized,
-      repaired: monsterStatusOutcome.repaired,
     })
   );
   recordStep(
     steps,
     "syncRuntime",
-    runBattleRoundAutomation({ type: BattleRoundEvent.SYNC_RUNTIME })
+    runBattleSessionAutomation({ type: BattleSessionEvent.SYNC_RUNTIME })
   );
   recordStep(
     steps,

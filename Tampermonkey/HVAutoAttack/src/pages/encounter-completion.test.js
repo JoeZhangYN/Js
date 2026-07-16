@@ -1,27 +1,18 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { EncounterEvent, runEncounterAutomation } from "./encounter.js";
 
-const mocks = vi.hoisted(() => ({
-  runOptionAutomation: vi.fn(),
-  runUserFeedbackAutomation: vi.fn(),
-}));
-vi.mock("../core/lang.js", () => ({
-  UserFeedbackEvent: Object.freeze({ BLOCKING_ERROR: "blockingError" }),
-  runUserFeedbackAutomation: mocks.runUserFeedbackAutomation,
-}));
-vi.mock("../state/option.js", () => ({
-  OptionEvent: Object.freeze({ READ_FIELD: "readField" }),
-  runOptionAutomation: mocks.runOptionAutomation,
-}));
-
-const HVUT_RE_KEY = "hvut_re";
+const terminalSession = (sessionId, outcome = "victory", roundType = "ba") => ({
+  version: 1,
+  sessionId,
+  phase: "terminal",
+  identity: { roundType, source: "initializationLog" },
+  progress: { roundNow: 1, roundAll: 1, roundLeft: 0 },
+  outcome,
+});
 
 beforeEach(() => {
   localStorage.clear();
   vi.unstubAllGlobals();
-  mocks.runOptionAutomation.mockReset();
-  mocks.runOptionAutomation.mockReturnValue(true);
-  mocks.runUserFeedbackAutomation.mockReset();
   vi.useFakeTimers();
   vi.setSystemTime(new Date("2026-06-27T12:00:00.000Z"));
 });
@@ -29,66 +20,50 @@ beforeEach(() => {
 afterEach(() => vi.useRealTimers());
 
 describe("runEncounterAutomation encounter completion", () => {
-  it("counts victory and defeat only when the random encounter reaches a terminal result", () => {
-    const victory = runEncounterAutomation({
-      type: EncounterEvent.RANDOM_ENCOUNTER_COMPLETED,
-      outcome: "victory",
-      roundType: "ba",
+  it("counts each terminal random-encounter session exactly once", () => {
+    const first = runEncounterAutomation({
+      type: EncounterEvent.BATTLE_SESSION_TERMINAL,
+      session: terminalSession("session-1"),
+    });
+    const duplicate = runEncounterAutomation({
+      type: EncounterEvent.BATTLE_SESSION_TERMINAL,
+      session: terminalSession("session-1"),
     });
     vi.setSystemTime(new Date("2026-06-27T12:31:00.000Z"));
-    const defeat = runEncounterAutomation({
-      type: EncounterEvent.RANDOM_ENCOUNTER_COMPLETED,
-      outcome: "defeat",
-      roundType: "ba",
+    const second = runEncounterAutomation({
+      type: EncounterEvent.BATTLE_SESSION_TERMINAL,
+      session: terminalSession("session-2", "defeat"),
     });
 
-    expect(victory).toMatchObject({
-      status: "completed",
-      ok: true,
-      counted: true,
+    expect(first).toMatchObject({ status: "completed", counted: true, state: { count: 1 } });
+    expect(duplicate).toMatchObject({
+      status: "alreadyCompleted",
+      counted: false,
       state: { count: 1 },
     });
-    expect(defeat).toMatchObject({
+    expect(second).toMatchObject({
       status: "completed",
-      ok: true,
       counted: true,
-      state: {
-        date: Date.now(),
-        count: 2,
-        anchorReason: "encounterCompleted",
-        dayPhase: "active",
-      },
+      state: { count: 2, lastSettledSessionId: "session-2" },
     });
   });
 
-  it("ignores terminal battles outside the main-world random encounter identity", () => {
+  it("requires terminal session identity instead of loose round fields", () => {
     expect(
       runEncounterAutomation({
-        type: EncounterEvent.RANDOM_ENCOUNTER_COMPLETED,
-        outcome: "victory",
-        roundType: "ar",
+        type: EncounterEvent.BATTLE_SESSION_TERMINAL,
+        session: terminalSession("arena", "victory", "ar"),
       })
-    ).toEqual({
-      claimed: false,
-      ok: true,
-      counted: false,
-      status: "notEncounterBattle",
-    });
-    expect(localStorage.getItem(HVUT_RE_KEY)).toBeNull();
-  });
-
-  it("does not count a non-terminal event even when it claims random-encounter identity", () => {
+    ).toEqual({ claimed: false, ok: true, counted: false, status: "notEncounterBattle" });
     expect(
       runEncounterAutomation({
-        type: EncounterEvent.RANDOM_ENCOUNTER_COMPLETED,
-        outcome: "ongoing",
-        roundType: "ba",
+        type: EncounterEvent.BATTLE_SESSION_TERMINAL,
+        session: { ...terminalSession("active"), phase: "active" },
       })
     ).toEqual({ claimed: false, ok: true, counted: false, status: "notTerminal" });
-    expect(localStorage.getItem(HVUT_RE_KEY)).toBeNull();
   });
 
-  it("records completion persistence failures as diagnostics without blocking battle completion", () => {
+  it("returns a typed persistence failure", () => {
     const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
     vi.stubGlobal("GM_getValue", (_key, fallback) => fallback);
     vi.stubGlobal("GM_setValue", () => {
@@ -97,30 +72,10 @@ describe("runEncounterAutomation encounter completion", () => {
 
     expect(
       runEncounterAutomation({
-        type: EncounterEvent.RANDOM_ENCOUNTER_COMPLETED,
-        outcome: "defeat",
-        roundType: "ba",
+        type: EncounterEvent.BATTLE_SESSION_TERMINAL,
+        session: terminalSession("session-failure", "defeat"),
       })
-    ).toMatchObject({
-      claimed: false,
-      status: "persistenceFailed",
-      ok: false,
-      counted: false,
-      persistence: { ok: false },
-    });
+    ).toMatchObject({ status: "persistenceFailed", ok: false, counted: false });
     expect(warn).toHaveBeenCalled();
-    expect(mocks.runUserFeedbackAutomation).not.toHaveBeenCalled();
-  });
-
-  it("counts a completed encounter independently from the automatic-entry option", () => {
-    mocks.runOptionAutomation.mockReturnValue(false);
-
-    expect(
-      runEncounterAutomation({
-        type: EncounterEvent.RANDOM_ENCOUNTER_COMPLETED,
-        outcome: "victory",
-        roundType: "ba",
-      })
-    ).toMatchObject({ status: "completed", counted: true, state: { count: 1 } });
   });
 });

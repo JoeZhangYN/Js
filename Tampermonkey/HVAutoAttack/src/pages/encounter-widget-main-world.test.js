@@ -57,11 +57,15 @@ describe("main-world encounter widget timing", () => {
       href: "?s=Battle&ss=ba&encounter=abc=",
       status: "ready",
       count: 0,
-      state: { date: 0, key: "abc=", count: 0, clear: false },
+      state: {
+        date: 0,
+        count: 0,
+        entry: { phase: "keyAvailable", key: "abc=", sessionId: null },
+      },
     });
   });
 
-  it("ignores root-page started checks even when a stale encounter key is present", () => {
+  it("does not expose the retired widget-start recognition path", () => {
     const state = { date: 0, key: "", count: 0, clear: true };
 
     const outcome = planEncounterWidgetEvent({
@@ -71,6 +75,6 @@ describe("main-world encounter widget timing", () => {
       pageType: "hv",
     });
 
-    expect(outcome).toMatchObject({ state, count: 0, status: "ready" });
+    expect(outcome).toBeUndefined();
   });
 });

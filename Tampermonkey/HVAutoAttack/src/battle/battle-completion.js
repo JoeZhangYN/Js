@@ -13,6 +13,8 @@ import {
 } from "../monitor/battle-monitor-automation.js";
 import { BattleRuntimeEvent, runBattleRuntimeAutomation } from "./battle-runtime.js";
 import { BattleProgressEvent, runBattleProgressAutomation } from "./battle-progress.js";
+import { BattleSessionEvent, runBattleSessionAutomation } from "./battle-session.js";
+import { BattleCompletionOutcome, classifyBattleCompletion } from "./battle-completion-ruling.js";
 import {
   BattleCompletionEvidenceEvent,
   runBattleCompletionEvidence,
@@ -32,13 +34,6 @@ export const BattleCompletionEvent = Object.freeze({
   READ_REACHED: EVENT_READ_REACHED,
 });
 
-const BattleCompletionOutcome = Object.freeze({
-  DEFEAT: "defeat",
-  NEXT_ROUND: "nextRound",
-  VICTORY: "victory",
-  ONGOING: "ongoing",
-});
-
 const battleCompletionEventHandlers = Object.freeze({
   [EVENT_COMPLETION_REACHED]: (event, deps) => handleCompletionReached(deps),
   [EVENT_READ_REACHED]: (event, deps) => deps.isCompletionReached(),
@@ -51,14 +46,9 @@ function readCompletionContext() {
     roundNow: progress.roundNow,
     roundAll: progress.roundAll,
     roundType: progress.roundType,
+    sessionId: progress.sessionId,
+    sessionPhase: progress.sessionPhase,
   };
-}
-
-function classifyCompletion(context) {
-  if (context.monsterAlive > 0) return BattleCompletionOutcome.DEFEAT;
-  if (context.roundNow !== context.roundAll) return BattleCompletionOutcome.NEXT_ROUND;
-  if (context.roundNow === context.roundAll) return BattleCompletionOutcome.VICTORY;
-  return BattleCompletionOutcome.ONGOING;
 }
 
 function victoryReloadDetail(outcome, context) {
@@ -77,10 +67,13 @@ function normalizeEncounterCompletion(result) {
 
 function handleTerminalCompletion(outcome, context, deps) {
   const alarmKind = outcome === BattleCompletionOutcome.DEFEAT ? "Defeat" : "Victory";
+  const terminalSession = deps.markSessionTerminal(outcome);
   const encounterCompletion = normalizeEncounterCompletion(
-    deps.completeEncounter(outcome, context)
+    terminalSession?.ok ? deps.completeEncounter(terminalSession.snapshot) : null
   );
   const effects = {
+    terminalSession,
+    terminalSessionOk: terminalSession?.ok === true,
     encounterCompletion,
     encounterCompletionOk: encounterCompletion.ok === true,
     utilityLearning: effectOk(deps.completeUtilityLearning(outcome)),
@@ -102,7 +95,7 @@ function handleCompletionReached(deps) {
     recordCompletionResult: recordCompletion,
   };
   const context = deps.readCompletionContext();
-  const outcome = classifyCompletion(context);
+  const outcome = classifyBattleCompletion(context);
   if (outcome === BattleCompletionOutcome.DEFEAT || outcome === BattleCompletionOutcome.VICTORY) {
     Object.assign(effects, handleTerminalCompletion(outcome, context, deps));
   }
@@ -132,11 +125,12 @@ export function runBattleCompletionAutomation(
         type: UtilityWeightLearningEvent.BATTLE_COMPLETED,
         outcome,
       }),
-    completeEncounter: (outcome, context) =>
+    markSessionTerminal: (outcome) =>
+      runBattleSessionAutomation({ type: BattleSessionEvent.MARK_TERMINAL, outcome }),
+    completeEncounter: (session) =>
       runEncounterAutomation({
-        type: EncounterEvent.RANDOM_ENCOUNTER_COMPLETED,
-        outcome,
-        roundType: context.roundType,
+        type: EncounterEvent.BATTLE_SESSION_TERMINAL,
+        session,
         source: "battleCompletion",
       }),
     clearSession: () => runBattleRuntimeAutomation({ type: BattleRuntimeEvent.CLEAR_SESSION }),

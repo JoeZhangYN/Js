@@ -10,6 +10,7 @@ export function readEncounterWidgetState(state, event = {}) {
     state: clock.state,
     remainingMs: clock.primaryCountdownMs,
     count: clock.state.count,
+    entryPhase: clock.entryPhase,
     status: clock.primaryStatus,
     reason: clock.primaryReason,
     operationalStatus: clock.status,
@@ -18,6 +19,6 @@ export function readEncounterWidgetState(state, event = {}) {
     recoveryRemainingMs: clock.recoveryCountdownMs,
     recoveryReason: clock.recoveryReason,
     attemptKey: clock.attemptKey,
-    warn: !clock.state.clear,
+    warn: clock.entryPhase === "keyAvailable",
   };
 }

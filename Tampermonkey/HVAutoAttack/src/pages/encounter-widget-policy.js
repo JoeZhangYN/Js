@@ -2,7 +2,7 @@ import { EncounterPolicyEvent, runEncounterPolicy } from "./encounter-policy.js"
 import { EncounterCheckMode } from "./encounter-check-mode.js";
 import { EncounterGenerationApplication } from "./encounter-generation-application.js";
 import { classifyEncounterGenerationResult } from "./encounter-generation-result.js";
-import { observeWidgetEntryStarted, observeWidgetLink } from "./encounter-widget-observation.js";
+import { observeWidgetLink } from "./encounter-widget-observation.js";
 import { readEncounterWidgetState as readWidgetState } from "./encounter-widget-state.js";
 
 const widgetState = (event, state = event.state) => readWidgetState(state, event);
@@ -118,7 +118,6 @@ function planWidgetEngage(event) {
 const encounterWidgetPolicyEventHandlers = Object.freeze({
   widgetTick: (event) => widgetState(event),
   widgetLinkFound: observeWidgetLink,
-  widgetStartedEncounter: observeWidgetEntryStarted,
   widgetResetDay: (event) =>
     widgetState(
       event,

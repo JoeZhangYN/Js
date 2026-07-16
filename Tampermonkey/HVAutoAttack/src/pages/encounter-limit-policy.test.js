@@ -13,6 +13,12 @@ const missing = {
   reason: EncounterGenerationFailureReason.ENCOUNTER_KEY_MISSING,
 };
 const policy = (type, state, fields = {}) => runEncounterPolicy({ type, state, ...fields });
+const terminalSession = (sessionId) => ({
+  sessionId,
+  phase: "terminal",
+  identity: { roundType: "ba" },
+  outcome: "victory",
+});
 const confirming = (fields = {}) => ({
   date: DAY - COOLDOWN_MS,
   key: "",
@@ -29,8 +35,8 @@ describe("encounter limit policy", () => {
     let state = policy(
       EncounterPolicyEvent.MARK_COMPLETED,
       { ...confirming(), count: 23 },
-      { nowMs: DAY }
-    );
+      { nowMs: DAY, session: terminalSession("session-24") }
+    ).state;
     expect(state).toMatchObject({ count: 24, dayPhase: "confirmingLimit" });
 
     for (let cycle = 1; cycle <= 3; cycle += 1) {
@@ -95,17 +101,24 @@ describe("encounter limit policy", () => {
     );
     const completed = policy(EncounterPolicyEvent.MARK_COMPLETED, available.state, {
       nowMs: DAY + 1000,
+      session: terminalSession("session-25"),
     });
 
     expect(available).toMatchObject({
       application: "available",
-      state: { key: "abc=", clear: false, invalidCycleCount: 2 },
+      state: {
+        entry: { phase: "keyAvailable", key: "abc=", sessionId: null },
+        invalidCycleCount: 2,
+      },
     });
     expect(completed).toMatchObject({
-      count: 24,
-      invalidCycleCount: 0,
-      dayPhase: "confirmingLimit",
-      anchorReason: "encounterCompleted",
+      counted: true,
+      state: {
+        count: 24,
+        invalidCycleCount: 0,
+        dayPhase: "confirmingLimit",
+        anchorReason: "encounterCompleted",
+      },
     });
   });
 });

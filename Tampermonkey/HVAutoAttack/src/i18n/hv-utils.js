@@ -3490,9 +3490,6 @@ const bindRe = function (re, ctx) {
       return;
     }
     if (re.init() === false) return false;
-    if ($id('textlog').tBodies[0].lastElementChild.textContent === 'Initializing random encounter ...') {
-      if (re.check() === false) return false;
-    }
     const button = $element('div', $id('csp'), ['RE', '!position: absolute; top: 10px; left: 600px; cursor: pointer; font-size: 10pt; font-weight: bold;']);
     if (re.clock(button) === false) return false;
 
@@ -3514,7 +3511,7 @@ const bindRe = function (re, ctx) {
     const onclick = link?.getAttribute('onclick');
     if (onclick) {
       const linkState = run_hvut_encounter_bridge('WIDGET_LINK_FOUND', { state: re.json, search: onclick });
-      if (linkState?.state?.key) {
+      if (linkState?.state?.entry?.key) {
         if (applyEncounterState(linkState) === false) return false;
         if (ctx.config.settings.reGalleryAlt) {
           link.setAttribute('onclick', onclick.replace('https://hentaiverse.org/', 'http://alt.hentaiverse.org/'));
@@ -3529,8 +3526,8 @@ const bindRe = function (re, ctx) {
     return true;
   };
   re.get = function () {
-    re.json = ctx.config.get('re', { date: 0, key: '', count: 0, clear: true }, 'hvut_');
-    const outcome = run_hvut_encounter_bridge('WIDGET_TICK', { state: re.json }) ?? { state: re.json, remainingMs: 0, count: re.json.count || 0, status: 'ready' };
+    const outcome = run_hvut_encounter_bridge('WIDGET_TICK', {});
+    if (!outcome) return false;
     if (applyEncounterState(outcome) === false) return false;
     return outcome;
   };
@@ -3542,13 +3539,17 @@ const bindRe = function (re, ctx) {
     re.start();
     return true;
   };
-  re.check = function () {
-    return applyEncounterState(run_hvut_encounter_bridge('WIDGET_STARTED_ENCOUNTER', { state: re.json, search: location.search, pageType: re.type }));
-  };
   re.refresh = function () {
     const readiness = re.get();
     if (readiness === false) return false;
-    if (readiness.status === 'countdown') {
+    re.button.classList.toggle('hvut-warn', readiness.warn === true);
+    if (readiness.entryPhase === 'battleActive') {
+      re.button.textContent = `遭遇战 [${readiness.count}] · 进行中`;
+      re.beep = false;
+    } else if (readiness.entryPhase === 'navigationAttempted') {
+      re.button.textContent = `遭遇战 [${readiness.count}] · 进入中`;
+      re.beep = false;
+    } else if (readiness.status === 'countdown') {
       const recovery = readiness.recoveryStatus === 'countdown' ? ` · R${time_format(readiness.recoveryRemainingMs, 2)}` : '';
       re.button.textContent = time_format(readiness.remainingMs, 2) + ` [${readiness.count}]${recovery}`;
       re.beep = true;
@@ -3635,11 +3636,6 @@ const bindRe = function (re, ctx) {
   };
   re.start = function () {
     re.stop();
-    if (!re.json.clear) {
-      re.button.classList.add('hvut-warn');
-    } else {
-      re.button.classList.remove('hvut-warn');
-    }
     re.tid = setInterval(re.refresh, 1000);
     re.refresh();
   };

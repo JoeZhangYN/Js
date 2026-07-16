@@ -1,6 +1,7 @@
 export const BattleSessionCheckpointSlice = Object.freeze({
   CD_RUNTIME: "cdRuntime",
   BATTLE_REPORT: "battleReport",
+  BATTLE_SESSION: "battleSession",
 });
 
 export function emptyBattleSessionCheckpoint() {

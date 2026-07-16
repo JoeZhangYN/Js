@@ -9,7 +9,7 @@ export function planEncounterEntryRoute(readiness) {
   if (readiness.canEnter) {
     return {
       action: "enter",
-      href: buildEncounterEntryUrl(readiness.state.key),
+      href: buildEncounterEntryUrl(readiness.state.entry.key),
       state: readiness.state,
     };
   }

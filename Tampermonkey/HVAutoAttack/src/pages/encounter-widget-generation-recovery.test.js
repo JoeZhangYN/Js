@@ -116,9 +116,8 @@ describe("encounter widget generation recovery", () => {
       remainingMs: ENCOUNTER_COOLDOWN_MS,
       state: {
         date: Date.now(),
-        key: "",
         count: 0,
-        clear: true,
+        entry: { phase: "idle", key: "", sessionId: null },
         dayPhase: "active",
         anchorReason: "newDay",
       },

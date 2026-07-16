@@ -6,6 +6,7 @@ import {
   observeEncounterNewDay,
 } from "./encounter-day-state.js";
 import { markEncounterKeyAvailable } from "./encounter-entry-state.js";
+import { EncounterEntryPhase } from "./encounter-entry-identity.js";
 import {
   EncounterGenerationFailureReason,
   EncounterGenerationResultStatus,
@@ -43,7 +44,7 @@ export function applyEncounterGenerationResult(state, result, event = {}) {
   }
   if (result.status === EncounterGenerationResultStatus.AVAILABLE) {
     const next = markEncounterKeyAvailable(state, result.key, nowMs);
-    if (!next.clear) {
+    if (next.entry.phase === EncounterEntryPhase.KEY_AVAILABLE) {
       return { application: EncounterGenerationApplication.AVAILABLE, result, state: next };
     }
     return failedCheckApplication(

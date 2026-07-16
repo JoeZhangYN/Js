@@ -17,10 +17,10 @@ function currentState(fields = {}) {
   return {
     date: 0,
     cycleReadyAt: 0,
-    key: "",
+    entry: { phase: "idle", key: "", sessionId: null },
+    lastSettledSessionId: null,
     count: 0,
-    clear: true,
-    schemaVersion: 4,
+    schemaVersion: 5,
     generationRouteRevision: 1,
     utcDay: "2026-06-27",
     dayPhase: "active",
@@ -59,17 +59,26 @@ describe("runEncounterStateAutomation", () => {
   it("marks started encounters through the state entry", () => {
     localStorage.setItem(
       HVUT_RE_KEY,
-      JSON.stringify(currentState({ date: Date.now(), key: "abc=", count: 1, clear: false }))
+      JSON.stringify(
+        currentState({
+          date: Date.now(),
+          entry: { phase: "keyAvailable", key: "abc=", sessionId: null },
+          count: 1,
+        })
+      )
     );
 
     runEncounterStateAutomation({
       type: EncounterStateEvent.MARK_ENTRY_STARTED,
-      search: "?s=Battle&ss=ba&encounter=abc=",
+      session: {
+        sessionId: "session-1",
+        phase: "active",
+        identity: { roundType: "ba" },
+      },
     });
 
     expect(JSON.parse(localStorage.getItem(HVUT_RE_KEY))).toMatchObject({
-      key: "abc=",
-      clear: true,
+      entry: { phase: "battleActive", key: "abc=", sessionId: "session-1" },
     });
   });
 
@@ -83,7 +92,11 @@ describe("runEncounterStateAutomation", () => {
 
     expect(result).toMatchObject({
       ok: true,
-      state: { date, key: "abc=", count: 1, clear: true },
+      state: {
+        date,
+        count: 1,
+        entry: { phase: "navigationAttempted", key: "abc=", sessionId: null },
+      },
       persistence: { ok: true, authority: "local" },
     });
     expect(JSON.parse(localStorage.getItem(HVUT_RE_KEY))).toEqual(result.state);
@@ -106,7 +119,11 @@ describe("runEncounterStateAutomation", () => {
     expect(result).toMatchObject({
       status: "available",
       persisted: true,
-      state: { date: 0, key: "xyz=", count: 0, clear: false },
+      state: {
+        date: 0,
+        count: 0,
+        entry: { phase: "keyAvailable", key: "xyz=", sessionId: null },
+      },
     });
     expect(JSON.parse(localStorage.getItem(HVUT_RE_KEY))).toMatchObject(result.state);
   });

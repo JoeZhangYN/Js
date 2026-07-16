@@ -53,8 +53,7 @@ describe("encounter generation route state migration", () => {
       })
     ).toMatchObject({
       date: NOW,
-      key: "pending=",
-      clear: false,
+      entry: { phase: "keyAvailable", key: "pending=", sessionId: null },
       count: 3,
       generationRouteRevision: 1,
     });
@@ -82,8 +81,7 @@ describe("encounter generation route state migration", () => {
       date: NOW,
       cycleReadyAt: NOW + 1_800_000,
       anchorReason: "encounterCompleted",
-      key: "",
-      clear: true,
+      entry: { phase: "idle", key: "", sessionId: null },
       count: 3,
       generationRouteRevision: 1,
     });

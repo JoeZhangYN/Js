@@ -48,11 +48,10 @@ describe("encounter entry navigation failures", () => {
       action: "blocked",
       handled: true,
       blocked: true,
-      state: { key: "abc123=", clear: false },
+      state: { entry: { phase: "keyAvailable", key: "abc123=", sessionId: null } },
     });
     expect(JSON.parse(localStorage.getItem(HVUT_RE_KEY))).toMatchObject({
-      key: "abc123=",
-      clear: false,
+      entry: { phase: "keyAvailable", key: "abc123=", sessionId: null },
     });
   });
 
@@ -69,11 +68,10 @@ describe("encounter entry navigation failures", () => {
       action: "blocked",
       handled: true,
       blocked: true,
-      state: { key: "abc123=", clear: false },
+      state: { entry: { phase: "keyAvailable", key: "abc123=", sessionId: null } },
     });
     expect(JSON.parse(localStorage.getItem(HVUT_RE_KEY))).toMatchObject({
-      key: "abc123=",
-      clear: false,
+      entry: { phase: "keyAvailable", key: "abc123=", sessionId: null },
     });
   });
 
@@ -92,7 +90,7 @@ describe("encounter entry navigation failures", () => {
     expect(outcome).toMatchObject({
       action: "blocked",
       blocked: true,
-      state: { key: "abc123=", clear: false },
+      state: { entry: { phase: "keyAvailable", key: "abc123=", sessionId: null } },
       evidence: { reason: "encounterEntryStatePersistenceFailed" },
     });
     expect(mocks.runNavigationAutomation).not.toHaveBeenCalled();

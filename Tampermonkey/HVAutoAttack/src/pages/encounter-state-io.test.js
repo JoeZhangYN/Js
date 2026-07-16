@@ -18,10 +18,10 @@ describe("encounter state IO", () => {
     const stored = {
       date: Date.now() - 1000,
       cycleReadyAt: Date.now() - 1000 + ENCOUNTER_COOLDOWN_MS,
-      key: "",
+      entry: { phase: "idle", key: "", sessionId: null },
+      lastSettledSessionId: null,
       count: 1,
-      clear: true,
-      schemaVersion: 4,
+      schemaVersion: 5,
       generationRouteRevision: 1,
       utcDay: "2026-06-27",
       dayPhase: "active",

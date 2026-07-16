@@ -39,15 +39,23 @@ describe("runEncounterPolicy route contract", () => {
         nowMs: 1000,
       }).canEnter
     ).toBe(true);
-    expect(available).toMatchObject({ date: 0, key: "abc", count: 0, clear: false });
+    expect(available).toMatchObject({
+      date: 0,
+      count: 0,
+      entry: { phase: "keyAvailable", key: "abc", sessionId: null },
+    });
 
     const started = runEncounterPolicy({
       type: EncounterPolicyEvent.MARK_ENTRY_STARTED,
       state: available,
-      search: "?s=Battle&ss=ba&encounter=abc",
+      session: { sessionId: "session-1", phase: "active", identity: { roundType: "ba" } },
       nowMs: 2000,
     });
-    expect(started).toMatchObject({ date: 0, key: "abc", count: 0, clear: true });
+    expect(started).toMatchObject({
+      date: 0,
+      count: 0,
+      entry: { phase: "battleActive", key: "abc", sessionId: "session-1" },
+    });
   });
 
   it("recognizes entry evidence without starting the completion-owned cooldown", () => {
@@ -57,19 +65,27 @@ describe("runEncounterPolicy route contract", () => {
       runEncounterPolicy({
         type: EncounterPolicyEvent.MARK_ENTRY_STARTED,
         state,
-        search: "",
+        session: null,
         nowMs: 2000,
       })
-    ).toMatchObject(state);
+    ).toMatchObject({
+      date: 0,
+      count: 0,
+      entry: { phase: "idle", key: "", sessionId: null },
+    });
 
     expect(
       runEncounterPolicy({
         type: EncounterPolicyEvent.MARK_ENTRY_STARTED,
         state,
-        source: "battleRoundStart",
+        session: { sessionId: "session-2", phase: "active", identity: { roundType: "ba" } },
         nowMs: 2000,
       })
-    ).toMatchObject({ date: 0, key: "", count: 0, clear: true });
+    ).toMatchObject({
+      date: 0,
+      count: 0,
+      entry: { phase: "battleActive", key: "", sessionId: "session-2" },
+    });
   });
 
   it("marks attempted entry as cleared without starting cooldown or counting an encounter", () => {
@@ -80,77 +96,11 @@ describe("runEncounterPolicy route contract", () => {
         key: "abc",
         nowMs: 2000,
       })
-    ).toMatchObject({ date: 1000, key: "abc", count: 1, clear: true });
-  });
-
-  it("plans entry only for an uncleared encounter key", () => {
-    const available = { date: 1000, key: "abc", count: 1, clear: false };
-    expect(
-      runEncounterPolicy({
-        type: EncounterPolicyEvent.PLAN_ACTIVATION,
-        state: available,
-        nowMs: 2000,
-      })
     ).toMatchObject({
-      action: "enter",
-      href: "?s=Battle&ss=ba&encounter=abc",
+      date: 1000,
+      count: 1,
+      entry: { phase: "navigationAttempted", key: "abc", sessionId: null },
     });
-
-    const cleared = { date: 1000, key: "abc", count: 1, clear: true };
-    expect(
-      runEncounterPolicy({
-        type: EncounterPolicyEvent.PLAN_ACTIVATION,
-        state: cleared,
-        nowMs: 2000,
-      })
-    ).toMatchObject({
-      action: "load",
-    });
-    expect(
-      runEncounterPolicy({
-        type: EncounterPolicyEvent.PLAN_ACTIVATION,
-        state: cleared,
-        force: true,
-        nowMs: 2000,
-      })
-    ).toMatchObject({
-      action: "load",
-    });
-  });
-
-  it("generates a new key after the attempted key cooldown expires", () => {
-    expect(
-      runEncounterPolicy({
-        type: EncounterPolicyEvent.PLAN_ACTIVATION,
-        state: { date: 1000, key: "abc", count: 1, clear: true },
-        nowMs: 1000 + 31 * 60 * 1000,
-      })
-    ).toMatchObject({
-      action: "generate",
-      request: { method: "GET", url: "https://e-hentai.org/news.php" },
-    });
-  });
-
-  it("does not reactivate the same key after it has been attempted", () => {
-    const attempted = { date: 1000, key: "abc", count: 1, clear: true };
-
-    expect(
-      runEncounterPolicy({
-        type: EncounterPolicyEvent.MARK_KEY_AVAILABLE,
-        state: attempted,
-        key: "abc",
-        nowMs: 2000,
-      })
-    ).toMatchObject(attempted);
-
-    expect(
-      runEncounterPolicy({
-        type: EncounterPolicyEvent.MARK_KEY_AVAILABLE,
-        state: attempted,
-        key: "def",
-        nowMs: 3000,
-      })
-    ).toMatchObject({ date: 1000, key: "def", count: 1, clear: false });
   });
 
   it("ignores unknown policy events", () => {

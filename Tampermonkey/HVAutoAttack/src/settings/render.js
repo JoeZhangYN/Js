@@ -19,7 +19,7 @@ import { setLang } from "../i18n/core/restore-controller.js";
 import { OptionEvent, runOptionAutomation } from "../state/option.js";
 import { AlarmProfileEvent, runAlarmProfileCatalog } from "../alarm/alarm-profiles.js";
 import { RiddleEvent, runRiddleAutomation } from "../pages/riddle-automation.js";
-import { BattleRoundEvent, runBattleRoundAutomation } from "../battle/battle-round.js";
+import { BattleSessionEvent, runBattleSessionAutomation } from "../battle/battle-session.js";
 import { IdleArenaEvent, runIdleArenaAutomation } from "../arena/idle-arena.js";
 import { QuickSiteEvent, runQuickSiteAutomation } from "../arena/quick-site.js";
 import {
@@ -1210,8 +1210,8 @@ export function optionBox() {
       });
     } else if (name === "About") {
       // 关于本脚本
-      const roundDebug = runBattleRoundAutomation({
-        type: BattleRoundEvent.READ_DEBUG_FIELDS,
+      const roundDebug = runBattleSessionAutomation({
+        type: BattleSessionEvent.READ_DEBUG_FIELDS,
       });
       gE(".hvAADebug", "all", optionBox).forEach((input) => {
         if (input.name in roundDebug) {
@@ -1398,8 +1398,8 @@ export function optionBox() {
   };
   // 标签页-关于本脚本
   gE(".hvAAFix", optionBox).onclick = function () {
-    runBattleRoundAutomation({
-      type: BattleRoundEvent.RECORD_DEBUG_FIELDS,
+    runBattleSessionAutomation({
+      type: BattleSessionEvent.RECORD_DEBUG_FIELDS,
       fields: gE('.hvAADebug[name^="round"]', "all", optionBox).map((input) => ({
         name: input.name,
         value: input.value,

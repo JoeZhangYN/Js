@@ -23,6 +23,7 @@ import {
   ENCOUNTER_GENERATION_ROUTE_REVISION,
   migrateEncounterGenerationRouteState,
 } from "./encounter-generation-route-state.js";
+import { idleEncounterEntry, normalizeEncounterEntry } from "./encounter-entry-identity.js";
 
 export {
   ENCOUNTER_DAILY_LIMIT,
@@ -36,16 +37,12 @@ export {
   EncounterAnchorReason,
 } from "./encounter-primary-clock.js";
 
-const entryState = (source = {}) => ({
-  key: typeof source.key === "string" ? source.key : "",
-  clear: source.clear !== false,
-});
-
 export function defaultEncounterState(nowMs = Date.now()) {
   return {
     ...defaultEncounterPrimaryClock(),
-    ...entryState(),
-    schemaVersion: 4,
+    entry: idleEncounterEntry(),
+    lastSettledSessionId: null,
+    schemaVersion: 5,
     generationRouteRevision: ENCOUNTER_GENERATION_ROUTE_REVISION,
     ...defaultEncounterBattleCycle(nowMs),
   };
@@ -64,8 +61,9 @@ export function normalizeEncounterState(state, nowMs = Date.now()) {
   if (!isEncounterUtcDayCurrent(sourceUtcDay, nowMs)) return beginEncounterDay(nowMs);
   const normalized = {
     ...normalizeEncounterPrimaryClock(source, nowMs),
-    ...entryState(source),
-    schemaVersion: 4,
+    entry: normalizeEncounterEntry(source),
+    lastSettledSessionId: source.lastSettledSessionId ? String(source.lastSettledSessionId) : null,
+    schemaVersion: 5,
     ...normalizeEncounterBattleCycle({ ...source, utcDay: sourceUtcDay }, nowMs),
   };
   return migrateEncounterGenerationRouteState(
@@ -86,22 +84,33 @@ export function observeEncounterNewDay(state, nowMs = Date.now()) {
   };
 }
 
-export function markEncounterCompleted(state, nowMs = Date.now()) {
+export function settleEncounterBattle(state, session, nowMs = Date.now()) {
   const current = normalizeEncounterState(state, nowMs);
-  return clearGenerationRecovery({
+  if (!session?.sessionId || session.phase !== "terminal" || session.identity?.roundType !== "ba") {
+    return { status: "notEncounterBattle", counted: false, state: current };
+  }
+  if (current.lastSettledSessionId === session.sessionId) {
+    return { status: "alreadyCompleted", counted: false, state: current };
+  }
+  const next = clearGenerationRecovery({
     ...current,
     ...completeEncounterBattleCycle(current),
     ...anchorEncounterPrimaryClock(nowMs, EncounterAnchorReason.BATTLE_TERMINAL),
-    key: "",
-    clear: true,
+    entry: idleEncounterEntry(),
+    lastSettledSessionId: session.sessionId,
   });
+  return { status: "completed", counted: true, state: next };
 }
 
 export function markEncounterLimitProbeEmpty(state, nowMs = Date.now()) {
   const current = normalizeEncounterState(state, nowMs);
   const battleCycle = recordPostLimitEmptyCycle(current);
   if (battleCycle === current) return current;
-  const next = clearGenerationRecovery({ ...current, ...battleCycle, key: "", clear: true });
+  const next = clearGenerationRecovery({
+    ...current,
+    ...battleCycle,
+    entry: idleEncounterEntry(),
+  });
   if (next.dayPhase === EncounterDayPhase.STOPPED_FOR_DAY) return next;
   return {
     ...next,
