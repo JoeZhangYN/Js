@@ -126,6 +126,12 @@ try {
   var resolveEn = function (node, group) {
     return run_hvut_i18n_bridge('resolveEn', [node, group], 'resolveEnBridgeMissing', { group: group }, undefined);
   };
+  var HVUT_ITEM_IDENTITY_GROUPS = Object.freeze(['items', 'artifact']);
+  var read_hvut_dom_identity = function (source, group) {
+    var observed = (typeof source === 'string' ? source : source?.textContent || '').trim();
+    var canonical = (resolveEn(source, group) ?? observed).trim();
+    return { canonical: canonical, observed: observed };
+  };
   // Stage G: 协调器正向出口 hvaaT(英文值, group)→当前 lang 显示中文（单一 canonical SSOT）。
   // 替代私有 HVAA_ITEM_CN/HVUT_CN 漂移表；桥未就绪/未命中退化返英文原值（不崩）。两 IIFE 闭包共用。
   var hvaaT = function (value, group) {
@@ -244,8 +250,8 @@ try {
   var parse_hvut_world_season = function (isIsekai, stage) {
     if (!isIsekai) return false;
     var text = $id('world_text')?.textContent || '';
-    var match = /(\d+ Season \d+)/.exec(text);
-    return match ? match[1] : (record_hvut_config_parse_failure(stage, { text: text }), '1');
+    var match = /(\d+)\s+\S+\s+(\d+)/.exec(text);
+    return match ? `${match[1]} Season ${match[2]}` : (record_hvut_config_parse_failure(stage, { text: text }), '1');
   };
   var create_hvut_world_identity = function (context) {
     var world = HVUT_RUNTIME_POLICY.profile.identity;
@@ -567,22 +573,25 @@ try {
   };
   var parse_hvut_item_shop_row = function (row, pattern, stage) {
     var cell = row?.cells?.[0];
-    var name = cell?.textContent?.trim() || '';
+    var identity = read_hvut_dom_identity(cell, HVUT_ITEM_IDENTITY_GROUPS);
+    var name = identity.canonical;
     var onclick = cell?.firstElementChild?.getAttribute('onclick') || '';
     var match = pattern.exec(onclick);
     if (!match) {
-      return record_hvut_item_shop_parse_failure(stage, { name: name, onclick: onclick, text: row?.textContent || '' });
+      return record_hvut_item_shop_parse_failure(stage, { name: name, observedName: identity.observed, onclick: onclick, text: row?.textContent || '' });
     }
     return { name: name, id: parseInt(match[1]), stock: parseInt(match[2]), price: parseInt(match[3]) };
   };
   var parse_hvut_inventory_item_row = function (row, stage) {
-    var name = row?.cells?.[0]?.textContent?.trim() || '';
-    var idText = row?.cells?.[0]?.firstElementChild?.id || '';
+    var nameCell = row?.cells?.[0];
+    var identity = read_hvut_dom_identity(nameCell, HVUT_ITEM_IDENTITY_GROUPS);
+    var name = identity.canonical;
+    var idText = nameCell?.firstElementChild?.id || '';
     var stockText = row?.cells?.[1]?.textContent || '';
     var idMatch = /^item_(\d+)$/.exec(idText);
     var stock = parseInt(stockText);
     if (!name || !idMatch || !Number.isFinite(stock)) {
-      return record_hvut_item_shop_parse_failure(stage, { name: name, id: idText, stock: stockText, text: row?.textContent || '' });
+      return record_hvut_item_shop_parse_failure(stage, { name: name, observedName: identity.observed, id: idText, stock: stockText, text: row?.textContent || '' });
     }
     return { name: name, id: parseInt(idMatch[1]), stock: stock };
   };
@@ -859,11 +868,11 @@ try {
     var entries = [];
     for (const div of Array.from(divs || [])) {
       var nameNode = div?.firstElementChild;
-      var observedName = (nameNode?.textContent || '').trim();
-      var name = (resolveEn(nameNode, 'ability') ?? observedName).trim();
+      var identity = read_hvut_dom_identity(nameNode, 'ability');
+      var name = identity.canonical;
       var ability = catalog?.[name];
       if (!ability) {
-        record_hvut_ability_parse_failure(context?.stage || 'abilityTreePrepare', { reason: 'abilityCatalogEntryMissing', name: name, observedName: observedName });
+        record_hvut_ability_parse_failure(context?.stage || 'abilityTreePrepare', { reason: 'abilityCatalogEntryMissing', name: name, observedName: identity.observed });
         return null;
       }
       var panel = parse_hvut_ability_button_panel(div, context?.panelStage || 'abilityButtonPanel');
@@ -1174,8 +1183,9 @@ try {
   };
   var parse_hvut_training_row = function (row, stage) {
     var nameCell = row?.cells?.[0];
-    var name = nameCell?.textContent?.trim() || '';
-    var enName = nameCell ? (resolveEn(nameCell, 'trains') ?? name) : '';
+    var identity = read_hvut_dom_identity(nameCell, 'trains');
+    var name = identity.observed;
+    var enName = identity.canonical;
     var time = parseFloat(row?.cells?.[3]?.textContent);
     var level = parseInt(row?.cells?.[4]?.textContent);
     var max = parseInt(row?.cells?.[6]?.textContent);
@@ -1377,7 +1387,7 @@ try {
     const user = row.cells[0].textContent;
     let sent = row.cells[2].textContent;
     sent = Date.parse(sent + ':00.000Z') / 1000;
-    let read = row.cells[3].textContent;
+    let read = read_hvut_dom_identity(row.cells[3], 'mm').canonical;
     read = read === 'Never' ? null : Date.parse(read + ':00.000Z') / 1000;
     return {
       kind: 'mail',
@@ -1819,12 +1829,13 @@ try {
     if (!staminaReadout) {
       return record_hvut_player_state_parse_failure(stage, { reason: 'staminaReadoutMissing' });
     }
-    var staminaMatch = /Stamina: (\d+)/.exec(staminaReadout.textContent || '');
+    var staminaValueNode = staminaReadout.querySelector('.fc4.far > div') || staminaReadout;
+    var staminaMatch = /(\d+)/.exec(staminaValueNode.textContent || '');
     if (!staminaMatch) {
       return record_hvut_player_state_parse_failure(stage, { reason: 'staminaValueMissing', text: staminaReadout.textContent || '' });
     }
     var accuracyNode = staminaReadout.querySelector('div:nth-child(2)');
-    var conditionNode = staminaReadout.querySelector('img[title^="Stamina"]');
+    var conditionNode = staminaReadout.querySelector('img');
     if (!accuracyNode || !conditionNode) {
       return record_hvut_player_state_parse_failure(stage, {
         reason: 'staminaTooltipMissing',
@@ -1832,12 +1843,17 @@ try {
         hasCondition: !!conditionNode,
       });
     }
+    var accuracyObserved = accuracyNode.title || '';
+    var conditionObserved = conditionNode.title || '';
+    var conditionText = conditionObserved.replace(/^[^:：]+[:：]\s*/, '');
     return {
-      difficulty: levelExec[1],
+      difficulty: read_hvut_dom_identity(levelExec[1], 'difficulty').canonical,
       level: parseInt(levelExec[2]),
       stamina: parseInt(staminaMatch[1]),
-      accuracy: accuracyNode.title,
-      condition: conditionNode.title,
+      accuracy: read_hvut_dom_identity(accuracyObserved, 'stamina').canonical,
+      accuracyDisplay: accuracyObserved,
+      condition: read_hvut_dom_identity(conditionText, 'stamina').canonical,
+      conditionDisplay: conditionObserved,
       warn: [],
     };
   };
@@ -1931,10 +1947,11 @@ try {
   };
   var parse_hvut_price_market_row = function (row, filter, stage) {
     var cells = row?.cells || [];
-    var name = cells[0]?.textContent || '';
+    var identity = read_hvut_dom_identity(cells[0], HVUT_ITEM_IDENTITY_GROUPS);
+    var name = identity.canonical;
     var itemidMatch = /itemid=(\d+)/.exec(row?.getAttribute('onclick') || '');
     if (!name || !itemidMatch || cells.length < 5) {
-      return record_hvut_price_market_parse_failure(stage, { filter: filter || '', name: name, text: row?.textContent || '' });
+      return record_hvut_price_market_parse_failure(stage, { filter: filter || '', name: name, observedName: identity.observed, text: row?.textContent || '' });
     }
     var stock = parseInt(cells[1].textContent);
     if (!Number.isFinite(stock)) {
@@ -2100,8 +2117,9 @@ try {
     if (!nameCell) {
       return record_hvut_character_parse_failure(stage, { reason: 'equipmentBaseStatNameMissing', text: row?.textContent || '' });
     }
-    var name = nameCell.textContent;
-    var enName = resolveEn(nameCell, 'characterStatus') ?? name;
+    var identity = read_hvut_dom_identity(nameCell, 'characterStatus');
+    var name = identity.observed;
+    var enName = identity.canonical;
     var baseVal = base[enName];
     nameCell.textContent = baseVal === undefined ? name : `[${baseVal}] ${name}`;
     return true;
@@ -2143,7 +2161,7 @@ try {
   var parse_hvut_shrine_offer_item = function (div, stage) {
     var onclick = div?.getAttribute('onclick') || '';
     var item = parse_hvut_shrine_offer_item_data(onclick);
-    if (!item.iid || !Number.isFinite(item.stock) || !Number.isFinite(item.bulk) || item.bulk <= 0) {
+    if (!item.iid || !item.name || !Number.isFinite(item.stock) || !Number.isFinite(item.bulk) || item.bulk <= 0) {
       return record_hvut_shrine_item_parse_failure(stage, { onclick: onclick, text: div?.textContent || '' });
     }
     return item;
@@ -4469,9 +4487,9 @@ const bindTop = function (top, ctx) {
       $element('input', top.node.stamina_form, { type: 'submit', value: '使用精力恢复剂', disabled: ctx.player().stamina >= ctx.config.settings.disableStaminaRestorative, style: 'width: 200px;' });
       top.node.stamina.addEventListener('mouseenter', top.stamina_create);
     }
-    $element('p', stamina_sub, ctx.player().condition);
+    $element('p', stamina_sub, ctx.player().conditionDisplay || ctx.player().condition);
     if (ctx.player().accuracy) {
-      $element('p', stamina_sub, [ctx.player().accuracy, '.hvut-warn']);
+      $element('p', stamina_sub, [ctx.player().accuracyDisplay || ctx.player().accuracy, '.hvut-warn']);
     }
 
     if (ctx.player().level !== 500) {
@@ -4915,14 +4933,14 @@ const bindPersona = function (persona, ctx) {
     if (!$qs('#stats_scrollable', doc)) return { kind: 'accepted', stats_pane: {} };
     const stats_pane = {};
     $qsa('#stats_scrollable > table', doc).forEach((table) => {
-      const type = table.previousElementSibling.textContent;
+      const type = read_hvut_dom_identity(table.previousElementSibling, 'characterStatus').canonical;
       Array.from(table.rows).forEach((tr) => {
         const text = tr.cells[0].textContent;
         let value = parseFloat(text);
         if (text.endsWith('%')) {
           value = Math.round(value * 100) / 10000;
         }
-        let name = tr.cells[1].textContent;
+        let name = read_hvut_dom_identity(tr.cells[1], 'characterStatus').canonical;
         if (/(Mainhand|Offhand|Magic) Attack/.test(type)) {
           const attack_type = RegExp.$1;
           if (/(Crushing|Piercing|Slashing|Void) Damage/.test(name)) {
@@ -4999,7 +5017,7 @@ const bindPersona = function (persona, ctx) {
     return json[json.pset][json.eset][name];
   };
   persona.read_equipset_row = function (row) {
-    const slot = row.children?.[0]?.textContent || '';
+    const slot = read_hvut_dom_identity(row.children?.[0], 'character').canonical;
     const equipNode = row.children?.[1];
     if (!equipNode) return { slot };
     const eq = ctx.parseEquipElem(equipNode);
@@ -5036,10 +5054,10 @@ const bindPersona = function (persona, ctx) {
       top.node.div.classList.add('hvut-top-warn');
       top.node.persona.firstElementChild.classList.add('hvut-warn');
     }
-    if (ctx.player.condition.includes('Stamina: Exhausted') || ctx.player.accuracy || ctx.player.stamina <= ctx.config.settings.warnLowStamina) {
+    if (ctx.player.condition.startsWith('Exhausted.') || ctx.player.accuracy || ctx.player.stamina <= ctx.config.settings.warnLowStamina) {
       top.node.div.classList.add('hvut-top-warn');
       top.node.stamina.firstElementChild.classList.add('hvut-warn');
-    } else if (ctx.player.condition.includes('Stamina: Great')) {
+    } else if (ctx.player.condition.startsWith('Great.')) {
       top.node.stamina.firstElementChild.classList.add('hvut-bonus');
     }
   };
@@ -5379,7 +5397,7 @@ const _amModify = function () {
       return;
     }
     const count = parseInt(tr.cells[0].textContent);
-    const name = tr.cells[1].textContent;
+    const name = read_hvut_dom_identity(tr.cells[1], HVUT_ITEM_IDENTITY_GROUPS).canonical;
     materials[name] = count;
   });
   const cost = $price.value(materials) + materials['Credits'];
@@ -8370,7 +8388,7 @@ if (characterPage.isTraining) {
 
   _tr.parse_progress = function () {
     const _curEl = $qs('#train_progress > div:nth-child(2) > :first-child');
-    _tr.current = _curEl ? (resolveEn(_curEl, 'trains') ?? _curEl.textContent) : undefined; // 英文逻辑 key(与 _tr.data 一致)
+    _tr.current = _curEl ? read_hvut_dom_identity(_curEl, 'trains').canonical : undefined; // 英文逻辑 key(与 _tr.data 一致)
     if (_tr.current && _tr.data[_tr.current]) {
       const current_end = parse_hvut_training_end_time(_window.end_time, 'trainingPageWindowEndTime');
       if (current_end === null) {
@@ -8771,14 +8789,13 @@ if (get_hvut_bazaar_page_context().isShrine) {
     init: function () {
       $qsa('.itemlist tr').forEach((tr) => {
         const div = tr.cells[0].firstElementChild;
-        const name = div.textContent;
         const type = $item.get_type(div.getAttribute('onmouseover'));
         const itemData = parse_hvut_shrine_offer_item(div, 'offerItemRow');
         if (itemData === null) {
           tr.classList.add('hvut-warn');
           return;
         }
-        const { iid, stock, bulk } = itemData;
+        const { iid, stock, bulk, name } = itemData;
         const max = Math.floor(stock / bulk);
         const item = { logname: name, name, type, iid, stock, bulk, max, requests: 0, total: 0, rewards: {}, node: {} };
         _ss.offer.items[iid] = item;
@@ -9126,7 +9143,7 @@ if (get_hvut_bazaar_page_context().isShrine) {
 if (get_hvut_market_page_context().isMarket) {
   const marketPage = get_hvut_market_page_context();
 
-  _mk.items = $qsa('#market_itemlist td:first-child').map((td) => td.textContent);
+  _mk.items = $qsa('#market_itemlist td:first-child').map((td) => read_hvut_dom_identity(td, HVUT_ITEM_IDENTITY_GROUPS).canonical);
 
   _mk.init = function () {
     _mk.table_init();
@@ -9149,7 +9166,7 @@ if (get_hvut_market_page_context().isMarket) {
         $element('th', tr, '插件参考价');
         return;
       }
-      const name = tr.cells[0].textContent;
+      const name = read_hvut_dom_identity(tr.cells[0], HVUT_ITEM_IDENTITY_GROUPS).canonical;
       const td = $element('td', tr);
       $price.market[name].td = td;
     });
@@ -10965,7 +10982,7 @@ if (get_hvut_mail_page_context().isMoogleMail && $config.settings.moogleMail) {
 
         _mm.item.list = Array.from(_mm.item.node.list.rows).map((tr) => {
           const div = tr.cells[0].firstElementChild;
-          const name = div.textContent;
+          const name = read_hvut_dom_identity(div, HVUT_ITEM_IDENTITY_GROUPS).canonical;
           const type = $item.get_type(div.getAttribute('onmouseover'));
           const { iid } = $item.get_data(div.getAttribute('onclick'));
           const lowercase = name.toLowerCase();
@@ -14018,7 +14035,7 @@ if (characterPage.isTraining) {
 
   _tr.json = $config.get('tr_notif', {}, 'hvut_');
   const _curEl = $qs('#train_progress > div:nth-child(2) > :first-child');
-  _tr.current = _curEl ? (resolveEn(_curEl, 'trains') ?? _curEl.textContent) : undefined; // 英文逻辑 key(与 _tr.data 一致)
+  _tr.current = _curEl ? read_hvut_dom_identity(_curEl, 'trains').canonical : undefined; // 英文逻辑 key(与 _tr.data 一致)
   _tr.level = {};
   _tr.spent = 0;
 
@@ -14600,14 +14617,13 @@ if (get_hvut_bazaar_page_context().isShrine) {
 
   $qsa('.itemlist tr').forEach((tr) => {
     const div = tr.cells[0].firstElementChild;
-    const name = div.textContent;
     const type = $item.get_type(div.getAttribute('onmouseover'));
     const itemData = parse_hvut_shrine_offer_item(div, 'legacyOfferItemRow');
     if (itemData === null) {
       tr.classList.add('hvut-warn');
       return;
     }
-    const { iid, stock, bulk } = itemData;
+    const { iid, stock, bulk, name } = itemData;
     const max = Math.floor(stock / bulk);
     const item = { log: name, name, type, iid, stock, bulk, max, requests: 0, recieved: 0, node: {} };
     _ss.items[iid] = item;
@@ -14688,7 +14704,7 @@ if (get_hvut_market_page_context().isMarket) {
         $element('th', tr, '插件参考价');
         return;
       }
-      const name = tr.cells[0].textContent;
+      const name = read_hvut_dom_identity(tr.cells[0], HVUT_ITEM_IDENTITY_GROUPS).canonical;
       const td = $element('td', tr);
       $price.market[name].td = td;
     });
@@ -16659,7 +16675,7 @@ if (get_hvut_mail_page_context().isMoogleMail && $config.settings.moogleMail) {
 
     _mm.item_list = Array.from(_mm.node.item_list.rows).map((tr) => {
       const div = tr.cells[0].firstElementChild;
-      const name = div.textContent;
+      const name = read_hvut_dom_identity(div, HVUT_ITEM_IDENTITY_GROUPS).canonical;
       const type = $item.get_type(div.getAttribute('onmouseover'));
       const { iid } = $item.get_data(div.getAttribute('onclick'));
       const lowercase = name.toLowerCase();

@@ -22,6 +22,11 @@ for (const required of [
   "return bridge[method](...(args || []));",
   "record_hvut_i18n_bridge_failure(stage + 'Failed'",
   "return run_hvut_i18n_bridge('resolveEn', [node, group], 'resolveEnBridgeMissing'",
+  "var HVUT_ITEM_IDENTITY_GROUPS = Object.freeze(['items', 'artifact']);",
+  "var read_hvut_dom_identity = function (source, group) {",
+  "var observed = (typeof source === 'string' ? source : source?.textContent || '').trim();",
+  "var canonical = (resolveEn(source, group) ?? observed).trim();",
+  "return { canonical: canonical, observed: observed };",
   "return run_hvut_i18n_bridge('t', [value, group], 'translateBridgeMissing'",
   "return run_hvut_i18n_bridge('translateText', [value, group], 'translateTextBridgeMissing'",
   "return run_hvut_i18n_bridge('navigationLinks', [], 'navigationRegistryBridgeMissing'",
@@ -32,6 +37,46 @@ for (const required of [
 ]) {
   if (!text.includes(required)) {
     violations.push(`${target} must keep HVUT i18n bridge boundary: ${required}`);
+  }
+}
+
+for (const required of [
+  "read_hvut_dom_identity(cell, HVUT_ITEM_IDENTITY_GROUPS)",
+  "read_hvut_dom_identity(nameNode, 'ability')",
+  "read_hvut_dom_identity(nameCell, 'trains')",
+  "read_hvut_dom_identity(row.cells[3], 'mm').canonical",
+  "read_hvut_dom_identity(cells[0], HVUT_ITEM_IDENTITY_GROUPS)",
+  "read_hvut_dom_identity(nameCell, 'characterStatus')",
+  "read_hvut_dom_identity(table.previousElementSibling, 'characterStatus').canonical",
+  "read_hvut_dom_identity(row.children?.[0], 'character').canonical",
+  "read_hvut_dom_identity(levelExec[1], 'difficulty').canonical",
+  "read_hvut_dom_identity(conditionText, 'stamina').canonical",
+  "read_hvut_dom_identity(tr.cells[1], HVUT_ITEM_IDENTITY_GROUPS).canonical",
+  "read_hvut_dom_identity(td, HVUT_ITEM_IDENTITY_GROUPS).canonical",
+  "read_hvut_dom_identity(div, HVUT_ITEM_IDENTITY_GROUPS).canonical",
+]) {
+  if (!text.includes(required)) {
+    violations.push(`${target} must normalize translated DOM identity through ${required}`);
+  }
+}
+
+for (const forbidden of [
+  "var name = cell?.textContent?.trim() || '';",
+  "var name = row?.cells?.[0]?.textContent?.trim() || '';",
+  "var observedName = (nameNode?.textContent || '').trim();",
+  "var name = (resolveEn(nameNode, 'ability') ?? observedName).trim();",
+  "let read = row.cells[3].textContent;",
+  "var name = cells[0]?.textContent || '';",
+  "const type = table.previousElementSibling.textContent;",
+  "let name = tr.cells[1].textContent;",
+  "const slot = row.children?.[0]?.textContent || '';",
+  "const name = div.textContent;",
+  ".map((td) => td.textContent)",
+]) {
+  if (text.includes(forbidden)) {
+    violations.push(
+      `${target} must not use translated DOM text as canonical identity: ${forbidden}`
+    );
   }
 }
 

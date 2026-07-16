@@ -134,7 +134,7 @@ for (const [required, expected] of [
     );
 }
 requireParts("persona.read_equipset_row", readEquipsetRow, [
-  "const slot = row.children?.[0]?.textContent || '';",
+  "const slot = read_hvut_dom_identity(row.children?.[0], 'character').canonical;",
   "const equipNode = row.children?.[1];",
   "if (!equipNode) return { slot };",
   "return { slot, category, name, customname, eid, key };",

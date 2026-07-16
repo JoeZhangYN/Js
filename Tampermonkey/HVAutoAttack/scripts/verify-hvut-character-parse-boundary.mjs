@@ -106,6 +106,8 @@ for (const required of [
   "return record_hvut_character_parse_failure(stage, { reason: 'baseStatRowIncomplete'",
   "var decorate_hvut_equipment_base_stat_row = function (row, base, stage) {",
   "return record_hvut_character_parse_failure(stage, { reason: 'equipmentBaseStatNameMissing'",
+  "var identity = read_hvut_dom_identity(nameCell, 'characterStatus');",
+  "var enName = identity.canonical;",
 ]) {
   requirePart("character parse helper", helperRegion, required);
 }
@@ -355,9 +357,21 @@ for (const forbidden of [
   "const [, type, tier] = reg_charm.exec(charm);",
   "base[tr.children[0].textContent] = tr.children[1].textContent;",
   "const name = tr.cells[1].textContent;\n      const enName = resolveEn(tr.cells[1], 'characterStatus') ?? name;",
+  "const type = table.previousElementSibling.textContent;",
+  "let name = tr.cells[1].textContent;",
 ]) {
   if (text.includes(forbidden)) {
     violations.push(`${target} must not keep unsafe character parse path: ${forbidden}`);
+  }
+}
+
+for (const required of [
+  "const type = read_hvut_dom_identity(table.previousElementSibling, 'characterStatus').canonical;",
+  "let name = read_hvut_dom_identity(tr.cells[1], 'characterStatus').canonical;",
+  "const slot = read_hvut_dom_identity(row.children?.[0], 'character').canonical;",
+]) {
+  if (!text.includes(required)) {
+    violations.push(`${target} character style parsing must consume ${required}`);
   }
 }
 

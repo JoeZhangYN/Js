@@ -96,10 +96,10 @@ for (const required of [
   "reason: 'abilityCatalogBridgeMissing'",
   "var prepare_hvut_ability_tree = function",
   "var nameNode = div?.firstElementChild;",
-  "var observedName = (nameNode?.textContent || '').trim();",
-  "var name = (resolveEn(nameNode, 'ability') ?? observedName).trim();",
+  "var identity = read_hvut_dom_identity(nameNode, 'ability');",
+  "var name = identity.canonical;",
   "reason: 'abilityCatalogEntryMissing'",
-  "observedName: observedName",
+  "observedName: identity.observed",
   "reason: 'abilityRankCountMismatch'",
 ]) {
   requirePart("ability parse helper", helperRegion, required);

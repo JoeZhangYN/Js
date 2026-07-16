@@ -45,13 +45,18 @@ export function resolveEn(nodeOrText, group) {
 }
 
 function resolveCustomOrCanonical(text, group) {
-  return (
-    runCustomDictionaryAutomation({
+  const groups = Array.isArray(group) ? group : [group];
+  for (const identityGroup of groups) {
+    const custom = runCustomDictionaryAutomation({
       type: CustomDictionaryEvent.RESOLVE_REVERSE,
-      group,
+      group: identityGroup,
       zhCN: text,
-    }) ?? reverseLookup(text, group)
-  );
+    });
+    if (custom != null) return custom;
+    const canonical = reverseLookup(text, identityGroup);
+    if (canonical != null) return canonical;
+  }
+  return undefined;
 }
 
 export function isSkipped(node) {

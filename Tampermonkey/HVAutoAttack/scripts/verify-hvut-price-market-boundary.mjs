@@ -87,7 +87,8 @@ for (const required of [
   "var match = /document\\.location='([^']+)'/.exec(onclick || '');",
   "return match ? match[1] : record_hvut_price_market_parse_failure(stage, { onclick: onclick || '' });",
   "var parse_hvut_price_market_row = function (row, filter, stage) {",
-  "return record_hvut_price_market_parse_failure(stage, { filter: filter || '', name: name, text: row?.textContent || '' });",
+  "var identity = read_hvut_dom_identity(cells[0], HVUT_ITEM_IDENTITY_GROUPS);",
+  "return record_hvut_price_market_parse_failure(stage, { filter: filter || '', name: name, observedName: identity.observed, text: row?.textContent || '' });",
   "return record_hvut_price_market_parse_failure(stage, { filter: filter || '', name: name, stock: cells[1].textContent || '' });",
 ]) {
   if (!text.includes(required)) {
@@ -154,6 +155,14 @@ if (!modernMarketBody.includes("if ($price.parse_market(marketPage.filter) === f
 }
 if (!legacyMarketBody.includes("if ($price.parse_market(marketPage.filter) === false) return;")) {
   violations.push(`${target} legacy market init must stop after parse failure`);
+}
+for (const [label, body] of [
+  ["modern market table", modernMarketBody],
+  ["legacy market table", legacyMarketBody],
+]) {
+  if (!body.includes("read_hvut_dom_identity(tr.cells[0], HVUT_ITEM_IDENTITY_GROUPS).canonical")) {
+    violations.push(`${target} ${label} must resolve the canonical item identity`);
+  }
 }
 if (
   /const new_prices = await price\.update_market\(filter, key\);\n\s*p\.textarea\.value/.test(

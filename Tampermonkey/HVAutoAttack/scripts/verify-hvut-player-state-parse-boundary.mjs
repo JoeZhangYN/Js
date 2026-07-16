@@ -23,10 +23,15 @@ for (const required of [
   "sessionStorage.setItem('HVAA:lastHvutPlayerStateParseFailure', JSON.stringify(evidence));",
   "var parse_hvut_player_state = function (levelExec, staminaReadout, stage) {",
   "return record_hvut_player_state_parse_failure(stage, { reason: 'staminaReadoutMissing' });",
-  "var staminaMatch = /Stamina: (\\d+)/.exec(staminaReadout.textContent || '');",
+  "var staminaValueNode = staminaReadout.querySelector('.fc4.far > div') || staminaReadout;",
+  "var staminaMatch = /(\\d+)/.exec(staminaValueNode.textContent || '');",
   "return record_hvut_player_state_parse_failure(stage, { reason: 'staminaValueMissing', text: staminaReadout.textContent || '' });",
   "var accuracyNode = staminaReadout.querySelector('div:nth-child(2)');",
-  "var conditionNode = staminaReadout.querySelector('img[title^=\"Stamina\"]');",
+  "var conditionNode = staminaReadout.querySelector('img');",
+  "difficulty: read_hvut_dom_identity(levelExec[1], 'difficulty').canonical",
+  "accuracy: read_hvut_dom_identity(accuracyObserved, 'stamina').canonical",
+  "condition: read_hvut_dom_identity(conditionText, 'stamina').canonical",
+  "conditionDisplay: conditionObserved",
 ]) {
   requirePart("player state parse helper", helperRegion, required);
 }
@@ -34,6 +39,10 @@ for (const required of [
 for (const required of [
   "const _player = parse_hvut_player_state(level_exec, $id('stamina_readout'), 'mainPlayerState');",
   "const _player = parse_hvut_player_state(level_exec, $id('stamina_readout'), 'isekaiPlayerState');",
+  "ctx.player.condition.startsWith('Exhausted.')",
+  "ctx.player.condition.startsWith('Great.')",
+  "ctx.player().conditionDisplay || ctx.player().condition",
+  "ctx.player().accuracyDisplay || ctx.player().accuracy",
 ]) {
   if (!text.includes(required))
     violations.push(`${target} must route player state through ${required}`);
@@ -50,6 +59,11 @@ for (const forbidden of [
   "stamina: parseInt(/Stamina: (\\d+)/.exec($id('stamina_readout').textContent)[1])",
   "$qs('#stamina_readout > div:nth-child(2)').title",
   "$qs('#stamina_readout img[title^=\"Stamina\"]').title",
+  "var staminaMatch = /Stamina: (\\d+)/.exec(staminaReadout.textContent || '');",
+  "difficulty: levelExec[1]",
+  "condition: conditionNode.title",
+  "ctx.player.condition.includes('Stamina: Exhausted')",
+  "ctx.player.condition.includes('Stamina: Great')",
 ]) {
   if (text.includes(forbidden)) {
     violations.push(`${target} must not keep unchecked player state parse path: ${forbidden}`);

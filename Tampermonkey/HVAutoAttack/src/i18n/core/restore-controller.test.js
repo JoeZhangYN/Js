@@ -145,4 +145,19 @@ describe("translated business identity resolution", () => {
 
     expect(resolveEn("体力值增幅", "ability")).toBe("HP Tank");
   });
+
+  it("resolves an item identity through its ordered surface dictionaries", async () => {
+    const { resolveEn } = await freshController();
+
+    expect(resolveEn("古遗物", ["items", "artifact"])).toBe("Precursor Artifact");
+  });
+
+  it("restores translated player state identities before business decisions", async () => {
+    const { resolveEn } = await freshController();
+
+    expect(resolveEn("困难 X2", "difficulty")).toBe("Hard");
+    expect(
+      resolveEn("你现在精力充沛，额外获得 100% 经验加成，但精力消耗量增加 50%", "stamina")
+    ).toBe("Great. You receive a 100% EXP Bonus but stamina drains 50% faster.");
+  });
 });

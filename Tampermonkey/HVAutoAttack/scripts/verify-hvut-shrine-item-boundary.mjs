@@ -19,15 +19,23 @@ for (const required of [
   "var exec = /set_shrine_item\\((\\w+),(\\d+),(\\d+),'(.+?)'\\)/.exec(onclick || '');",
   "var parse_hvut_shrine_offer_item = function (div, stage) {",
   "var item = parse_hvut_shrine_offer_item_data(onclick);",
+  "!item.name",
   "return record_hvut_shrine_item_parse_failure(stage, { onclick: onclick, text: div?.textContent || '' });",
   "const itemData = parse_hvut_shrine_offer_item(div, 'offerItemRow');",
   "const itemData = parse_hvut_shrine_offer_item(div, 'legacyOfferItemRow');",
   "if (itemData === null) {",
   "tr.classList.add('hvut-warn');",
+  "const { iid, stock, bulk, name } = itemData;",
 ]) {
   if (!text.includes(required)) {
     violations.push(`${rel(hvUtilsFile)} missing Shrine item boundary: ${required}`);
   }
+}
+
+if (text.includes("const name = div.textContent;")) {
+  violations.push(
+    `${rel(hvUtilsFile)} Shrine and mail flows must not replace authoritative item identity with translated DOM text`
+  );
 }
 
 if (/\{\s*iid,\s*stock,\s*bulk\s*\}\s*=\s*\$item\.get_data/.test(text)) {
