@@ -1,5 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { planEncounterWidgetEvent } from "./encounter-widget-policy.js";
+import { classifyEncounterGenerationResult } from "./encounter-generation-result.js";
+import { EncounterPolicyEvent, runEncounterPolicy } from "./encounter-policy.js";
+import {
+  planEncounterWidgetEvent,
+  planEncounterWidgetGeneration,
+} from "./encounter-widget-policy.js";
 
 beforeEach(() => {
   vi.setSystemTime(new Date("2026-06-27T23:59:55.000Z"));
@@ -44,12 +49,20 @@ describe("main-world encounter widget timing", () => {
   });
 
   it("does not count or start cooldown when news only exposes an encounter key", () => {
+    const result = classifyEncounterGenerationResult({
+      eventpane: '<a href="?s=Battle&amp;ss=ba&amp;encounter=abc=">RE</a>',
+    });
+    const generation = runEncounterPolicy({
+      type: EncounterPolicyEvent.APPLY_GENERATION_RESULT,
+      state: { date: 0, key: "", count: 0, clear: true },
+      result,
+      checkMode: "manual",
+    });
     expect(
-      planEncounterWidgetEvent({
-        type: "widgetNewsLoaded",
-        state: { date: 0, key: "", count: 0, clear: true },
-        eventpane: '<a href="?s=Battle&amp;ss=ba&amp;encounter=abc=">RE</a>',
-        checkMode: "manual",
+      planEncounterWidgetGeneration({
+        state: generation.state,
+        application: generation.application,
+        result: generation.result,
         pageType: "hv",
       })
     ).toMatchObject({

@@ -38,9 +38,12 @@ afterEach(() => {
 
 describe("encounter entry navigation failures", () => {
   it("does not claim a widget encounter when navigation is blocked", () => {
+    localStorage.setItem(
+      HVUT_RE_KEY,
+      JSON.stringify({ date: Date.now(), key: "abc123=", count: 1, clear: false })
+    );
     const outcome = runEncounterAutomation({
       type: EncounterEvent.WIDGET_CLICKED,
-      state: { date: Date.now(), key: "abc123=", count: 1, clear: false },
       pageType: "hv",
     });
 
@@ -56,9 +59,12 @@ describe("encounter entry navigation failures", () => {
   });
 
   it("does not claim a gallery encounter when opening the battle tab is blocked", () => {
+    localStorage.setItem(
+      HVUT_RE_KEY,
+      JSON.stringify({ date: Date.now(), key: "abc123=", count: 1, clear: false })
+    );
     const outcome = runEncounterAutomation({
       type: EncounterEvent.WIDGET_CLICKED,
-      state: { date: Date.now(), key: "abc123=", count: 1, clear: false },
       pageType: "eh",
       hvAvailable: true,
       galleryAlt: true,
@@ -76,14 +82,27 @@ describe("encounter entry navigation failures", () => {
   });
 
   it("blocks before navigation when attempted-state persistence is rejected", () => {
-    vi.stubGlobal("GM_getValue", (_key, fallback) => fallback);
+    const date = Date.now();
+    const stored = {
+      date,
+      cycleReadyAt: date + 1_805_000,
+      anchorReason: "encounterCompleted",
+      entry: { phase: "keyAvailable", key: "abc123=", sessionId: null },
+      lastSettledSessionId: null,
+      schemaVersion: 5,
+      count: 1,
+      utcDay: "2026-06-27",
+      dayPhase: "active",
+      invalidCycleCount: 0,
+      generationRouteRevision: 1,
+    };
+    vi.stubGlobal("GM_getValue", () => stored);
     vi.stubGlobal("GM_setValue", () => {
       throw new Error("GM write blocked");
     });
 
     const outcome = runEncounterAutomation({
       type: EncounterEvent.WIDGET_CLICKED,
-      state: { date: Date.now(), key: "abc123=", count: 1, clear: false },
       pageType: "hv",
     });
 

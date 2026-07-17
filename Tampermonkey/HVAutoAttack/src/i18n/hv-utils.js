@@ -3454,13 +3454,9 @@ const bindRe = function (re, ctx) {
       return undefined;
     }
   };
-  const applyEncounterState = function (outcome) {
+  const applyEncounterProjection = function (outcome) {
     if (!outcome?.state) {
       return true;
-    }
-    if (!ctx.config.set('re', outcome.state, 'hvut_')) {
-      show_hvut_generic_error();
-      return false;
     }
     re.json = outcome.state;
     return true;
@@ -3510,9 +3506,9 @@ const bindRe = function (re, ctx) {
     const link = $qs('#eventpane a');
     const onclick = link?.getAttribute('onclick');
     if (onclick) {
-      const linkState = run_hvut_encounter_bridge('WIDGET_LINK_FOUND', { state: re.json, search: onclick });
+      const linkState = run_hvut_encounter_bridge('WIDGET_LINK_FOUND', { search: onclick, pageType: re.type });
       if (linkState?.state?.entry?.key) {
-        if (applyEncounterState(linkState) === false) return false;
+        if (applyEncounterProjection(linkState) === false) return false;
         if (ctx.config.settings.reGalleryAlt) {
           link.setAttribute('onclick', onclick.replace('https://hentaiverse.org/', 'http://alt.hentaiverse.org/'));
         }
@@ -3528,14 +3524,14 @@ const bindRe = function (re, ctx) {
   re.get = function () {
     const outcome = run_hvut_encounter_bridge('WIDGET_TICK', {});
     if (!outcome) return false;
-    if (applyEncounterState(outcome) === false) return false;
+    if (applyEncounterProjection(outcome) === false) return false;
     return outcome;
   };
   re.set = function (key) {
-    return applyEncounterState(run_hvut_encounter_bridge('WIDGET_LINK_FOUND', { state: re.json, key }));
+    return applyEncounterProjection(run_hvut_encounter_bridge('WIDGET_LINK_FOUND', { key, pageType: re.type }));
   };
   re.reset = function () {
-    if (applyEncounterState(run_hvut_encounter_bridge('WIDGET_RESET_DAY')) === false) return false;
+    if (applyEncounterProjection(run_hvut_encounter_bridge('WIDGET_RESET_DAY', { pageType: re.type })) === false) return false;
     re.start();
     return true;
   };
@@ -3566,18 +3562,18 @@ const bindRe = function (re, ctx) {
   };
   re.run = async function () {
     if (re.type === 'ba') {
-      const outcome = run_hvut_encounter_bridge('WIDGET_CLICKED', { state: re.json, pageType: re.type });
-      if (applyEncounterState(outcome) === false) return false;
+      const outcome = run_hvut_encounter_bridge('WIDGET_CLICKED', { pageType: re.type });
+      if (applyEncounterProjection(outcome) === false) return false;
       if (outcome?.handled) return;
       return re.load(outcome.href);
     } else if (re.type === 'is') {
-      const outcome = run_hvut_encounter_bridge('WIDGET_CLICKED', { state: re.json, pageType: re.type });
-      if (applyEncounterState(outcome) === false) return false;
+      const outcome = run_hvut_encounter_bridge('WIDGET_CLICKED', { pageType: re.type });
+      if (applyEncounterProjection(outcome) === false) return false;
       if (outcome?.handled) return;
       return false;
     } else if (re.type === 'hv') {
-      const outcome = run_hvut_encounter_bridge('WIDGET_CLICKED', { state: re.json, pageType: re.type });
-      if (applyEncounterState(outcome) === false) return false;
+      const outcome = run_hvut_encounter_bridge('WIDGET_CLICKED', { pageType: re.type });
+      if (applyEncounterProjection(outcome) === false) return false;
       if (outcome?.handled) return;
       return re.load(outcome.href);
     } else if (re.type === 'eh') {
@@ -3588,14 +3584,14 @@ const bindRe = function (re, ctx) {
         html = await $ajax.fetch('https://hentaiverse.org/');
       } catch (error) {
         record_hvut_random_encounter_failure('widgetHvAvailabilityFetch', { reason: 'requestFailed', error: error?.message || String(error) });
-        const outcome = run_hvut_encounter_bridge('WIDGET_GENERATION_FAILED', { state: re.json, request: { method: 'GET', url: 'https://hentaiverse.org/' }, reason: 'generationRequestFailed', detail: { error: error?.message || String(error) }, pageType: re.type, checkMode: 'manual' });
-        if (applyEncounterState(outcome) === false) return false;
+        const outcome = run_hvut_encounter_bridge('WIDGET_GENERATION_FAILED', { request: { method: 'GET', url: 'https://hentaiverse.org/' }, reason: 'generationRequestFailed', detail: { error: error?.message || String(error) }, pageType: re.type, checkMode: 'manual' });
+        if (applyEncounterProjection(outcome) === false) return false;
         re.start();
         return false;
       }
       if (html.includes('<div id="navbar">')) {
-        const outcome = run_hvut_encounter_bridge('WIDGET_CLICKED', { state: re.json, pageType: re.type, hvAvailable: true });
-        if (applyEncounterState(outcome) === false) return false;
+        const outcome = run_hvut_encounter_bridge('WIDGET_CLICKED', { pageType: re.type, hvAvailable: true });
+        if (applyEncounterProjection(outcome) === false) return false;
         if (outcome?.handled) return;
         return re.load(outcome.href);
       } else {
@@ -3612,8 +3608,8 @@ const bindRe = function (re, ctx) {
       html = await $ajax.fetch(href || 'https://e-hentai.org/news.php');
     } catch (error) {
       record_hvut_random_encounter_failure('widgetNewsLoadFetch', { reason: 'requestFailed', error: error?.message || String(error) });
-      const outcome = run_hvut_encounter_bridge('WIDGET_GENERATION_FAILED', { state: re.json, request: { method: 'GET', url: href || 'https://e-hentai.org/news.php' }, reason: 'generationRequestFailed', detail: { error: error?.message || String(error) }, pageType: re.type, checkMode: 'manual' });
-      if (applyEncounterState(outcome) === false) return false;
+      const outcome = run_hvut_encounter_bridge('WIDGET_GENERATION_FAILED', { request: { method: 'GET', url: href || 'https://e-hentai.org/news.php' }, reason: 'generationRequestFailed', detail: { error: error?.message || String(error) }, pageType: re.type, checkMode: 'manual' });
+      if (applyEncounterProjection(outcome) === false) return false;
       re.start();
       return false;
     }
@@ -3621,8 +3617,8 @@ const bindRe = function (re, ctx) {
     const eventpaneNode = $id('eventpane', doc);
     const eventpane = eventpaneNode?.innerHTML;
     const newsPagePresent = Boolean($id('newsouter', doc) && $id('newsinner', doc));
-    const outcome = run_hvut_encounter_bridge('WIDGET_NEWS_LOADED', { state: re.json, eventpane, eventpanePresent: Boolean(eventpaneNode), newsPagePresent, responseIdentity: { kind: eventpaneNode ? 'eventSurface' : newsPagePresent ? 'newsPage' : 'unrecognizedPage', title: doc.title || '', markers: { eventpane: Boolean(eventpaneNode), newsOuter: Boolean($id('newsouter', doc)), newsInner: Boolean($id('newsinner', doc)) } }, checkMode: 'manual', pageType: re.type, galleryAlt: ctx.config.settings.reGalleryAlt });
-    if (applyEncounterState(outcome) === false) return false;
+    const outcome = run_hvut_encounter_bridge('WIDGET_NEWS_LOADED', { eventpane, eventpanePresent: Boolean(eventpaneNode), newsPagePresent, responseIdentity: { kind: eventpaneNode ? 'eventSurface' : newsPagePresent ? 'newsPage' : 'unrecognizedPage', title: doc.title || '', markers: { eventpane: Boolean(eventpaneNode), newsOuter: Boolean($id('newsouter', doc)), newsInner: Boolean($id('newsinner', doc)) } }, checkMode: 'manual', pageType: re.type, galleryAlt: ctx.config.settings.reGalleryAlt });
+    if (applyEncounterProjection(outcome) === false) return false;
     if (outcome?.handled) {
       return;
     }

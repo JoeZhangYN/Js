@@ -4,6 +4,7 @@ import { EncounterEvent, runEncounterAutomation } from "./encounter.js";
 const mocks = vi.hoisted(() => ({
   runNavigationAutomation: vi.fn(),
 }));
+const HVUT_RE_KEY = ["hvut", "re"].join("_");
 
 vi.mock("../core/navigate.js", () => ({
   NavigationEvent: Object.freeze({ OPEN_URL: "openUrl" }),
@@ -12,6 +13,7 @@ vi.mock("../core/navigate.js", () => ({
 }));
 
 beforeEach(() => {
+  localStorage.clear();
   mocks.runNavigationAutomation.mockReset();
   mocks.runNavigationAutomation.mockReturnValue(true);
   vi.useFakeTimers();
@@ -38,7 +40,8 @@ const state = (fields = {}) => ({
 describe("encounter widget timer identity", () => {
   it("keeps the one-second widget tick projection-only", () => {
     const current = state();
-    const outcome = runEncounterAutomation({ type: EncounterEvent.WIDGET_TICK, state: current });
+    localStorage.setItem(HVUT_RE_KEY, JSON.stringify(current));
+    const outcome = runEncounterAutomation({ type: EncounterEvent.WIDGET_TICK });
 
     expect(outcome).toMatchObject({
       status: "countdown",
@@ -59,14 +62,13 @@ describe("encounter widget timer identity", () => {
 
   it("lets a manual click check immediately without moving any counters or clocks when empty", () => {
     const current = state({ count: 24, dayPhase: "confirmingLimit", invalidCycleCount: 2 });
+    localStorage.setItem(HVUT_RE_KEY, JSON.stringify(current));
     const clicked = runEncounterAutomation({
       type: EncounterEvent.WIDGET_CLICKED,
-      state: current,
       pageType: "hv",
     });
     const loaded = runEncounterAutomation({
       type: EncounterEvent.WIDGET_NEWS_LOADED,
-      state: clicked.state,
       eventpane: "<p>No random encounter is currently available.</p>",
       eventpanePresent: true,
       checkMode: clicked.checkMode,
@@ -84,14 +86,13 @@ describe("encounter widget timer identity", () => {
 
   it("enters a battle found by a manual check and leaves counting to battle terminal", () => {
     const current = state();
+    localStorage.setItem(HVUT_RE_KEY, JSON.stringify(current));
     const clicked = runEncounterAutomation({
       type: EncounterEvent.WIDGET_CLICKED,
-      state: current,
       pageType: "hv",
     });
     const loaded = runEncounterAutomation({
       type: EncounterEvent.WIDGET_NEWS_LOADED,
-      state: clicked.state,
       eventpane: '<a href="?s=Battle&amp;ss=ba&amp;encounter=ready123=">Random Encounter</a>',
       eventpanePresent: true,
       checkMode: clicked.checkMode,

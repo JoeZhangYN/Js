@@ -1,8 +1,6 @@
 import { EncounterPolicyEvent, runEncounterPolicy } from "./encounter-policy.js";
 import { EncounterCheckMode } from "./encounter-check-mode.js";
 import { EncounterGenerationApplication } from "./encounter-generation-application.js";
-import { classifyEncounterGenerationResult } from "./encounter-generation-result.js";
-import { observeWidgetLink } from "./encounter-widget-observation.js";
 import { readEncounterWidgetState as readWidgetState } from "./encounter-widget-state.js";
 
 const widgetState = (event, state = event.state) => readWidgetState(state, event);
@@ -39,59 +37,43 @@ function planWidgetClick(event) {
   };
 }
 
-function planWidgetNewsLoaded(event) {
+export function planEncounterWidgetGeneration(event) {
   if (event.pageType === "is") {
     return suppressIsekaiNavigation(widgetState(event));
   }
-  const current = widgetState(event);
-  const generationResult = classifyEncounterGenerationResult({
-    eventpane: event.eventpane,
-    dawn: event.dawn,
-    key: event.key,
-    search: event.search,
-    eventpanePresent: event.eventpanePresent,
-    newsPagePresent: event.newsPagePresent,
-    responseIdentity: event.responseIdentity,
-  });
-  const application = runEncounterPolicy({
-    type: EncounterPolicyEvent.APPLY_GENERATION_RESULT,
-    state: current.state,
-    result: generationResult,
-    nowMs: event.nowMs,
-    attemptKey: current.attemptKey,
-    checkMode: event.checkMode || EncounterCheckMode.MANUAL,
-  });
-  if (application.application === EncounterGenerationApplication.AVAILABLE) {
-    const state = application.state;
-    return planWidgetEngage({ ...event, state });
+  if (event.application === EncounterGenerationApplication.AVAILABLE) {
+    return planWidgetEngage(event);
   }
-  if (application.application === EncounterGenerationApplication.NEW_DAY) {
+  if (event.application === EncounterGenerationApplication.NEW_DAY) {
     return {
-      ...widgetState(event, application.state),
+      ...widgetState(event),
       action: "dailyResetEvent",
       unavailableReason: "dailyResetEvent",
     };
   }
-  if (application.application === EncounterGenerationApplication.LIMIT_PROBE_EMPTY) {
+  if (event.application === EncounterGenerationApplication.LIMIT_PROBE_EMPTY) {
     return {
-      ...widgetState(event, application.state),
+      ...widgetState(event),
       action: "limitProbeEmpty",
-      unavailableReason: generationResult.reason,
+      unavailableReason: event.result.reason,
     };
   }
   if (
-    application.application === EncounterGenerationApplication.MANUAL_EMPTY ||
-    application.application === EncounterGenerationApplication.MANUAL_CHECK_FAILED ||
-    application.application === EncounterGenerationApplication.AUTOMATIC_CHECK_FAILED
+    event.application === EncounterGenerationApplication.MANUAL_EMPTY ||
+    event.application === EncounterGenerationApplication.MANUAL_CHECK_FAILED ||
+    event.application === EncounterGenerationApplication.AUTOMATIC_CHECK_FAILED
   ) {
     return {
-      ...widgetState(event, application.state),
+      ...widgetState(event),
       action: "unavailable",
-      unavailableReason: application.result.reason,
+      unavailableReason: event.result.reason,
     };
   }
-  const unavailableReason = application.result.reason;
-  return { ...widgetState(event, application.state), action: "unavailable", unavailableReason };
+  return {
+    ...widgetState(event),
+    action: "unavailable",
+    unavailableReason: event.result?.reason,
+  };
 }
 
 function planWidgetEngage(event) {
@@ -117,14 +99,7 @@ function planWidgetEngage(event) {
 
 const encounterWidgetPolicyEventHandlers = Object.freeze({
   widgetTick: (event) => widgetState(event),
-  widgetLinkFound: observeWidgetLink,
-  widgetResetDay: (event) =>
-    widgetState(
-      event,
-      runEncounterPolicy({ type: EncounterPolicyEvent.BEGIN_NEW_DAY, nowMs: event.nowMs })
-    ),
   widgetClicked: planWidgetClick,
-  widgetNewsLoaded: planWidgetNewsLoaded,
 });
 
 export function planEncounterWidgetEvent(event) {

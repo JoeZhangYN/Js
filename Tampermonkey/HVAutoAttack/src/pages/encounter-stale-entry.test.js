@@ -91,9 +91,12 @@ describe("encounter stale entry recovery", () => {
   });
 
   it("does not let a forced widget click revive an already attempted key", () => {
+    localStorage.setItem(
+      HVUT_RE_KEY,
+      JSON.stringify({ date: Date.now(), key: "abc123=", count: 1, clear: true })
+    );
     const outcome = runEncounterAutomation({
       type: EncounterEvent.WIDGET_CLICKED,
-      state: { date: Date.now(), key: "abc123=", count: 1, clear: true },
       pageType: "hv",
       force: true,
     });
@@ -108,9 +111,12 @@ describe("encounter stale entry recovery", () => {
   });
 
   it("does not navigate when news returns the same already attempted key", () => {
+    localStorage.setItem(
+      HVUT_RE_KEY,
+      JSON.stringify({ date: Date.now(), key: "xyz=", count: 1, clear: true })
+    );
     const outcome = runEncounterAutomation({
       type: EncounterEvent.WIDGET_NEWS_LOADED,
-      state: { date: Date.now(), key: "xyz=", count: 1, clear: true },
       eventpane: '<a href="?s=Battle&amp;ss=ba&amp;encounter=xyz=">RE</a>',
       engage: true,
       pageType: "hv",

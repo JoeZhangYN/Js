@@ -24,12 +24,12 @@ const bindRe = body(
   "bindRe"
 );
 const encounterBridge = body(
-  /const run_hvut_encounter_bridge = function \(eventName, event\) \{[\s\S]*?\n  \};\n  const applyEncounterState/,
+  /const run_hvut_encounter_bridge = function \(eventName, event\) \{[\s\S]*?\n  \};\n  const applyEncounterProjection/,
   "run_hvut_encounter_bridge"
 );
-const applyState = body(
-  /const applyEncounterState = function \(outcome\) \{[\s\S]*?\n  \};\n  re\.init/,
-  "applyEncounterState"
+const applyProjection = body(
+  /const applyEncounterProjection = function \(outcome\) \{[\s\S]*?\n  \};\n  re\.init/,
+  "applyEncounterProjection"
 );
 const init = body(/re\.init = function \(\) \{[\s\S]*?\n  \};\n  re\.clock/, "re.init");
 const clock = body(/re\.clock = function \(button\) \{[\s\S]*?\n  \};\n  re\.hv/, "re.clock");
@@ -40,13 +40,13 @@ const refresh = body(/re\.refresh = function \(\) \{[\s\S]*?\n  \};\n  re\.run/,
 const run = body(/re\.run = async function \(\) \{[\s\S]*?\n  \};\n  re\.load/, "re.run");
 const load = body(/re\.load = async function \(href\) \{[\s\S]*?\n  \};\n  re\.start/, "re.load");
 
-requireParts("applyEncounterState", applyState, [
-  "if (!ctx.config.set('re', outcome.state, 'hvut_')) {",
-  "show_hvut_generic_error();",
-  "return false;",
+requireParts("applyEncounterProjection", applyProjection, [
   "re.json = outcome.state;",
   "return true;",
 ]);
+if (/ctx\.config\.(?:get|set)\(['"]re['"]/.test(bindRe)) {
+  violations.push(`${target} widget projection must not read or write encounter storage`);
+}
 
 requireParts("run_hvut_encounter_bridge", encounterBridge, [
   "const bridge = typeof window !== 'undefined' ? window.HVAA_encounter : undefined",
@@ -77,8 +77,8 @@ requireParts("re.ba", ba, [
 ]);
 requireParts("re.eh", eh, [
   "if (re.init() === false) return false;",
-  "const linkState = run_hvut_encounter_bridge('WIDGET_LINK_FOUND', { state: re.json, search: onclick });",
-  "if (applyEncounterState(linkState) === false) return false;",
+  "const linkState = run_hvut_encounter_bridge('WIDGET_LINK_FOUND', { search: onclick, pageType: re.type });",
+  "if (applyEncounterProjection(linkState) === false) return false;",
   "return re.clock(button);",
   "return true;",
 ]);
@@ -86,7 +86,7 @@ requireParts("re.run", run, [
   "html = await $ajax.fetch('https://hentaiverse.org/');",
   "record_hvut_random_encounter_failure('widgetHvAvailabilityFetch'",
   "run_hvut_encounter_bridge('WIDGET_GENERATION_FAILED'",
-  "if (applyEncounterState(outcome) === false) return false;",
+  "if (applyEncounterProjection(outcome) === false) return false;",
   "checkMode: 'manual'",
   "re.start();",
   "return false;",
@@ -99,7 +99,7 @@ requireParts("re.load", load, [
   "run_hvut_encounter_bridge('WIDGET_GENERATION_FAILED'",
   "re.start();",
   "return false;",
-  "if (applyEncounterState(outcome) === false) return false;",
+  "if (applyEncounterProjection(outcome) === false) return false;",
   "eventpanePresent: Boolean(eventpaneNode)",
   "checkMode: 'manual'",
   "return true;",
@@ -120,15 +120,12 @@ for (const forbidden of ["WIDGET_TIMER_ELAPSED", "re.load(", "re.run("]) {
 
 requireParts("bindRe encounter bridge calls", bindRe, [
   "run_hvut_encounter_bridge('WIDGET_TICK', {})",
-  "run_hvut_encounter_bridge('WIDGET_LINK_FOUND', { state: re.json, key })",
-  "run_hvut_encounter_bridge('WIDGET_RESET_DAY')",
+  "run_hvut_encounter_bridge('WIDGET_LINK_FOUND', { key, pageType: re.type })",
+  "run_hvut_encounter_bridge('WIDGET_RESET_DAY'",
   "run_hvut_encounter_bridge('WIDGET_CLICKED'",
   "run_hvut_encounter_bridge('WIDGET_NEWS_LOADED'",
   "run_hvut_encounter_bridge('WIDGET_GENERATION_FAILED'",
 ]);
-if (/ctx\.config\.get\(['"]re['"]/.test(bindRe)) {
-  violations.push(`${target} widget must not read encounter storage outside its business entry`);
-}
 if (bindRe.includes("WIDGET_TIMER_ELAPSED")) {
   violations.push(`${target} must not restore widget timer expiry as an automatic entry`);
 }
@@ -150,6 +147,10 @@ requireParts("diagnostic evidence keys", keysText, [
 ]);
 
 for (const forbidden of [
+  "state: re.json",
+  "applyEncounterState",
+  "ctx.config.set('re'",
+  "ctx.config.get('re'",
   "re.json = outcome.state;\n    ctx.config.set('re', re.json, 'hvut_');",
   "ctx.config.set('re', re.json, 'hvut_');",
   "ctx.config.set('re', outcome.state, 'hvut_');\n    re.json = outcome.state;",
@@ -164,7 +165,7 @@ for (const forbidden of [
 ]) {
   if (bindRe.includes(forbidden)) {
     violations.push(
-      `${target} bindRe must not ignore random encounter state persistence: ${forbidden}`
+      `${target} bindRe must keep encounter persistence behind EncounterState: ${forbidden}`
     );
   }
 }

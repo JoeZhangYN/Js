@@ -78,9 +78,10 @@ const rejectionFile = path.normalize("src/pages/encounter-rejection.js");
 const bridgeFile = path.normalize("src/pages/encounter-bridge.js");
 const hvUtilsFile = path.normalize("src/i18n/hv-utils.js");
 const legacyWidgetFile = path.normalize("src/pages/encounter-widget.js");
+const widgetFlowFile = path.normalize("src/pages/encounter-widget-flow.js");
 const widgetPolicyFile = path.normalize("src/pages/encounter-widget-policy.js");
 const widgetStateFile = path.normalize("src/pages/encounter-widget-state.js");
-const widgetObservationFile = path.normalize("src/pages/encounter-widget-observation.js");
+const widgetAuthorityTest = path.normalize("src/pages/encounter-widget-authority.test.js");
 const widgetPolicyTest = path.normalize("src/pages/encounter-widget-policy.test.js");
 const widgetMainWorldTest = path.normalize("src/pages/encounter-widget-main-world.test.js");
 const widgetTimerTest = path.normalize("src/pages/encounter-widget-timer.test.js");
@@ -157,6 +158,7 @@ function checkFile(file) {
     }
     if (
       relative !== owner &&
+      relative !== widgetFlowFile &&
       relative !== battleLifecycleFile &&
       relative !== stateHelper &&
       relative !== stateStorageFile &&
@@ -181,6 +183,7 @@ function checkFile(file) {
     }
     if (
       relative !== owner &&
+      relative !== widgetFlowFile &&
       relative !== battleLifecycleFile &&
       relative !== entryExecutionFile &&
       relative !== lobbyFlowFile &&
@@ -220,6 +223,7 @@ function checkFile(file) {
     }
     if (
       relative !== owner &&
+      relative !== widgetFlowFile &&
       relative !== widgetPolicyTest &&
       relative !== widgetMainWorldTest &&
       relative !== widgetGenerationRecoveryTest &&
@@ -414,8 +418,9 @@ const policyCorruptStateTestText = fs.existsSync(path.join(root, policyCorruptSt
   : "";
 const rejectionText = fs.readFileSync(path.join(root, rejectionFile), "utf8");
 const hvUtilsText = fs.readFileSync(path.join(root, hvUtilsFile), "utf8");
+const widgetFlowText = fs.readFileSync(path.join(root, widgetFlowFile), "utf8");
 const widgetPolicyText = fs.readFileSync(path.join(root, widgetPolicyFile), "utf8");
-const widgetObservationText = fs.readFileSync(path.join(root, widgetObservationFile), "utf8");
+const widgetAuthorityTestText = fs.readFileSync(path.join(root, widgetAuthorityTest), "utf8");
 const widgetPolicyTestText = [
   widgetPolicyTest,
   widgetMainWorldTest,
@@ -521,12 +526,35 @@ for (const required of ["EVENT_BATTLE_SESSION_STARTED", "EVENT_BATTLE_SESSION_TE
   }
 }
 for (const required of [
-  "event.state === undefined",
   "EncounterStateEvent.READ_SNAPSHOT",
   'reason: "encounterStateReadFailed"',
+  "recordWidgetGeneration",
+  "EncounterStateEvent.RECORD_GENERATION_RESULT",
 ]) {
-  if (!ownerText.includes(required)) {
-    violations.push(`${owner.replaceAll("\\", "/")} must own widget state authority: ${required}`);
+  if (!widgetFlowText.includes(required)) {
+    violations.push(
+      `${widgetFlowFile.replaceAll("\\", "/")} must compose widget state authority: ${required}`
+    );
+  }
+}
+if (/\bstate:\s*event\.state\b/.test(widgetFlowText)) {
+  violations.push(
+    `${widgetFlowFile.replaceAll("\\", "/")} must not let widget callers inject encounter write state`
+  );
+}
+if (!ownerText.includes("runEncounterWidgetFlow")) {
+  violations.push(`${owner.replaceAll("\\", "/")} must route widget events through one flow`);
+}
+for (const required of [
+  "ignores caller-injected widget state and projects the authoritative snapshot",
+  "persists a widget link observation before projecting the available key",
+  "physically writes one changed observation and keeps repeated widget ticks write-free",
+  "expect(gmSetValue).toHaveBeenCalledOnce()",
+]) {
+  if (!widgetAuthorityTestText.includes(required)) {
+    violations.push(
+      `${widgetAuthorityTest.replaceAll("\\", "/")} must lock widget state authority: ${required}`
+    );
   }
 }
 if (
@@ -909,7 +937,7 @@ if (/EncounterGenerationApplication|applyEncounterGenerationResult/.test(entrySt
     `${entryStateFile.replaceAll("\\", "/")} must own only encounter-key entry lifecycle`
   );
 }
-for (const consumerText of [policyText, stateGenerationText, widgetPolicyText, ownerText]) {
+for (const consumerText of [policyText, stateGenerationText, widgetPolicyText]) {
   if (!consumerText.includes("encounter-generation-application.js")) {
     violations.push(
       `${generationApplicationFile.replaceAll("\\", "/")} must remain the live generation-decision identity`
@@ -1217,7 +1245,11 @@ for (const required of [
   "lets a manual click check immediately without moving any counters or clocks when empty",
   'action: "load"',
 ]) {
-  if (!widgetPolicyText.includes(required) && !widgetPolicyTestText.includes(required)) {
+  if (
+    !widgetFlowText.includes(required) &&
+    !widgetPolicyText.includes(required) &&
+    !widgetPolicyTestText.includes(required)
+  ) {
     violations.push(
       `${widgetPolicyFile.replaceAll("\\", "/")} must separate the primary cycle, technical recovery, and manual recheck: ${required}`
     );
@@ -1522,8 +1554,8 @@ for (const required of [
   "handleWidgetGenerationFailed",
   "recordWidgetGeneration",
 ]) {
-  if (!ownerText.includes(required)) {
-    violations.push(`${owner.replaceAll("\\", "/")} must own ${required}`);
+  if (!(ownerText + widgetFlowText).includes(required)) {
+    violations.push(`${widgetFlowFile.replaceAll("\\", "/")} must own ${required}`);
   }
 }
 for (const required of [
@@ -1537,7 +1569,7 @@ for (const required of [
 }
 for (const required of [
   "run_hvut_encounter_bridge('WIDGET_GENERATION_FAILED'",
-  "if (applyEncounterState(outcome) === false) return false;",
+  "if (applyEncounterProjection(outcome) === false) return false;",
 ]) {
   if (!hvUtilsText.includes(required)) {
     violations.push(`${hvUtilsFile.replaceAll("\\", "/")} must preserve ${required}`);
@@ -1648,9 +1680,9 @@ for (const required of [
     );
   }
 }
-if (!widgetPolicyText.includes("classifyEncounterGenerationResult")) {
+if (!widgetFlowText.includes("classifyEncounterGenerationResult")) {
   violations.push(
-    `${widgetPolicyFile.replaceAll("\\", "/")} must classify widget unavailable reasons through one function`
+    `${widgetFlowFile.replaceAll("\\", "/")} must classify widget results before persistence`
   );
 }
 for (const required of [
@@ -1668,7 +1700,7 @@ for (const required of [
     );
   }
 }
-if ((widgetPolicyText + widgetObservationText).includes("widgetStartedEncounter")) {
+if ((widgetPolicyText + widgetFlowText).includes("widgetStartedEncounter")) {
   violations.push(
     `${widgetPolicyFile.replaceAll("\\", "/")} must retire widget-owned battle recognition`
   );

@@ -1,22 +1,42 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ENCOUNTER_COOLDOWN_MS } from "./encounter-day-state.js";
-import { planEncounterWidgetEvent } from "./encounter-widget-policy.js";
+import { classifyEncounterGenerationResult } from "./encounter-generation-result.js";
+import { EncounterPolicyEvent, runEncounterPolicy } from "./encounter-policy.js";
+import {
+  planEncounterWidgetEvent,
+  planEncounterWidgetGeneration,
+} from "./encounter-widget-policy.js";
 
 beforeEach(() => {
   vi.setSystemTime(new Date("2026-06-27T12:00:00.000Z"));
 });
 
 describe("encounter widget generation recovery", () => {
-  it("keeps a manual authoritative empty result outside both clocks", () => {
-    const date = Date.now() - 31 * 60 * 1000;
-    const outcome = planEncounterWidgetEvent({
-      type: "widgetNewsLoaded",
-      state: { date, key: "", count: 7, clear: true },
-      eventpane: "<p>No random encounter is currently available.</p>",
-      eventpanePresent: true,
+  function planGeneration(state, response) {
+    const result = classifyEncounterGenerationResult(response);
+    const generation = runEncounterPolicy({
+      type: EncounterPolicyEvent.APPLY_GENERATION_RESULT,
+      state,
+      result,
       checkMode: "manual",
+    });
+    return planEncounterWidgetGeneration({
+      state: generation.state,
+      application: generation.application,
+      result: generation.result,
       pageType: "hv",
     });
+  }
+
+  it("keeps a manual authoritative empty result outside both clocks", () => {
+    const date = Date.now() - 31 * 60 * 1000;
+    const outcome = planGeneration(
+      { date, key: "", count: 7, clear: true },
+      {
+        eventpane: "<p>No random encounter is currently available.</p>",
+        eventpanePresent: true,
+      }
+    );
 
     expect(outcome).toMatchObject({
       action: "unavailable",
@@ -68,9 +88,8 @@ describe("encounter widget generation recovery", () => {
   });
 
   it("preserves an active automatic recovery when a manual check is empty", () => {
-    const outcome = planEncounterWidgetEvent({
-      type: "widgetNewsLoaded",
-      state: {
+    const outcome = planGeneration(
+      {
         date: Date.now() - 31 * 60 * 1000,
         key: "",
         count: 7,
@@ -85,11 +104,11 @@ describe("encounter widget generation recovery", () => {
         generationNextAttemptAt: Date.now() + 3 * 60 * 1000,
         generationFailureReason: "generationRequestFailed",
       },
-      eventpane: "<p>No random encounter is currently available.</p>",
-      eventpanePresent: true,
-      checkMode: "manual",
-      pageType: "hv",
-    });
+      {
+        eventpane: "<p>No random encounter is currently available.</p>",
+        eventpanePresent: true,
+      }
+    );
 
     expect(outcome.state).toMatchObject({
       generationFailureCount: 5,
@@ -99,14 +118,13 @@ describe("encounter widget generation recovery", () => {
 
   it("treats the UTC dawn response as the non-counting new-day cooldown anchor", () => {
     vi.setSystemTime(new Date("2026-06-28T00:00:05.000Z"));
-    const outcome = planEncounterWidgetEvent({
-      type: "widgetNewsLoaded",
-      state: { date: 0, key: "", count: 0, clear: true },
-      eventpane: "<p>It is the dawn of a new day!</p>",
-      eventpanePresent: true,
-      checkMode: "manual",
-      pageType: "hv",
-    });
+    const outcome = planGeneration(
+      { date: 0, key: "", count: 0, clear: true },
+      {
+        eventpane: "<p>It is the dawn of a new day!</p>",
+        eventpanePresent: true,
+      }
+    );
 
     expect(outcome).toMatchObject({
       action: "dailyResetEvent",

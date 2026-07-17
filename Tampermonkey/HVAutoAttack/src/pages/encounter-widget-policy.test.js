@@ -1,27 +1,20 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { planEncounterWidgetEvent } from "./encounter-widget-policy.js";
+import { EncounterGenerationApplication } from "./encounter-generation-application.js";
+import { classifyEncounterGenerationResult } from "./encounter-generation-result.js";
+import {
+  planEncounterWidgetEvent,
+  planEncounterWidgetGeneration,
+} from "./encounter-widget-policy.js";
 
 beforeEach(() => {
   vi.setSystemTime(new Date("2026-06-27T23:59:55.000Z"));
 });
 
 describe("planEncounterWidgetEvent", () => {
-  it("routes reset-day events through the widget policy entry", () => {
-    expect(
-      planEncounterWidgetEvent({
-        type: "widgetResetDay",
-        state: { date: 1000, key: "abc=", count: 3, clear: false },
-      })
-    ).toMatchObject({
-      state: {
-        date: 0,
-        count: 0,
-        entry: { phase: "idle", key: "", sessionId: null },
-      },
-      status: "ready",
-      count: 0,
-      warn: false,
-    });
+  it("keeps state-changing widget events outside the pure projection entry", () => {
+    expect(planEncounterWidgetEvent({ type: "widgetResetDay" })).toBeUndefined();
+    expect(planEncounterWidgetEvent({ type: "widgetLinkFound" })).toBeUndefined();
+    expect(planEncounterWidgetEvent({ type: "widgetNewsLoaded" })).toBeUndefined();
   });
 
   it("ignores invalid widget policy events", () => {
@@ -30,64 +23,43 @@ describe("planEncounterWidgetEvent", () => {
   });
 
   it("classifies missing news encounter key without claiming equipment capacity failure", () => {
+    const result = classifyEncounterGenerationResult({
+      eventpane: "<p>No random encounter is currently available.</p>",
+    });
+    expect(result).toMatchObject({ reason: "encounterKeyMissing" });
     expect(
-      planEncounterWidgetEvent({
-        type: "widgetNewsLoaded",
+      planEncounterWidgetGeneration({
         state: { date: Date.now() - 31 * 60 * 1000, key: "", count: 1, clear: true },
-        eventpane: "<p>No random encounter is currently available.</p>",
-        engage: true,
+        application: EncounterGenerationApplication.MANUAL_EMPTY,
+        result,
         pageType: "hv",
       })
-    ).toMatchObject({
-      action: "unavailable",
-      unavailableReason: "encounterKeyMissing",
-    });
+    ).toMatchObject({ action: "unavailable", unavailableReason: "encounterKeyMissing" });
   });
 
   it("does not classify low equipment capacity text as encounter equipment-full failure", () => {
     expect(
-      planEncounterWidgetEvent({
-        type: "widgetNewsLoaded",
-        state: { date: Date.now() - 31 * 60 * 1000, key: "", count: 1, clear: true },
+      classifyEncounterGenerationResult({
         eventpane:
           "<table><tr><td>Inventory Capacity:</td><td>54</td><td>/</td><td>500</td></tr></table>",
-        engage: true,
-        pageType: "hv",
       })
-    ).toMatchObject({
-      action: "unavailable",
-      unavailableReason: "encounterKeyMissing",
-    });
+    ).toMatchObject({ reason: "encounterKeyMissing" });
   });
 
   it("does not classify untyped equipment full text outside the news error box", () => {
     expect(
-      planEncounterWidgetEvent({
-        type: "widgetNewsLoaded",
-        state: { date: Date.now() - 31 * 60 * 1000, key: "", count: 1, clear: true },
+      classifyEncounterGenerationResult({
         eventpane: "<div>Inventory Capacity: 54 / 500. Your equipment inventory is full?</div>",
-        engage: true,
-        pageType: "hv",
       })
-    ).toMatchObject({
-      action: "unavailable",
-      unavailableReason: "encounterKeyMissing",
-    });
+    ).toMatchObject({ reason: "encounterKeyMissing" });
   });
 
   it("classifies explicit equipment inventory full news as the only equipment prompt reason", () => {
     expect(
-      planEncounterWidgetEvent({
-        type: "widgetNewsLoaded",
-        state: { date: Date.now() - 31 * 60 * 1000, key: "", count: 1, clear: true },
+      classifyEncounterGenerationResult({
         eventpane: '<p class="messagebox_error">Your equipment inventory is full</p>',
-        engage: true,
-        pageType: "hv",
       })
-    ).toMatchObject({
-      action: "unavailable",
-      unavailableReason: "equipmentInventoryFull",
-    });
+    ).toMatchObject({ reason: "equipmentInventoryFull" });
   });
 
   it("lets a plain battle-page countdown click recheck immediately", () => {

@@ -80,14 +80,17 @@ describe("runEncounterAutomation", () => {
   });
 
   it("serves the widget countdown from the same UTC day readiness", () => {
-    const outcome = runEncounterAutomation({
-      type: EncounterEvent.WIDGET_TICK,
-      state: {
+    localStorage.setItem(
+      HVUT_RE_KEY,
+      JSON.stringify({
         date: Date.UTC(2026, 5, 26, 23, 59),
         key: "",
         count: 24,
         clear: true,
-      },
+      })
+    );
+    const outcome = runEncounterAutomation({
+      type: EncounterEvent.WIDGET_TICK,
     });
 
     expect(outcome).toMatchObject({
@@ -99,10 +102,10 @@ describe("runEncounterAutomation", () => {
 
   it("handles HV widget click navigation through the encounter entry", () => {
     const state = { date: Date.now(), key: "abc123=", count: 1, clear: false };
+    localStorage.setItem(HVUT_RE_KEY, JSON.stringify(state));
 
     const outcome = runEncounterAutomation({
       type: EncounterEvent.WIDGET_CLICKED,
-      state,
       pageType: "hv",
     });
 
@@ -122,9 +125,9 @@ describe("runEncounterAutomation", () => {
   });
 
   it("turns a loaded news encounter into the same handled engage action", () => {
+    localStorage.setItem(HVUT_RE_KEY, JSON.stringify({ date: 0, key: "", count: 0, clear: true }));
     const outcome = runEncounterAutomation({
       type: EncounterEvent.WIDGET_NEWS_LOADED,
-      state: { date: 0, key: "", count: 0, clear: true },
       eventpane: '<a href="?s=Battle&amp;ss=ba&amp;encounter=xyz=">RE</a>',
       engage: true,
       pageType: "hv",
@@ -143,10 +146,10 @@ describe("runEncounterAutomation", () => {
 
   it("handles e-hentai widget click opening through the encounter entry", () => {
     const state = { date: Date.now(), key: "abc123=", count: 1, clear: false };
+    localStorage.setItem(HVUT_RE_KEY, JSON.stringify(state));
 
     const outcome = runEncounterAutomation({
       type: EncounterEvent.WIDGET_CLICKED,
-      state,
       pageType: "eh",
       hvAvailable: true,
       galleryAlt: true,

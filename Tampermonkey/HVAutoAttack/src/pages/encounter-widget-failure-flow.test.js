@@ -5,6 +5,7 @@ const mocks = vi.hoisted(() => ({
   runNavigationAutomation: vi.fn(),
   runUserFeedbackAutomation: vi.fn(),
 }));
+const HVUT_RE_KEY = ["hvut", "re"].join("_");
 
 vi.mock("../core/navigate.js", () => ({
   NavigationEvent: Object.freeze({ OPEN_URL: "openUrl" }),
@@ -25,9 +26,9 @@ beforeEach(() => {
 
 describe("encounter widget generation recovery", () => {
   it("starts the widget cooldown from dawn without reporting a generation failure", () => {
+    localStorage.setItem(HVUT_RE_KEY, JSON.stringify({ date: 0, key: "", count: 0, clear: true }));
     const outcome = runEncounterAutomation({
       type: EncounterEvent.WIDGET_NEWS_LOADED,
-      state: { date: 0, key: "", count: 0, clear: true },
       eventpane: "It is the dawn of a new day!",
       engage: true,
       pageType: "hv",
@@ -39,9 +40,10 @@ describe("encounter widget generation recovery", () => {
       state: { date: Date.now(), count: 0, anchorReason: "newDay", dayPhase: "active" },
     });
     expect(mocks.runUserFeedbackAutomation).not.toHaveBeenCalled();
-    expect(
-      runEncounterAutomation({ type: EncounterEvent.WIDGET_TICK, state: outcome.state })
-    ).toMatchObject({ status: "countdown", reason: "cooldown" });
+    expect(runEncounterAutomation({ type: EncounterEvent.WIDGET_TICK })).toMatchObject({
+      status: "countdown",
+      reason: "cooldown",
+    });
     expect(mocks.runNavigationAutomation).not.toHaveBeenCalled();
   });
 
@@ -52,9 +54,9 @@ describe("encounter widget generation recovery", () => {
       count: 1,
       clear: true,
     };
+    localStorage.setItem(HVUT_RE_KEY, JSON.stringify(state));
     const outcome = runEncounterAutomation({
       type: EncounterEvent.WIDGET_GENERATION_FAILED,
-      state,
       request: { method: "GET", url: "https://e-hentai.org/news.php" },
       reason: "generationRequestFailed",
       detail: { error: "network down" },
